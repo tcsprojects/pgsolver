@@ -1,0 +1,31 @@
+\section{Verifying Strategies}
+
+The problem of \emph{verifying strategies} is to decide whether a given partition $(W'_0, W'_1)$ of a parity 
+game $G$ along with two strategies $\sigma_0: W'_0 \cap V_0 \rightarrow V$ and 
+$\sigma_1: W'_1 \cap V_1 \rightarrow V$ matches the partition into winning sets, i.e. whether $W'_0 = W_0$ 
+and $W'_1 = W_1$ as well as $\sigma_0$ and $\sigma_1$ ensure the win of the respective player in the 
+respective winning set.
+
+The verification process basically traverses three phases. The algorithm verifies in the first phase that 
+$\sigma_0$ and $\sigma_1$ are welldefined in the sense that a strategy actually uses valid transitions in 
+the game graph. In the second phase the algorithm checks whether the strategies stay in their winning 
+regions, i.e. $\sigma_i[W'_i] \subseteq W'_i$ for both player $i$, as well as whether the winning regions 
+are closed w.r.t. the respective player.
+
+The third phase finally checks whether the given strategies are winning strategies. In order to solve this 
+problem, the algorithm computes the subgames $G_i := (G|_{W'_i})|_{\sigma_i}$ induced by the respective sets 
+and strategies in question. Note that both $G_i$ are special games, namely one-player games. Hence, they
+can be solved as described above.
+
+Since $\sigma_i$ is a winning strategy on $W'_i$ iff $\sigma_i$ is a winning strategy on $G_i$, it suffices 
+to check whether the computed winning set $W^{G_i}_i$ correspond with 
+$W'_i$, and if they do not, the counter strategy for player $1 - i$ can be used to extract a cycle in $G$ 
+following strategy $\sigma_i$ that is won by $1-i$.
+
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

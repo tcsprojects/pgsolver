@@ -1,0 +1,17 @@
+\documentclass{article}
+\usepackage{fullpage}
+\usepackage{graphics,graphicx}
+\usepackage[landscape]{geometry}
+\usepackage{lscape}
+
+\usepackage{ifpdf}
+\ifpdf
+\DeclareGraphicsRule{*}{mps}{*}{}
+\else
+\DeclareGraphicsRule{*}{eps}{*}{}
+\fi
+
+\newcommand{\animationgraphic}[1]{\includegraphics[height=15cm]{#1}}
+
+\begin{document}
+

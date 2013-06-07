@@ -1,0 +1,1 @@
+val someone : unit -> string

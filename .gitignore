@@ -7,3 +7,12 @@
 *.cmx
 *.cmxs
 *.cmxa
+bin/*
+Config
+*.aux
+*.bbl
+*.blg
+doc/main.dvi
+*.log
+doc/main.thm
+doc/main.toc

@@ -1,0 +1,155 @@
+\section{Technicalities}
+
+\subsection{Parity Games}
+
+A \emph{parity game} is a tuple $G = (V,V_0,V_1,E,\Omega)$ where $(V,E)$ forms a directed graph
+whose node set is partitioned into $V = V_0 \cup V_1$ with $V_0 \cap V_1 = \emptyset$, and
+$\Omega : V \to \Nat$ is the \emph{priority function} that assigns to each node a natural number
+called the \emph{priority} of the node. We assume the underlying graph to be total, i.e.\ for every
+$v \in V$ there is a $w \in W$ s.t.\ $(v,w) \in E$.
+
+We also use infix notation $vEw$ instead of $(v,w) \in E$ and define the set of all \emph{successors} of
+$v$ as $vE := \{ w \mid vEw \}$, as well as the set of all \emph{predecessors} of $w$ as
+$Ew := \{ v \mid vEw \}$.
+
+The game is played between two players called $0$ and $1$ in the following way. Starting in a node
+$v_0 \in V$ they construct an infinite path through the graph as follows. If the construction so far
+has yielded a finite sequence $v_0\ldots v_n$ and $v_n \in V_i$ then player $i$ selects a $w \in v_nE$
+and the play continues with the sequence $v_0\ldots v_n w$.
+
+Every play has a unique winner given by the \emph{parity} of the greatest priority that occurs infinitely 
+often in a play. The winner of the play $v_0 v_1 v_2 \ldots$ is player $i$ iff
+$\max \{ p \mid \forall j \in \Nat \exists k \geq j:\, \Omega(v_k) = p \} \equiv_2 i$ (where $i \equiv_2 j$ holds iff $|i - j| \mod 2 = 0$). That is, player $0$ tries to make an even
+priority occur infinitely often without any greater odd priorities occurring infinitely often, player
+$1$ attempts the converse.
+
+% The priorities occurring in a game are often ordered w.r.t. their usefulness to one of the players $i \in \{0, 1\}$ by the \emph{reward order $\preceq_i$} which is defined as follows:
+% \begin{displaymath}
+% p_1 \preceq_i p_2 \,:\iff\,\, rew_i(p_1) \leq rew_i(p_2)
+% \end{displaymath}
+% where $rew_i(p) := p$ if $p \equiv_2 i$ and $rew_i(p) := -p$ otherwise.
+% \TODO{Paragraph nach hinten}
+
+In the following we will restrict ourselves to finite parity games. It is easy to see that in a finite
+parity game the winner of a play is determined uniquely since the range of $\Omega$ must necessarily
+be finite as well. Technically, we are considering so-called max-parity games. There is also the
+min-parity variant in which the winner is determined by the parity of the \emph{least} priority occuring
+infinitely often. On finite graphs, though, these two games are equivalent in the sense that a max-parity
+game $G = (V,V_0,V_1,E,\Omega)$ can be converted into a min-parity game $G' = (V,V_0,V_1,E,\Omega')$
+whilst preserving important notions like winning regions, strategies, etc. Simply let $p$ an even upper
+bound on all the priorities $\Omega(v)$ for any $v \in V$. Then define $\Omega'(v) := p - \Omega(v)$.
+This construction also works the other way round, i.e.\ in order to transform a min-parity into a
+max-parity game.
+
+A \emph{strategy} for player $i$ is a partial function $\sigma: V^*V_i \to V$, s.t.\ for all sequences
+$v_0 \ldots v_n$ with $v_{i+1} \in v_iE$ for all $j=0,\ldots,n-1$, and all $v \in V_i$:
+$\sigma(v_0\ldots v_n) \in v_nE$. That is, a strategy for player $i$ assigns to every finite path through
+$G$ that ends in $V_i$ a successor of the ending node. A play $v_0 v_1 \ldots$ \emph{conforms} to a strategy
+$\sigma$ for player $i$ if for all $j \in \Nat$ we have: if $v_j \in V_i$ then 
+$v_{j+1} = \sigma(v_0\ldots v_j)$.
+Intuitively, conforming to a strategy means to always make those choices that are prescribed by the strategy.
+A strategy $\sigma$ for player $i$ is a \emph{winning strategy} starting in some node $v \in V$ if player $i$ wins
+every play that conforms to this strategy and begins in $v$. We say that player $i$ \emph{wins} the game $G$
+starting in $v$ iff he/she has a winning strategy for $G$ starting in $v$.
+
+With $G$ we associate two sets $W_0,W_1 \subseteq V$ with the following definition. $W_i$ is the set of
+all nodes $v$ s.t.\ player $i$ wins the game $G$ starting in $v$. We write $W_i^G$ in order to name the parity 
+game that the winning regions refer to, for example when it cannot uniquely be identified from the context. 
+
+Clearly, we must have
+$W_0 \cap W_1 = \emptyset$ for otherwise assume that there is a node $v$ such that both players $0$ and $1$
+have winning strategies $\sigma_0$ and $\sigma_1$ for $G$ starting in $v$. Then there is a unique play
+$\pi = v_0 v_1 \ldots$ such that $v_0 = v$ and $\pi$ conforms to both $\sigma_0$ and $\sigma_1$. It is
+obtained by simply playing the game while both players perform their choices according to their respective
+strategies. However, by definition $\pi$ is won by both players, and therefore the maximal priority occurring
+infinitely often would have to be both even and odd.
+
+On the other hand, it is not obvious that every node should belong to either of $W_0$ or $W_1$. However, this
+is indeed the case and known as \emph{determinacy}: a player has a strategy for a game iff the opponent does
+not have a strategy for that game.
+
+\begin{theorem}[\cite{Mart75,Gurevich-Harrington/82,focs91*368}]
+Let $G = (V,V_0,V_1,E,\Omega)$ be a parity game. Then $W_0 \cap W_1 = \emptyset$ and $W_0 \cup W_1 = V$.
+\end{theorem}
+
+A strategy $\sigma$ for player $i$ is called \emph{positional} or \emph{memory-less} or \emph{history-free} if
+for all $v_0\ldots v_n \in V^*V_i$ and all $w_0\ldots w_m \in V^*V_i$ we have: if $v_n = w_m$ then
+$\sigma(v_0\ldots v_n) = \sigma(w_0\ldots w_m)$. That is, the value of the strategy on a finite path
+only depends on the last node on that path. An important feature of parity games is the fact that such
+strategies suffice.
+
+\begin{theorem}[\cite{focs91*368}]
+Let $G = (V,V_0,V_1,E,\Omega)$ be a parity game, $v \in V$, and $i \in \{0,1\}$. Player $i$ has a winning
+strategy for $G$ starting in $v$ iff player $i$ has a positional winning strategy for $G$ starting in $v$.
+\end{theorem}
+
+A positional strategy $\sigma$ for player $i$ induces a \emph{subgame} 
+$G|_\sigma := (V, V_0, V_1, E|_\sigma, \Omega)$ where 
+$E|_\sigma := \{(u, v) \in E \mid u \in dom(\sigma) \Rightarrow \sigma(u) = v\}$. Such a subgame $G|_\sigma$ 
+is, roughly speaking, basically the same game as $G$ with the restriction that whenever $\sigma$ provides a 
+strategy decision for a node $u \in V_i$ all transitions from $u$ but $\sigma(u)$ are no longer accessible.
+
+A set $U \subseteq V$ is said to be $i$-closed iff player $i$ can force any play to stay within $U$. This
+means that player $1-i$ must not able to leave $U$ but player $i$ must always have the choice to remain 
+inside $U$: 
+\begin{displaymath}
+\forall v \in U:\, \big(\ v \in V_{1-i}\, \Rightarrow \, vE \subseteq U\ \big)
+\enspace \mbox{and} \enspace
+\big(\ v \in V_i\, \Rightarrow \, vE \cap U \ne \emptyset\ \big)
+\end{displaymath}
+Note that $W_0$ is $0$-closed and $W_1$ is $1$-closed.
+
+A set $U \subseteq V$ induces a \emph{subgame} 
+$G|_U := (U, U \cap V_0, U \cap V_1, E \cap U \times U, \Omega|_U)$ iff the underlying transition relation 
+$E \cap U \times U$ remains total i.e. for all $u \in U$ there is at least one $v \in U$ s.t.\ $uEv$. Clearly, 
+each $i$-closed set $U$ induces a subgame. We often identify a set $U \subseteq V$ that induces a subgame 
+w.r.t.\ a fixed parity game with the induced subgame itself.
+
+\subsection{Dominions}
+
+A set $U \subseteq V$ is called an \emph{$i$-dominion} iff $U$ is $i$-closed and the induced subgame is won by player $i$. Clearly, $W_0$ is a $0$-dominion and $W_1$ is a $1$-dominion. That is, an $i$-dominion $U$ covers the idea of a region in the game graph that is won by player $i$ by forcing player $1-i$ to stay in $U$ on the one hand; but on the other hand an $i$-dominion $U$ is only won by player $i$ when using a winning strategy on $U$.
+
+To see more precisely what the concept of dominions is used for we need to introduce \emph{attractors} and 
+\emph{SCC decompositions} of parity games.
+
+
+\subsection{Attractors and Attractor Strategies}
+Let $U \subseteq V$ and $i \in \{0,1\}$. Define for all $k \in \Nat$
+\begin{align*}
+\attr{0}{i}{U} \enspace := \enspace &U \\
+\attr{k+1}{i}{U} \enspace := \enspace &\attr{k}{i}{U} \\
+\cup\enspace &(V_i \cap \{ v \mid vE \cap \attr{k}{i}{U} \ne \emptyset \}) \\
+\cup\enspace &(V_{1-i} \cap \{ v \mid vE \subseteq \attr{k}{i}{U} \}) \\
+\attr{}{i}{U} \enspace := \enspace &\bigcup\limits_{k \in \Nat} \attr{k}{i}{U}
+\end{align*}
+Intuitively, $\attr{k}{i}{U}$ consists of all nodes s.t.\ player $i$ can force any play to reach $U$ in
+at most $k$ moves. 
+%Attractors are necessary in order to be able to use local solvers for the global problem.
+
+\begin{lemma}[\cite{TCS::Zielonka1998,Stirling95}]
+\label{lem:minusattr}
+Let $G = (V,V_0,V_1,E,\Omega)$ be a parity game and $U \subseteq V$. Let $V' := V \setminus \attr{}{i}{U}$.
+Then $G' = (V',V_0 \cap V',V_1 \cap V', E \cap V'\times V',\Omega)$ is again a parity game with its
+underlying graph being total.
+\end{lemma}
+
+In other words $V \setminus \attr{}{i}{U}$ is $(1-i)$-closed; if additionally $U$ is an $i$-dominion then 
+$\attr{}{i}{U}$ also is an $i$-dominion. This yields a general procedure for solving parity games: find a 
+dominion in the game graph that is won by one of the two players, build its attractor of the dominion and 
+investigate the complement subgame.
+
+Each attractor for player $i$ induces an \emph{attractor strategy} for player $i$. It is defined for all
+$v \in \attr{k}{i}{U} \cap V_i$ for any $k \ge 1$ as $\sigma(v) = w$ iff $w \in \attr{k-1}{i}{U}$.
+
+
+
+
+
+
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

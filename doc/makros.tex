@@ -1,0 +1,45 @@
+\newcommand{\pgsolver}{{\sc PGSolver}\xspace}
+
+\newcommand{\Nat}{\ensuremath{\mathbb{N}}}
+
+\newcommand{\attr}[3]{\ensuremath{\mathit{Attr}^{#1}_{#2}(#3)}}
+
+\newcounter{algcounter}
+\newcounter{heurcounter}
+\newcommand{\nextalg}{\stepcounter{algcounter}\arabic{algcounter}}
+\newcommand{\nextheur}{\stepcounter{heurcounter}\arabic{heurcounter}}
+
+\newcommand{\nonterminal}[1]{\ensuremath{\langle\mathit{#1}\rangle}}
+\newcommand{\terminal}[1]{\ensuremath{{\tt #1}}}
+\newcommand{\sem}[1]{\ensuremath{[\![ #1 ]\!]}}
+\newcommand{\hide}[1]{}
+
+\newcommand{\TODOcomment}[2]{%
+  \stepcounter{TODOcounter#1}%
+  {\scriptsize\bf$^{(\arabic{TODOcounter#1})}$}%
+  \marginpar[\fbox{
+    \parbox{2cm}{\raggedleft
+      \scriptsize$^{({\bf{\arabic{TODOcounter#1}{#1}}})}$%
+      \scriptsize #2}}]%
+  {\fbox{\parbox{2cm}{\raggedright
+      \scriptsize$^{({\bf{\arabic{TODOcounter#1}{#1}}})}$%
+      \scriptsize #2}}}
+}%
+
+\newcommand{\simpleTODOcomment}[2]{%
+  \stepcounter{TODOcounter#1}%
+  {\bf
+    \scriptsize({\arabic{TODOcounter#1}~{#1}})
+    {\bfseries{TODO:} #2}
+  }
+}
+
+\newcounter{TODOcounter}
+\newcommand{\TODO}[1]{\TODOcomment{}{#1}}
+\newcommand{\TODOX}[1]{\simpleTODOcomment{}{#1}}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

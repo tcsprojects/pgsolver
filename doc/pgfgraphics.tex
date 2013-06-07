@@ -1,0 +1,343 @@
+\newcommand{\playercirc}[3]{
+	\pgfcircle[stroke]{\pgfpoint{#1}{#2}}{0.5cm}
+	\pgfputat{\pgfpoint{#1}{#2}}{\pgfbox[center,center]{#3}}
+}
+
+\newcommand{\playerrect}[3]{
+	\pgfrect[stroke]{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{-0.5cm}{-0.5cm}}}{\pgfpoint{1.0cm}{1.0cm}}
+	\pgfputat{\pgfpoint{#1}{#2}}{\pgfbox[center,center]{#3}}
+}
+
+\newcommand{\playercircs}[3]{
+	\pgfcircle[stroke]{\pgfpoint{#1}{#2}}{0.25cm}
+	\pgfputat{\pgfpoint{#1}{#2}}{\pgfbox[center,center]{#3}}
+}
+
+\newcommand{\playerrects}[3]{
+	\pgfrect[stroke]{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{-0.25cm}{-0.25cm}}}{\pgfpoint{0.5cm}{0.5cm}}
+	\pgfputat{\pgfpoint{#1}{#2}}{\pgfbox[center,center]{#3}}
+}
+
+\newcommand{\playeredge}[2]{
+	\pgfsetendarrow{\pgfarrowto}
+	\pgfline{#1}{#2}
+}
+
+\newcommand{\playeredgecurve}[3]{
+	\pgfsetendarrow{\pgfarrowto}
+	\pgfmoveto{#1}
+	\pgfcurveto{#2}{#2}{#3}
+	\pgfstroke
+}
+
+\newcommand{\playeredgecurvex}[4]{
+	\pgfsetendarrow{\pgfarrowto}
+	\pgfmoveto{#1}
+	\pgfcurveto{#2}{#3}{#4}
+	\pgfstroke
+}
+
+\newcommand{\playeredgelr}[3]{
+	\playeredge{\pgfrelative{\pgfpoint{#1}{#3}}{\pgfpoint{0.5cm}{0.0cm}}}{\pgfrelative{\pgfpoint{#2}{#3}}{\pgfpoint{-0.5cm}{0.0cm}}}
+}
+
+\newcommand{\playeredgerl}[3]{
+	\playeredge{\pgfrelative{\pgfpoint{#1}{#3}}{\pgfpoint{-0.5cm}{0.0cm}}}{\pgfrelative{\pgfpoint{#2}{#3}}{\pgfpoint{0.5cm}{0.0cm}}}
+}
+
+\newcommand{\playeredgeud}[3]{
+	\playeredge{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{0cm}{-0.5cm}}}{\pgfrelative{\pgfpoint{#1}{#3}}{\pgfpoint{0cm}{0.5cm}}}
+}
+
+\newcommand{\playeredgedu}[3]{
+	\playeredge{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{0cm}{0.5cm}}}{\pgfrelative{\pgfpoint{#1}{#3}}{\pgfpoint{0cm}{-0.5cm}}}
+}
+
+\newcommand{\playeredgeblur}[4]{
+	\playeredge{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{0.35cm}{0.35cm}}}{\pgfrelative{\pgfpoint{#3}{#4}}{\pgfpoint{-0.35cm}{-0.35cm}}}
+}
+
+\newcommand{\playeredgeurbl}[4]{
+	\playeredge{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{-0.35cm}{-0.35cm}}}{\pgfrelative{\pgfpoint{#3}{#4}}{\pgfpoint{0.35cm}{0.35cm}}}
+}
+
+\newcommand{\playeredgeulbr}[4]{
+	\playeredge{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{0.35cm}{-0.35cm}}}{\pgfrelative{\pgfpoint{#3}{#4}}{\pgfpoint{-0.35cm}{0.35cm}}}
+}
+
+\newcommand{\playeredgebrul}[4]{
+	\playeredge{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{-0.35cm}{0.35cm}}}{\pgfrelative{\pgfpoint{#3}{#4}}{\pgfpoint{0.35cm}{-0.35cm}}}
+}
+
+\newcommand{\playeredgeselfdn}[2]{\playeredgecurvex{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{0.16cm}{-0.5cm}}}{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{0.60cm}{-1.40cm}}}{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{-0.60cm}{-1.40cm}}}{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{-0.16cm}{-0.50cm}}}}
+
+\newcommand{\playeredgeselfrs}[2]{\playeredgecurvex{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{+0.25cm}{0.08cm}}}{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{+0.7cm}{+0.3cm}}}{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{+0.7cm}{-0.3cm}}}{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{+0.25cm}{-0.08cm}}}}
+
+\newcommand{\playeredgecurvelr}[4]{\playeredgecurve{\pgfrelative{\pgfpoint{#1}{#4}}{\pgfpoint{0.5cm}{0.20cm}}}{\pgfrelative{\pgfpoint{#2}{#4}}{\pgfpoint{0cm}{0.5cm}}}{\pgfrelative{\pgfpoint{#3}{#4}}{\pgfpoint{-0.5cm}{0.20cm}}}}
+
+\newcommand{\playeredgecurverl}[4]{\playeredgecurve{\pgfrelative{\pgfpoint{#1}{#4}}{\pgfpoint{-0.5cm}{-0.20cm}}}{\pgfrelative{\pgfpoint{#2}{#4}}{\pgfpoint{0cm}{-0.5cm}}}{\pgfrelative{\pgfpoint{#3}{#4}}{\pgfpoint{0.5cm}{-0.20cm}}}}
+
+\newcommand{\playeredgecurvelrs}[4]{\playeredgecurve{\pgfrelative{\pgfpoint{#1}{#4}}{\pgfpoint{0.25cm}{0.10cm}}}{\pgfrelative{\pgfpoint{#2}{#4}}{\pgfpoint{0cm}{0.25cm}}}{\pgfrelative{\pgfpoint{#3}{#4}}{\pgfpoint{-0.25cm}{0.10cm}}}}
+
+\newcommand{\playeredgecurverls}[4]{\playeredgecurve{\pgfrelative{\pgfpoint{#1}{#4}}{\pgfpoint{-0.25cm}{-0.10cm}}}{\pgfrelative{\pgfpoint{#2}{#4}}{\pgfpoint{0cm}{-0.25cm}}}{\pgfrelative{\pgfpoint{#3}{#4}}{\pgfpoint{0.25cm}{-0.10cm}}}}
+
+
+\newcommand{\playeredgecurvetd}[4]{\playeredgecurve{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{-0.20cm}{-.5cm}}}{\pgfrelative{\pgfpoint{#1}{#3}}{\pgfpoint{-.5cm}{0cm}}}{\pgfrelative{\pgfpoint{#1}{#4}}{\pgfpoint{-0.20cm}{.5cm}}}}
+
+\newcommand{\playeredgecurvedt}[4]{\playeredgecurve{\pgfrelative{\pgfpoint{#1}{#2}}{\pgfpoint{0.20cm}{.5cm}}}{\pgfrelative{\pgfpoint{#1}{#3}}{\pgfpoint{.5cm}{0cm}}}{\pgfrelative{\pgfpoint{#1}{#4}}{\pgfpoint{0.20cm}{-.5cm}}}}
+
+\newcommand{\pictrecursiveladder}[0]{
+\begin{pgfpicture}{-1cm}{-1.5cm}{10cm}{9cm}
+\pgfsetlinewidth{0.7pt}
+\playerrect{0cm}{8cm}{$a_0: 1$}
+\playercirc{0cm}{6cm}{$b_0: 1$}
+\playerrect{0cm}{4cm}{$c_0: 5$}
+\playercirc{0cm}{2cm}{$d_0: 4$}
+\playerrect{0cm}{0cm}{$e_0: 3$}
+\playercirc{3cm}{8cm}{$a_1: 0$}
+\playerrect{3cm}{6cm}{$b_1: 0$}
+\playercirc{3cm}{4cm}{$c_1: 8$}
+\playerrect{3cm}{2cm}{$d_1: 7$}
+\playercirc{3cm}{0cm}{$e_1: 6$}
+\playerrect{6cm}{8cm}{$a_2: 1$}
+\playercirc{6cm}{6cm}{$b_2: 1$}
+\playerrect{6cm}{4cm}{$c_2: 11$}
+\playercirc{6cm}{2cm}{$d_2: 10$}
+\playerrect{6cm}{0cm}{$e_2: 9$}
+\playercirc{9cm}{8cm}{$a_3: 0$}
+\playerrect{9cm}{6cm}{$b_3: 0$}
+\playeredgecurvelr{0cm}{1.5cm}{3cm}{2cm}
+\playeredgecurverl{3cm}{1.5cm}{0cm}{2cm}
+\playeredgecurvelr{3cm}{4.5cm}{6cm}{2cm}
+\playeredgecurverl{6cm}{4.5cm}{3cm}{2cm}
+\playeredgecurvetd{0cm}{8cm}{7cm}{6cm}
+\playeredgecurvedt{0cm}{6cm}{7cm}{8cm}
+\playeredgecurvetd{3cm}{8cm}{7cm}{6cm}
+\playeredgecurvedt{3cm}{6cm}{7cm}{8cm}
+\playeredgecurvetd{6cm}{8cm}{7cm}{6cm}
+\playeredgecurvedt{6cm}{6cm}{7cm}{8cm}
+\playeredgecurvetd{9cm}{8cm}{7cm}{6cm}
+\playeredgecurvedt{9cm}{6cm}{7cm}{8cm}
+\playeredgecurvetd{0cm}{2cm}{1cm}{0cm}
+\playeredgecurvedt{0cm}{0cm}{1cm}{2cm}
+\playeredgecurvetd{3cm}{2cm}{1cm}{0cm}
+\playeredgecurvedt{3cm}{0cm}{1cm}{2cm}
+\playeredgecurvetd{6cm}{2cm}{1cm}{0cm}
+\playeredgecurvedt{6cm}{0cm}{1cm}{2cm}
+\playeredgeud{0cm}{6cm}{4cm}
+\playeredgeud{0cm}{4cm}{2cm}
+\playeredgeud{3cm}{6cm}{4cm}
+\playeredgeud{3cm}{4cm}{2cm}
+\playeredgeud{6cm}{6cm}{4cm}
+\playeredgeud{6cm}{4cm}{2cm}
+\playeredge{\pgfpoint{0.5cm}{0cm}}{\pgfpoint{2.5cm}{5.9cm}}
+\playeredge{\pgfpoint{3.5cm}{0cm}}{\pgfpoint{5.5cm}{5.9cm}}
+\playeredge{\pgfpoint{6.5cm}{0cm}}{\pgfpoint{8.5cm}{5.9cm}}
+\playeredge{\pgfpoint{0.5cm}{4cm}}{\pgfpoint{2.5cm}{6.1cm}}
+\playeredge{\pgfpoint{3.5cm}{4cm}}{\pgfpoint{5.5cm}{6.1cm}}
+\playeredge{\pgfpoint{6.5cm}{4cm}}{\pgfpoint{8.5cm}{6.1cm}}
+\playeredge{\pgfpoint{2.5cm}{8cm}}{\pgfpoint{0.5cm}{2cm}}
+\playeredge{\pgfpoint{5.5cm}{8cm}}{\pgfpoint{3.5cm}{2cm}}
+\playeredge{\pgfpoint{8.5cm}{8cm}}{\pgfpoint{6.5cm}{2cm}}
+\end{pgfpicture}
+}
+
+
+
+
+\newcommand{\thegame}[4]{
+\newcommand{\declaneeven}{a}
+\newcommand{\declaneodd}{b}
+\newcommand{\declaneevenroot}{c}
+\newcommand{\declaneoddroot}{d}
+\newcommand{\cyclenodea}{e}
+\newcommand{\cyclenodeb}{f}
+\newcommand{\cyclenodec}{g}
+\newcommand{\cyclecenter}{h}
+\newcommand{\cycleaccess}{k}
+\newcommand{\cycleselector}{l}
+\newcommand{\cycleleaver}{m}
+\newcommand{\upperselector}{z}
+\newcommand{\finalsink}{p}
+\newcommand{\finalcycle}{q}
+\newcommand{\starteven}{s}
+\newcommand{\startselector}{t}
+\newcommand{\highentrybit}{w}
+\newcommand{\lowestbit}{y}
+\newcommand{\bitselector}{x}
+\begin{pgfpicture}{#1}{#2}{#3}{#4}
+\pgfsetlinewidth{0.7pt}
+\playercirc{0cm}{2cm}{$\declaneodd_0: 21$}
+\playerrect{2cm}{2cm}{$\declaneeven_0: 22$}
+\playercirc{0cm}{4cm}{$\declaneodd_1: 23$}
+\playerrect{2cm}{4cm}{$\declaneeven_1: 24$}
+\playercirc{0cm}{6cm}{$\declaneodd_2: 25$}
+\playerrect{2cm}{6cm}{$\declaneeven_2: 26$}
+\playercirc{0cm}{8cm}{$\declaneodd_3: 27$}
+\playerrect{2cm}{8cm}{$\declaneeven_3: 28$}
+\playercirc{0cm}{10cm}{$\declaneodd_4: 29$}
+\playerrect{2cm}{10cm}{$\declaneeven_4: 30$}
+\playercirc{0cm}{12cm}{$\declaneodd_5: 31$}
+\playerrect{2cm}{12cm}{$\declaneeven_5: 32$}
+\playercirc{0cm}{14cm}{$\declaneodd_6: 33$}
+\playerrect{2cm}{14cm}{$\declaneeven_6: 34$}
+\playerrect{2cm}{0cm}{$\declaneevenroot: 35$}
+\playercirc{0cm}{0cm}{$\declaneoddroot: 36$}
+\playercirc{8cm}{8cm}{$\cyclenodea_0: 9$}
+\playercirc{8cm}{14cm}{$\cyclenodea_1: 15$}
+\playercirc{6cm}{6cm}{$\cyclenodeb_0: 11$}
+\playercirc{6cm}{12cm}{$\cyclenodeb_1: 17$}
+\playercirc{8cm}{4cm}{$\cyclenodec_0: 13$}
+\playercirc{8cm}{10cm}{$\cyclenodec_1: 19$}
+\playerrect{10cm}{6cm}{$\cyclecenter_0: 14$}
+\playerrect{10cm}{12cm}{$\cyclecenter_1: 20$}
+\playerrect{12cm}{4cm}{$\cycleaccess_0: 41$}
+\playerrect{12cm}{10cm}{$\cycleaccess_1: 45$}
+\playercirc{16cm}{4cm}{$\cycleselector_0: 10$}
+\playercirc{16cm}{10cm}{$\cycleselector_1: 16$}
+\playerrect{16cm}{6cm}{$\cycleleaver_0: 42$}
+\playerrect{16cm}{12cm}{$\cycleleaver_1: 46$}
+\playercirc{18cm}{6cm}{$\upperselector_0: 39$}
+\playercirc{18cm}{12cm}{$\upperselector_1: 43$}
+\playerrect{20cm}{6cm}{$\finalsink: 48$}
+\playerrect{20cm}{4cm}{$\finalcycle: 1$}
+\playercirc{13cm}{14cm}{$\lowestbit: 5$}
+\playercirc{15cm}{14cm}{$\highentrybit: 7$}
+\playercirc{-3cm}{8cm}{$\bitselector: 38$}
+\playercirc{8cm}{0cm}{$\starteven: 2$}
+\playercirc{-3cm}{6cm}{$\startselector: 3$}
+\playeredgerl{2cm}{0cm}{0cm}
+\playeredgerl{2cm}{0cm}{2cm}
+\playeredgerl{2cm}{0cm}{4cm}
+\playeredgerl{2cm}{0cm}{6cm}
+\playeredgerl{2cm}{0cm}{8cm}
+\playeredgerl{2cm}{0cm}{10cm}
+\playeredgerl{2cm}{0cm}{12cm}
+\playeredgerl{2cm}{0cm}{14cm}
+\playeredgeud{0cm}{2cm}{0cm}
+\playeredgeud{0cm}{4cm}{2cm}
+\playeredgeud{0cm}{6cm}{4cm}
+\playeredgeud{0cm}{8cm}{6cm}
+\playeredgeud{0cm}{10cm}{8cm}
+\playeredgeud{0cm}{12cm}{10cm}
+\playeredgeud{0cm}{14cm}{12cm}
+\playeredgelr{10cm}{16cm}{6cm}
+\playeredgelr{10cm}{16cm}{12cm}
+\playeredgelr{16cm}{18cm}{6cm}
+\playeredgelr{16cm}{18cm}{12cm}
+\playeredgerl{16cm}{12cm}{4cm}
+\playeredgerl{16cm}{12cm}{10cm}
+\playeredgeblur{16cm}{4cm}{18cm}{6cm}
+\playeredgeblur{16cm}{10cm}{18cm}{12cm}
+\playeredgelr{18cm}{20cm}{6cm}
+\playeredgeulbr{18cm}{12cm}{20.35cm}{6.17cm}
+\playeredgebrul{18cm}{6cm}{16cm}{10cm}
+\playeredgeud{20cm}{6cm}{4cm}
+\playeredgeselfdn{20cm}{4cm}
+% \playeredgebrul{12cm}{4cm}{9.70cm}{5.83cm}
+\playeredgebrul{11.87cm}{4.13cm}{9.70cm}{5.83cm}
+%\playeredgebrul{12cm}{10cm}{9.70cm}{11.83cm}
+\playeredgebrul{11.87cm}{10.13cm}{9.70cm}{11.83cm}
+\playeredgebrul{10.35cm}{6.17cm}{8cm}{8cm}
+\playeredgebrul{10.35cm}{12.17cm}{8cm}{14cm}
+\playeredgeurbl{8cm}{8cm}{6cm}{6cm}
+\playeredgeurbl{8cm}{14cm}{6cm}{12cm}
+\playeredgeulbr{6cm}{6cm}{8cm}{4cm}
+\playeredgeulbr{6cm}{12cm}{8cm}{10cm}
+\playeredgeblur{8cm}{4cm}{10.30cm}{5.83cm}
+\playeredgeblur{8cm}{10cm}{10.30cm}{11.83cm}
+\playeredgecurvelr{13cm}{14cm}{15cm}{14cm}
+\playeredgecurverl{15cm}{14cm}{13cm}{14cm}
+\playeredgecurvex{\pgfpoint{13cm}{13.5cm}}{\pgfpoint{12cm}{7cm}}{\pgfpoint{15cm}{5cm}}{\pgfpoint{15.65cm}{4.35cm}}
+\playeredgecurve{\pgfpoint{15cm}{13.5cm}}{\pgfpoint{14.5cm}{11cm}}{\pgfpoint{15.65cm}{10.35cm}}
+\playeredgecurvex{\pgfpoint{15.5cm}{14cm}}{\pgfpoint{17cm}{14.5cm}}{\pgfpoint{19cm}{15cm}}{\pgfpoint{20.25cm}{6.5cm}}
+\playeredgecurvex{\pgfpoint{6.45cm}{5.8cm}}{\pgfpoint{7.5cm}{6.5cm}}{\pgfpoint{10.5cm}{3.5cm}}{\pgfpoint{11.5cm}{3.8cm}}
+\playeredgecurvex{\pgfpoint{6.45cm}{12.2cm}}{\pgfpoint{7.5cm}{12.5cm}}{\pgfpoint{10.5cm}{9.5cm}}{\pgfpoint{11.5cm}{10.2cm}}
+\playeredgecurvex{\pgfpoint{6.45cm}{6.2cm}}{\pgfpoint{11cm}{8cm}}{\pgfpoint{10cm}{9cm}}{\pgfpoint{11.5cm}{9.8cm}}
+\playeredgecurvex{\pgfpoint{6.45cm}{11.8cm}}{\pgfpoint{9cm}{12cm}}{\pgfpoint{11.5cm}{6.5cm}}{\pgfpoint{12cm}{4.5cm}}
+\playeredgecurvex{\pgfpoint{8.5cm}{0cm}}{\pgfpoint{14cm}{4.5cm}}{\pgfpoint{17cm}{1.5cm}}{\pgfpoint{19.5cm}{5.9cm}}
+% \playeredgeblur{8cm}{0cm}{12cm}{4cm}
+\playeredgeblur{8cm}{0cm}{11.87cm}{3.87cm}
+\playeredgecurve{\pgfpoint{8.45cm}{0.23cm}}{\pgfpoint{14cm}{4cm}}{\pgfpoint{12.45cm}{9.5cm}}
+\playeredgecurve{\pgfpoint{8cm}{7.5cm}}{\pgfpoint{9.5cm}{4cm}}{\pgfpoint{8cm}{0.5cm}}
+\playeredgecurvex{\pgfpoint{8cm}{13.5cm}}{\pgfpoint{9cm}{11cm}}{\pgfpoint{10.5cm}{3.5cm}}{\pgfpoint{8.2cm}{0.45cm}}
+\playeredgecurvex{\pgfpoint{-0.25cm}{1.55cm}}{\pgfpoint{-0.1cm}{-0.6cm}}{\pgfpoint{-4cm}{-1.5cm}}{\pgfpoint{7.54cm}{-0.2cm}}
+\playeredgecurvex{\pgfpoint{-0.25cm}{3.55cm}}{\pgfpoint{-0.9cm}{-0.8cm}}{\pgfpoint{-4cm}{-2.0cm}}{\pgfpoint{7.58cm}{-0.25cm}}
+\playeredgecurvex{\pgfpoint{-0.25cm}{5.55cm}}{\pgfpoint{-1.7cm}{-1.0cm}}{\pgfpoint{-4cm}{-2.5cm}}{\pgfpoint{7.62cm}{-0.3cm}}
+\playeredgecurvex{\pgfpoint{-0.25cm}{7.55cm}}{\pgfpoint{-2.5cm}{-1.2cm}}{\pgfpoint{-4cm}{-3.0cm}}{\pgfpoint{7.66cm}{-0.35cm}}
+\playeredgecurvex{\pgfpoint{-0.25cm}{9.55cm}}{\pgfpoint{-3.3cm}{-1.4cm}}{\pgfpoint{-4cm}{-3.5cm}}{\pgfpoint{7.70cm}{-0.40cm}}
+\playeredgecurvex{\pgfpoint{-0.25cm}{11.55cm}}{\pgfpoint{-4.1cm}{-1.6cm}}{\pgfpoint{-4cm}{-4.0cm}}{\pgfpoint{7.75cm}{-0.45cm}}
+\playeredgecurvex{\pgfpoint{-0.25cm}{13.55cm}}{\pgfpoint{-4.9cm}{-1.8cm}}{\pgfpoint{-4cm}{-4.5cm}}{\pgfpoint{7.80cm}{-0.50cm}}
+\playeredge{\pgfpoint{-0.3cm}{0.4cm}}{\pgfpoint{-2.71cm}{7.55cm}}
+\playeredge{\pgfpoint{-0.5cm}{2cm}}{\pgfpoint{-2.64cm}{7.64cm}}
+\playeredge{\pgfpoint{-0.5cm}{4cm}}{\pgfpoint{-2.58cm}{7.76cm}}
+\playeredge{\pgfpoint{-0.5cm}{6cm}}{\pgfpoint{-2.53cm}{7.88cm}}
+\playeredge{\pgfpoint{-0.5cm}{8cm}}{\pgfpoint{-2.5cm}{8cm}}
+\playeredge{\pgfpoint{-0.5cm}{10cm}}{\pgfpoint{-2.53cm}{8.12cm}}
+\playeredge{\pgfpoint{-0.5cm}{12cm}}{\pgfpoint{-2.58cm}{8.24cm}}
+\playeredge{\pgfpoint{-0.5cm}{14cm}}{\pgfpoint{-2.64cm}{8.36cm}}
+\playeredgedu{-3cm}{6cm}{8cm}
+\playeredge{\pgfpoint{-0.5cm}{0cm}}{\pgfpoint{-2.7cm}{5.6cm}}
+\playeredgecurvex{\pgfpoint{-3cm}{5.5cm}}{\pgfpoint{-4cm}{-1.8cm}}{\pgfpoint{-2cm}{-4.5cm}}{\pgfpoint{8cm}{-0.5cm}}
+\playeredgecurvex{\pgfpoint{-3cm}{8.5cm}}{\pgfpoint{-4cm}{19cm}}{\pgfpoint{8cm}{15cm}}{\pgfpoint{14.7cm}{14.4cm}}
+\playeredgecurvex{\pgfpoint{-2.9cm}{8.48cm}}{\pgfpoint{-4cm}{18.5cm}}{\pgfpoint{8cm}{15cm}}{\pgfpoint{12.7cm}{14.4cm}}
+\playeredgecurvex{\pgfpoint{7.53cm}{14.1cm}}{\pgfpoint{5cm}{14.2cm}}{\pgfpoint{4.5cm}{11.9cm}}{\pgfpoint{2.5cm}{12cm}}
+\playeredgecurvex{\pgfpoint{7.53cm}{10.1cm}}{\pgfpoint{5cm}{10.0cm}}{\pgfpoint{4.5cm}{14.1cm}}{\pgfpoint{2.5cm}{14cm}}
+\playeredgecurvex{\pgfpoint{5.53cm}{12.1cm}}{\pgfpoint{4.5cm}{12.2cm}}{\pgfpoint{3.5cm}{9.9cm}}{\pgfpoint{2.5cm}{10cm}}
+\playeredgecurvex{\pgfpoint{7.5cm}{10cm}}{\pgfpoint{5cm}{10.2cm}}{\pgfpoint{4.5cm}{7.9cm}}{\pgfpoint{2.5cm}{8.1cm}}
+\playeredgecurvex{\pgfpoint{7.53cm}{4.1cm}}{\pgfpoint{5cm}{4.0cm}}{\pgfpoint{4.5cm}{8.1cm}}{\pgfpoint{2.5cm}{7.9cm}}
+\playeredgecurvex{\pgfpoint{7.5cm}{14.0cm}}{\pgfpoint{3.5cm}{14.2cm}}{\pgfpoint{4.0cm}{5.9cm}}{\pgfpoint{2.5cm}{6.1cm}}
+\playeredgecurvex{\pgfpoint{7.53cm}{8.1cm}}{\pgfpoint{5cm}{8.2cm}}{\pgfpoint{4.5cm}{5.9cm}}{\pgfpoint{2.5cm}{5.9cm}}
+\playeredgecurvex{\pgfpoint{6cm}{11.5cm}}{\pgfpoint{6cm}{11cm}}{\pgfpoint{5.0cm}{5cm}}{\pgfpoint{2.5cm}{4.1cm}}
+\playeredgecurvex{\pgfpoint{5.5cm}{6cm}}{\pgfpoint{4.5cm}{6.2cm}}{\pgfpoint{3.5cm}{3.9cm}}{\pgfpoint{2.5cm}{3.9cm}}
+\playeredgecurvex{\pgfpoint{7.53cm}{9.9cm}}{\pgfpoint{3.5cm}{10.2cm}}{\pgfpoint{4.0cm}{1.9cm}}{\pgfpoint{2.5cm}{2.1cm}}
+\playeredgecurvex{\pgfpoint{7.53cm}{3.9cm}}{\pgfpoint{5cm}{4.2cm}}{\pgfpoint{4.5cm}{1.9cm}}{\pgfpoint{2.5cm}{1.9cm}}
+\playeredgecurvex{\pgfpoint{7.53cm}{13.9cm}}{\pgfpoint{3.0cm}{14.2cm}}{\pgfpoint{3.5cm}{-0.1cm}}{\pgfpoint{2.5cm}{0.1cm}}
+\playeredgecurvex{\pgfpoint{7.53cm}{7.9cm}}{\pgfpoint{3.5cm}{8.2cm}}{\pgfpoint{4.0cm}{-0.1cm}}{\pgfpoint{2.5cm}{-0.1cm}}
+\end{pgfpicture}
+}
+
+\newcommand{\pictexpstratimpr}{\thegame{0cm}{-1.5cm}{22cm}{14cm}}
+
+
+\newcommand{\pictmodelcheckerladder}{
+\begin{pgfpicture}{-2cm}{-2cm}{12cm}{4cm}
+\pgfsetlinewidth{0.7pt}
+\playercirc{0cm}{2cm}{$1$}
+\playerrect{2cm}{2cm}{$2$}
+\playercirc{4cm}{2cm}{$3$}
+\playerrect{6cm}{2cm}{$4$}
+\playercirc{8cm}{2cm}{$5$}
+\playerrect{10cm}{2cm}{$6$}
+\playercirc{0cm}{0cm}{$12$}
+\playerrect{2cm}{0cm}{$11$}
+\playercirc{4cm}{0cm}{$10$}
+\playerrect{6cm}{0cm}{$9$}
+\playercirc{8cm}{0cm}{$8$}
+\playerrect{10cm}{0cm}{$7$}
+\playeredgelr{0cm}{2cm}{2cm}
+\playeredgelr{2cm}{4cm}{2cm}
+\playeredgelr{4cm}{6cm}{2cm}
+\playeredgelr{6cm}{8cm}{2cm}
+\playeredgelr{8cm}{10cm}{2cm}
+\playeredgeud{0cm}{2cm}{0cm}
+\playeredgeud{2cm}{2cm}{0cm}
+\playeredgeud{4cm}{2cm}{0cm}
+\playeredgeud{6cm}{2cm}{0cm}
+\playeredgeud{8cm}{2cm}{0cm}
+\playeredgeud{10cm}{2cm}{0cm}
+\playeredgeblur{0cm}{0cm}{1.85cm}{1.85cm}
+\playeredgeblur{2.15cm}{0.15cm}{4cm}{2cm}
+\playeredgeblur{4cm}{0cm}{5.85cm}{1.85cm}
+\playeredgeblur{6.15cm}{0.15cm}{8cm}{2cm}
+\playeredgeblur{8cm}{0cm}{9.85cm}{1.85cm}
+\playeredgeud{0cm}{3.5cm}{2cm}
+\playeredgelr{-1.5cm}{0cm}{2cm}
+\pgfsetendarrow{}
+\pgfline{\pgfpoint{10cm}{2.5cm}}{\pgfpoint{10cm}{3cm}}
+\pgfline{\pgfpoint{10cm}{3cm}}{\pgfpoint{0cm}{3cm}}
+\pgfline{\pgfpoint{10cm}{-0.5cm}}{\pgfpoint{10cm}{-1cm}}
+\pgfline{\pgfpoint{10cm}{-1cm}}{\pgfpoint{-1cm}{-1cm}}
+\pgfline{\pgfpoint{-1cm}{-1cm}}{\pgfpoint{-1cm}{2cm}}
+\end{pgfpicture}
+}

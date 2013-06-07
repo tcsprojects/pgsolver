@@ -1,0 +1,95 @@
+\section{The Importance of Parity Games}
+
+Parity games are simple two-player games of perfect information played on directed graphs whose
+nodes are labeled with priorities. The name \emph{parity game} is due to the fact that the winner
+of a play is determined according to the parities (even or odd) of the priorities occurring in
+that play. In fact, it is determined by the maximal priority occurring infinitely often. % This
+% can be seen as an abstraction of a setting in which an agent attemps to visit certain configurations
+% infinitely often unless some other configurations are also visited infinitely often unless some
+% other configurations are als visited infinitely often \ldots while another agent is making his/her
+% life difficult by steering into different directions from time to time.
+
+Parity games are an interesting object of study in computer science, and the theory of formal languages
+and automata in particular, for (at least) the following reasons.
+\begin{itemize}
+\item They are closely related to other games of infinite duration like mean payoff games,
+      discounted payoff games, stochastic games, etc.\ \cite{Jurdzinski/98,purithesis,Stirling95}.
+\item They are at the core of other important problems in computer science, for instance, solving a
+      parity game is known to be polynomial-time equivalent to model checking for the modal
+      $\mu$-calculus \cite{Emerson93a,Stirling95}. 
+\item They arise in complementation or determinisation problems for tree automata
+      \cite{lncs2500,focs91*368} and in emptiness and word problems for various kinds of (alternating) 
+      automata \cite{focs91*368}.
+\item Controller synthesis problems can be reduced to satisfiability problems for branching-time logics
+      \cite{AVW03} which in turn require the solving of parity games because
+      of determinisations of B\"uchi word automata into parity automata 
+      \cite{conf/lics/Piterman06,conf/icalp/KahlerW08}.
+\item Solving a parity game is one of the rare problems that belongs to the complexity class
+      NP$\cap$co-NP and that is not (yet) known to belong to P \cite{Emerson93a}. The variety of algorithms
+      that have been invented for solving parity games is surely due to the fact that many people believe
+      the problem to be in P.
+\end{itemize}
+
+\section{Aim and Content of \pgsolver}
+
+This variety of algorithms has provided a good understanding of the theory of parity games even though
+its computational complexity has possibly not yet been determined precisely. However, this theoretical
+knowledge is unmatched by the little amount of investigation into practical aspects of solving parity
+games. The aim of this project is to provide a platform for this: it should enable the comparison
+between different algorithms not just by the Landau-terms for their worst-case time complexities but
+by their actual performance on various classes of parity games.
+
+The current version of this tool contains implementations of the following algorithms found in
+the literature:
+\begin{itemize}
+\item the recursive algorithm due to Zielonka \cite{TCS::Zielonka1998},
+\item the local model checking algorithm due to Stevens and Stirling \cite{StevensStirling98},
+\item the strategy-improvement algorithm due to Jurdzi{\'n}ski and V\"oge \cite{conf/cav/VogeJ00},
+\item the strategy-improvement algorithm due to Schewe \cite{conf/csl/Schewe08},
+\item the strategy-improvement algorithm reduction to discounted payoff games due to Puri \cite{purithesis},
+\item the randomized strategy-improvement algorithm due to Bj{\"o}rklund and Vorobyov \cite{BjoerklundVorobyov/2007},
+\item another randomized strategy-improvement algorithm due to Bj{\"o}rklund, Sandberg and Vorobyov \cite{DBLP:conf/stacs/BjorklundSV03},
+\item the small progress measures algorithm due to Jurdzi{\'n}ski \cite{Jurdzinski/00},
+\item the small progress measures reduction to SAT due to Lange \cite{lange-gdv05},
+\item the dominion decomposition algorithm due to Jurdzi{\'n}ski, Paterson and Zwick \cite{JPZ06},
+\item the big-step variant of the latter due to Schewe \cite{Schewe/07/Parity}.
+\end{itemize}
+In addition, there is a new local strategy improvement algorithm by ourselves. Moreover
+there is a direct reduction to SAT based on strategy iteration due to Friedmann.
+
+Finally, there is one heuristic solvers. Such solvers are sound: the answers they provide are correct.
+But they are not necessarily complete, for example because they may not terminate. Our heuristic
+algorithm just guesses strategies for both players until a (partial) winning strategy has been found.
+
+The heuristic is included because it can solve certain classes of parity games very quickly and
+-- most importantly -- in a time that is independent of the number of priorities present in the game.
+On the other hand, it is easy to construct games on which it does not terminate, resp.\ infinite families
+of games on which the probability of termination decreases exponentially.
+
+
+
+\section{Structure of this Report}
+
+Chapter~\ref{chp:pgames} formally introduces parity games and standard notions around the problem of solving them
+like winning regions and strategies, but also others that are needed in order to understand the constructions
+implemented in various solvers like attractor strategies, decompositions into subgames, etc. It then
+describes implemented meta-level optimisations for solving parity games, i.e.\ optimisations that apply to
+\emph{any} solver. Next, it shortly describes the implemented algorithms and heuristics. For those known
+before we refer to the corresponding literature for a detailed introduction into these algorithms. Here we
+only want to point out the rough functionality in order to be able to compare these algorithms and possibly
+attribute slow/fast solving to certain techniques.
+
+Chapter~\ref{chp:uguide} is the user's guide. It describes how to compile, install and run \pgsolver, as well
+as how to specify parity games that it takes as input and how to read its output, etc.
+
+\pgsolver comes with programs that generate benchmarks. These are for example random games, games
+constructed in a way such that they are difficult for a certain algorithm to solve, or application-oriented
+games. These are described in Chapter~\ref{chp:benchmarks}.
+
+Finally, Chapter~\ref{chp:devguide} contains the developer's guide. It explains how to
+integrate another parity game solver -- implemented in OCaml -- into this tool.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

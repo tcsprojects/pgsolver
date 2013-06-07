@@ -1,0 +1,396 @@
+\section{Additional Tools}
+\label{sec:tools}
+
+\subsection{Obfuscator}
+
+This tool randomly permutes the identifiers of nodes as well as the order
+of nodes' successors in a parity game. This is useful to confuse algorithms
+which perform very well on certain benchmarks because of the order in which
+nodes and successors are given.
+
+\begin{example}
+Take the ladder game of index 4, as introduced in Sect.~\ref{sec:laddergame}
+below. In \pgsolver's specification format it looks like this.
+\begin{verbatim}
+    ~/pgsolver> bin/laddergame 4
+    parity 7;
+    0 0 0 1,2;
+    1 1 1 2,3;
+    2 0 0 3,4;
+    3 1 1 4,5;
+    4 0 0 5,6;
+    5 1 1 6,7;
+    6 0 0 7,0;
+    7 1 1 0,1;
+\end{verbatim}
+Each player owns 4 out of the eight nodes. Since all nodes have outdegree 2, there
+are $2^4 = 16$ strategies for each of the player. In general, there are $2^n$
+different strategies in the game of index $n$ but only one of them is
+a winning strategy. However, the winning strategy for player $0$ for example is
+an obvious one in this case. It consists of always choosing the first node in the
+list of successors. Equally, the winning strategy for player $1$ consists of always
+choosing the last node in each list. This is hardly a good hiding of the winning
+strategies.
+
+Obfuscator employs a random generator to destroy the order of the successors and
+the order in which the nodes are given. A typical obfuscation of the ladder game of
+index 4 would be the following.
+\begin{verbatim}
+    ~/pgsolver> bin/laddergame 4 | bin/obfuscator
+    parity 7;
+    0 1 1 6,1;
+    1 1 1 7,5;
+    2 1 1 3,0;
+    3 0 0 0,6;
+    4 0 0 2,3;
+    5 1 1 4,2;
+    6 0 0 1,7;
+    7 0 0 5,4;
+\end{verbatim}
+\end{example}
+
+Obfuscator is automatically built through \verb#make obfuscator#,
+\verb#make tools#, or \verb#make all#.
+It takes a parity game on \texttt{stdin} in the specification format described above
+and returns the permuted game on \texttt{stdout}. The currently understood command-line
+parameters are:
+\begin{description}
+\item[{\tt --disablenodeobfuscation}] \enspace or {\tt -dn} \\
+	Disables the obfuscation of the ordering of nodes.
+
+\item[{\tt --disableedgeobfuscation}] \enspace or {\tt -de} \\
+    Disables the obfuscation of the ordering of the edges.
+\end{description}
+
+
+
+\subsection{Compressor}
+
+This tool compresses a given parity game s.t.\ the winning sets and strategies of
+the resulting game equal those of the original game.
+
+\begin{example}
+Take the Jurdzi{\'n}ski game of $J_{1, 2}$, as introduced in Sect.~\ref{sec:jurdgame} below.
+In \pgsolver's specification format it looks like this.
+\begin{verbatim}
+    ~/pgsolver> bin/jurdzinskigame 1 2
+    parity 11;
+    0 1 0 5;
+    2 1 0 7;
+    4 2 1 5,0;
+    6 2 1 5,7,2;
+    5 2 0 4,6,9;
+    7 2 0 7,6;
+    8 4 0 9;
+    10 4 0 9,11;
+    9 3 1 8,10,5;
+    11 3 1 10,11,7;
+\end{verbatim}
+It is possible to push priorities along edges overriding smaller priorities. It is also possible
+to reassign priorities just keeping parities and the order inbetween them. This leads to the
+following game:
+\begin{verbatim}
+    ~/pgsolver> bin/jurdzinskigame 1 2 | bin/compressor -pr -pp
+    parity 11;
+    0 0 0 5;
+    2 0 0 7;
+    4 0 1 5,0;
+    5 0 0 4,6,9;
+    6 0 1 5,7,2;
+    7 0 0 7,6;
+    8 2 0 9;
+    9 1 1 8,10,5;
+    10 2 0 9,11;
+    11 1 1 10,11,7;
+\end{verbatim}
+It is also possible to compress the original game's identifier space eliminating unused node indetifiers.
+\begin{verbatim}
+    ~/pgsolver> bin/jurdzinskigame 1 2 | bin/compressor --nodes
+    parity 9;
+    0 1 0 3;
+    1 1 0 5;
+    2 2 1 3,0;
+    3 2 0 2,4,7;
+    4 2 1 3,5,1;
+    5 2 0 5,4;
+    6 4 0 7;
+    7 3 1 6,8,3;
+    8 4 0 7,9;
+    9 3 1 8,9,5;
+\end{verbatim}
+Note that the original game does not possess a node called $1$ for instance.
+\end{example}
+
+Compressor is automatically built through \verb#make compressor#,
+\verb#make tools#, or \verb#make all#. It takes a parity game in the specification format described above
+on \texttt{stdin} or from a given file, and returns the compressed game on \texttt{stdout}. The currently
+understood command-line parameters are:
+\begin{description}
+\item[\nonterminal{filename}] \ \\
+   Tells the tool to look for the specification of the parity game to transform in the file
+   \nonterminal{filename}.
+
+\item[{\tt --priorities}] \enspace or {\tt -pr} \\
+    It reduces the priority of each node preserving their parities as well as the relation $\le$
+    among priorities of nodes within an SCC of the game graph.
+
+\item[{\tt --priopropagation}] \enspace or {\tt -pp} \\
+    It tries to reduce the overall number of priorities occurring in the game by pushing priorities
+    along edges of the game graph overriding smaller ones. If all nodes leading to a node $v$ have a
+    greater priority than the node itself, the priority of this node is altered to the least predecessing
+    priority. Similarly the priority of a node is adapted if all successors of a node have a greater
+    priority than the node itself. This process is iterated until stability is reached.
+
+    Obviously, this process may destroy the preservation of parities and the less-or-equals relation among
+    priorites described above.
+
+\item[{\tt --antipropagation}] \enspace or {\tt -ap} \\
+	It tries to set the priority of as many nodes as possible to zero. If all nodes leading to a node
+	$v$ have a greater priority than the node itself, the priority of this node can be set to zero.
+	Similarly the priority of a node is adapted if all successors of a node have a greater priority than
+	the node itself. This process is iterated until stability is reached.
+
+\item[{\tt  --fakealt}] \enspace or {\tt -fa} \\
+    Keep fake alternation w.r.t.\ priorities. If this option is enabled the compaction of priorities
+    never assigns the same priority to nodes that had different priorities before, even if there is
+    no other priority occurring inbetween and both priorities in question are of the same parity.
+
+\item[{\tt --wholegame}] \enspace or {\tt -pp} \\
+    The compression of priorities is usually done independently for each SCC of the game graph.
+    This switch causes the graph's SCC decomposition to be ignored. This will in general result
+    in a worse compression rate.
+
+\item[{\tt --nodes}] \enspace or {\tt -no} \\
+    Performs a compression of the space of identifiers of a parity game, resulting in a possible
+    down-shift of identifiers.
+
+\item[{\tt --minmaxswap}] \enspace or {\tt -mm} \\
+    Transforms a min-parity game into a max-parity one and vice versa.
+\end{description}
+
+
+\subsection{Combinator}
+
+This tool combines two or more parity games into one single parity game by shifting the node numbers.
+Neither additional edges between the games are added nor other modifications are done.
+
+\begin{example}
+We just create two small random games and combine them to see what happens.
+\begin{verbatim}
+    ~/pgsolver> bin/randomgame 5 5 2 3 | tee game1.gm
+    parity 4;
+    0 1 1 3,4 "0";
+    1 4 0 1,4 "1";
+    2 5 0 0,2,4 "2";
+    3 1 0 0,2,4 "3";
+    4 0 1 0,1,3 "4";
+
+    ~/pgsolver> bin/randomgame 5 5 2 3 | tee game2.gm
+    parity 4;
+    0 4 0 2,3 "0";
+    1 5 0 0,4 "1";
+    2 4 1 0,2,3 "2";
+    3 4 0 2,4 "3";
+    4 4 1 0,3 "4";
+\end{verbatim}
+A combination of both games can be achieved as follows:
+\begin{verbatim}
+    ~/pgsolver> bin/combine game1.gm game2.gm
+    parity 9;
+    0 1 1 3,4 "0";
+    1 4 0 1,4 "1";
+    2 5 0 0,2,4 "2";
+    3 1 0 0,2,4 "3";
+    4 0 1 0,1,3 "4";
+    5 4 0 7,8 "0";
+    6 5 0 5,9 "1";
+    7 4 1 5,7,8 "2";
+    8 4 0 7,9 "3";
+    9 4 1 5,8 "4";
+\end{verbatim}
+\end{example}
+
+Combine is automatically built through \verb#make combine#,
+\verb#make tools#, or \verb#make all#.
+It takes arbitrarly many parity games as command-line parameters and returns the
+combined game on \texttt{stdout}. There are no other command-line parameters.
+
+
+\subsection{Transformer}
+
+This tool transforms a given parity game into an (somehow) equivalent parity game fulfilling
+certain properties -- depending on the user's command line specification. The transformed
+parity game can be associated with the original game s.t.\ winning sets and strategies can
+be easily back-transformed.
+
+% Additionally, winning strategies in the transformed game can be canonically identified with winning strategies in the original game: the totality
+% transformation essentially connects nodes with out-degree 0 with themselves and the choice-alternation transformation replaces all edges between
+% nodes belonging to the same player with dummy transfer nodes belonging to the other player.
+
+\begin{example}
+Again, take the ladder game of index 3, as introduced in Sect.~\ref{sec:laddergame} below.
+In \pgsolver's specification format it looks like this.
+\begin{verbatim}
+    ~/pgsolver> bin/laddergame 3
+    parity 5;
+    0 0 0 1,2;
+    1 1 1 2,3;
+    2 0 0 3,4;
+    3 1 1 4,5;
+    4 0 0 5,0;
+    5 1 1 0,1;
+\end{verbatim}
+The game is obviously total but not choice-alternating as node $0$ is directly connected to node $2$
+with both of them belonging to player $0$. A choice-alternation version of this game can obtained as follows:
+\begin{verbatim}
+    ~/pgsolver> bin/laddergame 3 | bin/transformer --alternating
+    parity 11;
+    0 0 0 1,6;
+    1 1 1 2,7;
+    2 0 0 3,8;
+    3 1 1 4,9;
+    4 0 0 5,10;
+    5 1 1 0,11;
+    6 0 1 2;
+    7 0 0 3;
+    8 0 1 4;
+    9 0 0 5;
+    10 0 1 0;
+    11 0 0 1;
+\end{verbatim}
+\end{example}
+
+Transformer is automatically built through \verb#make transformer#,
+\verb#make tools#, or \verb#make all#.
+It takes a parity game in the specification format described above on \texttt{stdin} or from a file,
+and returns the transformed game on \texttt{stdout}. The currently understood command-line parameters are:
+
+\begin{description}
+\itemsep3mm
+\item[\nonterminal{filename}] \ \\
+   Tells the tool to look for the specification of the parity game to transform in the file
+   \nonterminal{filename}.
+
+\item[{\tt --total}] \enspace or {\tt -to} \\
+   Perform a totality transformation on the given parity game.
+
+\item[{\tt --alternating}] \enspace or {\tt -al} \\
+   Perform a choice-alternation transformation on the given parity game.
+
+ \item[{\tt --singlescc}] \enspace or {\tt -scc} \\
+   Perform a simple transformation that results in a single-scc-parity game. The winning sets and
+   strategies of the original game and the transformed game match.
+
+ \item[{\tt --prioalignment}] \enspace or {\tt -pa} \\
+   Performs a transformation s.t.\ the parity of each node of the resulting game matches its player
+   unless its priority is zero.
+
+\item[{\tt --dummynodes}] \enspace or {\tt -dn} \\
+   Performs a transformation that divides each edge by an additional node with priority $0$.
+
+\item[{\tt --uniquizeprios}] \enspace or {\tt -up} \\
+   Performs a transformation of the occurring priorities s.t.\ every occurring priority occurs only once.
+
+ \item[{\tt --cheapescapecycles}] \enspace or {\tt -ce} \\
+   Adds two low-priority cycles $c_0$ and $c_1$ to the game that are profitable for either one of the
+   player ($c_0$ for player $0$ and $c_1$ for player $1$). All nodes in the original belonging to
+   player $0$ get additional edges leading to $c_1$ and all nodes belonging to player $1$ get
+   additional edges leading to $c_0$.
+
+\item[{\tt --bouncingnode}] \enspace or {\tt -bn} \\
+   Replaces every self-cycle by a bouncing node.
+
+ \item[{\tt --increasepriorityoccurrence}] \enspace or {\tt -ip} \\
+   Increases the occurrence of all priorities by one by simply inserting a long cycle that is not
+   connected to the rest of the game.
+
+\item[{\tt --antiprioritycompactation}] \enspace or {\tt -ap} \\
+   Adds additional nodes that prohibits any priority compactation.
+\end{description}
+
+Note that the command-line parameters that are specified are carried out in the same ordering as they
+appear in the call of the transformer tool. It is also possible to specify a parameter more than once.
+
+
+\subsection{Benchmark Tool}
+
+This tool helps the user to carry out benchmarks and to compare the different solvers with each other. 
+You can specify a list of games that are to be benchmarked with a list of solver that also has to be 
+specified.
+
+You can either choose to receive a verbose output showing the exact timing of each case or a simple line 
+containing data that can be easily parsed by \texttt{gnuplot}. The latter output option is usually to be 
+used in combination with a shell script creating a whole benchmark series.
+
+\begin{example}
+The following example shows how to benchmark the recursive and the strategy improvement algorithm on a 
+random game with 1000 nodes. To smooth multitasking interference factors, each test case is carried out 
+3 times.
+\begin{verbatim}
+    ~/pgsolver> bin/randomgame 1000 1000 2 4 | bin/benchmark -re -si -t 3
+    Benchmarking stratimprove...
+    Game # 0, Iteration #1...0.02 sec
+    Game # 0, Iteration #2...0.02 sec
+    Game # 0, Iteration #3...0.02 sec
+    Finished. Best: 0.02 sec  Avg: 0.02 sec  Worst: 0.02 sec
+
+    Benchmarking recursive...
+    Game # 0, Iteration #1...0.01 sec
+    Game # 0, Iteration #2...0.00 sec
+    Game # 0, Iteration #3...0.01 sec
+    Finished. Best: 0.00 sec  Avg: 0.01 sec  Worst: 0.01 sec
+
+    +-----------------------------------------------------------+
+    | Benchmark Statistics                                      |
+    +-----------------------------------------------------------+
+    | Solver       |         Best |      Average |        Worst |
+    +-----------------------------------------------------------+
+    | recursive    |     0.00 sec |     0.01 sec |     0.01 sec |
+    | stratimprove |     0.02 sec |     0.02 sec |     0.02 sec |
+    +-----------------------------------------------------------+
+\end{verbatim}
+\end{example}
+
+Benchmark is automatically built through \verb#make benchmark#, \verb#make tools#, or \verb#make all#.
+It takes one ore more parity games in the specification format described above on \texttt{stdin} or
+from files, and carries out the benchmark. The currently understood command-line parameters are:
+
+\begin{description}
+\itemsep3mm
+\item[\nonterminal{filename}] \ \\
+   Tells the tool to look for the specification of the parity game in the file
+   \nonterminal{filename}.
+
+\item[{\tt --all}] \enspace or {\tt -a} \\
+   Benchmark all available parity games solvers.
+
+\item[{\tt --\nonterminal{solver}}] \ \\
+   Benchmark the specified solver. All solvers that are compiled into \pgsolver are available here.
+
+\item[{\tt --silent}] \enspace or {\tt -s} \\
+   Only print the final statistics on \texttt{stdout}.
+
+\item[{\tt --gnuplotformat}] \enspace or {\tt -gp} \\
+   Only print a gnuplot-compatible line.
+
+ \item[{\tt --timeout \nonterminal{timeout}}] \enspace or {\tt -t \nonterminal{timeout}} \\
+   If one of the solvers requires more than $t$ seconds on one of the test cases, the solver is ignored
+   for the rest of the series. There is no timeout by default.
+
+\item[{\tt --name \nonterminal{title}}] \enspace or {\tt -n \nonterminal{title}} \\
+   Specifies the title of the benchmark that is to be printed in the final statistics.
+
+ \item[{\tt --times \nonterminal{n}}] \enspace or {\tt -t \nonterminal{n}} \\
+   Specifies the number of iterations a single test case is carried out per algorithm. By default, $n$
+   is 10.
+
+\item[{\tt --\nonterminal{optimisation-option}}] \ \\
+   All optimisation options that are available to \texttt{pgsolver} are also available here.
+\end{description}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

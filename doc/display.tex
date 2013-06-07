@@ -1,0 +1,52 @@
+\section{Viewing Parity Games}
+\label{sec:viewing}
+
+\pgsolver can display parity games in two different ways: textually and graphically. The former
+can be invoked using the command-line option \texttt{-f}.
+\begin{verbatim}
+    ~/proj/pgsolver> bin/pgsolver -f 
+\end{verbatim}
+This results in a simple reprinting of the parity game to be solved at the end of \pgsolver's usual
+output. The format is the same as the input format described in the previous section.
+
+In order to display parity games graphically one needs the \texttt{graphviz} package, available for
+free from
+\begin{verbatim}
+    http://www.graphviz.org/
+\end{verbatim}
+\pgsolver can create output in the \texttt{dot}-format which can be displayed using \texttt{dotty} from
+the \texttt{graphviz} package for example. The relevant command-line parameter is \texttt{-d} with
+a filename which tells \pgsolver to write the \texttt{dot} code into that file after solving the game.
+Beware that you need to tell \pgsolver explicitly (how) to solve the game. If you omit this, \pgsolver
+will parse the input but not solve the game. However, this can be used to display the game as it is.
+\begin{verbatim}
+    ~/proj/pgsolver> bin/pgsolver -d graph.dot tests/test1.gm
+\end{verbatim}
+Then, in order to view it, try
+\begin{verbatim}
+    ~/proj/pgsolver> dotty graph.dot
+\end{verbatim}
+\pgsolver can also display a game together with the winning information. This happens when you tell it
+to create \texttt{dot}-code for the game \emph{and} tell it to solve it.
+\begin{verbatim}
+    ~/proj/pgsolver> bin/pgsolver --recursive -d graph.dot tests/test1.gm
+\end{verbatim}
+Again, the result can be viewed using
+\begin{verbatim}
+    ~/proj/pgsolver> dotty graph.dot
+\end{verbatim}
+for example. However, now nodes and some edges are coloured according to the following specification.
+\begin{itemize}
+\item The winning region for player $0$, i.e.\ all nodes from which he/she can win the game, is coloured 
+      green. The winning region for player $1$ is coloured red.
+\item An edge coloured green belongs to the positional strategy for player $0$ that is winning on his/her
+      winning region. An edge coloured red belongs to player $1$'s respective winning strategy.
+\end{itemize}
+An example display of a solved parity game is given on the title page.
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

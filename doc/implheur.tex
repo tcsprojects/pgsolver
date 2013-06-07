@@ -1,0 +1,134 @@
+\section{Implemented Heuristics}
+
+In addition to the algorithms described above, there is also one heuristics implemented in \pgsolver.
+Heuristics are not necessarily supposed to compete with the proper algorithms but are interesting on
+their own because they can provide insight into the difficulty of solving certain parity games, as well
+as be very quick on certain classes of games.
+
+As with heuristics in general, it can be difficult to give estimations on their worst-case time
+complexities. They may even be non-terminating. We classify them according to three properties: being
+\emph{sound}, i.e.\ if they claim that a node belongs to the winning region of one of the players then
+it really does so; being \emph{complete}, i.e.\ finding those regions; and being \emph{terminating}.
+
+We distinguish completeness and termination explicitly because a heuristic may be terminating but incomplete,
+for example when it realises that it cannot solve the game at hand. In this case it notionally provides
+a \emph{don't know} answer and practically one of the algorithms above is used to solve the game.
+
+
+% \hide{
+% \subsection{Duelling Strategies}
+
+% This very simple heuristic maintains two pools of fixed size (currently 50) of positional strategies, one for
+% each player. It then performs a fixed number of \emph{rounds} (currently 100), and in each of them
+% one strategy from each pool is selected. These two strategies perform a \emph{duel} resulting in a single
+% play. That play is won by one of the players, and according to the winner, the strategies receive positive,
+% resp.\ negative points. After that given number of rounds, strategies that have accummulated a positive
+% number of points -- i.e.\ have won against more strategies of the other player than lost -- are
+% checked for being winning strategies. If one of them guarantees a win for the corresponding player on a
+% certain part of the game, then the heuristic continues with the subgame resulting from taking that part and
+% the corresponding attractor out. Overall winning strategies are assembled out of parts of the guessed
+% strategies and the attractor strategies.
+% \begin{center}
+%   \begin{tabular}{|l|p{8cm}|}
+%     \hline
+%     \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Heuristic \nextheur\ (Duelling Strategies)} \\ \hline\hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & M.~Lange \\ \hline
+% %    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{lange-gdv05} \\ \hline
+%     \rule[-8mm]{0mm}{13mm}{\bf Short description} & select candidates for winning strategies by duelling two
+%                                strategies \\ \hline
+% %    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & --- \\ \hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(n)$ \\ \hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Soundness} & yes \\ \hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Completeness} & no \\ \hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Termination} & no \\ \hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & biased selection of strategies with preference to those that
+%                               have won duels before \\ \hline
+%   \end{tabular}
+% \end{center}
+% % Strategies are not selected uniformly from the pools. Instead, the strategies inside a pool a ranked according
+% % to their performance in previous duels. After a duel, the winning strategy is re-inserted into its pool at
+% % the front, the losing strategy is re-inserted into its pool at the end. The probability for choosing
+% % a strategy at position $i$ decreases as $i$ increases.
+% We remark that this heuristic is actually complete and therefore terminating if the used random generator
+% is fair, i.e.\ eventually every strategy has been generated and tried.
+
+% \subsection{Dominion Finding Iteration}
+
+% This heuristic first guesses a random strategy for one of the players and determines the set (of dominions)
+% this player wins on when following the guessed strategy. If the player wins at least one node the heuristic
+% returns the set of won dominions; otherwise the counter strategy (which wins on all nodes w.r.t.\ the former
+% strategy) is used as new initialization strategy. This process is iterated a number of times depending on the
+% size of the game. If the process terminates without finding a dominion for any of the players a completely
+% new strategy is randomly guessed and the whole process starts all over again.
+% \begin{center}
+%   \begin{tabular}{|l|p{8cm}|}
+%     \hline
+%     \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Heuristic \nextheur\ (Dominion Finding Iteration)} \\ \hline\hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & O.~Friedmann \\ \hline
+% %    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{lange-gdv05} \\ \hline
+%     \rule[-8mm]{0mm}{13mm}{\bf Short description} & tries to find dominions by selecting a random strategy and if not computes a counter strategy which is subsequently used\\ \hline
+% %    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & --- \\ \hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(n)$ \\ \hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Soundness} & yes \\ \hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Completeness} & no \\ \hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Termination} & no \\ \hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+%   \end{tabular}
+% \end{center}
+% }
+
+
+\subsection{The Strategy Guessing Iteration}
+
+This heuristic guesses random strategies for both players and computes the winning regions w.r.t.\ these
+strategies. If the winning regions are not empty, the algorithm returns these sets. Otherwise the whole process starts all over again.
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Heuristic \nextheur\ (Strategy Guessing Iteration)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & O.~Friedmann \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{lange-gdv05} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & tries to find dominions by selecting a random strategies\\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & --- \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(n)$ \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Soundness} & yes \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Completeness} & no \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Termination} & no \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  \end{tabular}
+\end{center}
+
+
+% \subsection{The Reachability Analysis}
+% For every node $v$ and each player $i$ one iteratively determines the set $R_i(v)$ containing tuples
+% $(w, p)$ (with $w$ being a node and $p$ being a priority) with the following interpretation: ``Player $i$
+% is able to force player $1 - i$ to reach node $w$ starting from node $v$ while the greatest priority
+% occurring is not lower (w.r.t.\ some reward order) than $p$''. These sets can be determined by a
+% fixed-point iteration in polynomial time. If there is a player $i$, a node $v$ and a priority $p$ s.t.
+% $(v, p) \in R_i(v)$ with $p$ being good for $i$ then $v$ induces an $i$-dominion. If there is no such node
+% this algorithm starts another algorithm (here: the recursive one) to solve the game. This only happens
+% iff there is no $i$-dominion in the game ensuring that at least one node in the dominion has to be visited
+% no matter which cycle is chosen by the other player.
+% \begin{center}
+  % \begin{tabular}{|l|p{8cm}|}
+    % \hline
+    % \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Heuristic \nextheur\ (Reachability Analysis)} \\ \hline\hline
+    % \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & O.~Friedmann\\ \hline
+% %    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{TCS::Zielonka1998} \\ \hline
+    % \rule[-8mm]{0mm}{13mm}{\bf Short description} & Computing reachability sets for both players and all nodes in order to identify specific dominions\\ \hline
+    % \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $\mathcal{O}(n^2 \cdot d)$ + running time of backend \\ \hline
+    % \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(n^2)$ + space needed by backend \\ \hline
+    % \rule[-3mm]{0mm}{8mm}{\bf Soundness} & yes \\ \hline
+    % \rule[-3mm]{0mm}{8mm}{\bf Completeness} & no \\ \hline
+    % \rule[-3mm]{0mm}{8mm}{\bf Termination} & yes \\ \hline
+% %    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  % \end{tabular}
+% \end{center}
+% Note that the information about incompleteness only concerns the heuristic. In combination with a complete
+% solver like the recursive one, this obviously becomes complete as well.
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

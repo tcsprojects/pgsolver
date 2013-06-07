@@ -1,0 +1,282 @@
+%\section{Benchmark Games}
+
+The \pgsolver library contains a few programs that create benchmarks for the parity game
+solvers. They are built using the command
+\begin{verbatim}
+    ~/pgsolver> make generators
+\end{verbatim}
+and reside afterwards in the subdirectory \texttt{bin}.
+
+Additionally, it is possible to compile all generators directly into \pgsolver by setting
+the variable \texttt{LINKGENERATORS} to \texttt{YES} in the \texttt{./Config}-file. This
+has the advantage that the process of generating and solving a game is not slowed down by
+formatting the game first and parsing it afterwards again into the same data structure.
+
+\section{Random Games}
+
+Randomly generated parity games are the simplest form of benchmarking utility to assess the
+performance of game solvers. The ones used here are parametrized by four parameters: the number
+$n$ of nodes in the game, the highest priority $p$, a lower and an upper bound $l$ and $u$ on the
+out-degree of each node. The call
+\begin{verbatim}
+    ~/pgsolver> bin/randomgame 1000 200 2 5
+\end{verbatim}
+creates a random game with 1000 nodes as follows: for each node $v$,
+\begin{itemize}
+\item the priority $\Omega(v)$ is uniformly chosen among $\{0,\ldots,200\}$;
+\item node $v$ belongs to player $0$ with probability $0.5$ and therefore to player $1$ with
+      probability $0.5$ as well;
+\item a number $d$ is uniformly chosen in the range $\{2,\ldots,5\}$, and $d$ pairwise different
+      nodes are uniformly chosen as $v$'s successors.
+\end{itemize}
+Beware that \texttt{bin/randomgame} may crash or not terminate if the lower bound on the outdegree
+is greater than the upper bound or that one is greater than the number of nodes.
+
+
+\section{Clustered Random Games}
+
+Almost every game created by the random generator above consists of a single big SCC and many adhesive
+chains.
+
+Therefore this generator uses an other random model that accomplishes to bring a bit more structure into its instances. It depends on nine parameters: The number of nodes $n$, the highest possibly occurring priority $p$, an out-degree range $(l;h)$, a recursion depth $r$, a recursion breadth range $(a;b)$ and an interconnection range $(x;y)$. An instance of $\mathcal{G}^c_{(n,r)}$ with $c = (p,l,h,a,b,x,y)$ can be generated as follows. If $r = 0$ or $a > n$ simply return a randomly generated game with $n$ nodes, highest priority $p$ and out-degree bounds $l$ and $h$ as above. If $r > 0$ and $a \leq n$,
+\begin{itemize}
+\item a number $d$ is uniformly chosen in the range $\{a,\ldots,\min(b,n)\}$;
+\item $d$ numbers $k_0,\ldots,k_{d-1}$ are uniformly chosen in the range $\{0,\ldots,n-1\}$ s.t.\ $\sum_{i=0}^{d-1} k_i = n$;
+\item $d$ instances $G_0,\ldots,G_{d-1}$ are chosen, where $G_i$ is chosen from $\mathcal{G}^c_{(k_i,r-1)}$ (we assume the nodes of all $G_i$ to be pairwise different);
+\item a game $G$ is created by the union of all $G_i$;
+\item a number $e$ is uniformly chosen in the range $\{x,\ldots,y\}$;
+\item $e$ additional uniformly chosen edges in $G$ are added to $G$;
+\item the game $G$ is returned.
+\end{itemize}
+
+Basically, this recursive approach creates a topological tree structure that is partially intercepted by adding the additional interconnection edges.
+
+A clustered random game with 1000 nodes, highest priority 2, out-degree bounds 2 and 5, recursion depth 3, recursion breadth between 4 and 6 and interconnection degree between 11 and 22 is created using the call
+\begin{verbatim}
+    ~/pgsolver> bin/clusteredrandomgame 1000 200 2 5 3 4 6 11 22
+\end{verbatim}
+
+
+\section{Steady Random Games}
+
+The Steady Random Generator tries to circumvent many universal optimisations in order to particularly
+benchmark the backend solvers. The Steady Random Generator is parametrized by five parameters: the number
+$n$ of nodes (and different priorities) in the game, a lower and an upper bound and on the
+out-degree of each node and a lower and an upper bound and on the in-degree of each node. The call
+\begin{verbatim}
+    ~/pgsolver> bin/steadygame 1000 2 4 3 5
+\end{verbatim}
+creates a random game with 1000 nodes as follows: for each node $v$,
+\begin{itemize}
+\item the priority $\Omega(v)$ is simply $v$;
+\item node $v$ belongs to player $0$ with probability $0.5$ and therefore to player $1$ with
+      probability $0.5$ as well;
+\item a number $d$ is uniformly chosen in the range $\{2,\ldots,4\}$, and $d$ pairwise different
+      nodes are uniformly chosen in $v$'s subgame as $v$'s successors;
+\item a number $d$ is uniformly chosen in the range $\{3,\ldots,5\}$, and an attempt is made to ensure
+      that $v$ has $d$ pairwise different predecessors.
+\end{itemize}
+All edges are iteratively determined as long as there are at least two different nodes with one of them violating
+a lower bound and the other one being below the opposite upper bound uniformly between two such nodes.
+
+
+\section{Clique Games}
+
+The clique game of order $n$ is $G_n = (\{0,\ldots,n-1\},\{0,2,4,\ldots\},\{1,3,5,\ldots\},E,\Omega)$
+with $E = \{ (v,w) \mid v \ne w \}$ and $\Omega(v) = v$. It forms a clique in a directed graph without
+self-cycles. Clique games exhibit a large amount of cycles in the game which may pose difficulties
+for certain solvers. Note that adding self-cycles to the nodes will result in easy solving because
+self-cycles are partial winning strategies in this case, and then all other nodes would lie in the attractor
+of these winning regions.
+
+The clique game of order $50$ for instance is generated as follows.
+\begin{verbatim}
+    ~/pgsolver> bin/cliquegame 50
+\end{verbatim}
+The clique game of order 50 with self-cycles can also be generated.
+\begin{verbatim}
+    ~/pgsolver> bin/cliquegame 50 self
+\end{verbatim}
+
+
+\section{Ladder Games}
+\label{sec:laddergame}
+
+The name of these games is derived from their structure which is reminiscent of a ladder. The
+\emph{ladder game} of index $n$ is $G_n = (V,V_0,V_1,E,\Omega)$, defined as follows.
+\begin{itemize}
+\item $V = \{0,\ldots,2n-1\}$,
+\item $V_0 = \{0,2,4,\ldots,2n-2\}$, $V_1 = \{1,3,5,\ldots,2n-1\}$,
+\item $E = \{ (v,w) \mid w \equiv_{2n} v+i $ for some $i \in \{1,2\}$ $\}$,
+\item $\Omega(v) = v \mod 2$.
+\end{itemize}
+where $\equiv_{2n}$ means equality modulo $2n$.
+
+It is not hard to see that player $0$ wins on $V_0$ and player $1$ wins on $V_1$ since both can
+stay within these regions and only see the priorities $0$, resp.\ $1$.
+
+Ladder games are chosen as benchmarks because in $G_n$ there are $2^n$ many positional strategies for each
+player but only one of them is a winning strategy. Not surprisingly, ladder games are very difficult
+to solve for the strategy guessing heuristic for example.
+
+The ladder game of index 19 is created using the call
+\begin{verbatim}
+    ~/pgsolver> bin/laddergame 19
+\end{verbatim}
+
+
+
+\section{Jurdzi{\'n}ski Games}
+\label{sec:jurdgame}
+
+Jurdzi{\'n}ski has defined a family of games on which the small progress measures algorithm
+exhibits an exponential running time \cite{Jurdzinski/00}. The Jurdzi{\'n}ski game $J_{d,w}$ of depth 
+$d$ and width $w$ forms a rectangle of dimension $(2d+1) \times (2w)$. For instance, $J_{50,100}$
+is generated by calling
+\begin{verbatim}
+    ~/pgsolver> bin/jurdzinskigame 50 100
+\end{verbatim}
+
+
+% \begin{figure}[t]
+% \begin{center}
+% \scalebox{0.6}{\input{graphics/marcingame.eepic}}
+% \end{center}
+
+% \caption{The Jurdzi{\'n}ski games.}
+% \label{fig:marcingame}
+% \end{figure}
+
+
+
+\section{Recursive Ladder Games}
+
+%\include{pgfgraphics}
+
+% \begin{figure}[t]
+% \begin{center}
+% \pictrecursiveladder
+% \end{center}
+% \caption{The recursive ladder game of index 4.}
+% \label{fig:recursiveladder}
+% \end{figure}
+
+The recursive ladder games form a family on which the recursive algorithm exhibits an exponential
+running time.  The recursive ladder game of index $n$ has size $5 \cdot n$. 
+% We omit a formal
+% definition here. The construction can easily be inferred from Fig.~\ref{fig:recursiveladder}. Inside
+% the nodes it shows the node's identifier (left of the colon) and its priority.
+The recursive ladder game of index 4 results in 20 nodes and is generated by calling
+\begin{verbatim}
+    ~/pgsolver> bin/recursiveladder 4
+\end{verbatim}
+
+
+
+
+
+\section{Exponential Strategy Improvement Games}
+
+The exponential strategy improvement games form a family on which both strategy improvement algorithms
+exhibit an exponential running time (in the index of the game) \cite{FriedmannSI09}.
+The exponential strategy improvement game of index $n$ has size $14 \cdot n + 11$. 
+% We omit a formal definition here. The game of index 2 is depicted in Fig.~\ref{fig:expstratimpr}.
+% Inside the nodes it
+%shows the node's identifier (left of the colon) and its priority.
+A game of index 4 results in 67 nodes and is generated by calling
+\begin{verbatim}
+    ~/pgsolver> bin/expstratimpr 4
+\end{verbatim}
+
+In order to verify that the strategy iteration indeed requires exponential runtime on these games, you
+need to either disable all generic optimisations or transform the game using the \texttt{transformer}
+tool with the parameters \texttt{-ss -ap -bn}.
+
+
+% \begin{landscape}
+% % \pagenumbering{none}
+% \begin{figure}[t]
+% \begin{center}
+% \pictexpstratimpr
+% \end{center}
+% \caption{The exponential strategy improvement game of index 2.}
+% \label{fig:expstratimpr}
+% \end{figure}
+% \end{landscape}
+
+
+
+\section{Model Checker Ladder Games}
+
+The model checker ladder games form a family on which the model checker algorithm exhibits an
+exponential running time.  The model checker ladder game of index $n$ has size $4 \cdot n$. 
+% We omit a formal definition here. The construction can easily be inferred from
+% Fig.~\ref{fig:modelcheckerladder}.
+%Inside the nodes it shows the node's identifier (left of the colon) and its priority.
+A model checker ladder game of index 3 results in 12 nodes and is generated by calling
+\begin{verbatim}
+    ~/pgsolver> bin/modelcheckerladder 3
+\end{verbatim}
+
+% \begin{figure}[h]
+% \begin{center}
+% \pictmodelcheckerladder
+% \end{center}
+% \caption{The model checker ladder game of index 3.}
+% \label{fig:modelcheckerladder}
+% \end{figure}
+
+
+
+\section{Tower of Hanoi}
+
+The Towers of Hanoi problem can be seen as a reachability game in the graph of game configurations.
+The problem of size $n$ has $n$ disks that are to be moved from the first to the third rod.
+A problem of size $3$ is generated by calling
+\begin{verbatim}
+    ~/pgsolver> bin/towersofhanoi 3
+\end{verbatim}
+
+
+\section{Fairness Verification of an Elevator System}
+
+We encode a simple fairness verification problem as a parity game. States of a transition system modelling
+an \emph{elevator} for $n$ floors are of type
+$\{1,\ldots,n\} \times \{\mathtt{o},\mathtt{c}\} \times (\bigcup \{ \mathit{Perm}(S) \mid S \subseteq \{1,\ldots,n\})$.
+The first component describes the current position of the elevator as one of the floors. The
+second component indicates whether the door is \emph{open} or \emph{closed}. The third component -- a permutation
+of a subset of all available floors -- holds the \emph{requests}, i.e.\ those floors that should be served next.
+The transitions on these are as follows.
+\begin{itemize}
+\item At any moment, any request or none can be issued. For simplicity reasons, we assume that at most one floor
+      is added to the requests per transition. Note that nondeterministically, no request can be issued, and a
+      request for a certain floor that is already contained in the current requests does not change them.
+\item If the door is open then it is closed in the next step, the current floor does not change.
+\item If it is closed, the elevator moves one floor (up or down) into the direction of the first request. If the
+      floor reached that way is among the requested ones, the door is opened and that floor is removed from the
+      current requests. Otherwise, the door remains closed.
+\end{itemize}
+We consider two different implementations of this elevator model: the first one stores requests in FIFO
+style, the second in LIFO style. The games $G_n$ (with FIFO), resp.\ $G'_n$ (with LIFO) result from
+encoding the model checking problem for this transition system and the CTL$^*$ formula
+$\mathtt{A}(\mathtt{GF}\mathit{isPressed} \to \mathtt{GF}\mathit{isAt})$ as a parity game
+\cite{Stirling95}.  Proposition $\mathit{isPressed}$ holds in any state s.t.\ the request list contains
+the number $n$, and $\mathit{isAt}$ holds in a state where the current floor is $n$. Hence, this
+formula requires all runs of the elevator to satisfy the following fairness property: if the top floor
+is requested infinitely often then it is being served infinitely often. It can easily be formulated in
+the modal $\mu$-calculus using a formula of size $11$ and alternation depth $2$ (of type
+$\nu$--$\mu$--$\nu$). Hence the resulting parity games have constant index 3.  Note that $G_n$
+encodes a positive instance of the model checking problem whereas $G'_n$ encodes a negative one.
+The game $G_4$ is generated by calling
+\begin{verbatim}
+    ~/pgsolver> bin/elevatorverification 4
+\end{verbatim}
+and the game $G'_5$ by calling
+\begin{verbatim}
+    ~/pgsolver> bin/elevatorverification -u 5
+\end{verbatim}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

@@ -1,0 +1,202 @@
+\section{Universal Optimisations}
+\label{sec:universal}
+
+There are some optimisations that apply to \emph{all} solvers. These universal optimisations efficiently
+try to reduce the overall complexity of a given parity game in order to reduce the effort spent by any solver. 
+Clearly, such optimisations have to ensure that a solution of the modified game can be effectively and 
+efficiently translated back into a valid solution of the original game.
+
+In the following we describe optimisations that are implemented on top of every solving algrithm:
+SCC decomposition, detection of special cases, and compression. The next section then describes a generic
+algorithm that uses (some of -- depending on the configuration) these optimisations in order to call
+a real solver on as few and little parts of a game as possible.   
+
+
+\subsection{SCC Decomposition}
+
+Let $G = (V, V_0, V_1, E, \Omega)$ be a parity game. A \emph{strongly connected component} (SCC) is a non-empty set 
+$S \subseteq V$ with the property that every node in $S$ can reach every other node in $S$, i.e. $uE^*v$ for 
+all $u, v \in S$ (where $E^*$ denotes the transitive-reflexive closure of $E$). A strongly connected component 
+$S$ is \emph{proper} iff $uE^+v$ for all $u, v \in S$ (where $E^+$ denotes the transitive closure of $E$). In 
+other words: An SCC $S$ is proper iff $|S| > 1$ or $S = \{u\}$ and $uEu$.
+
+\begin{theorem}[\cite{tarjan:146}]
+Every parity game $G = (V,V_0,V_1,E,\Omega)$ can, in time $\mathcal{O}(|E|)$, be partitioned into SCCs 
+$S_0, ..., S_n$ with $V = \bigcup_{i \leq n} S_i$ and $S_i \cap S_j = \emptyset$ for all $i \not= j$.
+\end{theorem}
+
+Additionally there is a strict partial ordering $\rightarrow$ on these SCCs which is defined as follows:
+\begin{displaymath}
+S_i \rightarrow S_j \quad:\iff\quad i \not= j \wedge \exists u \in S_i,\, v \in S_j:\, uEv
+\end{displaymath}
+This strict partial ordering is generally known as the \emph{topology} of the SCC decomposition. An SCC $S$
+is called \emph{final} w.r.t.\ $\to$ if there is no SCC $T$ s.t.\ $S \to T$. Note that every SCC topology
+of a finite graph must have at least one final SCC.
+
+SCC decomposition of parity games as a universal optimisation works as follows. First, the game is decomposed 
+into SCCs along with the computation of the strict partial ordering $\rightarrow$. Then, all final SCCs 
+with respect to $\rightarrow$ are solved by a parity game solver. Since these SCCs are not connected to any 
+other SCCs, all solutions obtained in this manner can be directly used as solutions in the global game.
+
+Second, the attractors for both players with respect to the computed winning sets of all maximal solved SCCs 
+are computed and removed from the game. The remainder is still a game, but because of the removal some of the
+original SCCs may not be SCCs anymore. All ``damaged'' ex-SCCs are again decomposed into SCCs and replaced by 
+the new respective decomposition. 
+%(Note: There is no need to actually replace the SCC in the data structure; it is more convenient to implement
+% this by recursion).
+In this way, the remaining decomposition can be used again to solve the rest of the game, again starting
+with those SCCs that are now final. 
+%Note that it is convenient to automatically solve improper SCCs since otherwise they usually need to be 
+%treated differently than normal SCCs in the real solving algorithms.
+
+
+%\subsection{Excision of Dominions}
+
+%Although there is no obvious way to further reduce a parity game to smaller sub games that need to be solved, 
+
+With this SCC decomposition it is not necessary to require solvers to solve an entire SCC let alone an entire
+game. Instead it suffices to have them solve at least a dominion for one of the players. Given an SCC $S$ and
+two dominions $D_0, D_1 \subseteq S$ with $D_0 \subseteq W_0$ and $D_1 \subseteq W_1$, one simply computes the 
+attractors $A_i := \attr{}{i}{D_i}$ and considers the induced subgame $(S \setminus A_0) \setminus A_1$ which 
+can be recursively solved by decomposition into SCCs etc.
+
+% The excision of dominions is particularly useful for algorithms using a certain heuristic to generate ``good'' 
+% strategies or for algorithms trying to find small dominions locally; some solution algorithms of the following 
+% subsection will apply the dominion excision approach. Since the excision of a dominion possibly leads to a new 
+% subgame that can be optimised and decomposed again, this optimisation can be very powerful.\TODO{Sehr schwammiger
+% Paragraph.}
+
+
+\subsection{Detection of Special Cases}
+
+There are certain kinds of special games that can be solved very efficiently by the following procedures. 
+W.l.o.g.\ we can assume games to be proper strongly connected components. Remember that SCCs which are not proper
+consist of a single node $v$ only that does not have an edge back to itself. The winner of $v$ is the owner
+iff there is a successor that he/she wins. Since all successors belong to topologically greater SCCs we can
+assume them to be solved already, and thus, the winner of $v$ is easily determined.
+
+\begin{itemize}
+\item \emph{Self-cycle games}: Suppose there is a node $v$ such that $vEv$. Then there are two cases depending on
+the node's owner $p$ and the parity of the node's priority. If $\Omega(v) \not\equiv_2 p$ then taking the edge 
+$(v,v)$ is always a bad choice for player $p$ and this edge can be removed from the game for as long as 
+totality is preserved. If $\Omega(v) \equiv_2 p$ then taking this edge is always good in the sense that 
+$\{v\}$ is a dominion for player $p$. Hence, its attractor can be removed as described above.
+
+\item \emph{One-parity games}: If all nodes in a proper SCC have the same parity, the whole game is obviously won 
+by the corresponding player no matter which transition the player uses. Hence, a winning strategy can be found 
+by random choice.
+
+\item \emph{One-player games}: A game $G$ is a one-player game for player $i$ iff for all $v \in V_{1 - i}$ we have
+$|vE| = 1$. Such a one-player game that is an SCC can be solved using a simple fixed-point iteration. 
+%\begin{align*}
+%E_0\,\, &:= E \\
+%E_{j + 1} &:= \{(u, v) \mid uE_jv \vee \exists w:(uE_jw \wedge wE_jv \wedge \Omega(u) \geq \Omega(w) \wedge \Omega(u) \equiv_2 i )\} \\
+%E'\,\, &:= \bigcup_{j \in \Nat} E_j
+%\end{align*}
+%Now the following holds: 
+Player $i$ wins the game iff there is a node $u$ with $\Omega(u) \equiv_2 i$ and $u$ is reachable from itself
+on a path that does not contain a priority greater than $\Omega(u)$.
+% As player $i$ wins the game iff there is a cycle in the game won by player $i$ the fixed point iteration 
+%simply computes which nodes having parity $i$ can reach itself without seeing a greater priority than their 
+%own. Thus, if $E'$ connects $i$-parity nodes with itself, there needs to be a cycle using that particular 
+%node being won by player $i$. The conversion also holds: If there is no $i$-parity node $u$ s.t. $uE'u$ then 
+%the whole SCC is won by player $1-i$.
+If there is such a cycle won by player $i$ then the rest of the SCC lies in the attractor of the cycle (since 
+player $i$ is the only one to make choices); otherwise, if there is no cycle won by player $i$, the whole game 
+is won by player $1-i$.
+\end{itemize}
+
+
+\subsection{Priority Compression}
+
+The complexity of a parity game rises with the number of different priorities in the game. This optimisation step
+attempts to reduce this number. Note that it is not the actual values of priorities that determine the winner.
+It is rather their \emph{parity} on the one hand and their \emph{ordering} on the other. For instance, if there are 
+two priorities $p_1 < p_2$ in a game with $p_1 \equiv_2 p_2$ but there is no $p'$ such that $p_1 < p' < p_2$ and 
+$p' \not\equiv_2 p_1$ then every occurrence of $p_2$ can be replaced by $p_1$. 
+
+In general, let $P = (p_0,\ldots,p_k)$ be the list of all the priorities occurring in a game $G = (V,V_0,V_1,E,\Omega)$ 
+s.t.\ $p_{i-1} < p_i$ for all $0 \le i < k$. W.l.o.g.\ we assume $p_0$ to be even. If the least priority occurring in
+$G$ is odd, then simply add $p_0 = 0$ to this list which does not affect the construction in any way. We will also
+use $P$ to denote the \emph{set} of all elements in $P$.
+
+Take a decomposition of $P$ into maximal sublists of elements with the same parity, i.e.\ 
+\begin{displaymath}
+P \enspace = \enspace (p_{0,0},\ldots,p_{0,m_0},p_{1,0},\ldots,p_{1,m_1},\ldots,p_{n,0},\ldots,p_{n,m_n})
+\end{displaymath}
+with $p_{i,j} \equiv_2 p_{i,j'}$ for all $0 \le i \le n$, $0 \le j < j' \le m_i$ and 
+$p_{i,m_i} \not\equiv_2 p_{i+1,0}$ for all $0 \le i < n$. This defines a partial mapping $\omega: \Nat \to \Nat$ as 
+\begin{displaymath}
+\omega(p) \enspace = \enspace 
+\begin{cases} 
+i &, \mbox{if } p = p_{i,j} \mbox{ for some } j  \\
+\mathrm{undefined} &, \mbox{otherwise}
+\end{cases}
+\end{displaymath}
+Note the following facts about $\omega$:
+\begin{itemize}
+\item $\omega$ is defined on all priorities occurring in $G$;
+\item $\omega$ is \emph{decreasing}: we have $\omega(p) \le p$ for all $p \in P$;
+\item $\omega$ is \emph{monotone}: for all $p,p'$ with $p \le p'$ we have $\omega(p) \le \omega(p')$;
+\item $\omega$ \emph{preserves parities}: we have $\omega(p) \equiv_2 p$ for all $p \in P$;
+\item $\omega$ is \emph{dense}: for all $p,p' \in P$ with $\omega(p)+1 < \omega(p')$ there is a $p''$ with 
+$\omega(p) < \omega(p'') < \omega(p')$.
+\end{itemize} 
+Now define another parity game $G' := (V,V_0,V_1,E,\Omega')$ with $\Omega'(v) := \omega(\Omega(v))$. I.e.\ $G'$
+results from $G$ by reducing the priorities according to the function $\omega$. Then $G'$ is equivalent to $G$
+in the sense that the players' winning regions coincide in the two games, and a winning strategy $\sigma$ for
+some player $i$ in $G$ is also a winning strategy for him/her in $G'$ and vice-versa. This is guaranteed by the
+properties of $\omega$ identified above: due to monotonicity and preservation of parities, the greatest priority
+ocurring in an infinite play in $G$ is even iff it is even in the same play in $G'$. The property of being
+decreasing guarantees that this should in general be an optimisation, and density says that $G'$ is optimal 
+w.r.t.\ this optimisation. 
+ 
+% \begin{lemma}
+% Every parity game $G = (V,V_0,V_1,E,\Omega)$ induces an equivalent parity game $G' = (V,V_0,V_1,E,\Omega')$ where 
+% $\Omega'$ is inductively defined as follows:
+% \begin{displaymath}
+% \Omega'(v) \enspace := \enspace
+% \begin{cases}
+% m(v) \enspace, &\mbox{if } \Omega(v) \equiv_2 m(v) \\
+% m(v) + 1 & \mbox{otherwise}
+% \end{cases}
+% \end{displaymath}
+% and
+% \begin{displaymath}
+% m(v) \enspace := \enspace \max \{0, \Omega'(w) \mid \Omega(w) < \Omega(v)\}
+% \end{displaymath}
+% Then $W_0(G) = W_0(G')$, $W_1(G) = W_1(G')$ and every winning strategy for player $i \in \{0, 1\}$ w.r.t. $G$ is a winning strategy for player $i$ w.r.t. $G'$ and vice versa.
+% \end{lemma}
+
+% Since $\Omega(v) \leq \Omega(w)$ iff $\Omega'(v) \leq \Omega'(w)$ as well as $\Omega(v) \equiv_2 \Omega'(v)$ it is not hard to see that the greatest priority occurring infinitely often in a play w.r.t. $G$ has the same parity as w.r.t. $G'$.
+
+
+
+\subsection{Priority Propagation}
+
+Note that any play visiting a node $v$ has to -- due to totality -- also visit one of the successors of 
+$v$. Now suppose that the priorities of all successors of $v$ are greater than the priority of $v$ itself.
+Then $v$'s priority is irrelevant in the sense that no play is won by either player because $v$'s priority
+occurs in it. For those plays not visiting $v$ at all this is trivial and for those plays that do visit
+$v$ this is simply because $v$ is certainly not the geatest priority occurring in this play, let alone
+occurring infinitely often. Hence, $v$'s priority can be replaced by a greater one. 
+
+In general, let $G = (V,V_0,V_1,E,\Omega)$. Applying \emph{backwards propagation} in node $v$ results in
+the game $G' = (V,V_0,V_1,E,\Omega')$ where 
+$\Omega' = \Omega[v \mapsto \max \{ \Omega(v), \min \{ \Omega(w) \mid w \in vE \} \}]$.
+Similarly, \emph{forwards propagation} replaces $v$'s priority with the minimum of all
+priorities of its predecessors if that is greater than its current priority. It is equally sound because
+any play that visits $v$ infinitely often must visit one of its predecessors infinitely often too.
+
+Both backwards and forwards propagation can be iterated and combined thus reducing the range of priorities
+in a game.
+
+
+
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

@@ -1,0 +1,45 @@
+\section{Change Log}
+
+Changes are classified according to their importance. Changes effecting only the performance of
+parts of the tool or are less important otherwise are marked with one asterisk ($\ast$). Changes
+that are worth noting like the addition of new features etc.\ are marked with two asterisks 
+($\ast\ast$). Finally, major changes that would effect usability, for example breaks in backwards
+compatibility, changes in the user interface, etc., are marked with three asterisks ($\ast\ast\ast$)
+
+Changes incorporated into version 3:
+\begin{itemize}
+\item[$\ast\ast$] \pgsolver is now linkable as library.
+\item[$\ast$] A new local strategy improvement algorithm has been added.
+\item[$\ast\ast$] Local Solving of Games has been enabled.
+\item[$\ast$] Generators can now be linked directly into \pgsolver.
+\item[$\ast$] Two new randomized strategy improvement algorithms have been incorporated.
+\item[$\ast$] The lists of solvers and generators are now maintained in \texttt{./Solvers} and \texttt{./Generators} respectively.
+\item[$\ast$] Printing and parsing of solution and strategies.
+\item[$\ast$] Conversion between min-parity and max-parity games as a new transformer feature.
+\item[$\ast$] Two new generators: Towers of Hanoi as a reachability game and a fairness verification of an elevator system.
+\end{itemize} 
+
+
+
+Changes incorporated into version 2:
+\begin{itemize}
+\item[$\ast$] In order to allow more efficient parsing, the specification format for parity
+      games has been extended. It is now possible to include at the beginning of the specification
+      the maximal index of a node in the game. If this is done, then parsing will be quicker.
+\item[$\ast$] All the random game generators are now based on a more efficient generation
+      of sets of random numbers.
+\item[$\ast$] The computation of attractor regions has been improved.
+\item[$\ast\ast\ast$] Confusing terminology has been clarified: the algorithm due to Stevens and
+     Stirling \cite{StevensStirling98} is now referred to as the \emph{model checker} rather than the 
+     former \emph{game-based algorithm}. Command line parameters to \texttt{pgsolver} have been 
+     changed accordingly.
+\item[$\ast\ast$] A useful benchmarking tool has been included in the distribution.
+\item[$\ast$] This change log has been included in this documentation -- in case you hadn't noticed.
+\end{itemize} 
+
+ 
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

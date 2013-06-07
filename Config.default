@@ -1,0 +1,44 @@
+#######
+# give the full paths here if these programs are not found in the PATH
+#######
+TAR=tar
+GZIP=gzip
+OCAML=ocaml
+OCAMLC=ocamlc
+OCAMLOPT=ocamlopt
+OCAMLLEX=ocamllex
+OCAMLYACC=ocamlyacc
+OCAMLDEP=ocamldep
+CPP=g++
+OCAMLOPTCPP=g++
+COMPILE_WITH_OPT=YES
+
+
+
+#######
+# change this to the OCaml installation directory
+#######
+OCAML_DIR=/usr/lib/ocaml
+
+
+#######
+# DIRECTORIES
+#######
+OBJDIR=obj
+SRCDIR=src
+BINDIR=bin
+SATSOLVERSROOT=./satsolversforocaml
+TCSLIBROOT=./tcslib
+
+
+#######
+# CONFIG
+#######
+LINKGENERATORS=NO
+
+
+#######
+# Z3
+#######
+HASSMT=NO
+Z3DIR=/usr/local/lib/z3

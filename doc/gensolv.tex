@@ -1,0 +1,48 @@
+\section{The Generic Solver}
+
+Solving a parity game is done by a central module called the \emph{generic solver}.
+It combines the universal optimisations described above with any of the implemented
+algorithms of heuristics described above. This is realised by taking a solver, i.e.\
+one of these algorithms or heuristics as a parameter. Then it roughly works as follows.
+\begin{enumerate}
+\item Self-cycles are eliminated from the game, and attractors of nodes for which the
+      self-cycle is part of a winning strategy are computed and removed. 
+\item The entire game is decomposed into SCCs.
+\item Terminal SCCs are solved as follows.
+      \begin{enumerate}
+        \item Priorities are compressed.
+        \item The SCC is checked for being a special case of a game.
+              \begin{itemize}
+                 \item If it is, winning regions and strategies are constructed accordingly.
+                 \item Otherwise, the solver given as the parameter is used to solve this
+                       SCC.
+              \end{itemize}
+        \item Attractors of the computed winning regions are also computed, together with 
+              corresponding strategies which are added to the winning regions and strategies.
+        \item The computed winning regions are removed from the game.
+        \item All non-terminal SCCs which have lost some nodes in the removal of these
+              attractors are again decomposed into more fine-grained SCCs.
+      \end{enumerate}
+\item Step 3 is repeated until the entire game is solved.
+\end{enumerate}
+Note that the removal of terminal SCCs will make other, previously non-terminal SCCs terminal.
+Also, note that this scheme is sound -- the regions and strategies it computes are
+in fact winning regions and winning strategies for the corresponding players on the given
+game -- if the parameter solver is sound. Hence, it can also be used with sound heuristics.
+Furthermore, it is complete if it is guaranteed that the parameter solver solves at least 
+one node of every SCC that it is given. Hence, the solvers used as backends need not be 
+complete for the generic solver to be complete. This is why this scheme can solve whole games
+using heuristics that are incomplete themselves.
+
+We also note that the features SCC decomposition, detection of special cases, and priority
+compression can be switched off via command-line options. This may be useful when the performance 
+of an algorithm on its own is to be measured. In addition, it is possible to turn the feature 
+priority propagation on in which case it is done before priority compression. However, in general 
+this does not seem to be an optimisation since it slows down virtually any backend.  
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

@@ -1,0 +1,435 @@
+\label{chp:devguide}
+
+The purpose of this chapter is to provide enough insight into the structure
+of the \pgsolver tool such that it becomes possible to extend it with a new algorithm.
+We assume reasonable OCaml programming skills and some familiarity with parity games, though.
+
+Implementing a new algorithm requires two steps only.
+\begin{enumerate}
+\item Create an OCaml source code file that contains the solver. This is just a function
+      which takes a parity game and returns a partition of (a subset of) its node set into
+      winning regions and winning strategies for the two players. It must reside in a new
+      module.
+\item Integrate this function into the main program such that the new solver can be used
+      by giving \texttt{pgsolver} a certain command-line argument. Then adjust the
+      \texttt{SolverList} such that the new module is compiled with the rest of the tool.
+\end{enumerate}
+
+
+\section{Structure of the Source Code}
+
+In the following, all references to files are given relatively to the directory into which
+\pgsolver was unpacked during the installation process. There, the subdirectory \texttt{src}
+is the important one for this step. It contains the source files of all the modules that
+make up the \pgsolver library. They are organised into the following subdirectories respectively.
+Note that, when we speak of \emph{modules} we often refer to files only that implicitly count as
+a module in OCaml.
+\begin{description}
+\item[\texttt{generators}] contains modules that make up the benchmark generators;
+\item[\texttt{tools}] contains tools for the creation or manipulation of parity games;
+\item[\texttt{paritygame}] contains modules that define parity games as a data structure and
+     provide functionality for that, e.g.\ in the form of procedures that compute SCC decompositions
+     etc.;
+% \item[\texttt{parser}] contains modules for the lexer and parser of the parity game specification
+%     format;
+\item[\texttt{pgsolver}] contains modules for the actual program \texttt{pgsolver};
+\item[\texttt{solvers}] contains the parity game solvers, each in a separate module;
+% \item[\texttt{zchaff}] contains the interface to the external C++ functions in the \texttt{zChaff}
+%     library.
+\end{description}
+
+\section{Definitions of Important Data Types}
+
+The signature file
+\begin{verbatim}
+src/paritygame/paritygame.mli
+\end{verbatim}
+contains the definition of parity games as a data structure.
+\begin{verbatim}
+type paritygame = (int * int * int array * string option) array
+\end{verbatim}
+A parity game is internally stored as an array of node definitions. Hence, the size of the array
+is at least the number of nodes in the game. A node is a value of type \texttt{int} -- it is
+implicitly assumed that the nodes' names in a game are $0,\ldots,n$ for some $n \in \Nat$. The
+value stored in the array at position $i$ defines the node $i$ in the game. Such a value is of
+the form \verb#(priority, player, successors, name)# where
+\begin{itemize}
+\item \texttt{priority} is a value of type \texttt{int} defining the node's priority. Admissible
+      values are $0,1,2,\ldots$
+\item \texttt{player} is a value of type \texttt{int} determining whether or not node $i$ belongs
+      to $V_0$ or $V_1$. Admissible values are only $0$ or $1$.
+\item \texttt{successors} is an array with entries of type \texttt{int} defining the outgoing edges
+      of node $i$. There is an edge to node $j$ iff $j$ occurs somewhere in the array. Multiple
+      occurrences of successor nodes in such an array are not explicitly forbidden. Hence, it is
+      actually possible to define a multi-graph. However, it is easy to see that
+      multiple edges do not affect the winning regions or strategies.
+\item \texttt{name} of type \texttt{string option} is an optional name for the node which can be
+      used in displaying the game. The default value is \texttt{None} representing no name. A value
+      of the form \verb#Some("Europe")# declares the string \texttt{Europe} as the symbolic name of
+      node $i$.
+\end{itemize}
+
+\begin{example}
+The parity game in Ex.~\ref{ex:examplegame} whose graph is shown in Fig.~\ref{fig:examplegame} on
+page~\pageref{fig:examplegame} would, for example, be represented as the following array.
+\begin{verbatim}
+[| (6,1,[|4;2|],Some("Africa")); (8,1,[|2;4;3|],Some("America"));
+   (7,0,[|3;1;0;4|],Some("Asia")); (6,0,[|4;2|],Some("Australia"));
+   (5,1,[|0|],Some("Antarctica")) |]
+\end{verbatim}
+\end{example}
+
+It is possible to leave nodes undefined by given them the value \verb#(-1,-1,[||],None)# for example. 
+% Take the Jurdzi{\'n}ski games shown in Fig.~\ref{fig:marcingame}
+% on page~\pageref{fig:marcingame} for example. When generating these it may be helpful to add a fourth
+% node to every small triangle that makes up the entire rectangular structure in order to have a simpler
+% enumeration of the graph's nodes. 
+%Such a node could be defined using .
+
+The signature file
+\begin{verbatim}
+src/paritygame/paritygame.mli
+\end{verbatim}
+also contains two type definitions for a parity game's \emph{solution} -- the node set's partition into
+winning regions -- and positional \emph{strategies}.
+\begin{verbatim}
+type solution = int array
+type strategy = int array
+\end{verbatim}
+Internally, both simply are arrays with entries of type \texttt{int}. Note that a solution or a strategy
+only makes sense in the context of a parity game, but this is not respected by this definition of data
+structures. The program itself has to ensure that it does not lose the connection between a solution array
+and the corresponding game for example.
+
+Given a parity game, represented as an array of length $n$ as above, a solution to this is an \texttt{int}
+array \texttt{s} of length $n$ as well. The entry at position $i$ in \texttt{s} is either $0$ or $1$ --
+indicating whether or not node $i$ belongs to $W_0$ or $W_1$. The value $-1$ is also allowed, enabling partial
+solving. This is used to indicate that a solution for node $i$ has not been computed.
+
+An array of type \texttt{strategy} contains, in effect, two positional strategies -- one for each player.
+Again, such strategies are only well-defined in the context of a given parity game, although this is
+not reflected by the typing. Remember that the node set $V$ of a parity game is partitioned into
+$V_0$ and $V_1$, assigning an owner to each node in the game. If there are $n$ nodes, then a valid
+strategy array is also of size $n$. Let \texttt{game} be the array representation of a parity game as
+described above. Now take some $i < n$ and let \texttt{(priority,player,succs,name)} be the definition of
+node $i$, i.e.\ the entry at position $i$ in the array \texttt{game}. Remember that \texttt{succs} is, again,
+an array with entries of type \texttt{int} that contains the indices of all the successors of $i$. Now
+the array \texttt{strategy} defines two positional strategies $\sigma_0$ and $\sigma_1$ for players
+$0$ and $1$ in the following sense. The entry at position $i$ is $j$ iff player $\sigma_p(i) = k$ where
+$k$ is the value of the \texttt{succs}-array at position $j$, and $p$ is the value of \texttt{player}.
+In other words, the \texttt{strategy} array contains for every node the index of the outgoing edge that
+the owner of the node should take in a move.
+
+Clearly, the strategies represented by such arrays need not be winning strategies. It is assumed, though,
+that, in the context of a solution array, the strategies are winning strategies on those parts of the game
+that are won by each player respectively. Hence, admissible values for entries in a strategy array
+are $0,1,\ldots$ but values $j \ge 1$ may lead to exceptions due to array indices that are out of bounds.
+The value $-1$ is also allowed to indicate that a strategy is not defined for a certain node. This enables
+partial solving and should only occur in conjunction with a $-1$ in the corresponding position of the
+solution array indicating that the node has not been solved by a solver.
+
+\section{Implementing a New Solver}
+
+We will exemplarily describe how to implement and integrate a new algorithm that solves parity games. There
+is more than one way to do so but there is a unique easiest way which we will follow here.
+
+Suppose you have finally come up with a deterministic polynomial time algorithm. Surely this cannot miss in
+the \pgsolver library. It is also quite probable that the algorithm is complex -- for otherwise someone
+else would have found it before. Therefore you cannot wait for us to implement it. By the time we have
+understood all the algorithm's subtleties our programming skills will have bitten the dust. In that case you
+better do it yourself.
+
+Find an expressive name for your algorithm that will be used to create a module and also later a command-line
+parameter for the \texttt{pgsolver} program. Say \emph{Deterministic Polynomial Time Solver} was a good name.
+Then create two files in the \texttt{src/solvers} subdirectory, for example called
+\begin{verbatim}
+detpoly.ml
+detpoly.mli
+\end{verbatim}
+The signature file \texttt{detpoly.mli} must look like this.
+\begin{verbatim}
+val solve : Paritygame.paritygame ->
+              Paritygame.solution * Paritygame.strategy
+\end{verbatim}
+The name of the function is actually irrelevant, but calling it \texttt{solve} is not a bad idea. Its type
+is mandatory though. It must take a parity game and return a pair of a solution and a strategy using the
+data types described above.
+
+Now sit down and hack the code for the implementation of your solver into the file \texttt{detpoly.ml}. In the
+simplest form this will look like
+\begin{verbatim}
+open Paritygame ;;
+let solve game = ...
+\end{verbatim}
+However, note that this function will be called in the main program, and as the argument \texttt{game} it will
+receive the parity game from the input. Hence, this does not automatically make use of the universal solver
+described in Sect.~\ref{sec:universal}. This is because one cannot guarantee that the universal optimisations
+compression, SCC decomposition and solving of special cases speed up \emph{any} solver.
+
+If your algorithm turns out to be that quick you might not want the universal optimisations in which case you
+can skip the following description of how to employ the universal solver with your new algorithm as a backend
+and continue with the next section.
+
+So you are still with us -- thanks for the trust you have in our universal solver! Now, you will still have
+to implement your algorithm in a function of type
+\texttt{Paritygame.paritygame -> Paritygame.solution * Paritygame.strategy} but it may be better to choose
+a different name. For instance, create a function
+\begin{verbatim}
+let my_solver game = ...
+\end{verbatim}
+in \texttt{detpoly.ml} that contains the implementation of your solver. This may now assume that the argument
+\texttt{game} consists of a single SCC only such that the priorities of at least two nodes have different
+parities and it is not just one player who has real choices in all the nodes in this game.
+
+Now all you have to do is to make sure that the \texttt{solve}-function declared in \texttt{detpoly.mli}
+calls the universal solver using your solver as a backend. This is easily done, \texttt{detpoly.ml} should
+look like this.
+\begin{verbatim}
+let solve = Univsolve.universal_solve
+             (Univsolve.universal_solve_init_options_verbose
+              !Univsolve.universal_solve_global_options)
+              my_solver
+\end{verbatim}
+Note that, if your solver implemented in \verb#my_solver# is recursive, it can also call \verb#solve# instead
+of \verb#my_solver# recursively in order to have the universal optimisations done in every step.
+
+
+\section{Integrating the New Solver}
+
+Continuing with the example of the previous section we assume that you have implemented a solver in the file
+\texttt{src/solvers/detpoly.ml}. In particular, this file contains a function \texttt{solve} of type
+\texttt{Paritygame.paritygame -> Paritygame.solution * Paritygame.strategy} which is declared in
+\texttt{src/solvers/detpoly.mli}.
+
+You will have to ensure that your file does automatically get compiled when \pgsolver is being built using
+the \texttt{make} command. In \texttt{SolverList} you will find a variable declaration listing all the modules
+that make up the entire program. It should look like this.
+\begin{verbatim}
+PGSOLVERSLIST=
+	obj/recursive.cmx \
+	obj/stratimprovement.cmx \
+	...
+	obj/stratimprlocal.cmx \
+	obj/stratimprdisc.cmx 
+\end{verbatim}
+Append to this list \texttt{obj/detpoly.cmx}. It need not be at the end of this list but you have to make
+sure that it occurs behind any other module that contains code which is used by your solver. This could
+be the \texttt{paritygame} and \texttt{univsolve} part for example and will most certainly be the
+\texttt{solvers} part. Now running \texttt{make} should compile the \texttt{detpoly}-module as well.
+
+At last, you have to integrate your algorithm into the program so that it can be used through the
+\texttt{pgsolver} program when given a certain command-line option. This could not be an easier. Add to
+your file \texttt{detpoly.ml} the following code after your \texttt{solve} function.
+\begin{verbatim}
+let _ = Solvers.register_solver
+          solve
+          "detpoly"
+          "dp"
+          "use the brand-new deterministic polytime algorithm"
+\end{verbatim}
+The function \texttt{register\_solver} from the module \texttt{solvers.ml} does everything for you. You
+simply have to give it four arguments.
+\begin{itemize}
+\item The first one, here \texttt{solve} is the function of the type described above that implements
+      your algorithm.
+\item The second one is a string which should contain a concise but reasonably expressive synonym for your
+      algorithm. It must not contain white spaces because it will be prefixed by two dashes ``\texttt{--}''
+      and used as a command-line parameter that tells \texttt{pgsolver} to use your algorithm.
+\item The third one is a string which contains an even shorter synonym for your algorithm. It will be
+      prefixed by a single dash symbol ``\texttt{-}'' and used as a command-line parameter for \texttt{pgsolver}
+      with the same effect.
+\item The fourth argument is again a string which contains a description of what \texttt{pgsolver} does
+      when given any of the the command-line parameters derived from the second or third argument.
+\end{itemize}
+After compilation, called \texttt{bin/pgsolver --help} should result in output containing the following
+lines.
+\begin{verbatim}
+PGSolver Collection Ver. 3: Parity Game Solver
+Authors: Oliver Friedmann and Martin Lange, University of Munich,
+         2008-2010
+http://www.tcs.ifi.lmu.de/pgsolver
+
+Usage: pgsolver [options] [infile]
+Solves the parity game given in <infile>. If this argument is omitted it
+reads a game from STDIN.
+
+Options are
+  -v <level>
+     sets the verbosity level, valid arguments are 0-3, default is 1
+  ...
+  --detpoly, -dp
+     use the brand-new deterministic polytime algorithm
+\end{verbatim}
+Finally, calling \texttt{bin/pgsolver -dp} or \texttt{bin/pgsolver --detpoly} will solve a parity game
+using your algorithm.
+
+We leave it up to you to find the right bits in the code that you have to edit in order to make
+\texttt{pgsolver} say that you have also contributed to the tool.
+
+
+
+\section{Useful Functions}
+
+When designing a new solver you may need some functionality that other solvers rely on as well. In that
+case there is a good chance that one of the modules already contains the function you are looking for,
+and you do not have to re-implement it. In the following we describe some of the implemented functions
+that are most likely to be useful for solving parity games in general. All path names are relative to
+the subdirectory \texttt{src}, i.e.\ when we speak about module \texttt{Basics} in the \texttt{paritygame}
+directory for example then this can be found in the file \texttt{src/paritygame/basics.ml}.
+
+%\paragraph{Basics Module}
+\subsection{The {\tt Basics} Module}
+
+This module in the subdirectory \texttt{utils} contains only one function at the moment which is used to
+output string messages to \texttt{STDOUT} depending on the configured verbosity level.
+
+\begin{description}
+\itemsep3mm
+\item \verb+val message : int -> (unit -> string) -> unit+ \ \\
+Calling \verb+message v (fun _ -> s)+ outputs the string \verb+s+ on \texttt{STDOUT} if the currently
+set verbosity level is greater or equal than \verb+v+.
+
+\item \verb+val verbosity_level_verbose : verbosity_level+ \ \\
+Predefined verbosity level constant for verbose output (2).
+
+\item \verb+val verbosity_level_default : verbosity_level+ \ \\
+Predefined verbosity level constant for debug output (3).
+\end{description}
+
+
+\subsection{The {\tt Paritygame} Module}
+
+This module in the \texttt{paritygame} subdirectory contains many useful routines for creating, accessing,
+manipulating, printing, decomposing and generally handling parity games. Some of the most useful functions
+are as follows:
+
+\begin{description}
+\itemsep3mm
+\item \verb+val print_game : paritygame -> unit+ \ \\
+Calling \verb+print_game game+ prints game on \texttt{STDOUT} s.t.\ it could be parsed again.
+
+\item \verb+val pg_max_prio : paritygame -> int+ \ \\
+Calling \verb+pg_max_prio game+ returns the greatest priority occurring in the \verb+game+.
+
+\item \verb+val pg_min_prio : paritygame -> int+ \ \\
+Calling \verb+pg_min_prio game+ returns the least priority occurring in the \verb+game+.
+
+\item \verb+val pg_max_prio_for : paritygame -> int -> int+ \ \\
+Calling \verb+pg_max_prio_for game player+ returns the greatest reward for \verb+player+ occurring in the \verb+game+.
+
+\item \verb+val pg_get_index : paritygame -> int+ \ \\
+Calling \verb+pg_get_index game+ returns the index of the \verb+game+.
+
+\item \verb+val pg_remove_nodes : paritygame -> int list -> unit+ \ \\
+Calling \verb+pg_remove_nodes game node_list+ removes all nodes specified in \verb+node_list+.
+
+\item \verb+val pg_remove_edges : paritygame -> (int * int) list -> unit+ \ \\
+Calling \verb+pg_remove_edges game edge_list+ removes all edges specified in \verb+edge_list+.
+
+\item \verb+val collect_max_prio_nodes : paritygame -> int list+ \ \\
+Calling \verb+collect_max_prio_nodes game+ returns all nodes with greatest priority.
+
+\item \verb+val subgame_by_list : paritygame -> int list -> paritygame+ \ \\
+Calling \verb+subgame_by_list game nodes+ returns a compressed subgame induced and ordered by the \verb+nodes+-list
+
+\item \verb+val merge_strategies_inplace : strategy -> strategy -> unit+ \ \\
+Calling \verb+merge_strategies_inplace strat1 strat2+ adds all strategy decisions from \verb+strat2+ to
+\verb+strat1+. Throws an \verb+Unmergable+-Exception if the domain of both strategies is not empty, i.e.\ if
+there is an index $i$ such that the values of \verb+strat1+ and \verb+strat2+ at index $i$ are both not
+$-1$.
+
+\item \verb+val merge_solutions_inplace : solution -> solution -> unit+ \ \\
+Calling \verb+merge_solutions_inplace sol1 sol2+ adds all solution informations from \verb+sol2+ to \verb+sol1+.
+Throws an \verb+Unmergable+-Exception if the domain of both solutions is not empty, see above.
+
+\item \verb+val game_to_transposed_graph : paritygame -> int list array+ \ \\
+Calling \verb+game_to_transposed_graph game+ returns the transposed graph associated with the \verb+game+. It is
+stipped of information about nodes' owners and priorities. At index $i$ it contains a list containing the
+identifiers of all predecessors of node $i$ in \verb+game+.
+
+\item \verb+val game_to_graph : paritygame -> int list array+ \ \\
+Calling \verb+game_to_graph game+ returns the graph associated with the \verb+game+. See the former function
+for a description of how graphs are represented.
+
+\item
+\begin{verbatim}
+val strongly_connected_components: paritygame ->
+                                   int list array *
+                                   int array *
+                                   int list array *
+                                   int list
+\end{verbatim}
+Calling \verb+strongly_connected_components game+ decomposes the \verb+game+ into its SCCs. It returns a tuple
+\verb+(sccs, sccindex, topology, roots)+ where \verb+sccs+ is an array mapping each SCC to its list of nodes,
+\verb+sccindex+ is an array mapping each node to its SCC (represented by an integer value), \verb+topology+ is an
+array mapping each SCC to the list of its immediate successing SCCs and \verb+roots+ is the list of SCC having no
+predecessing SCCs.
+
+\item
+\begin{verbatim}
+val attr_closure_inplace: paritygame -> strategy ->
+                          int -> int list -> int list
+\end{verbatim}
+Calling \verb+attr_closure_inplace game strategy player region returns+ the attractor for the given \verb+player+
+and \verb+region+. Additionally all necessary strategy decisions for \verb+player+ leading into the \verb+region+
+are added to \verb+strategy+.
+
+\end{description}
+
+
+\subsection{The {\tt Univsolve} Module}
+
+This module in the \texttt{paritygame} subdirectory contains the universal solver and some possibly helpful functions
+for the universal solving process:
+\begin{description}
+\itemsep3mm
+
+\item
+\begin{verbatim}
+val universal_solve :
+  universal_solve_options -> (paritygame -> solution * strategy) ->
+      paritygame -> solution * strategy
+\end{verbatim}
+Calling \verb+universal_solve verbosity solver game+ starts the universal solving process using \verb+solver+ as a
+backend. It returns the solved game as a pair of \verb+solution+ and \verb+strategy+.
+
+\item
+\begin{verbatim}
+val universal_solve_by_player_solver :
+  universal_solve_options ->
+      (paritygame -> int -> solution * strategy) ->
+      paritygame -> solution * strategy
+\end{verbatim}
+Calling \verb+universal_solve_by_player_solver verbosity player_solver game+ \linebreak starts the universal
+solving process using \verb+player_solver+ as a backend. Instead of a solver backend that solves arbitrary SCCs
+\verb+player_solver+ is supposed to solve an SCC w.r.t.\ a given player, for instance if \verb+player_solver scc 0+
+is called, the backend is supposed to determine whether a node is won by player $0$ (return $0$ for this node) or
+not (return $-1$ for this node). The strategy that is returned by \verb+player_solver+ is only considered w.r.t.\
+the given player. The function returns the solved game as a pair of \verb+solution+ and \verb+strategy+.
+
+\item
+\begin{verbatim}
+val universal_solve_trivial :
+   verbosity_level -> paritygame -> solution * strategy
+\end{verbatim}
+Calling \verb+universal_solve_trivial verbosity game+ starts the universal solving process with a trivial i.e.\
+not-solving backend. This function is legal to be called when \verb+game+ can be completely solved by the universal
+solving process without requiring the backend. Calling \verb+universal_solve_trivial+ returns the solved game as a
+pair of \verb+solution+ and \verb+strategy+.
+
+\item
+\begin{verbatim}
+val compute_winning_nodes :
+   verbosity_level -> paritygame -> strategy -> int -> int list
+\end{verbatim}
+Calling \verb+compute_winning_nodes verbosity game strategy player+ considers \linebreak the subgame of \verb+game+ w.r.t.\
+the \verb+strategy+ decisions for \verb+player+; the strategy is assumed to be total w.r.t.\ \verb+player+. It
+returns the list of nodes \verb+player+ wins on the game following \verb+strategy+.
+\end{description}
+In all these cases the argument \verb+verbosity+ is used to determine whether or not statistics should be printed
+at the end.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

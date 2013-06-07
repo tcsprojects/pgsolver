@@ -1,0 +1,71 @@
+\section{Local vs.\ Global Solvers}
+
+The problem of \emph{solving} a parity game $G = (V,V_0,V_1,E,\Omega)$ is, roughly speaking, to determine
+which of the players has a winning strategy for that game. However, this does not take starting nodes into
+account. In order to obtain a well-defined problem, this is refined in two ways.
+
+The problem of solving the parity game $G$ \emph{globally} is to determine, for \emph{every} node $v \in V$
+whether $v \in W_0$ or $v \in W_1$. The problem of solving $G$ \emph{locally} is to determine for a
+\emph{given} $v \in V$ whether $v \in W_0$ or $v \in W_1$ holds. In addition, we require a \emph{solver}
+to compute (partial) winning strategies in the following sense: a local solver should return one strategy
+that is a winning strategy for player $i$ if $v \in W_i$ for the given input node $v$. A global solver
+should return two strategies, one for each player s.t.\ player $i$ wins exactly on the nodes $v \in W_i$
+if he/she plays according to the strategy computed for her.
+
+Clearly, the local and global problem are interreducible, the global one solves the local one for free,
+and the global one is solved by calling the local one $|V|$ many times. But neither of these indirect
+methods is particularly clever. Thus, there are algorithms for the global, and other algorithms for the
+local problem. We focus on the global problem here, but also use local solvers. In that case we expect
+them to determine for \emph{at least} the given node $v$ to which winning set it belongs but possibly and
+preferably also for other nodes. These methods can then be used to solve the global problem by calling
+the local algorithm \emph{at most} $|V|$ many times.
+
+Suppose $V = \{v_0,\ldots,v_n\}$. Then one can solve $G$ globally using a local solver $A$ as follows.
+Start $A$ with starting node $v_0$. It will return two (possibly empty) winning sets $W'_0$ and $W'_1$.
+In any case, we will have $W'_0 \cap W'_1 = \emptyset$, but not necessarily $W'_0 \cup W'_1 = V$. Let
+$W' := V \setminus (\attr{}{0}{W'_0} \cup \attr{}{1}{W'_1})$. Then taking out all nodes in $W'$ from $G$
+will result in a total parity game again by two applications of Lemma~\ref{lem:minusattr} and the fact
+that $\attr{}{0}{W'_0} \cap \attr{}{1}{W'_1} = \emptyset$. Let $G'$ be this game. Then the winning positions
+for player $i$ in $G$ are $\attr{}{i}{W'_i}$ plus the winning positions for him/her in $G'$. Since $G'$
+will be smaller than $G$ this can be used iteratively or recursively, to compute the entire $W_0$ and $W_1$.
+
+The winning strategies can equally be assembled to a winning strategy $\sigma$ for player $i$. Let
+$\sigma'$ be player $i$'s winning strategy on the subgame $G'$, $\alpha$ be his/her attractor strategy
+for reaching $W'_i$, and $\eta$ be the strategy that guarantees him/her to win on $W'_i$. Then define
+\begin{displaymath}
+\sigma(v) \enspace := \enspace
+\begin{cases}
+\eta(v) \enspace, &\mbox{if } v \in W'_i \\
+\alpha(v) \enspace, &\mbox{if } v \in \attr{}{i}{W'_i} \setminus W'_i \\
+\sigma'(v) \enspace, &\mbox{if } v \mbox{ is a node in } G' \\
+\mbox{anything} & \mbox{otherwise}
+\end{cases}
+\end{displaymath}
+The following theorem provides correctness of this construction. 
+
+\begin{proposition}
+Let $G = (V,V_0,V_1,E,\Omega)$ be a parity game, let $W_i$ be the winning set of player $i$ and 
+$i \in \{0,1\}$. Player $i$ has a positional strategy $\sigma$ for $G$ s.t. $\sigma$ is a positional 
+winning strategy for $G$ starting in any node $v \in W_i$.
+\end{proposition}
+
+To see that this holds let $\sigma_v$ be positional winning strategies for $G$ starting in $v$ for each node 
+$v \in W_i$ (which have to exist by the former theorem). We assume all nodes $v \in W_i$ to be ordered 
+w.r.t.\ a well-ordering $<$. A positional strategy $\sigma$ winning from each node $v \in W_i$ can be 
+defined as follows:
+\begin{displaymath}
+\sigma: v \in W_i \cap V_i \mapsto \sigma_{\min_{<} \{u \in W_i \mid v \in dom(\sigma_u)\}} (v)
+\end{displaymath}
+To see that $\sigma$ indeed is a positional winning strategy for $G$ starting in any node $v \in W_i$ let 
+$v_0 v_1 \ldots$ be a $\sigma$-conforming play with $v_j \in W_i$ for all $j \in \Nat$. Since $<$ is a 
+well-ordering $\sigma$ finally simulates the strategy of $\sigma_u$ for some $u \in W_i$ and thus player 
+$i$ is wins this play.
+
+
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

@@ -1,0 +1,349 @@
+\section{Implemented Algorithms}
+
+We shortly describe the algorithms that are implemented in \pgsolver. The aim is 
+not to give a complete description of these algorithms.
+For details and an account of the theory behind them please follow the literature.
+We just give an idea of how these algorithms work, in order to be able to name
+implementation details and the optimisations that are carried out.
+%  Note that
+% they are all used as a backend to the universal solver only, i.e.\ they always
+% get given a parity game consisting of a single strongly connected component with
+% at least two different priorities and proper choices by both of the players.
+
+For the terms describing the asymptotic time and space complexities of these
+algorithms we introduce the convention that $n$ denotes the number of nodes
+in a game, $e$ denotes the number of edges, and $d$ denotes the number of
+priorities.
+
+\subsection{The Recursive Algorithm}
+
+This algorithm falls out of the constructive determinacy proof for parity games
+due to Zielonka. It decomposes the game at hand to smaller ones recursively by
+simultaneous induction on the number of priorities and the number of nodes in the
+game. In the base cases, if the game only has one node or one priority, the winner
+and corresponding strategy can easily be obtained, in the latter case as a random
+strategy for example. In the other cases a winning strategy can be assembled out of
+strategies for smaller subgames and an attractor strategy for one of the players
+reaching the set of nodes with maximal priority in the game.
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Recursive Algorithm)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & W.~Zielonka\\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{TCS::Zielonka1998} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Decomposition into subgames with recursion on number
+                              of nodes and priorities \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $\mathcal{O}(e \cdot n^d)$ \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(e \cdot n)$ \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  \end{tabular}
+\end{center}
+
+
+% \subsection{The Recursive Preservation Algorithm}
+% This algorithm is inspired by the recursive algorithm due to Zielonka. First it determines the set of nodes
+% with greatest priority in the game. It removes the attractor of this set and determines recursively the
+% winning sets of the remaining game. But instead of throwing away the winning set of one of the players we
+% rescue as many dominions as possible by determining on which nodes the player still wins. This does not affect 
+% the worst-case complexities compared to the original recursive algorithm.
+% \begin{center}
+  % \begin{tabular}{|l|p{8cm}|}
+    % \hline
+    % \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Recursive Preservation Algorithm)} \\ \hline\hline
+    % \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & O.~Friedmann\\ \hline
+% %    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{TCS::Zielonka1998} \\ \hline
+    % \rule[-8mm]{0mm}{13mm}{\bf Short description} & Decomposition into subgames with recursion on number
+                              % of nodes and priorities by trying to keep as much computed information as possible\\ \hline
+    % \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $\mathcal{O}(e \cdot n^d)$ \\ \hline
+    % \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(e \cdot n)$ \\ \hline
+% %    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  % \end{tabular}
+% \end{center}
+
+
+\subsection{The Local Model Checking Algorithm}
+
+The only algorithm solving parity games locally in our collection is the $\mu$-calculus model checker
+due to Stevens and Stirling. Since a parity game can be regarded as the product of an unknown transition
+system and an unknown $\mu$-calculus formula (even though there may not exists such factors), this algorithm
+can also be used to solve parity games. It basically explores a game depth-first and whenever it reaches a 
+cycle it stops, storing the node starting the cycle along with a cycle progress measure as an \emph{assumption} 
+for the cycle-winning player. Then, the exploration is backtracked in the sense that if the losing player could 
+have made other moves they are again explored depth-first. If this leads to a cycle-win for the other player, the 
+whole process starts again, now with respect to the other player. Whenever the backtracking finally leads to the 
+starting node of a cycle the node is registered as a \emph{decision} for the player which basically can be seen 
+as being a preliminary winning node for the respective player. Additionally, if there are assumptions of the other 
+player for the respective node, these assumptions are dropped, and all depending assumptions and decisions are 
+invalidated.
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Model Checking Algorithm)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & P.~Stevens and C.~Stirling\\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{StevensStirling98} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Exploring the game depth-first, detecting cycles and backtracking subsequently for other possible moves \\ \hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & not given in the literature  \\ \hline
+%     \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & not given in the literature  \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  \end{tabular}
+\end{center}
+There are no sensible estimations on the worst-case time and space complexities of this algorithm in the
+literature.
+
+\subsection{The Strategy Improvement Algorithm}
+
+The strategy improvement algorithm due to Jurdzi{\'n}ski and V\"oge picks a strategy for one of the two players, say for player 0, and computes a valuation of the strategy-induced subgame. This valuation is used to select a new strategy for player 0 by choosing transitions from player 0 choice points maximizing the valuation for the respective target node.
+
+The process of valuating the current strategy and subsequently picking a new one is iterated until all transitions of the new strategy are not assigned better valuations than the transitions of the former strategy. The final valuation is then used to infer winning sets and winning strategies for both players.
+
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Strategy Improvement Algorithm)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & M.~Jurdzi{\'n}ski and J.~V\"oge\\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{conf/cav/VogeJ00,SchVog00} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Iteratively improves an initialization strategy until it satisfies a winning-strategy-predicate \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $\mathcal{O}(2^e \cdot n \cdot e)$ \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(n^2 + n \cdot \log d + e)$  \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  \end{tabular}
+\end{center}
+
+
+\subsection{The Optimal Strategy Improvement Method}
+This strategy improvement algorithm due to Schewe guarantees to select, in each improvement step, an optimal combination of local strategy modifications. The estimation produced in each iteration step are used to infer winning regions along with winning strategies for both players.
+
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Optimal Strategy Improvement Method)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & S. Schewe\\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{conf/csl/Schewe08} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Iteratively improves an estimation until a fixed point is reached \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $\mathcal{O}(e \cdot (\frac{n+d}{d})^d \cdot \log(\frac{n+d}{d}))$ \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(n^2)$  \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  \end{tabular}
+\end{center}
+
+
+\subsection{The Strategy Improvement by Reduction to Discounted Payoff Games}
+This algorithm translates the given parity game to a corresponding discounted payoff games and solves the latter
+by Puri's algorithm. The winning regions as well as winning strategies for the discounted payoff games directly
+correspond to those of the original parity game.
+
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Strategy Improvement for DPGs)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & A.~Puri\\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{purithesis} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Iteratively improves an estimation until a fixed point is reached \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $\mathcal{O}(e \cdot (\frac{n+d}{d})^d \cdot \log(\frac{n+d}{d}))$ \\ \hline
+    %\rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(n^2)$  \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  \end{tabular}
+\end{center}
+
+\subsection{Probabilistic Strategy Improvement}
+A probabilistic strategy iteration method that has an subexponential upper bound on the number of expected iterations
+that are required to solve the game.
+
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Probabilistic Strategy Improvement)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & H.~Bj{\"o}rklund and S.~Vorobyov \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{BjoerklundVorobyov/2007} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Iteratively improves an estimation until a fixed point is reached \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $\mathcal{O}(e \cdot (\frac{n+d}{d})^d \cdot \log(\frac{n+d}{d}))$ \\ \hline
+    %\rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(n^2)$  \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  \end{tabular}
+\end{center}
+
+\subsection{Probabilistic Strategy Improvement 2}
+Another probabilistic strategy iteration method that has an subexponential upper bound on the number of expected iterations
+that are required to solve the game.
+
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Probabilistic Strategy Improvement 2)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & H.~Bj{\"o}rklund, S.~Sandberg and S.~Vorobyov \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{DBLP:conf/stacs/BjorklundSV03} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Iteratively improves an estimation until a fixed point is reached \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $\mathcal{O}(e \cdot (\frac{n+d}{d})^d \cdot \log(\frac{n+d}{d}))$ \\ \hline
+    %\rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(n^2)$  \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  \end{tabular}
+\end{center}
+
+\subsection{Local Strategy Improvement}
+A local version of the strategy iteration paradigm.
+
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Local Strategy Improvement)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & O.~Friedmann and M.~Lange \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{DBLP:conf/stacs/BjorklundSV03} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Iteratively improves an estimation until a fixed point is reached \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $\mathcal{O}(e \cdot (\frac{n+d}{d})^d \cdot \log(\frac{n+d}{d}))$ \\ \hline
+    %\rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(n^2)$  \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  \end{tabular}
+\end{center}
+
+\subsection{The Small Progress Measures Algorithm}
+
+The existence of a winning strategy for either of the players can be characterised be a condition
+that is local to the nodes of the parity game. Each node carries a tuple of values, and those values
+have to be larger than one or all of the values in successor nodes depending on the own of the node
+and its priority. It can be shown that the values in a node can be bounded by a number depending on the
+nodes reachable from the one at hand.
+
+Jurdzi{\'n}ski suggest to find these values iteratively starting with 0 everywhere and increasing
+them whereever necessary to respect their relation. Non-existence of a winning strategy on certain parts
+of the game is found when the iteration tries to increase values beyond their pre-computed maxima.
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Small Progress Measures Algorithm)}
+                    \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & M.~Jurdzi{\'n}ski \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{Jurdzinski/00} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Iteratively increase lexicographically ordered tuples
+                              \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $\mathcal{O}(d\cdot e \cdot (\frac{n}{d})^{d/2})$ \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(d\cdot n \cdot \log n)$ \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & tight computation of maximal values \\ \hline
+  \end{tabular}
+\end{center}
+The performance of the algorithm depends very much on a good approximation of the maximal values in
+these tuples since this directly affects the maximal running time. Suppose this algorithm is used to
+find a winning strategy for player $0$. Then each tuple contains a field for every odd priority that
+occurs in the game. The maximal value in the field $p$ of the tuple at node $v$ for some odd priority $p$
+is 1 plus the number of nodes of priority $p$ in the same SCC as $v$ that are reachable from $v$ without
+passing through a node with a priority higher than $p$.
+
+Our implementation performs two iterations -- one for each player. Note that the original
+exposition of the small progress measures algorithm allows to compute the winning region and a strategy
+for one of the players. Clearly, the winning region for the other player can easily be inferred from this
+but his/her strategy cannot. One possibility would be to rerun the algorithm on the winning region for the
+other player measuring the progress for him/her. Another possibility is to iterate the
+progress measures for both players in all nodes right away from the beginning.
+
+
+\subsection{The Small Progress Measures Reduction to SAT}
+
+Since solving parity games is known to be in NP there must be a polynomial reduction to SAT, the
+satisfiability problem for propositional logic. Such a reduction is basically given by the small
+progress measures algorithm. Instead of iteratively computing values one lets a SAT solver find
+them. Since these values can be bounded, there is a finite number of bits representing these numbers,
+and these bits can be seen as propositional variables for the SAT solver. The necessary relations
+between the numbers are only less-than and less-than-or-equals, and it is not difficult to write down
+propositional formulas which describe such relations between natural numbers in terms of constraints
+on their bits.
+
+Again, this is supposed to be a \emph{global} parity game solver. Hence, it has to report winning
+regions and strategies for both players. As said above, Jurdzi{\'n}ski's original characterisation of these
+in terms of small progress measures caters for one of the players only, and therefore needs space linear in
+$\lceil\frac{d}{2}\rceil$. In order to obtain strategies for both players one has to use the algorithm
+twice. The same holds for the symbolic execution by a reduction to SAT. The obvious choice here is to
+simply create constraints for two sets of progress measures. But then the reduction technically does not
+map into the satisfiability problem for propositional logic because the resulting formula is always
+satisfiable, and a satisfying variable assignment encodes both the partition into winning regions and the
+positional strategies.
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Small Progress Measures Reduction to SAT)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & M.~Lange \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{lange-gdv05} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Symbolic encoding in propositional logic of the
+                               small progress measure algorithm \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $\mathcal{O}(e\cdot d)$ + running time of the SAT solver \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(e\cdot d)$ + space needed by the SAT solver  \\ \hline
+  \end{tabular}
+\end{center}
+% The SAT solver that is currently used is the library version of \textsc{zChaff} \cite{Moskewicz2001a},
+% a high-performance and state-of-the-art program for that purpose.
+
+
+
+
+\subsection{The Direct Reduction to SAT}
+
+This formalises in propositional logics the existing of strategies and requires them to be winning
+by checking that every cycle which is reached by following the strategy for one of the players sees
+has a greatest priority which is good for that player. As with the previous reduction, the resulting
+formula is always satisfiable.  
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Direct Reduction to SAT)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & O.~Friedmann \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{lange-gdv05} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Symbolic encoding in propositional logic of the
+                               a direct predicate \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $\mathcal{O}(n^3)$ + running time of the SAT solver \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(n^3)$ + space needed by the SAT solver  \\ \hline
+  \end{tabular}
+\end{center}
+
+
+
+
+\subsection{The Dominion Decomposition Algorithm}
+This algorithm is the first deterministic subexponential algorithm for parity games. It basically refines
+the recursive algorithm due to Zielonka. First, one searches for small ($\leq \sqrt{2 \cdot n}$) dominions
+by simply building each small subset, checking whether it is closed w.r.t.\ player 0 or player 1 and if so
+checking whether the closed small subset is an $i$-dominion by using the original recursive algorithm. If
+it actually is a dominion the attractor is built and the complement subgame recursively solved. If there is
+no small dominion the algorithm switches to the original recursive algorithm (and searches for smaller
+dominions in subsequent recursive calls).
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Dominion Decomposition Algorithm)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & M.~Jurdzi{\'n}ski, M. Paterson, and U. Zwick\\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{JPZ06} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Brute-force search for small dominions with subsequent decomposition into subgames with recursion on number of nodes and priorities \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $n^{O(\sqrt{n})}$ \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}(e \cdot n)$  \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  \end{tabular}
+\end{center}
+
+
+
+
+
+
+\subsection{The Big-Step Algorithm}
+This algorithm refines the dominion decomposition algorithm by replacing the brute-force search for small 
+dominions by a restricted run of the small progress measures algorithm. Basically, the sum of the entries 
+in a small progress measure is limited by the size of the largest dominion that is searched for 
+($\sqrt[3]{n^2 \cdot d}$). Hence, the small progress measures algorithm identifies all dominions less or 
+equal to that limit. If there is no small dominion the algorithm switches to the original recursive algorithm 
+(and searches for smaller dominions in subsequent recursive calls).
+\begin{center}
+  \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \multicolumn{2}{l}{\rule[-3mm]{0mm}{8mm}\quad \bf Algorithm \nextalg\ (Big-Step Algorithm)} \\ \hline\hline
+    \rule[-3mm]{0mm}{8mm}{\bf Author(s)} & S. Schewe\\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Literature} & \cite{Schewe/07/Parity} \\ \hline
+    \rule[-8mm]{0mm}{13mm}{\bf Short description} & Small progress measures-based search for small dominions with subsequent decomposition into subgames with recursion on number of nodes and priorities \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Time complexity} & $O(e \cdot n^{\frac{1}{3}d})$ \\ \hline
+    \rule[-3mm]{0mm}{8mm}{\bf Space complexity} & $\mathcal{O}((e + d \cdot \log n) \cdot n)$  \\ \hline
+%    \rule[-3mm]{0mm}{8mm}{\bf Optimisations} & none \\ \hline
+  \end{tabular}
+\end{center}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

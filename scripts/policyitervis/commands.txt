@@ -1,0 +1,14 @@
+Cunningham Exponential Lower Bound
+	./buildanim.sh "stratimprgen -pg cunninghamexp 3" "-sirrse" animation graphs/cunninghamexptemplate.mp template.tex
+	
+Cunningham Subexponential Lower Bound
+	./buildanim.sh "stratimprgen -pg cunninghamsubexp 3" "-sirrse" animation graphs/cunninghamsubexptemplate.mp template.tex
+	
+Zadeh Exponential Lower Bound
+	./buildanim.sh "stratimprgen -pg zadehexp 3" "-sfse" animation graphs/zadehexptemplate.mp template.tex
+
+Fearnley Subexponential Lower Bound
+	./buildanim.sh "stratimprgen -pg fearnleysubexp 3" "-sm" animation graphs/fearnleysubexptemplate.mp template.tex
+	
+Friedmann Subexponential Lower Bound
+	./buildanim.sh "stratimprgen -pg friedmannsubexp 3" "-sa" animation graphs/friedmannsubexptemplate.mp template.tex	

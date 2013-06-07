@@ -1,0 +1,87 @@
+\documentclass[open=left,twopage=true]{scrreprt}
+
+\usepackage{xspace}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{latexsym}
+\usepackage{pgf}
+\usepackage{pgfarrows}
+\usepackage{ntheorem}
+\usepackage{lscape}
+\usepackage{graphicx}
+\usepackage{epic,eepic}
+
+\input{./makros}
+
+\begin{document}
+
+\begin{titlepage}
+\subject{Report}
+\title{The \pgsolver Collection of Parity Game Solvers \\[2mm] {\large Version 3}}
+\author{Oliver Friedmann \and Martin Lange \\[3mm]
+Institut f\"ur Informatik \\ Ludwig-Maximilians-Universit\"at M\"unchen, Germany}
+\publishers{
+\vspace{2cm}
+\scalebox{0.59}{\includegraphics{graphics/titlegame.ps}}
+\vspace{-2cm}}
+\end{titlepage}
+\maketitle[0]
+
+\tableofcontents
+
+\chapter{Introduction}
+
+\input{./intro}
+
+\chapter{Solving Parity Games}
+\label{chp:pgames}
+
+\input{./tech}
+\input{./locglob}
+\input{./verify}
+\input{./univopt}
+\input{./gensolv}
+\input{./implalg}
+\input{./implheur}
+
+\chapter{User's Guide}
+\label{chp:uguide}
+
+\input{./license}
+\input{./changelog}
+\input{./install}
+\input{./running}
+\input{./specs}
+\input{./display}
+\input{./tools}
+
+\chapter{Benchmarks}
+\label{chp:benchmarks}
+
+\input{./benchmarks}
+%\input{./results}
+
+\chapter{Developer's Guide}
+\label{chp:dguide}
+
+\input{./develop}
+
+%\appendix
+
+%\chapter{New Algorithms}
+%\label{app:newalg}
+
+
+
+
+\bibliographystyle{alpha}
+\bibliography{./literature}
+
+\end{document}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

@@ -1,0 +1,240 @@
+\section{Installation Guide}
+
+\subsection{Obtaining the Relevant Parts}
+
+You can obtain the source code of the \pgsolver library from
+\begin{verbatim}
+    http://www.tcs.ifi.lmu.de/pgsolver
+\end{verbatim}
+Download and unpack the archive.
+\begin{verbatim}
+    ~> tar xzvf pgsolver.tgz
+\end{verbatim}
+% name of the actual archive you have obtained may vary in the version number.
+Unpacking will create a directory \texttt{pgsolver} and various
+subdirectories in it.
+
+In order to compile \pgsolver from source code you will need
+\begin{itemize}
+\item the OCaml compiler; we recommend version 3.09.2 or higher, but earlier versions
+      may just as well be fine. You can get it from
+      \begin{verbatim}
+    http://caml.inria.fr\end{verbatim}
+\item GNU make; we recommend version 3.81 or higher but earlier ones may suffice as well.
+      You can get it from
+      \begin{verbatim}
+    http://www.gnu.org/software/make\end{verbatim}
+\item (optionally) one ore more SAT solvers. Note that this is only necessary if you want
+      \pgsolver to also contain the algorithms relying on SAT solving backends. You can
+      compile it without. Although it should be possible to integrate almost every linkable
+      SAT solver, there are three SAT solver backends that are already supported by
+      \pgsolver:
+
+	\begin{itemize}
+		\item the SAT solver \texttt{zChaff} developed in Princeton. It is available from
+        \begin{verbatim}
+      http://www.princeton.edu/~chaff/zchaff.html\end{verbatim}
+        We recommend version 2007.3.12. Earlier version will probably not suffice.
+
+        \item the SAT solver \texttt{PicoSAT} developed in Linz. It is available from
+        \begin{verbatim}
+      http://fmv.jku.at/picosat\end{verbatim}
+        We recommend version 632. Earlier version will probably not suffice.
+
+        \item the SAT solver \texttt{MiniSat} developed in G\"oteborg. It is available from
+        \begin{verbatim}
+      http://minisat.se\end{verbatim}
+        We recommend the C-version of 1.14. Other version will probably not work with our interface.
+    \end{itemize}
+
+\item (optionally) a C++ compiler like \texttt{g++} for example. This is only necessary
+      to compile \texttt{zChaff} and the parts of \pgsolver that link it. You can get it
+      from
+      \begin{verbatim}
+    http://gcc.gnu.org\end{verbatim}
+\end{itemize}
+We assume that the OCaml compiler as well as GNU make are installed. A quick installation
+guide for the mentioned SAT solvers is provided below. If you want \pgsolver to contain the
+reductions to SAT you obviously need to install at least one SAT solver before compiling \pgsolver.
+
+\subsection{Compiling \pgsolver}
+
+Now change into the directory created by unpacking the \pgsolver source code.
+\begin{verbatim}
+    ~> cd pgsolver
+\end{verbatim}
+The first (and probably most important) step consists of adjusting the \texttt{Config} files.
+There are two config files, \texttt{./Config.default} and \texttt{./satsolvers/Config.default},
+that have to be edited. It is highly recommended to create a copy of both files with the name \texttt{Config}
+in the respective directory that is to be edited instead of the original versions. The Makefile
+checks whether a customized configuration file named \texttt{Config} exists and if so it is used
+instead of the default versions.
+
+Both configuration files start with declarations about where to find all the programs necessary to build
+the executable \pgsolver.
+\begin{verbatim}
+    TAR=tar
+    OCAMLOPT=ocamlopt
+    OCAMLLEX=ocamllex
+    OCAMLYACC=ocamlyacc
+    CPP=g++
+    OCAMLOPTCPP=g++
+\end{verbatim}
+Change these lines to point to the full path in which the OCaml compiler, lexer and parser
+generator are installed unless they are in the current PATH. The lines pointing to the C++
+compiler only need to be configured if there is at least one sat solver that is to be linked
+with \pgsolver.
+
+You need to give the full path of you OCaml installation directory.
+\begin{verbatim}
+    OCAML_DIR=/usr/lib/ocaml
+\end{verbatim}
+
+
+For each supported SAT solver, there are some lines that need to be configured in order
+to use the include the respective SAT solver.
+\begin{verbatim}
+    WITH_RESPECTIVE_SAT_SOLVER=YES
+    PATH_TO_OBJECT_FILE=...
+\end{verbatim}
+If you do want to have support for the reductions to SAT then make sure that at least one
+SAT solver is properly configured and enabled.
+
+Once you have adjusted both \texttt{Config} files accordingly you can now compile \pgsolver
+by simply calling the make program.
+\begin{verbatim}
+    ~/pgsolver> make
+\end{verbatim}
+This is the same as
+\begin{verbatim}
+    ~/pgsolver> make pgsolver
+\end{verbatim}
+After successful compilation, the executable can be found as \texttt{pgsolver} in the
+subdirectory \texttt{bin}.
+
+You can delete all files that have been created during the compilation process by running
+\begin{verbatim}
+    ~/pgsolver> make clean
+\end{verbatim}
+If you ever encounter error message like
+\begin{verbatim}
+    The files obj/paritygame.cmi and obj/transformations.cmi
+    make inconsistent assumptions over interface Paritygame
+\end{verbatim}
+during the compilation process, which should only occur when the source code has been changed, then
+use this to get rid of them.
+
+If you also want to have executable programs that create the benchmarks described in the next
+chapter as well as some possibly useful tools that massage parity games then run
+\begin{verbatim}
+    ~/pgsolver> make generators
+\end{verbatim}
+and
+\begin{verbatim}
+    ~/pgsolver> make tools
+\end{verbatim}
+Finally,
+\begin{verbatim}
+    ~/pgsolver> make all
+\end{verbatim}
+is a synonym for \verb#make pgsolver; make generators; make tools#.
+
+
+\subsection{Integrating SAT solvers}
+
+\pgsolver currently supports three backend SAT solvers, namely \texttt{zChaff}, \texttt{PicoSAT} and
+\texttt{MiniSat}. It should be also possible to integrate other SAT solvers; see the Developer's Guide for
+more information on that subject. In order to integrate one of them into \pgsolver, you need to follow these
+steps:
+\begin{enumerate}
+\item Download and compile the respective SAT solver.
+\item Adjust the \texttt{satsolvers/Config} file s.t.\ the usage of the respective SAT solver is enabled and all required links point to the correct target.
+\item Remove the current compilation of \pgsolver: \verb#make cleanall#.
+\item Recompile \pgsolver: \verb#make all#.
+\end{enumerate}
+
+
+\subsubsection{Compiling \texttt{zChaff}}
+
+Obtain the source code of \texttt{zChaff} (we recommend at least version 2007.3.12), unpack it and
+consult the included \texttt{README} file for instructions on how to compile it. If you are lucky
+then a simple
+\begin{verbatim}
+    ~/zchaff> make
+\end{verbatim}
+will do the job.
+
+% \hide{
+% Check in the included \texttt{Makefile} or via the output produced during compilation which C++ compiler
+% is being used. For example, in \texttt{Makefile} there should be a line of the form
+% \begin{verbatim}
+%     CC = g++ -Wall
+% \end{verbatim}
+% which tells you that the compiler used to build \texttt{zChaff} is \texttt{g++}. You will have to make
+% sure that this is also the value of the variable \texttt{CPP} in \pgsolver's \texttt{Makefile}. Otherwise
+% \texttt{zChaff} cannot be linked with the modules of the \pgsolver library.
+% }
+
+The compilation of \texttt{zChaff} produces an executable \texttt{zchaff}. However, \pgsolver uses the
+library version which can be linked into the program directly. This is usually called \texttt{libsat.a}
+and is also produced by \texttt{zChaff}'s compilation process. Make sure that the variable
+\verb#ZCHAFFLIB# in \pgsolver's \texttt{satsolvers/Config} file points to the directory in which \texttt{libsat.a}
+can be found, for example
+\begin{verbatim}
+    #######
+    # ZCHAFF
+    #######
+    ZCHAFFLIB=/usr/local/lib/zchaff-2007-3-12/libsat.a
+    WITH_ZCHAFF=YES
+\end{verbatim}
+
+
+\subsubsection{Compiling \texttt{PicoSAT}}
+
+Obtain the source code of \texttt{PicoSAT} (we recommend at least version 632), unpack it and
+consult the included \texttt{README} file for instructions on how to compile it. Usually,
+\begin{verbatim}
+    ~/picosat> ./configure && make
+\end{verbatim}
+will do the job.
+
+The compilation of \texttt{PicoSAT} produces an executable \texttt{picosat}. However, \pgsolver uses the
+object files which can be linked into the program directly. Make sure that the variable
+\verb#PICOSATDIR# in \pgsolver's \texttt{satsolvers/Config} file points to the directory in which the object files
+can be found, for example
+\begin{verbatim}
+    #######
+    # PICOSAT
+    #######
+    PICOSATDIR=/usr/local/lib/picosat-632
+    WITH_PICOSAT=YES
+\end{verbatim}
+
+
+\subsubsection{Compiling \texttt{MiniSat}}
+
+Obtain the source code of \texttt{MiniSat} (we recommend the C-version 1.14), unpack it and
+consult the included \texttt{README} file for instructions on how to compile it. Usually,
+\begin{verbatim}
+    ~/minisat/core> make
+\end{verbatim}
+will do the job.
+
+The compilation of \texttt{MiniSat} produces an executable \texttt{minisat}. However, \pgsolver uses the
+object files which can be linked into the program directly. Make sure that both
+\verb#MINISAT# variables in \pgsolver's \texttt{satsolvers/Config} file point to the respective directories, for example
+\begin{verbatim}
+    #######
+    # MINISAT
+    #######
+    MINISATDIR=/usr/local/lib/minisat/core
+    MINISATMTL=/usr/local/lib/minisat/mtl
+    WITH_MINISAT=YES
+\end{verbatim}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

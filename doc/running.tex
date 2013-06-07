@@ -1,0 +1,206 @@
+\section{Running \pgsolver}
+
+\subsection{Invocation}
+
+A successful compilation produces an executable binary called \texttt{pgsolver} which, unless
+specified otherwise in \texttt{Makefile}, resides in the subdirectory \texttt{bin}. Type
+\begin{verbatim}
+    ~/pgsolver> bin/pgsolver --help
+\end{verbatim}
+or
+\begin{verbatim}
+    ~/pgsolver> bin/pgsolver -help
+\end{verbatim}
+for a list of command-line options and a description of the command-line parameters that the
+program expects.
+
+The specification of the parity game to be solved -- cf.\ Sect.~\ref{sec:specs} -- can either be
+given in a file or through \texttt{stdin}. The latter case is the default, and to switch to the
+former one only needs to give the name of the file including the specification as a command-line
+argument.
+\begin{verbatim}
+    ~/pgsolver> bin/pgsolver tests/test1.gm
+\end{verbatim}
+
+\subsection{Command-Line Parameters}
+
+\pgsolver's behaviour can be changed through command-line parameters. In particular, you can determine
+the algorithm that is used for solving, specify whether or not you want to view the result in text
+mode or graphically, etc. Command-line parameters can be given in any order, although some are
+conflicting and in that case the latter overrides the former; for example when you specify more than
+one algorithm that should be used for solving. The currently understood command-line parameters are:
+\begin{description}
+\itemsep3mm
+\item[\nonterminal{filename}] \ \\
+   Tells \texttt{pgsolver} to look for the specification of the parity game to solve in the file
+   \nonterminal{filename}.
+
+\item[{\tt  -v \nonterminal{level}}] \ \\
+   Sets the verbosity level, valid arguments are $0$--$3$, the default is 1. With verbosity level $0$,
+   \texttt{pgsolver} will be very humble and not bother \texttt{stdout} with its pathetic goobledigook.
+   With verbosity level 1, it will tell you what it does and what the winning regions and strategies
+   are. With verbosity level 2, it will tell you a bit more, but this very much depends on which
+   algorithm is chosen for solving etc. It may for example tell you something it has found out about the
+   SCC structure or priority distribution in the game. Verbosity level 3 is for debugging purposes. Again,
+   this very much depends on the solving algorithm.
+
+\item[{\tt --quiet}] \ \\
+   Causes the program to be quiet, same as \texttt{-v 0}.
+
+\item[{\tt --verbose}] \ \\
+   Causes the program to be verbose, same as \texttt{-v 2}.
+
+\item[{\tt --debug}] \ \\
+   Causes the program to be very verbose, same as \texttt{-v 3}.
+
+\item[{\tt -d \nonterminal{filename}}] \ \\
+   Tells \texttt{pgsolver} to open the file \nonterminal{filename} for writing and print into it the
+   \texttt{dot}-code of the parity game as a graph, see also Sect.~\ref{sec:viewing}. If the game has
+   been solved during this invocation then the graphical presentation will display the winning regions
+   and strategies. You can use option \texttt{-n} in combination with this one to display a pure parity
+   game, i.e.\ without the winning information.
+
+% \item[{\tt -f}] \ \\
+%    Causes \texttt{pgsolver} to print the whole game on \texttt{stdout} again. The format is the one
+%    that \texttt{pgsolver} would expect as input.\TODO{Hat das einen besonderen Sinn?}
+
+% \item[{\tt --sanitycheck}]  \enspace or {\tt -sc} \\
+%   Checks whether the given parity game is well-formed, meaning that it particularly does not contain any edge leading to inaccessible nodes.
+
+\item[{\tt -n}] \ \\
+   Tells \texttt{pgsolver} to suppress solving. This can be used to simply draw a parity game in
+   \texttt{dot}-format without the information about winning regions and strategies. This is a default
+   selection, i.e.\ \pgsolver will not solve a game unless you specify explicitly which algorithm it
+   should use. See below for the command-line parameters that let you do so.
+
+\item[{\tt --disableglobalopt}]  \enspace or {\tt -dgo} \\
+   Tells \texttt{pgsolver} to completely disable any global optimisations. Global optimisation is enabled by default.
+
+\item[{\tt --disableuselesscycles}]  \enspace or {\tt -dul} \\
+   Tells \texttt{pgsolver} to disable to automatic deletion of useless self cycles. This is a global optimisation and is enabled by default.
+
+\item[{\tt --disableusefulcycles}]  \enspace or {\tt -duf} \\
+   Tells \texttt{pgsolver} to disablee the automatic utilisation of useful self cycles. This is a global optimisation and is enabled by default.
+
+\item[{\tt --disablesccdecomposition}]  \enspace or {\tt -dsd} \\
+   Tells \texttt{pgsolver} to decompose the game into strongly connected components. This is enabled by default.
+
+\item[{\tt --disablelocalopt}]  \enspace or {\tt -dlo} \\
+   Tells \texttt{pgsolver} to completely disable any local optimisations. Local optimisation is enabled by default.
+
+\item[{\tt --enableprioprop}]  \enspace or {\tt -pp} \\
+   Tells \texttt{pgsolver} to enable priority propagation. This is a local optimisation and is disabled (!) by default.
+
+\item[{\tt --disablepriocomp}]  \enspace or {\tt -dcp} \\
+   Tells \texttt{pgsolver} to disable priority compression. This is a local optimisation and is enabled by default.
+
+\item[{\tt --disablespecialgames}]  \enspace or {\tt -dsg} \\
+   Tells \texttt{pgsolver} to completely disable any algorithms solving special instances. This is enabled by default.
+
+\item[{\tt --disablesingleparity}]  \enspace or {\tt -dpa} \\
+   Tells \texttt{pgsolver} to disable the automatic solving of single parity instances. This is a special instance solving optimisation and is enabled by default.
+
+\item[{\tt --disablesingleplayer}]  \enspace or {\tt -dpl} \\
+   Tells \texttt{pgsolver} to disable the automatic solving of single player instances. This is a special instance solving optimisation and is enabled by default.
+
+\item[{\tt --verify}]  \enspace or {\tt -ve} \\
+   This causes \texttt{pgsolver} to perform, after solving, an additional check that the reported winning
+   strategies are correct; useful for finding bugs in new algorithm implementations.
+
+\item[{\tt --verify2}]  \enspace or {\tt -ve} \\
+   Same as {\tt --verify} but use a different verification method; useful for finding bugs in new
+   algorithm implementations if you have used \texttt{--verify} but want to be really sure.
+
+\item[{\tt --verify3}]  \enspace or {\tt -ve} \\
+   Still the same as {\tt --verify} or {\tt --verify2} but uses yet again a different verification method;
+   useful for finding bugs in new algorithm implementations if you have used \texttt{--verify} and
+   \texttt{--verify2} but generally have issues with trust.
+
+\item[{\tt --justheatCPU}] \enspace or {\tt -jh}  \\
+   On large parity games, printing the winning information can take a long time because of the bottleneck
+   \texttt{stdout}. This option turns the printing of that information off. Useful if one is interested in
+   running times only for instance.
+
+\item[{\tt --changesat \nonterminal{satsolver}}] \enspace or {\tt -cs \nonterminal{satsolver}}  \\
+   Selects the SAT solver backend that is to be used. Only affects parity game solving algorithms that
+   depend on SAT solving. If there are less than two SAT solvers linked into \pgsolver, this parameter
+   is disabled.
+
+\item[{\tt --viasat}] \enspace or {\tt -vs} \\
+   Use the small progress measure encoding for propositional logic and a reduction to SAT due to Lange.
+   Also see the command-line parameters that select the SAT solver to be used.
+   This parameter is only available if there is at least one SAT solver linked into \pgsolver.
+
+\item[{\tt --stratimprove}] \enspace or {\tt -si} \\
+   Use the strategy improvement algorithm due to Jurdzi{\'n}ski and V\"oge.
+
+\item[{\tt  --optstratimprov}] \enspace or {\tt -os} \\
+   Use the strategy improvement algorithm due to Schewe.
+
+\item[{\tt --smallprog}] \enspace or {\tt -sp} \\
+   Use the small progress measure algorithm due to Jurdzi{\'n}ski.
+
+\item[{\tt --satsolve}] \enspace or {\tt -ss} \\
+   Tells \texttt{pgsolver} to encode a direct NP predicate that is to be solved due To Friedmann.
+   This parameter is only available if there is at least one SAT solver linked into \pgsolver.
+
+\item[{\tt --recursive}] \enspace or {\tt -re} \\
+   Use the recursive algorithm due to Zielonka.
+
+\item[{\tt --modelchecker}] \enspace or {\tt -mc}  \\
+   Use the $\mu$-calculus model checker due to Stevens and Stirling.
+
+\item[{\tt --dominiondec}] \enspace or {\tt -dd} \\
+   Use the dominion decomposition algorithm due to Jurdzi{\'n}ski, Paterson, and Zwick.
+
+\item[{\tt --bigstep}] \enspace or {\tt -bs} \\
+   Use the big-step procedure due to Schewe.
+
+\item[{\tt --guessstrategy}] \enspace or {\tt -gs} \\
+   Use the strategy guessing heuristic.
+
+\end{description}
+
+
+
+\subsection{Output}
+
+An invocation of
+\begin{verbatim}
+    ~/pgsolver> bin/randomgame 10 10 2 4 | bin/pgsolver --recursive
+\end{verbatim}
+will typically create output on \texttt{stdout} like this:
+\begin{verbatim}
+    PGSolver Collection Ver. 3: Parity Game Solver
+    Authors: Oliver Friedmann and Martin Lange, University of Munich, 
+    2008-2010
+    http://www.tcs.ifi.lmu.de/pgsolver
+
+    Parsing ..................... 0.00 sec
+    Chosen solver `recursive' ..... 0.00 sec
+
+    Player 0 wins from nodes:
+      {0,2,5,6,7,8}
+    with strategy
+      [0->6,2->2,5->0,6->2,7->7,8->8]
+
+    Player 1 wins from nodes:
+      {1,3,4,9}
+    with strategy
+      [1->9,3->9,4->3,9->9]
+\end{verbatim}
+It reports the times it took to parse the input and to solve the game specified in this input
+as well as which solver has been used. Then it reports for both players the sets of winning
+regions in the game as a list of natural numbers (each node's index in the game) in ascending order.
+The positional strategies are reported as a list of pairs of the form $x$\texttt{->}$y$ meaning
+that in node $x$, the player at hand should move to node $y$. This list is also sorted in
+ascending order w.r.t.\ $x$. Furthermore, the set of nodes given as $x$'s in this list is
+exactly the set of nodes belonging to that player.
+
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:
