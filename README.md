@@ -27,6 +27,4 @@ There is one config file, ```./Config.default``` that has to be edited. It is hi
 
 The configuration file starts with declarations about where to find all the programs necessary to build the executable PGSolver. Change these lines to point to the full path in which the OCaml compiler, lexer and parser generator are installed unless they are in the current PATH.
 
-You need to give the full path of you OCaml installation directory.
-
-```OCAML_DIR=/usr/lib/ocaml```
+You need to give the full path of you OCaml installation directory: ```OCAML_DIR=/usr/lib/ocaml```
