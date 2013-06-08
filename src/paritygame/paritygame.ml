@@ -1129,3 +1129,72 @@ module SymbolicParityGame = struct
 
 end;;
 
+
+
+(********************************************************
+ * Building Parity Games                                *
+ ********************************************************)
+
+module type GameNode = 
+  sig
+    type node
+
+    val compare    : node -> node -> int
+
+    val owner      : node -> int
+    val priority   : node -> int
+    val successors : node -> node list
+    val name       : node -> string option
+  end;;
+
+module Build = functor (T: GameNode) ->
+  struct
+
+    module Encoding = Map.Make(
+      struct 
+        type t = T.node 
+        let compare = T.compare 
+      end);;
+
+    module IntSet = Set.Make(
+      struct 
+        type t = int
+        let compare = compare
+      end);;
+
+
+    let codes = ref Encoding.empty
+
+    let next_code = ref 0
+
+
+    let encode v = try
+                     Encoding.find v !codes
+                   with Not_found -> begin
+                                       codes := Encoding.add v !next_code !codes;
+                                       incr next_code;
+                                       !next_code - 1
+                                     end
+
+    let build_from_node v = 
+      let rec iterate acc visited = 
+        function []          -> acc
+               | ((v,c)::vs) -> begin
+                                  if IntSet.mem c visited then
+                                    iterate acc visited vs
+                                  else
+                                    let ws = T.successors v in
+                                    let ds = List.map encode ws in
+                                    iterate ((c, T.owner v, T.priority v, ds, T.name v) :: acc) (IntSet.add c visited) ((List.combine ws ds) @ vs)
+                                  end
+      in
+      let nodes = iterate [] IntSet.empty [(v,encode v)] in
+      let game = pg_create (List.length nodes) in
+      let rec transform = 
+        function []                  -> ()
+	       | ((v,o,p,ws,nm)::ns) -> pg_set_node game v p o (Array.of_list ws) nm;
+                                        transform ns
+      in
+      transform nodes;
+      game
+  end;;

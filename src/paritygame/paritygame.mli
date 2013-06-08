@@ -285,3 +285,26 @@ module SymbolicParityGame : sig
 	val add_node: 'a symbolic_paritygame -> 'a -> int -> int -> 'a array -> string option -> unit
 
 end
+
+
+
+(**************************************************************
+ * Building Parity Games                                      *
+ **************************************************************)
+
+module type GameNode =
+  sig
+    type node
+
+    val compare    : node -> node -> int
+
+    val owner      : node -> int
+    val priority   : node -> int
+    val successors : node -> node list
+    val name       : node -> string option
+  end
+
+module Build: functor (T: GameNode) -> 
+  sig
+    val build_from_node : T.node -> paritygame
+  end

@@ -276,6 +276,132 @@ and the game $G'_5$ by calling
     ~/pgsolver> bin/elevatorverification -u 5
 \end{verbatim}
 
+
+\section{Language Inclusion Between an NBA and a DBA}
+
+Let $n,m \ge 2$, $\Sigma_n = \{a_1,\ldots,a_n\}$ and consider the language $L_{n,m}$ of all words over the alphabet
+$\Sigma_n$ that contain infinitely many occurrences of $(a_i)^m$ for some $i \{ 1,\ldots,n\}$. This language is 
+accepted by the following NBA $\mathcal{A}_{n,m}$.
+\begin{center}
+\begin{tikzpicture}[thick,->,initial text={},every state/.style={shape=ellipse}, node distance=2.3cm]
+  \node[state,initial]   (0)                    {$0$};
+  \node[state]           (1) at ($(0)+(2,2)$)   {$1$};
+  \node[state]           (n1) [right of=1]      {$n{+}1$};
+  \node[state]           (2n1) [right of=n1]    {$2n{+}1$};
+  \node                  (d1) [right of=2n1]    {$\ldots$};
+  \node[state,accepting] (m2n1) [right of=d1]   {$(m{-}2)n{+}1$};
+  \node[state]           (2) at ($(0)+(2,.5)$) {$2$};
+  \node[state]           (n2) [right of=2]      {$n{+}2$};
+  \node[state]           (2n2) [right of=n2]    {$2n{+}2$};
+  \node                  (d2) [right of=2n2]    {$\ldots$};
+  \node[state,accepting] (m2n2) [right of=d2]   {$(m{-}2)n{+}2$};
+  \node[state]           (n) at ($(0)+(2,-2)$)  {$n$};
+  \node[state]           (2n) [right of=n]      {$2n$};
+  \node[state]           (3n) [right of=2n]     {$3n$};
+  \node                  (dn) [right of=3n]    {$\ldots$};
+  \node[state,accepting] (m1n) [right of=dn]   {$(m{-}1)n$};
+
+  \node (ds1) at ($(0)+(2,-.5)$) {$\vdots$};
+  \node (ds2) [right of=ds1] {$\vdots$};
+  \node (ds3) [right of=ds2] {$\vdots$};
+  \node (ds4) [right of=ds3] {};
+  \node ()    [right of=ds4] {$\vdots$};
+
+  \path (0)    edge [out=145,in=125,loop] node [above]                   {$\Sigma_n$} ()
+               edge [out=90,in=180]     node [above,sloped]            {$a_1$}      (1)
+               edge              node [above,sloped]            {$a_2$}      (2)
+               edge [out=270,in=180]             node [above,sloped]            {$a_n$}      (n)
+        (1)    edge              node [above]                   {$a_1$}      (n1)
+        (n1)   edge              node [above]                   {$a_1$}      (2n1)
+        (2n1)  edge              node [above]                   {$a_1$}      (d1)
+        (d1)   edge              node [above]                   {$a_1$}      (m2n1)
+        (2)    edge              node [above]                   {$a_2$}      (n2)
+        (n2)   edge              node [above]                   {$a_2$}      (2n2)
+        (2n2)  edge              node [above]                   {$a_2$}      (d2)
+        (d2)   edge              node [above]                   {$a_2$}      (m2n2)
+        (m2n2) edge [bend left=10]  node [very near start,sloped,below] {$a_2$}      (0)
+        (n)    edge              node [above]                   {$a_n$}      (2n)
+        (2n)   edge              node [above]                   {$a_n$}      (3n)
+        (3n)   edge              node [above]                   {$a_n$}      (dn)
+        (dn)   edge              node [below]                   {$a_n$}      (m1n);
+%        (m1n)  edge              node [near start,sloped,above] {$a_n$}      (0);
+
+  \draw[->] (m2n1) .. controls ($(m2n1)+(-2.3,-1.4)$) and ($(0)+(1.5,2.2)$) .. (0) node [near start,above] {$a_1$};
+  \draw[->] (m1n) .. controls ($(m1n)+(-2.3,1)$) and ($(0)+(2,-2)$) .. (0) node [near start,above] {$a_n$};
+\end{tikzpicture}
+\end{center}
+It is also accepted by the following deterministic B\"uchi automata $\mathcal{B}_{n,m}$.
+\begin{center}
+\begin{tikzpicture}[thick,->,node distance=2.3cm,initial text={},every state/.style={shape=ellipse}]
+  \node[state,initial,accepting] (0)                        {$0$};
+  \node[state,accepting]         (1)      [below of=0]      {$1$};
+  \node                          (d1)     [below of=1,node distance=1.5cm]      {$\vdots$}; 
+  \node[state,accepting]         (nm1)    [below of=d1,node distance=1.5cm]     {$n{-}1$};
+  \node[state]                   (n)      [right of=0]      {$n$};
+  \node[state]                   (np1)    [below of=n]      {$n{+}1$};
+  \node                          (d2)     [below of=np1,node distance=1.5cm]    {$\vdots$}; 
+  \node[state]                   (2nm1)   [below of=d2,node distance=1.5cm]     {$2n{-}1$};
+  \node                          (d3)     [right of=n]      {$\ldots$};
+  \node                          (d4)     [right of=np1]    {$\ldots$};
+  \node                          (d5)     [right of=d2]     {$\vdots$};
+  \node                          (d6)     [right of=2nm1]   {$\ldots$};
+  \node[state]                   (mm1n)   [right of=d3]     {$(m{-}1)n$};
+  \node[state]                   (mm1np1) [below of=mm1n]   {$(m{-}1)n{+}1$};
+  \node                          (d7)     [below of=mm1np1,node distance=1.5cm] {$\vdots$}; 
+  \node[state]                   (mnm1)   [below of=d7,node distance=1.5cm]     {$mn{-}1$};
+
+  \path[->] (0)    edge node [above] {$a_1$} (n)
+            (n)    edge node [above] {$a_1$} (d3)
+            (d3)   edge node [above] {$a_1$} (mm1n)
+            (1)    edge node [below] {$a_2$} (np1)
+            (np1)  edge node [above] {$a_2$} (d4)
+            (d4)   edge node [above] {$a_2$} (mm1np1)
+            (nm1)  edge node [above] {$a_n$} (2nm1)
+            (2nm1) edge node [above] {$a_n$} (d6)
+            (d6)   edge node [above] {$a_n$} (mnm1);
+
+  \path[->] (0)      edge                       node [sloped,above,near start]      {$a_2$} (np1)
+            (n)      edge [bend right]          node [sloped,below]                 {$a_2$} (np1)
+            (mm1n)   edge                       node [sloped,above,near start]      {$a_2$} (np1)
+            (1)      edge                       node [sloped,above,near end]        {$a_1$} (n)
+            (np1)    edge [bend right]          node [sloped,below]                 {$a_1$} (n)
+            (mm1np1) edge                       node [sloped,above,near start]      {$a_1$} (n)
+            (0)      edge                       node [sloped,above,near end]        {$a_n$} (2nm1)
+            (n)      edge [bend right]          node [sloped,above,near start]        {$a_n$} (2nm1)
+            (mm1n)   edge [bend right=5,in=170] node [sloped,above,very near start] {$a_n$} (2nm1)
+            (nm1)    edge                       node [sloped,above,near start]      {$a_1$} (n)
+            (2nm1)   edge [bend right]          node [sloped,below,near start]      {$a_1$} (n)
+            (mnm1)   edge [in=-30,out=130]      node [sloped,above,very near start] {$a_1$} (n)
+            (1)      edge                       node [sloped,below,near start]      {$a_n$} (2nm1)
+            (np1)    edge [bend right]          node [sloped,below,near start]        {$a_n$} (2nm1)
+            (mm1np1) edge                       node [sloped,above,near start]      {$a_n$} (2nm1)
+            (nm1)    edge [in=220]              node [sloped,above,near start]      {$a_2$} (np1)
+            (2nm1)   edge [bend right]          node [sloped,below]                 {$a_2$} (np1)
+            (mnm1)   edge                       node [sloped,above,near start]      {$a_2$} (np1);
+            
+  \draw[->] (mm1n) .. controls ($(mm1n)+(-.3,1)$) and ($(0)+(.3,1)$) .. (0) node [near start,above] {$a_1$};
+  \draw[->] (mm1np1) .. controls ($(mm1np1)+(-.3,-1)$) and ($(1)+(.3,-1)$) .. (1) node [near start,above] {$a_2$};
+  \draw[->] (mnm1) .. controls ($(mnm1)+(-.3,-1)$) and ($(nm1)+(.3,-1)$) .. (nm1) node [near start,above] {$a_n$};
+\end{tikzpicture}
+\end{center}
+The synchronous product of $\mathcal{A}_{n,m}$ and $\mathcal{B}_{n,m}$ is a parity game $\mathcal{G}_{n,m}$ in which
+every node is owned by player $1$, and the priority of a node $(q,p)$ is given as
+\begin{displaymath}
+\Omega(q,p) \enspace = \enspace \begin{cases}
+2 &,\text{if } p \text{ is accepting,} \\
+1 &,\text{if } p \text{ is not accepting and } q \text{ is accepting,} \\
+0 &,\text{otherwise.}
+\end{cases}
+\end{displaymath}
+This is the standard encoding of fair simulation as a parity condition \cite{HenzingerKR02,HutagalungLL:LATA13}. This game
+encodes the language inclusion problem between an NBA and a DBA. In this case, the game is entirely won by player $0$.
+
+The game $\mathcal{G}_{6,9}$ is generated by
+\begin{verbatim}
+    ~/pgsolver> bin/langincl 6 9
+\end{verbatim}
+The second parameter is optional. If it is not given then $m=2$ is chosen by default.
+
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "main"

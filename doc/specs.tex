@@ -63,7 +63,31 @@ Otherwise it will terminate with an error message.
 
 \begin{figure}[t]
 \begin{center}
-\scalebox{0.6}{\includegraphics{graphics/examplegame.ps}}
+\scalebox{0.6}{%\includegraphics{graphics/examplegame.ps}}
+\begin{tikzpicture}[very thick,-triangle 45,start chain=circled placed {at=(\tikzchaincount*72:6)}]
+
+  \tikzstyle{boxnode}=[draw=black,shape=rectangle,inner sep=10pt]
+  \tikzstyle{diamnode}=[draw=black,very thin,shape=diamond]
+
+  \node[on chain,diamnode] (australia)  {Australia: 6};
+  \node[on chain,diamnode] (asia)       {Asia: 7};
+  \node[on chain,boxnode]  (africa)     {Africa: 6};
+  \node[on chain,boxnode]  (antarctica) {Antarctica: 5};
+  \node[on chain,boxnode]  (america)    {America: 8};
+
+  \path (america)    edge                (australia)
+                     edge [bend left=5]  (asia)
+                     edge                (antarctica)
+        (australia)  edge [bend left=10] (asia)
+                     edge                (antarctica)
+        (antarctica) edge [bend left=10] (africa)
+        (africa)     edge [bend left=10] (antarctica)
+                     edge [bend left=10] (asia)
+        (asia)       edge [bend left=10] (australia)
+                     edge [bend left=5]  (america)
+                     edge [bend left=10] (africa)
+                     edge                (antarctica);
+\end{tikzpicture}}
 \end{center}
 
 \caption{An example of a parity game.}
