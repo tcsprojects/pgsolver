@@ -1,0 +1,6 @@
+- Include Tie-Breaking Rules
+- Add Translation for Epsilon-Times Transitions
+
+- Better output for strategy iteration
+- Improve strategy iteration tools
+- Better command line parsing: conditional parameters
