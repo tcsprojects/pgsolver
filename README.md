@@ -12,7 +12,7 @@ It is developed and maintained by:
 
 - Install OCaml.
 - Run "git submodule update --init" to checkout all required sub modules
-- Create a copy of Config.include, name it Config and modify it to fit your configuration
+- Create a copy of Config.default, name it Config and modify it to fit your configuration
 - Run make
 
 
