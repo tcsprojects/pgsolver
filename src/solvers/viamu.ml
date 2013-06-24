@@ -1,3 +1,5 @@
+(* Implemented by Michael Falk, 2013, University of Kassel *)
+
 open Basics ;;
 open Paritygame ;;
 open Univsolve;;
@@ -83,6 +85,6 @@ let solve game =
    let solution = Array.make n (1) in
    IntSet.iter (fun v -> solution.(v) <- 0) sol_set;
 
-   (solution, Array.make n 17);;
+   (solution, Array.make n (-1));;
 
-let _ = print_string "Hallo viamu\n"; register_solver solve "viamucalculus" "vm" "use the reduction to mu-calculus model checking";;
+let _ = register_solver solve "viamucalculus" "vm" "use the reduction to mu-calculus model checking (does not compute winning strategies!)";;
