@@ -1,6 +1,14 @@
 Jun 24 2013     Michael Falk
  - Added a new solver based on a reduction to mu-calculus model checking
 
+Jun 6 2013      Martin Lange
+ - Added a functor Build in src/paritygame/paritygame.ml which turns a datatype 
+   for paritygame nodes into a function that creates a parity game from some
+   initial node given functions that create the successors etc. of a node.
+ - Added a new benchmark "langincl" formalising an inclusion problem between
+   an NBA and a DBA as a solitaire game of index 3. See this for the use of the 
+   functor Build.
+
 Apr 26 2013     Oliver Friedmann
  - Added a parity game to abstract unique sink / grid unique sink orientations
    called "auso"
