@@ -5,7 +5,7 @@ RENAME=mv
 
 doc: pgsolver.pdf
 
-pgsolver.pdf: main.aux main.bbl
+pgsolver.pdf: main.pdf
 #	$(DVI2PDF) -o pgsolver.pdf main.dvi
 	$(RENAME) main.pdf pgsolver.pdf
 
@@ -18,6 +18,8 @@ main.bbl: main.aux
 
 main.aux:
 	$(LATEX) main
+
+main.pdf: main.bbl
 	$(LATEX) main
 
 clean:
