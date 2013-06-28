@@ -1,20 +1,23 @@
-LATEX=latex
+LATEX=pdflatex
 BIBTEX=bibtex
-DVI2PDF=dvipdfm
+#DVI2PDF=dvipdfm
+RENAME=mv
 
 doc: pgsolver.pdf
 
-pgsolver.pdf: main.dvi
-	$(DVI2PDF) -o pgsolver.pdf main.dvi
+pgsolver.pdf: main.aux main.bbl
+#	$(DVI2PDF) -o pgsolver.pdf main.dvi
+	$(RENAME) main.pdf pgsolver.pdf
 
-main.dvi: main.bbl
-	$(LATEX) main
-	$(LATEX) main
+#main.dvi: main.bbl
+#	$(LATEX) main
+#	$(LATEX) main
 
 main.bbl: main.aux
 	$(BIBTEX) main
 
 main.aux:
+	$(LATEX) main
 	$(LATEX) main
 
 clean:

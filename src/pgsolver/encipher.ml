@@ -112,7 +112,7 @@ let whoiswho = [| "Chuck Norris";
                   "the Godfather";
                   "Peter Sauce-Pan";
                   "the last man standing took a deep breath and";
-                  "Michael Moore found out about a conspirative gouvernment ploy that";
+                  "Michael Moore found out about a conspirative government ploy that";
                   "Henry VIII";
                   "Tweety Pie";
                   "Karl Lagerfeld (fand heraus, dass das Lager fehlt und) ";

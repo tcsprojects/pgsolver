@@ -37,8 +37,8 @@ let solve' game =
 
   (* arrays used to hold the current and last values of X(i) as well as the evaluation of the Walukiewicz formula in the
      innermost iteration *)  
-  let x = Array.make prios IntSet.empty in
-  let y = Array.make prios IntSet.empty in
+  let x = Array.init prios (fun i -> if odd i then IntSet.empty else all_nodes) in
+  let y = Array.copy x in
   let a = ref IntSet.empty in
 
   (* arrays used to abbreviate the unions and intersections in the Walukiewicz formula *)
@@ -55,28 +55,14 @@ let solve' game =
   let moment = ref [] in
   let make_prefix _ = "[" ^ String.concat "," (List.fold_right (fun i -> fun l -> l @ [string_of_int i]) !moment []) ^ "] " in
 
-  (* compute the set of all nodes that have a successor in t 
-     the second argument states whether a witnessing edge should be recorded in strategy for player 0 *)  
+  (* compute the set of all nodes that have a successor in t *)  
 
-  let diamond t strategyActivated =
+  let diamond t =
     IntSet.fold (fun v -> fun s -> 
                    List.fold_left (fun s' -> fun u -> 
-                                     let (pr,pl,_,_) = game.(u) in
+                                     let (pr,_,_,_) = game.(u) in
                                      if (pr >=0) then 
-                                       begin
-                                         let yes = pl=0 && strategyActivated && 
-                                                   let w = strategy.(u) in
-                                                   let (pr',_,_,_) = game.(w) in
-                                                   not (IntSet.mem w x.(pr' - min_prio))
-                                         in
-                                         if yes then 
-                                           begin
-                                             msg_tagged 3 (fun _ -> make_prefix () ^ "recording strategy decision " ^ string_of_int u ^ 
-                                                                    "->" ^ string_of_int v ^ " for player 0\n");
-                                             strategy.(u) <- v
-                                           end;
-                                         IntSet.add u s'
-                                       end
+                                       IntSet.add u s'
                                      else s')  
                                    s tg.(v)) 
                 t IntSet.empty 
@@ -84,41 +70,22 @@ let solve' game =
 
 
   (* Compute the set of all nodes such that all successors are in t.
-     It uses the diamond function to restrict the search space.
-     It records edges that witness why a node does not belong to (box t) in strategy for player 1. *)  
+     It uses the diamond function to restrict the search space. *)  
 
   let box t =
-    let c = diamond t false in      
-    IntSet.filter (fun v -> let (pr, pl, successors, _) = game.(v) in
+    let c = diamond t in      
+    IntSet.filter (fun v -> let (pr, _, successors, _) = game.(v) in
                             if pr >= 0 then
-                              if pl=1 then
-                                Array.fold_left (fun b -> fun w -> let found = IntSet.mem w t in
-                                                                   let yes = not found &&  
-                                                                             let w' = strategy.(v) in
-                                                                             let (pr',_,_,_) = game.(w') in
-                                                                             IntSet.mem w' x.(pr' - min_prio)
-                                                                   in
-                                                                   if yes then 
-                                                                     begin
-                                                                       msg_tagged 3 (fun _ -> make_prefix () ^ 
-                                                                                              "recording strategy decision " ^ 
-                                                                                              string_of_int v ^ "->" ^ 
-                                                                                              string_of_int w ^ " for player 1\n");
-                                                                       strategy.(v) <- w
-                                                                     end; 
-                                                                   b && found) 
-                                                 true successors
-                              else
-                                Array.fold_left (fun b -> fun w -> b && IntSet.mem w t) true successors
+                              Array.fold_left (fun b -> fun w -> b && IntSet.mem w t) true successors
                             else
                               false
                   ) c 
   in 
 
-  let update_modal_terms j first = 
-    diams.(j)  <- diamond x.(j) true;
+  let update_modal_terms j = 
+    diams.(j)  <- IntSet.inter v0 (diamond x.(j));
     unions.(j) <- IntSet.union diams.(j) unions.(j+1);
-    boxes.(j)  <- box (IntSet.union pr_complement.(j) x.(j));
+    boxes.(j)  <- IntSet.inter v1 (box (IntSet.union pr_complement.(j) x.(j)));
     isects.(j) <- IntSet.inter boxes.(j) isects.(j+1)
   in
 
@@ -127,8 +94,21 @@ let solve' game =
 
     if j < 0 then
       begin
-        a := IntSet.union (IntSet.inter v0 unions.(0)) (IntSet.inter v1 isects.(0));
-        msg_tagged 3 (fun _ -> make_prefix () ^ "computed " ^ show_nodeSet !a ^ "\n")
+        a := IntSet.union unions.(0) isects.(0);
+	msg_tagged 3 (fun _ -> for i = max_prio downto min_prio do
+                                 let j = i-min_prio in
+	                         msg_tagged 3 (fun _ -> make_prefix () ^ "Value of X(" ^ string_of_int i ^ ") is " ^ 
+                                                        show_nodeSet x.(j) ^ "\n");
+                                 msg_tagged 3 (fun _ -> make_prefix () ^ "Value of V0 n <>X(" ^ string_of_int i ^ ") is " ^ 
+                                                        show_nodeSet diams.(j) ^ "\n");
+                                 msg_tagged 3 (fun _ -> make_prefix () ^ "Value of D(" ^ string_of_int i ^ ") is " ^ 
+                                                        show_nodeSet unions.(j) ^ "\n"); 
+                                 msg_tagged 3 (fun _ -> make_prefix () ^ "Value of V1 n [](-Pr(" ^ string_of_int i ^ ") u X(" ^ 
+                                                        string_of_int i ^ ")) is " ^ show_nodeSet boxes.(j) ^ "\n"); 
+                                 msg_tagged 3 (fun _ -> make_prefix () ^ "Value of B(" ^ string_of_int i ^ ") is " ^ 
+                                                        show_nodeSet isects.(j) ^ "\n"); 
+                               done;
+                               make_prefix () ^ "Current winning region for player 0 is " ^ show_nodeSet !a ^ "\n")
       end
     else
       begin
@@ -137,44 +117,29 @@ let solve' game =
         msg_tagged 2 (fun _ -> make_prefix () ^ "Entering fixpoint iteration for priority " ^ string_of_int i ^ "\n");
         x.(j) <- if even i then pr.(j) else IntSet.empty;
         msg_tagged 3 (fun _ -> make_prefix () ^ "Initialising X(" ^ string_of_int i ^ ") with " ^ show_nodeSet x.(j) ^ "\n");
+
+        update_modal_terms j;
                  
-        let first = ref true in
         repeat_until
           (fun _ -> 
-            update_modal_terms j !first;
-            first := false;
-            msg_tagged 3 (fun _ -> make_prefix () ^ "Updating d(" ^ string_of_int i ^ ") to " ^ show_nodeSet diams.(j) ^ "\n");
-            msg_tagged 3 (fun _ -> make_prefix () ^ "Updating D(" ^ string_of_int i ^ ") to " ^ show_nodeSet unions.(j) ^ "\n");
-            msg_tagged 3 (fun _ -> make_prefix () ^ "Updating b(" ^ string_of_int i ^ ") to " ^ show_nodeSet boxes.(j) ^ "\n");
-            msg_tagged 3 (fun _ -> make_prefix () ^ "Updating B(" ^ string_of_int i ^ ") to " ^ show_nodeSet isects.(j) ^ "\n");
-
             y.(j) <- x.(j);
             recsolve (i-1);
             x.(j) <- IntSet.inter !a pr.(j);
 
             msg_tagged 3 (fun _ -> make_prefix () ^ "New value of X(" ^ string_of_int i ^ ") is " ^ show_nodeSet x.(j) ^ "\n");
-            msg_tagged 3 (fun _ -> make_prefix () ^ "Old value of X(" ^ string_of_int i ^ ") was " ^ show_nodeSet y.(j) ^ "\n");
 
             moment := ((List.hd !moment)+1) :: (List.tl !moment)
           )
-          (fun _ -> (((even i) && IntSet.subset y.(j) x.(j)) || (odd i) && IntSet.subset x.(j) y.(j)));
+(*          (fun _ -> (((even i) && IntSet.subset y.(j) x.(j)) || 
+                     ((odd i)  && IntSet.subset x.(j) y.(j)))); *)
+          (fun _ -> (((even i) && (IntSet.is_empty x.(j)      || IntSet.subset y.(j) x.(j))) || 
+                     ((odd i)  && (IntSet.subset all_nodes x.(j) || IntSet.subset x.(j) y.(j)))));
 
         moment := List.tl !moment
       end
     in
  
     msg_tagged 2 (fun _ -> "Starting fixpoint iteration algorithm.\n");
-    msg_tagged 3 (fun _ -> "initialisations:\n");
-(*    (* initalisiere array x, d und b *)
-    for i = prios-1 downto 0 do 
-      x.(i) <- if (i mod 2 = 0) then pr.(i) else IntSet.empty;
-      msg_tagged 3 (fun _ -> make_prefix () ^ "value of X(" ^ string_of_int (i+min_prio) ^ "): " ^ show_nodeSet x.(i) ^ "\n");
-      d.(i) <- compute_DiamondUnion i;
-      msg_tagged 3 (fun _ -> make_prefix () ^ "value of D(" ^ string_of_int (i+min_prio) ^ "): " ^ show_nodeSet d.(i) ^ "\n");
-      b.(i) <- compute_BoxInter i;
-      msg_tagged 3 (fun _ -> make_prefix () ^ "value of B(" ^ string_of_int (i+min_prio) ^ "): " ^ show_nodeSet b.(i) ^ "\n")
-    done;   
-*)                      
 
     recsolve max_prio; 
     let sol_set = !a in
