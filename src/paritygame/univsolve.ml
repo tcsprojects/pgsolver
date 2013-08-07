@@ -354,7 +354,6 @@ let universal_solve_run options stats backend game' =
 	in
 
 	let strongly_connected_components' game =
-        let rec deflist l n = if n = 0 then 0::l else deflist (n::l) (n - 1) in
 		if options.decompose_sccs then (
             let (sccs, sccindex, topology, roots) = strongly_connected_components game in
             if Array.length sccs = 1

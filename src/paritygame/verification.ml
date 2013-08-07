@@ -44,7 +44,11 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 			else if sol.(i) != pl
 			then if strat.(i) >= 0
 				 then Some (i::[strat.(i)], "Strategy for node " ^ string_of_int i ^ " is defined (" ^ string_of_int strat.(i) ^ ") but node is not in the winning set of player " ^ string_of_int pl)
-				 else sanity_check (i + 1)
+				 else try
+                        let j = ArrayUtils.find (fun j -> sol.(j) != sol.(i)) delta in
+                        Some ([i;j], "Node " ^ string_of_int i ^ " can escape to " ^ string_of_int j ^ " from the winning set of player " ^ string_of_int pl)
+          			  with Not_found -> 
+                      	sanity_check (i + 1)
 			else if strat.(i) >= 0
 				 then if sol.(strat.(i)) != sol.(i)
 				 	  then Some(i::[strat.(i)], "Strategy for node " ^ string_of_int i ^ " leads to node " ^ string_of_int strat.(i) ^ " which is out of the winning set of player " ^ string_of_int pl)
