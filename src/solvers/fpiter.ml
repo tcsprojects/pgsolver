@@ -3,25 +3,28 @@ open Paritygame ;;
 open Univsolve;;
 open Solvers;;
 
-module IntSet = Set.Make(
-struct
-  type t = int
-  let compare = compare
-end);;
-
+(*
 let rec repeat_until command condition =
   command (); 
   if not (condition ()) then 
     repeat_until command condition
 
+let rec repeat_while command condition =
+  command (); 
+  if condition () then 
+    repeat_while command condition
+*)
+
 let even i = (i mod 2 = 0)
 let odd i = (i mod 2 = 1)
+
+let list_to_set = List.fold_left (fun s -> fun v -> NodeSet.add v s) NodeSet.empty
  
 let solve' game =
-  let msg_tagged v = message_autotagged v (fun _ -> "FPITER") in
+  let msg_tagged v = message_autotagged v (fun _ -> "FPITER2") in
 (*  let msg_plain = message in *)
   
-  let show_nodeSet s = "{" ^ String.concat "," (List.map string_of_int (IntSet.elements s)) ^ "}" in
+  let show_nodeSet s = "{" ^ String.concat "," (List.map string_of_int (NodeSet.elements s)) ^ "}" in
   
   let n = pg_size game in
   let min_prio = pg_min_prio game in
@@ -30,125 +33,117 @@ let solve' game =
   let tg = game_to_transposed_graph game in
   let strategy = Array.init n (fun i -> let (_,_,ws,_) = game.(i) in ws.(0)) in
   
-  let list_to_set = List.fold_left (fun s -> fun v -> IntSet.add v s) IntSet.empty in
-  
   let all_nodes_list = collect_nodes game (fun _ -> fun _ -> true) in
   let all_nodes = list_to_set all_nodes_list in
 
-  (* arrays used to hold the current and last values of X(i) as well as the evaluation of the Walukiewicz formula in the
-     innermost iteration *)  
-  let x = Array.init prios (fun i -> if odd i then IntSet.empty else all_nodes) in
-  let y = Array.copy x in
-  let a = ref IntSet.empty in
-
   (* arrays used to abbreviate the unions and intersections in the Walukiewicz formula *)
-  let diams  = Array.make prios IntSet.empty in        (* D(i) = <>(Pr(i) and X(i)) *)
-  let unions = Array.make (prios+1) IntSet.empty in    (* U(i) = D(i) or U(i+1) *)
+  let diams  = Array.make prios NodeSet.empty in        (* D(i) = <>(Pr(i) and X(i)) *)
+  let unions = Array.make (prios+1) NodeSet.empty in    (* U(i) = D(i) or U(i+1) *)
   let boxes  = Array.make prios all_nodes in           (* B(i) = [](-Pr(i) or X(i)) *)
   let isects = Array.make (prios+1) all_nodes in       (* I(i) = B(i) and I(i+1) *)
 
   let pr = Array.init prios (fun i -> list_to_set (collect_nodes game (fun _ -> fun (p,_,_,_) -> i+min_prio=p))) in
-  let pr_complement = Array.init prios (fun i -> IntSet.diff all_nodes pr.(i)) in
+  let pr_complement = Array.init prios (fun i -> NodeSet.diff all_nodes pr.(i)) in
   let v0 = list_to_set (collect_nodes game (fun _ -> fun (_,o,_,_) -> o=0)) in
   let v1 = list_to_set (collect_nodes game (fun _ -> fun (_,o,_,_) -> o=1)) in 
 
-  let moment = ref [] in
-  let make_prefix _ = "[" ^ String.concat "," (List.fold_right (fun i -> fun l -> l @ [string_of_int i]) !moment []) ^ "] " in
+  (* variable used to hold the current winning positions *)  
+  let x = Array.make prios NodeSet.empty in
+  let win = ref NodeSet.empty in
 
-  (* compute the set of all nodes that have a successor in t *)  
+  (* These functions are used to avoid direct access to any array storing values for each priority.
+     They normalise the array indices such that the least priority occupies the array field 0 *)
+  let set a p v = a.(p - min_prio) <- v in
+  let get a p = a.(p - min_prio) in
 
-  let diamond t =
-    IntSet.fold (fun v -> fun s -> 
-                   List.fold_left (fun s' -> fun u -> 
-                                     let (pr,_,_,_) = game.(u) in
-                                     if (pr >=0) then 
-                                       IntSet.add u s'
-                                     else s')  
-                                   s tg.(v)) 
-                t IntSet.empty 
+  let moment = Array.make prios 0 in
+  let make_prefix _ = "[" ^ String.concat "," (Array.fold_right (fun i -> fun l -> l @ [string_of_int i]) moment []) ^ "] " in
+
+  let rec initialise p = 
+    if p >= min_prio then
+      begin
+        set x p (if odd p then NodeSet.empty else get pr p);
+        msg_tagged 3 (fun _ -> "Initialising X(" ^ string_of_int p ^ ") to " ^ show_nodeSet (get x p) ^ "\n");
+        initialise (p-1)
+      end
   in
 
-
-  (* Compute the set of all nodes such that all successors are in t.
-     It uses the diamond function to restrict the search space. *)  
-
-  let box t =
-    let c = diamond t in      
-    IntSet.filter (fun v -> let (pr, _, successors, _) = game.(v) in
-                            if pr >= 0 then
-                              Array.fold_left (fun b -> fun w -> b && IntSet.mem w t) true successors
-                            else
-                              false
-                  ) c 
-  in 
-
-  let update_modal_terms j = 
-    diams.(j)  <- IntSet.inter v0 (diamond x.(j));
-    unions.(j) <- IntSet.union diams.(j) unions.(j+1);
-    boxes.(j)  <- IntSet.inter v1 (box (IntSet.union pr_complement.(j) x.(j)));
-    isects.(j) <- IntSet.inter boxes.(j) isects.(j+1)
+  let rec update_modal_terms p =
+    set diams  p (NodeSet.inter v0 (diamond_with_transposed_graph (get x p) game tg));
+    set unions p (NodeSet.union (get diams p) (get unions (p+1)));
+    set boxes  p (NodeSet.inter v1 (box_with_transposed_graph (NodeSet.union (get pr_complement p) (get x p)) game tg));
+    set isects p (NodeSet.inter (get boxes p) (get isects (p+1)));
+    msg_tagged 3 (fun _ -> "Current value: X(" ^ string_of_int p ^ ") = " ^ show_nodeSet (get x p) ^ "\n");
+    msg_tagged 3 (fun _ -> "Update modal term: D(" ^ string_of_int p ^ ") = " ^ show_nodeSet (get diams p) ^ "\n");
+    msg_tagged 3 (fun _ -> "Update modal term: U(" ^ string_of_int p ^ ") = " ^ show_nodeSet (get unions p) ^ "\n");
+    msg_tagged 3 (fun _ -> "Update modal term: B(" ^ string_of_int p ^ ") = " ^ show_nodeSet (get boxes p) ^ "\n");
+    msg_tagged 3 (fun _ -> "Update modal term: I(" ^ string_of_int p ^ ") = " ^ show_nodeSet (get isects p) ^ "\n");
+    if p > min_prio then update_modal_terms (p-1)
   in
 
-  let rec recsolve i =
-    let j = i-min_prio in
+  msg_tagged 2 (fun _ -> "Starting fixpoint iteration algorithm.\n");
 
-    if j < 0 then
-      begin
-        a := IntSet.union unions.(0) isects.(0);
-	msg_tagged 3 (fun _ -> for i = max_prio downto min_prio do
-                                 let j = i-min_prio in
-	                         msg_tagged 3 (fun _ -> make_prefix () ^ "Value of X(" ^ string_of_int i ^ ") is " ^ 
-                                                        show_nodeSet x.(j) ^ "\n");
-                                 msg_tagged 3 (fun _ -> make_prefix () ^ "Value of V0 n <>X(" ^ string_of_int i ^ ") is " ^ 
-                                                        show_nodeSet diams.(j) ^ "\n");
-                                 msg_tagged 3 (fun _ -> make_prefix () ^ "Value of D(" ^ string_of_int i ^ ") is " ^ 
-                                                        show_nodeSet unions.(j) ^ "\n"); 
-                                 msg_tagged 3 (fun _ -> make_prefix () ^ "Value of V1 n [](-Pr(" ^ string_of_int i ^ ") u X(" ^ 
-                                                        string_of_int i ^ ")) is " ^ show_nodeSet boxes.(j) ^ "\n"); 
-                                 msg_tagged 3 (fun _ -> make_prefix () ^ "Value of B(" ^ string_of_int i ^ ") is " ^ 
-                                                        show_nodeSet isects.(j) ^ "\n"); 
-                               done;
-                               make_prefix () ^ "Current winning region for player 0 is " ^ show_nodeSet !a ^ "\n")
-      end
-    else
-      begin
-        moment := 0 :: !moment;
+  let curr_prio = ref min_prio in
+  let continue = ref true in
+  initialise max_prio;
+  update_modal_terms max_prio;
 
-        msg_tagged 2 (fun _ -> make_prefix () ^ "Entering fixpoint iteration for priority " ^ string_of_int i ^ "\n");
-        x.(j) <- if even i then pr.(j) else IntSet.empty;
-        msg_tagged 3 (fun _ -> make_prefix () ^ "Initialising X(" ^ string_of_int i ^ ") with " ^ show_nodeSet x.(j) ^ "\n");
+  while !curr_prio <= max_prio do
+    win := NodeSet.union (get unions min_prio) (get isects min_prio);
+    msg_tagged 3 (fun _ -> "Computed current winning set " ^ show_nodeSet !win ^ "\n");
 
-        update_modal_terms j;
-                 
-        repeat_until
-          (fun _ -> 
-            y.(j) <- x.(j);
-            recsolve (i-1);
-            x.(j) <- IntSet.inter !a pr.(j);
+    curr_prio := min_prio;
+    continue := true;
+    while !curr_prio <= max_prio && !continue do
+      let win_mod_prio = NodeSet.inter (get pr !curr_prio) !win in
+      if even !curr_prio then
+        begin
+          if NodeSet.subset (get x !curr_prio) win_mod_prio then
+            begin 
+              msg_tagged 3 (fun _ -> "Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ show_nodeSet win_mod_prio ^ "\n"); 
+              set moment !curr_prio 0;
+              incr curr_prio
+            end
+          else
+            begin
+              set moment !curr_prio ((get moment !curr_prio) + 1);
+              set x !curr_prio win_mod_prio;
+              msg_tagged 3 (fun _ -> make_prefix () ^ "Updating: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
+                                     show_nodeSet (get x !curr_prio) ^ "\n"); 
+              initialise (!curr_prio - 1);
+              update_modal_terms !curr_prio;
+              continue := false
+            end
+        end
+      else
+        begin
+          if NodeSet.subset win_mod_prio (get x !curr_prio) then
+            begin
+              msg_tagged 3 (fun _ -> "Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ show_nodeSet win_mod_prio ^ "\n"); 
+              set moment !curr_prio 0;
+              incr curr_prio
+            end
+          else
+            begin
+              set moment !curr_prio ((get moment !curr_prio) + 1);
+              set x !curr_prio win_mod_prio;
+              msg_tagged 3 (fun _ -> make_prefix () ^ "Updating: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
+                                     show_nodeSet (get x !curr_prio) ^ "\n"); 
+              initialise (!curr_prio - 1);
+              update_modal_terms !curr_prio;
+              continue := false
+            end
+        end
+    done
+  done;
 
-            msg_tagged 3 (fun _ -> make_prefix () ^ "New value of X(" ^ string_of_int i ^ ") is " ^ show_nodeSet x.(j) ^ "\n");
+  let solution = Array.make n (1) in
+  NodeSet.iter (fun v -> solution.(v) <- 0) !win;
+  msg_tagged 2 (fun _ -> "Fixpoint iteration algorithm finished.\n");
 
-            moment := ((List.hd !moment)+1) :: (List.tl !moment)
-          )
-(*          (fun _ -> (((even i) && IntSet.subset y.(j) x.(j)) || 
-                     ((odd i)  && IntSet.subset x.(j) y.(j)))); *)
-          (fun _ -> (((even i) && (IntSet.is_empty x.(j)      || IntSet.subset y.(j) x.(j))) || 
-                     ((odd i)  && (IntSet.subset all_nodes x.(j) || IntSet.subset x.(j) y.(j)))));
+  (solution, strategy)
 
-        moment := List.tl !moment
-      end
-    in
+
+let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
  
-    msg_tagged 2 (fun _ -> "Starting fixpoint iteration algorithm.\n");
-
-    recsolve max_prio; 
-    let sol_set = !a in
-    let solution = Array.make n (1) in
-    IntSet.iter (fun v -> solution.(v) <- 0) sol_set;
-    msg_tagged 2 (fun _ -> "Fixpoint iteration algorithm finished.\n");
-
-    (solution, strategy)
-
-    let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
- 
-    register_solver solve "fpiter" "fp" "use the fixpoint iteration algorithm";;
+register_solver solve "fpiter2" "fi" "use the fixpoint iteration algorithm (non-recursive)";;
