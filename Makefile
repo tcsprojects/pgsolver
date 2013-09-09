@@ -381,7 +381,6 @@ DEPENDENCY_INCLUDES=-I $(SRCDIR)/pgsolver \
                     -I $(SRCDIR)/tools \
                     -I $(SRCDIR)/paritygame \
                     -I $(SRCDIR)/solvers \
-                    -I $(SRCDIR)/utils \
                     -I $(SRCDIR)
 
 depend:
