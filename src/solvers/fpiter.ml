@@ -30,6 +30,10 @@ let solve' game =
   let min_prio = pg_min_prio game in
   let max_prio = pg_max_prio game in
   let prios = max_prio - min_prio + 1 in
+  let (even_prios,odd_prios) = let a = prios / 2 in
+                               if odd (max_prio - min_prio) then (a,a) 
+                               else if even min_prio then (a+1,a) else (a,a+1)
+  in
   let tg = game_to_transposed_graph game in
 
 
@@ -59,20 +63,53 @@ let solve' game =
 
   (* These functions are used to avoid direct access to any array storing values for each priority.
      They normalise the array indices such that the least priority occupies the array field 0 *)
+
   let set a p v = a.(p - min_prio) <- v in
   let get a p = a.(p - min_prio) in
 
-  let moment = Array.make prios 0 in
+  let even_moment = Array.make even_prios 0 in
+  let odd_moment = Array.make odd_prios 0 in
+
+  let encode prio = if even (prio - min_prio) then (prio - min_prio) / 2 else (prio - min_prio - 1) / 2 in
+  let decode i = let j = 2*i + min_prio in 
+                 if even min_prio then (j, j+1) else (j+1,j)
+  in 
+
+  let reset_moment p =
+    let i = encode p in 
+    if even p then even_moment.(i) <- 0 else odd_moment.(i) <- 0
+  in
+  let increase_moment p =
+    let i = encode p in
+    if even p then even_moment.(i) <- even_moment.(i) + 1 else odd_moment.(i) <- odd_moment.(i) + 1
+  in
+
+  let rec zip l = function [] -> l
+                         | (b::bs) -> (match l with
+                                            (c::cs) -> c::b::(zip cs bs)
+			                  | []      -> b::bs)
+  in
+
 (*  let null_moment = Array.make prios 0 in *)
 
   let show_timestamp m = "[" ^ String.concat "," (Array.fold_right (fun i -> fun l -> l @ [string_of_int i]) m []) ^ "]" in
+  let show_moment _ =
+    let evens = Array.fold_right (fun i -> fun l -> l @ [i]) even_moment [] in
+    let odds =  Array.fold_right (fun i -> fun l -> l @ [i]) odd_moment  [] in
+    let ends = if even max_prio then 
+                  zip evens odds 
+               else
+                  zip odds evens
+    in  
+    "[" ^ String.concat "," (List.map string_of_int ends) ^ "]" 
+  in
 
   let rec initialise p = 
     if p >= min_prio then
       begin
         set x p (if odd p then NodeSet.empty else get pr p);
         msg_tagged 3 (fun _ -> "  Initialising X(" ^ string_of_int p ^ ") to " ^ show_nodeSet (get x p) ^ "\n");
-        initialise (p-1)
+        initialise (p-2)
       end
   in
 
@@ -103,39 +140,58 @@ let solve' game =
                                             if not (NodeSet.mem w (get x pr)) then w else find_cntexmpl ws
   in
 
+  let record_decision owner v w =
+    let moment = if owner=0 then odd_moment else even_moment in 
+    match evt_pos_strategy.(v) with
+       [] -> evt_pos_strategy.(v) <- [ (w, Array.copy moment) ];
+             msg_tagged 3 (fun _ -> "  Recording strategy decision " ^ string_of_int v ^ " -> " ^ 
+                                    string_of_int w ^ " for player " ^ string_of_int owner ^ " at moment " ^ show_moment () ^ "\n")
+     | (w', mnt')::str -> 
+             if mnt' <> moment then
+               begin 
+                 evt_pos_strategy.(v) <- (w, Array.copy moment) :: evt_pos_strategy.(v);
+                 msg_tagged 3 (fun _ -> "  Recording strategy decision " ^ string_of_int v ^ " -> " ^ 
+                                      string_of_int w ^ " for player " ^ string_of_int owner ^ " at moment " ^ show_moment () ^ "\n")
+               end
+             else
+               begin
+                 evt_pos_strategy.(v) <- (w, mnt') :: str;
+                 msg_tagged 3 (fun _ -> "  Changing strategy decision to " ^ string_of_int v ^ " -> " ^ 
+                                        string_of_int w ^ " for player " ^ string_of_int owner ^ " at moment " ^ show_moment () ^ "\n")
+               end
+  in
 
   msg_tagged 2 (fun _ -> "Starting fixpoint iteration algorithm.\n");
 
   let curr_prio = ref min_prio in
   let continue = ref true in
   initialise max_prio;
+  initialise (max_prio-1);
   update_modal_terms max_prio;
 
   while !curr_prio <= max_prio do
     win := NodeSet.union (get unions min_prio) (get isects min_prio);
-    msg_tagged 3 (fun _ -> show_timestamp moment ^ " Computed current winning set " ^ show_nodeSet !win ^ "\n");
+    msg_tagged 3 (fun _ -> show_moment () ^ " Computed current winning set " ^ show_nodeSet !win ^ "\n");
 
     curr_prio := min_prio;
     continue := true;
     while !curr_prio <= max_prio && !continue do
       let win_mod_prio = NodeSet.inter (get pr !curr_prio) !win in
-      set moment !curr_prio ((get moment !curr_prio) + 1);
+      increase_moment !curr_prio;
       if even !curr_prio then
         begin
           if NodeSet.subset (get x !curr_prio) win_mod_prio then
             begin 
-              msg_tagged 3 (fun _ -> show_timestamp moment ^ " Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
+              msg_tagged 3 (fun _ -> show_moment () ^ " Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
                                      show_nodeSet win_mod_prio ^ "\n"); 
               NodeSet.iter (fun v -> let (_,ow,ws,_) = game.(v) in
                                      if ow=0 then
                                        begin
                                          let w = find_witness (Array.to_list ws) in
-                                         evt_pos_strategy.(v) <- (w, Array.copy moment) :: evt_pos_strategy.(v);
-                                         msg_tagged 3 (fun _ -> "  Recording strategy decision " ^ string_of_int v ^ " -> " ^ 
-                                                                 string_of_int w ^ " for player 0 at moment " ^ show_timestamp moment ^ "\n")
+                                         record_decision 0 v w 
                                        end)
                            win_mod_prio; 
-              set moment !curr_prio 0;
+              reset_moment !curr_prio;
               incr curr_prio
             end
           else
@@ -147,13 +203,11 @@ let solve' game =
                                      if ow = 1 then
                                        begin
                                          let w = find_cntexmpl (Array.to_list ws) in
-                                         evt_pos_strategy.(v) <- (w, Array.copy moment) :: evt_pos_strategy.(v);
-                                         msg_tagged 3 (fun _ -> "  Recording strategy decision " ^ string_of_int v ^ " -> " ^ 
-                                                                 string_of_int w ^ " for player 1 at moment " ^ show_timestamp moment ^ "\n")
+                                         record_decision 1 v w 
                                        end)
                            now_out;
               set x !curr_prio win_mod_prio;
-              msg_tagged 3 (fun _ -> show_timestamp moment ^ " Updating: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
+              msg_tagged 3 (fun _ -> show_moment () ^ " Updating: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
                                      show_nodeSet (get x !curr_prio) ^ "\n"); 
 
               initialise (!curr_prio - 1);
@@ -165,18 +219,16 @@ let solve' game =
         begin
           if NodeSet.subset win_mod_prio (get x !curr_prio) then
             begin
-              msg_tagged 3 (fun _ -> show_timestamp moment ^ " Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
+              msg_tagged 3 (fun _ -> show_moment () ^ " Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
                                      show_nodeSet win_mod_prio ^ "\n");
               NodeSet.iter (fun v -> let (_,ow,ws,_) = game.(v) in
                                      if ow=1 then
                                        begin
                                          let w = find_cntexmpl (Array.to_list ws) in
-                                         evt_pos_strategy.(v) <- (w, Array.copy moment) :: evt_pos_strategy.(v);
-                                         msg_tagged 3 (fun _ -> "  Recording strategy decision " ^ string_of_int v ^ " -> " ^ 
-                                                                 string_of_int w ^ " for player 1 at moment " ^ show_timestamp moment ^ "\n")
+                                         record_decision 1 v w
                                        end)
                            (NodeSet.diff (get pr !curr_prio) win_mod_prio); 
-              set moment !curr_prio 0;
+              reset_moment !curr_prio;
               incr curr_prio
             end
           else
@@ -188,13 +240,11 @@ let solve' game =
                                      if ow = 0 then
                                        begin
                                          let w = find_witness (Array.to_list ws) in
-                                         evt_pos_strategy.(v) <- (w, Array.copy moment) :: evt_pos_strategy.(v);
-                                         msg_tagged 3 (fun _ -> "  Recording strategy decision " ^ string_of_int v ^ " -> " ^ 
-                                                                 string_of_int w ^ " for player 0 at moment " ^ show_timestamp moment ^ "\n")
+                                         record_decision 0 v w
                                        end)
                            now_in;
               set x !curr_prio win_mod_prio;
-              msg_tagged 3 (fun _ -> show_timestamp moment ^ " Updating: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
+              msg_tagged 3 (fun _ -> show_moment () ^ " Updating: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
                                      show_nodeSet (get x !curr_prio) ^ "\n"); 
 
               initialise (!curr_prio - 1);
@@ -210,15 +260,16 @@ let solve' game =
 
   (* now turn eventually positional strategy into a positional strategy *)
 
-  let top_moment = Array.init prios (fun i -> 1 + npr.(i)) in
-  let first_visit = Array.init prios (fun i -> 2 + npr.(i)) in
+  let even_top_moment = Array.init even_prios (fun i -> let (p,_) = decode i in 2 + npr.(p - min_prio)) in
+  let odd_top_moment  = Array.init odd_prios  (fun i -> let (_,p) = decode i in 2 + npr.(p - min_prio)) in
 
   let relevant_parity winner = if winner = 0 then odd else even in
 
-  let compare winner cut ts1 ts2 =
+  let compare winner prio ts1 ts2 =
     let rec cmp p =
-        if p >= cut then
-          let c = compare ts1.(p) ts2.(p) in
+        if p >= prio then
+          let i = encode p in
+          let c = compare ts1.(i) ts2.(i) in
           if c <> 0 then
             c
           else 
@@ -229,47 +280,30 @@ let solve' game =
     cmp (if relevant_parity winner max_prio then max_prio else max_prio - 1)
   in
         
-(*
-    let result = ref true in
-    while !result && !pos > cut do
-      let left = get ts1 !pos in
-      let right = get ts2 !pos in 
-      msg_tagged 3 (fun _ -> "  Checking " ^ string_of_int left ^ " <= " ^ string_of_int right ^ " at position " ^ string_of_int !pos ^ "\n");
-      result := left <= right;
-      pos := !pos - 2
-    done;
-    if !pos = cut then 
-      begin
-        let left = get ts1 !pos in
-        let right = get ts2 !pos in 
-        msg_tagged 3 (fun _ -> "  Checking " ^ string_of_int left ^ " < " ^ string_of_int right ^ " at position " ^ string_of_int !pos ^ "\n");
-        result := !result && left < right
-      end;
-    !result
-  in
-*)
-
   let next_smallest winner prio ts =
-    let t = Array.make prios 0 in
-    for p = min_prio to max_prio do
-      set t p (if p > prio then 
-                 get ts p 
-               else if p = prio then
-                 begin
-                   if relevant_parity winner prio then 
-                     (get ts p) - 1
-                   else
-                     (get ts p)
-                 end
-               else
-                 1 + (get npr p))
+    msg_tagged 3 (fun _ -> "  Computing next smallest timestamp of " ^ show_timestamp ts ^ ": ");
+    let t = Array.copy ts in
+    let i = encode prio in
+    let np = ref (prio - 1) in
+    if relevant_parity winner prio then 
+      begin 
+        t.(i) <- t.(i) - 1;
+        decr np
+      end;
+    while !np >= min_prio do
+      t.(encode !np) <- 2 + npr.(!np - min_prio);
+      np := !np - 2
     done;
+    message 3 (fun _ -> show_timestamp t ^ "\n");
     t
   in
+
   let discard_decisions v winner prio m =
-    while let (w,m') = List.hd evt_pos_strategy.(v) in msg_tagged 3 (fun _ -> "  Checking decision " ^ string_of_int v ^ " -> " ^ 
-                                                                              string_of_int w ^ " of moment " ^ show_timestamp m' ^ "... ");
-                                                       compare winner prio m m' < 0 do
+    while let (w,m') = List.hd evt_pos_strategy.(v) in 
+          msg_tagged 3 (fun _ -> "  Checking decision " ^ string_of_int v ^ " -> " ^ 
+                                 string_of_int w ^ " of moment " ^ show_timestamp m' ^ "... ");
+          let c = compare winner prio m m' in
+          c < 0 (* || (c = 0 && relevant_parity winner prio) *) do
       evt_pos_strategy.(v) <- List.tl evt_pos_strategy.(v);
       message 3 (fun _ -> "discarded\n")
     done;
@@ -283,6 +317,8 @@ let solve' game =
   let last_visit = Array.make n None in
 
   while !next_node < n do
+    let top_moment = if solution.(!next_node) = 1 then even_top_moment else odd_top_moment
+    in
     todo := [ (!next_node, top_moment) ];
     while !todo <> [] do
       let (v, bound) = List.hd !todo in
@@ -329,4 +365,4 @@ let solve' game =
 
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
  
-register_solver solve "fpiter" "fi" "use the iterative fixpoint iteration algorithm";;
+register_solver solve "fpiter" "fi" "use the (optimised) iterative fixpoint iteration algorithm";;
