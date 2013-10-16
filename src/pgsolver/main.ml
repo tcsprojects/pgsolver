@@ -181,11 +181,11 @@ let _ =
   let game = match !generator with
 
     NoGenerator -> (
-	  message 2 (fun _ -> "Reading game from ........... ");
+	  message 2 (fun _ -> "Reading game from ..................... ");
 	  let (in_channel,name) = if !input_file = "" then (stdin,"STDIN") else (open_in !input_file,!input_file) in
 	  message 2 (fun _ -> name ^ "\n");
 
-	  message 1 (fun _ -> "Parsing ..................... ");
+	  message 1 (fun _ -> "Parsing ............................... ");
 	  let timobj = SimpleTiming.init true in
 (*	  let game = Parserhelper.parse_from_channel in_channel !perform_sanity_check in *)
 	  let game = (
@@ -215,7 +215,7 @@ let _ =
 
   match !solver with
 	LocalSolver (id, solve) -> (
-		 message 1 (fun _ -> "Chosen local solver `" ^ id ^ "' " ^ String.make (14 - (String.length id)) '.' ^ " ");
+		 message 1 (fun _ -> "Chosen local solver `" ^ id ^ "' " ^ String.make (16 - (String.length id)) '.' ^ " ");
 		 let timobj = SimpleTiming.init true in
 		 let (c, g) = induce_counting_partialparitygame game !initnode in
 		 let result = (solve (Array.of_list (Tcsstrings.StringUtils.explode !solveargs ' '))) g in
@@ -239,7 +239,7 @@ let _ =
 										Tcsgameparser.parse_explicit_parity_solution (open_in !parse_sol)
 									 )
 			| YesSolver(id,solve) -> message 1 (fun _ -> "Chosen solver `" ^ id ^ "' " ^
-												String.make (14 - (String.length id)) '.' ^ " ");
+												String.make (22 - (String.length id)) '.' ^ " ");
 									 let timobj = SimpleTiming.init true in
 									 let result = solve (Array.of_list (Tcsstrings.StringUtils.explode !solveargs ' ')) game in
 									 SimpleTiming.stop timobj;

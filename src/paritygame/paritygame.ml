@@ -1132,6 +1132,55 @@ end;;
 
 
 (********************************************************
+ * a type and data structure for sets of game nodes     *
+ ********************************************************)
+
+module NodeSet = Set.Make(
+struct
+  type t = int
+  let compare = compare
+end);;
+
+module NodePairSet = Set.Make(
+struct
+  type t = int * int
+  let compare = compare
+end);;
+
+
+(********************************************************
+ * Modal logic operations on sets of game nodes.        *
+ * takes a set of nodes, a parity game and its          *
+ *  transposed graph                                    *
+ ********************************************************)
+
+(* return the set of all nodes which have a successors in t *)
+
+let diamond_with_transposed_graph t game tg =
+  NodeSet.fold (fun v -> fun s -> 
+                 List.fold_left (fun s' -> fun u -> 
+                                   let (pr,_,_,_) = game.(u) in
+                                   if (pr >=0) then 
+                                     NodeSet.add u s'
+                                   else s')  
+                                 s tg.(v)) 
+               t NodeSet.empty 
+
+
+(* return the set of all nodes for which all successors are in t *)
+
+let box_with_transposed_graph t game tg =
+  let c = diamond_with_transposed_graph t game tg in      
+  NodeSet.filter (fun v -> let (pr, _, successors, _) = game.(v) in
+                          if pr >= 0 then
+                            Array.fold_left (fun b -> fun w -> b && NodeSet.mem w t) true successors
+                          else
+                            false
+                 ) c 
+
+
+
+(********************************************************
  * Building Parity Games                                *
  ********************************************************)
 
@@ -1156,13 +1205,6 @@ module Build = functor (T: GameNode) ->
         let compare = T.compare 
       end);;
 
-    module IntSet = Set.Make(
-      struct 
-        type t = int
-        let compare = compare
-      end);;
-
-
     let codes = ref Encoding.empty
 
     let next_code = ref 0
@@ -1180,15 +1222,15 @@ module Build = functor (T: GameNode) ->
       let rec iterate acc visited = 
         function []          -> acc
                | ((v,c)::vs) -> begin
-                                  if IntSet.mem c visited then
+                                  if NodeSet.mem c visited then
                                     iterate acc visited vs
                                   else
                                     let ws = T.successors v in
                                     let ds = List.map encode ws in
-                                    iterate ((c, T.owner v, T.priority v, ds, T.name v) :: acc) (IntSet.add c visited) ((List.combine ws ds) @ vs)
+                                    iterate ((c, T.owner v, T.priority v, ds, T.name v) :: acc) (NodeSet.add c visited) ((List.combine ws ds) @ vs)
                                   end
       in
-      let nodes = iterate [] IntSet.empty [(v,encode v)] in
+      let nodes = iterate [] NodeSet.empty [(v,encode v)] in
       let game = pg_create (List.length nodes) in
       let rec transform = 
         function []                  -> ()
