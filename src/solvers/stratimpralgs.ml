@@ -1922,10 +1922,10 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 		let g i = 2 * idxmap.(i) + 1 - state.(i+1) in
 		let h c d i = if fst (strat (c ^ string_of_int i)) = d then 1 else 0 in
 		let mp = function
-		|	(('m',_),_,_)                       		    			-> -2
-		|	(('p',_),_,_)                       		    			-> -1
-		|	(('q',_),_,_)                       		    			-> -1
-		|	(('d',i),_,_)                       		    			-> 0
+		|	(('m',_),_,_)                       		    			-> -3
+		|	(('p',_),_,_)                       		    			-> -2
+		|	(('q',_),_,_)                       		    			-> -2
+		|	(('d',i),_,_)                       		    			-> -1
 		|	(('a',_),_,('E',_)) (* CycleNodeX1 *) 		    			-> 0
 		|	(('w',_),_,('X',_)) (* CycleNodeX2 *)  		 				-> 0
 		|	(('b',_),_,('E',_)) (* CycleNodeY1 *)  		    			-> 0
