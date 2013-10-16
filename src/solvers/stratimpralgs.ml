@@ -1938,12 +1938,12 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 		|	(('w',_),_,_) (* CycleNodeX2 *)  		 					-> 1
 		|	(('b',_),_,_) (* CycleNodeY1 *)  		    				-> 1
 		|	(('v',_),_,_) (* CycleNodeY2 *)  		    				-> 1
-		|	(('l',_),_,_) (* Helper *)		    						-> 2 + 2 * nn
-		|	(('g',_),_,_) (* UpDown1 *)		    						-> 2 + 2 * nn
-		|	(('s',_),_,_) (* UpDown2 *)		    						-> 2 + 2 * nn
-		|	(('f',_),_,_) (* DownSelector *) 							-> 2 + 2 * nn
-		|	(('c',_),_,_) (* UpperSelector1 *) 							-> 2 + 2 * nn
-		|	(('u',_),_,_) (* UpperSelector2 *) 							-> 2 + 2 * nn
+		|	(('l',_),_,_) (* Helper *)		    						-> 4 + 2 * nn
+		|	(('g',_),_,_) (* UpDown1 *)		    						-> 4 + 2 * nn
+		|	(('s',_),_,_) (* UpDown2 *)		    						-> 4 + 2 * nn
+		|	(('f',_),_,_) (* DownSelector *) 							-> 3 + 2 * nn
+		|	(('c',_),_,_) (* UpperSelector1 *) 							-> 4 + 2 * nn
+		|	(('u',_),_,_) (* UpperSelector2 *) 							-> 4 + 2 * nn
 		|	_ -> failwith "imp"
 		in	
 		compare (mp ((soulab0, souidx0), (tarlab0, taridx0), (oldlab0, oldidx0))) (mp ((soulab1, souidx1), (tarlab1, taridx1), (oldlab1, oldidx1)))
