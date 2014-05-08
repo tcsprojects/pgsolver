@@ -39,20 +39,23 @@ numeric % Groups
 numeric % Nodes
 	node_d[],               % g
 	node_f[],               % b
-	node_m[],               % c
-	node_b[],               % d0
+	node_b[],               % d00
 	node_m_one[],           % c
-	node_v[],               % d1
+	node_v[],               % d10
 	node_E[],               % F0
 	node_X[],               % F1
-	node_a[],               % e0
+	node_a[],               % d01
 	node_d_zero[],          % g
-	node_w[],               % e1
+	node_w[],               % d11
 	node_c[],               % h0
 	node_g[],               % s0
 	node_f_zero[],          % b
 	node_s[],               % s1
 	node_u[],               % h1
+	node_o[],				% e01
+	node_p[],               % e00
+	node_q[],               % e11
+	node_r[],               % e10
 	node_t;                 % t
 	
 	
@@ -61,14 +64,14 @@ numeric % Edges
 	edge_d_right[],
 	edge_f_in[],
 	edge_f_out[],
-	edge_m_in[],
-	edge_m_out[],
 	edge_b_in[],
-	edge_b_out_m[],
-	edge_b_out_d[],
+	edge_b_out[],
+	edge_p_out_m[],
+	edge_p_out_d[],
 	edge_v_in[],
-	edge_v_out_m[],
-	edge_v_out_d[],
+	edge_v_out[],
+	edge_r_out_m[],
+	edge_r_out_d[],
 	edge_E_in_b[],
 	edge_E_in_a[],
 	edge_E_out[],
@@ -76,11 +79,13 @@ numeric % Edges
 	edge_X_in_w[],
 	edge_X_out[],
 	edge_a_in[],
-	edge_a_out_m[],
-	edge_a_out_d[],
+	edge_a_out[],
+	edge_o_out_m[],
+	edge_o_out_d[],
 	edge_w_in[],
-	edge_w_out_m[],
-	edge_w_out_d[],
+	edge_w_out[],
+	edge_q_out_m[],
+	edge_q_out_d[],
 	edge_c[],
 	edge_g_in[],
 	edge_g_out[],
@@ -199,27 +204,28 @@ vardef build_graph(expr aspg) =
 		numeric mdpminus;
 		mdpminus:=6;
 
-		node_d[index] := new_even_node(6,0, "$g_" & indexstr & "$", decimal(2*index+9), decimal(2*index+9-mdpminus));
+		node_d[index] := new_even_node(8,0, "$g_" & indexstr & "$", decimal(2*index+9), decimal(2*index+9-mdpminus));
 		node_f[index] := new_even_node(0,0, "$b_" & indexstr & "$", "3", "");
-		if (index > 1) :
-			node_m[index] := new_even_node(12,0, "$c_" & indexstr & "$", "3", "");
-		fi;
-		node_b[index] := new_even_node(4, 2, "$d_{" & indexstr & ",0}$", "3", "");
-		node_m_one[index] := new_even_node_small(6, 2, "$c_2$", "3", "");
+		node_b[index] := new_even_node(4, 2, "$d_{" & indexstr & ",0,0}$", "3", "");
+		node_p[index] := new_even_node(6, 2, "$e_{" & indexstr & ",0,0}$", "3", "");
+		node_m_one[index] := new_even_node_small(8, 2, "$b_2$", "3", "");
 		node_E[index] := new_odd_node(2, 4, "$F_{" & indexstr & ",0}$", "6", "");
 		if (index < count):
-			node_v[index] := new_even_node(8, 2, "$d_{" & indexstr & ",1}$", "3", "");
-			node_X[index] := new_odd_node(10, 4, "$F_{" & indexstr & ",1}$", "4", "");
+			node_v[index] := new_even_node(12, 2, "$d_{" & indexstr & ",1,0}$", "3", "");
+			node_r[index] := new_even_node(10, 2, "$e_{" & indexstr & ",1,0}$", "3", "");
+			node_X[index] := new_odd_node(14, 4, "$F_{" & indexstr & ",1}$", "4", "");
 		fi;
-		node_a[index] := new_even_node(4, 6, "$e_{" & indexstr & ",0}$", "3", "");
-		node_d_zero[index] := new_even_node_small(6, 6, "$g_1$", "3", "");
+		node_a[index] := new_even_node(4, 6, "$d_{" & indexstr & ",0,1}$", "3", "");
+		node_o[index] := new_even_node(6, 6, "$e_{" & indexstr & ",0,1}$", "3", "");
+		node_d_zero[index] := new_even_node_small(8, 6, "$g_1$", "3", "");
 		node_c[index] := new_prio_node(2, 8, "$h_{" & indexstr & ",0}$", decimal(2*index+10), decimal(2*index+10-mdpminus));
 		node_g[index] := new_even_node(4, 8, "$s_{" & indexstr & ",0}$", decimal(10), decimal(10-mdpminus));
-		node_f_zero[index] := new_even_node_small(6, 8, "$b_1$", "3", "");
+		node_f_zero[index] := new_even_node_small(8, 8, "$b_1$", "3", "");
 		if (index < count):
-			node_w[index] := new_even_node(8, 6, "$e_{" & indexstr & ",1}$", "3", "");
-			node_s[index] := new_even_node(8, 8, "$s_{" & indexstr & ",1}$", decimal(8), decimal(8-mdpminus));
-			node_u[index] := new_prio_node(10, 8, "$h_{" & indexstr & ",1}$", decimal(2*index+10), decimal(2*index+10-mdpminus));
+			node_w[index] := new_even_node(12, 6, "$d_{" & indexstr & ",1,1}$", "3", "");
+			node_q[index] := new_even_node(10, 6, "$e_{" & indexstr & ",1,1}$", "3", "");
+			node_s[index] := new_even_node(12, 8, "$s_{" & indexstr & ",1}$", decimal(8), decimal(8-mdpminus));
+			node_u[index] := new_prio_node(14, 8, "$h_{" & indexstr & ",1}$", decimal(2*index+10), decimal(2*index+10-mdpminus));
 		fi;
 
 		edge_d_left[index] := new_default_edge(node_d[index], node_E[index]);
@@ -230,23 +236,23 @@ vardef build_graph(expr aspg) =
 			edge_d_right[index] := new_default_edge(node_d[index], node_X[index]);
 			edge_add_text_line(edge_d_right[index], 0, latex("$g_" & indexstr & "^1$"), black, 0.7, false);
 		fi;
-		if (index > 1):
-			edge_m_in[index] := new_default_edge(node_m[index], node_d[index]);
-			edge_add_text_line(edge_m_in[index], 0, latex("$c_" & indexstr & "^1$"), black, 0.1, false);
-		fi;
 		edge_b_in[index] := new_default_edge(node_b[index], node_E[index]);
-		edge_add_text_line(edge_b_in[index], 0, latex("$d_{" & indexstr & ",0}^0$"), black, 0.75, true);
-		edge_b_out_m[index] := new_default_edge(node_b[index], node_m_one[index]);
-		edge_add_text_line(edge_b_out_m[index], 0, latex("$d_{" & indexstr & ",0}^2$"), black, 0.5, false);
-		edge_b_out_d[index] := new_default_edge(node_b[index], node_d_zero[index]);
-		edge_add_text_line(edge_b_out_d[index], 0, latex("$d_{" & indexstr & ",0}^1$"), black, 0.9, false);
+		edge_add_text_line(edge_b_in[index], 0, latex("$d_{" & indexstr & ",0,0}^1$"), black, 0.75, true);
+		edge_b_out[index] := new_default_edge(node_b[index], node_p[index]);
+		edge_add_text_line(edge_b_out[index], 0, latex("$d_{" & indexstr & ",0,0}^0$"), black, 0.5, false);
+		edge_p_out_m[index] := new_default_edge(node_p[index], node_m_one[index]);
+		edge_add_text_line(edge_p_out_m[index], 0, latex("$e_{" & indexstr & ",0,1}^1$"), black, 0.5, false);
+		edge_p_out_d[index] := new_default_edge(node_p[index], node_d_zero[index]);
+		edge_add_text_line(edge_p_out_d[index], 0, latex("$e_{" & indexstr & ",0,0}^0$"), black, 0.9, false);
 		if (index < count):
 			edge_v_in[index] := new_default_edge(node_v[index], node_X[index]);
-			edge_add_text_line(edge_v_in[index], 0, latex("$d_{" & indexstr & ",1}^0$"), black, 0.75, false);
-			edge_v_out_m[index] := new_default_edge(node_v[index], node_m_one[index]);
-			edge_add_text_line(edge_v_out_m[index], 0, latex("$d_{" & indexstr & ",1}^2$"), black, 0.5, false);
-			edge_v_out_d[index] := new_default_edge(node_v[index], node_d_zero[index]);
-			edge_add_text_line(edge_v_out_d[index], 0, latex("$d_{" & indexstr & ",1}^1$"), black, 0.75, false);
+			edge_add_text_line(edge_v_in[index], 0, latex("$d_{" & indexstr & ",1,0}^1$"), black, 0.75, false);
+			edge_v_out[index] := new_default_edge(node_v[index], node_r[index]);
+			edge_add_text_line(edge_v_out[index], 0, latex("$d_{" & indexstr & ",1,0}^0$"), black, 0.5, false);
+			edge_r_out_m[index] := new_default_edge(node_r[index], node_m_one[index]);
+			edge_add_text_line(edge_r_out_m[index], 0, latex("$e_{" & indexstr & ",1,0}^1$"), black, 0.5, false);
+			edge_r_out_d[index] := new_default_edge(node_r[index], node_d_zero[index]);
+			edge_add_text_line(edge_r_out_d[index], 0, latex("$e_{" & indexstr & ",1,0}^0$"), black, 0.75, false);
 		fi;
 		edge_E_in_b[index] := new_default_edge(node_E[index], node_b[index]);
 		edge_E_in_a[index] := new_default_edge(node_E[index], node_a[index]);
@@ -257,18 +263,22 @@ vardef build_graph(expr aspg) =
 			edge_X_out[index] := new_default_edge(node_X[index], node_s[index]);
 		fi;
 		edge_a_in[index] := new_default_edge(node_a[index], node_E[index]);
-		edge_add_text_line(edge_a_in[index], 0, latex("$e_{" & indexstr & ",0}^0$"), black, 0.75, false);
-		edge_a_out_m[index] := new_default_edge(node_a[index], node_m_one[index]);
-		edge_add_text_line(edge_a_out_m[index], 0, latex("$e_{" & indexstr & ",0}^2$"), black, 0.75, false);
-		edge_a_out_d[index] := new_default_edge(node_a[index], node_d_zero[index]);
-		edge_add_text_line(edge_a_out_d[index], 0, latex("$e_{" & indexstr & ",0}^1$"), black, 0.5, false);
+		edge_add_text_line(edge_a_in[index], 0, latex("$d_{" & indexstr & ",0,1}^1$"), black, 0.75, false);
+		edge_a_out[index] := new_default_edge(node_a[index], node_o[index]);
+		edge_add_text_line(edge_a_out[index], 0, latex("$d_{" & indexstr & ",0,1}^0$"), black, 0.75, false);
+		edge_o_out_m[index] := new_default_edge(node_o[index], node_m_one[index]);
+		edge_add_text_line(edge_o_out_m[index], 0, latex("$e_{" & indexstr & ",0,1}^1$"), black, 0.75, false);
+		edge_o_out_d[index] := new_default_edge(node_o[index], node_d_zero[index]);
+		edge_add_text_line(edge_o_out_d[index], 0, latex("$e_{" & indexstr & ",0,1}^0$"), black, 0.5, false);
 		if (index < count):
 			edge_w_in[index] := new_default_edge(node_w[index], node_X[index]);
-			edge_add_text_line(edge_w_in[index], 0, latex("$e_{" & indexstr & ",1}^0$"), black, 0.75, true);
-			edge_w_out_m[index] := new_default_edge(node_w[index], node_m_one[index]);
-			edge_add_text_line(edge_w_out_m[index], 0, latex("$e_{" & indexstr & ",1}^2$"), black, 0.9, false);
-			edge_w_out_d[index] := new_default_edge(node_w[index], node_d_zero[index]);
-			edge_add_text_line(edge_w_out_d[index], 0, latex("$e_{" & indexstr & ",1}^1$"), black, 0.5, false);
+			edge_add_text_line(edge_w_in[index], 0, latex("$d_{" & indexstr & ",1,1}^1$"), black, 0.75, true);
+			edge_w_out[index] := new_default_edge(node_w[index], node_q[index]);
+			edge_add_text_line(edge_w_out[index], 0, latex("$d_{" & indexstr & ",1,1}^0$"), black, 0.5, false);
+			edge_q_out_m[index] := new_default_edge(node_q[index], node_m_one[index]);
+			edge_add_text_line(edge_q_out_m[index], 0, latex("$e_{" & indexstr & ",1,1}^1$"), black, 0.9, false);
+			edge_q_out_d[index] := new_default_edge(node_q[index], node_d_zero[index]);
+			edge_add_text_line(edge_q_out_d[index], 0, latex("$e_{" & indexstr & ",1,1}^0$"), black, 0.5, false);
 		fi;
 		edge_g_in[index] := new_default_edge(node_g[index], node_c[index]);
 		edge_add_text_line(edge_g_in[index], 0, latex("$s_{" & indexstr & ",0}^1$"), black, 0.5, false);
@@ -286,9 +296,9 @@ vardef build_graph(expr aspg) =
 		edge_path_curl(edge_a_in[index], 0, -0.3);
 		edge_path_curl(edge_E_in_a[index], 0, -0.3);
 		edge_path_curl(edge_E_out[index], 0, 0.3);
-		edge_path_curl(edge_d_left[index], 0, 0.3);
+		edge_path_curl(edge_d_left[index], 0, 0.35);
 		if (index < count):
-			edge_path_curl(edge_d_right[index], 0, -0.3);
+			edge_path_curl(edge_d_right[index], 0, -0.35);
 			edge_path_curl(edge_v_in[index], 0, -0.3);
 			edge_path_curl(edge_w_in[index], 0, -0.3);
 			edge_path_curl(edge_X_in_v[index], 0, -0.3);
@@ -317,15 +327,13 @@ vardef build_graph(expr aspg) =
 		coords_enter_base((0,basey));
 		
 		node_f[count+1] := coords_register(0,0);
-		node_m[count+1] := coords_register(12,0);
 		
-		node_t        := new_prio_node(6,0, "$t$", "1", "");
+		node_t        := new_prio_node(8,0, "$t$", "1", "");
 
 		edge_t      := new_default_edge(node_t, node_t);
 			   	       edge_path_loop(edge_t, 0, 0.5, 0.75, 0);
 
 		edge_f_in[count+1] := new_coord_to_edge(node_f[count+1], node_t);
-		edge_m_in[count+1] := new_coord_to_edge(node_m[count+1], node_t);
 					   
 		coords_leave_base;
 		group_leave;
@@ -336,19 +344,15 @@ vardef build_graph(expr aspg) =
 		if (layer < count):
 			edge_u[layer] := new_default_edge(node_u[layer], node_d[layer+1]);
 			edge_add_text_line(edge_u[layer], 0, latex("$h_{" & decimal(layer) & ",1}^0$"), black, 0.2, false);
+			edge_path_curl(edge_u[layer], 0, -0.2);
 			edge_c[layer] := new_edge_to_coord(node_c[layer], node_f[layer+2]);
 			edge_add_text_line(edge_c[layer], 0, latex("$h_{" & decimal(layer) & ",0}^0$"), black, 0.2, false);
 			edge_f_out[layer] := new_default_edge(node_f[layer], node_f[layer+1]);
 			edge_add_text_line(edge_f_out[layer], 0, latex("$b_" & decimal(layer) & "^0$"), black, 0.03, false);
-			if (layer > 1):
-				edge_m_out[layer] := new_default_edge(node_m[layer], node_m[layer+1]);
-				edge_add_text_line(edge_m_out[layer], 0, latex("$c_" & decimal(layer) & "^0$"), black, 0.03, false);
-			fi;
 		else:
 			edge_c[layer] := new_default_edge(node_c[layer], node_t);
 			edge_add_text_line(edge_c[layer], 0, latex("$h_{" & decimal(layer) & ",0}^0$"), black, 0.5, false);
 			edge_f_out[layer] := new_edge_to_coord(node_f[layer], node_f[layer+1]);
-			edge_m_out[layer] := new_edge_to_coord(node_m[layer], node_m[layer+1]);
 		fi;
 
 	enddef;
@@ -393,18 +397,17 @@ vardef edge_translate(expr source, source_stack, target, target_stack) =
   
   if     (source="d") and (target="E"): edge_d_left[source_arr[0]+1]
   elseif (source="d") and (target="X"): edge_d_right[source_arr[0]+1]
-  elseif (source="f") and (target="d"): edge_f_in[source_arr[0]+1]
-  elseif (source="f") and (target="f"): edge_f_out[source_arr[0]+1]
-  elseif (source="f") and (target="Y"): edge_f_out[source_arr[0]+1]
-  elseif (source="m") and (target="d"): edge_m_in[source_arr[0]+1]
-  elseif (source="m") and (target="m"): edge_m_out[source_arr[0]+1]
-  elseif (source="m") and (target="Y"): edge_m_out[source_arr[0]+1]
+  elseif (source="m") and (target="d"): edge_f_in[source_arr[0]+1]
+  elseif (source="m") and (target="m"): edge_f_out[source_arr[0]+1]
+  elseif (source="m") and (target="Y"): edge_f_out[source_arr[0]+1]
   elseif (source="b") and (target="E"): edge_b_in[source_arr[0]+1]
-  elseif (source="b") and (target="m"): edge_b_out_m[source_arr[0]+1]
-  elseif (source="b") and (target="d"): edge_b_out_d[source_arr[0]+1]
+  elseif (source="b") and (target="p"): edge_b_out[source_arr[0]+1]
+  elseif (source="p") and (target="m"): edge_p_out_m[source_arr[0]+1]
+  elseif (source="p") and (target="d"): edge_p_out_d[source_arr[0]+1]
   elseif (source="v") and (target="X"): edge_v_in[source_arr[0]+1]
-  elseif (source="v") and (target="m"): edge_v_out_m[source_arr[0]+1]
-  elseif (source="v") and (target="d"): edge_v_out_d[source_arr[0]+1]
+  elseif (source="v") and (target="r"): edge_v_out[source_arr[0]+1]
+  elseif (source="r") and (target="m"): edge_r_out_m[source_arr[0]+1]
+  elseif (source="r") and (target="d"): edge_r_out_d[source_arr[0]+1]
   elseif (source="E") and (target="b"): edge_E_in_b[source_arr[0]+1]
   elseif (source="E") and (target="a"): edge_E_in_a[source_arr[0]+1]
   elseif (source="E") and (target="g"): edge_E_out[source_arr[0]+1]
@@ -412,15 +415,17 @@ vardef edge_translate(expr source, source_stack, target, target_stack) =
   elseif (source="X") and (target="w"): edge_X_in_w[source_arr[0]+1]
   elseif (source="X") and (target="s"): edge_X_out[source_arr[0]+1]
   elseif (source="a") and (target="E"): edge_a_in[source_arr[0]+1]
-  elseif (source="a") and (target="m"): edge_a_out_m[source_arr[0]+1]
-  elseif (source="a") and (target="d"): edge_a_out_d[source_arr[0]+1]
+  elseif (source="a") and (target="o"): edge_a_out[source_arr[0]+1]
+  elseif (source="o") and (target="m"): edge_o_out_m[source_arr[0]+1]
+  elseif (source="o") and (target="d"): edge_o_out_d[source_arr[0]+1]
   elseif (source="w") and (target="X"): edge_w_in[source_arr[0]+1]
-  elseif (source="w") and (target="m"): edge_w_out_m[source_arr[0]+1]
-  elseif (source="w") and (target="d"): edge_w_out_d[source_arr[0]+1]
+  elseif (source="w") and (target="q"): edge_w_out[source_arr[0]+1]
+  elseif (source="q") and (target="m"): edge_q_out_m[source_arr[0]+1]
+  elseif (source="q") and (target="d"): edge_q_out_d[source_arr[0]+1]
   elseif (source="g") and (target="c"): edge_g_in[source_arr[0]+1]
-  elseif (source="g") and (target="f"): edge_g_out[source_arr[0]+1]
+  elseif (source="g") and (target="m"): edge_g_out[source_arr[0]+1]
   elseif (source="s") and (target="u"): edge_s_in[source_arr[0]+1]
-  elseif (source="s") and (target="f"): edge_s_out[source_arr[0]+1]
+  elseif (source="s") and (target="m"): edge_s_out[source_arr[0]+1]
   else:
     -1
   fi

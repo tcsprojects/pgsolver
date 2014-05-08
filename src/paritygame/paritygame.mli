@@ -41,6 +41,8 @@ val pg_set_node   : paritygame -> int -> int -> int -> int array -> string optio
 
 val pg_find_desc  : paritygame -> string option -> int
 
+val pg_get_tr_index_of: paritygame -> int -> int -> int
+
 
 
 (**************************************************************

@@ -327,7 +327,7 @@ The following example shows how to benchmark the recursive and the strategy impr
 random game with 1000 nodes. To smooth multitasking interference factors, each test case is carried out 
 3 times.
 \begin{verbatim}
-    ~/pgsolver> bin/randomgame 1000 1000 2 4 | bin/benchmark -re -si -t 3
+    ~/pgsolver> bin/randomgame 1000 1000 2 4 | bin/benchmark -re '' -si '' -t 3
     Benchmarking stratimprove...
     Game # 0, Iteration #1...0.02 sec
     Game # 0, Iteration #2...0.02 sec
@@ -361,11 +361,8 @@ from files, and carries out the benchmark. The currently understood command-line
    Tells the tool to look for the specification of the parity game in the file
    \nonterminal{filename}.
 
-\item[{\tt --all}] \enspace or {\tt -a} \\
-   Benchmark all available parity games solvers.
-
-\item[{\tt --\nonterminal{solver}}] \ \\
-   Benchmark the specified solver. All solvers that are compiled into \pgsolver are available here.
+\item[{\tt --\nonterminal{solver} `solver options`}] \ \\
+   Benchmark the specified solver. All solvers that are compiled into \pgsolver are available here. Note: even if you don't want to pass any options to the solver, you still need to add ``.
 
 \item[{\tt --silent}] \enspace or {\tt -s} \\
    Only print the final statistics on \texttt{stdout}.
@@ -373,7 +370,7 @@ from files, and carries out the benchmark. The currently understood command-line
 \item[{\tt --gnuplotformat}] \enspace or {\tt -gp} \\
    Only print a gnuplot-compatible line.
 
- \item[{\tt --timeout \nonterminal{timeout}}] \enspace or {\tt -t \nonterminal{timeout}} \\
+ \item[{\tt --timeout \nonterminal{timeout}}] \enspace or {\tt -to \nonterminal{timeout}} \\
    If one of the solvers requires more than $t$ seconds on one of the test cases, the solver is ignored
    for the rest of the series. There is no timeout by default.
 

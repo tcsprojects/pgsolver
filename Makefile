@@ -186,7 +186,7 @@ $(SRCDIR)/pgsolver/whoiswho.ml: $(SRCDIR)/pgsolver/encipher.ml
 
 generators: $(GENERATORS:$(OBJDIR)/%.$(COMPILEEXT)=%) stratimprgen
 
-tools: obfuscator transformer compressor combine benchmark infotool
+tools: obfuscator transformer compressor combine benchmark infotool winningstrats
 
 %: $(SRCDIR)/generators/%.ml $(OBJDIR)/%.$(COMPILEEXT) $(OBJDIR)/rungenerator.$(COMPILEEXT)
 	$(OCAMLCOMP) $(CPPCOMPILER) -o $(BINDIR)/$@ nums.$(COMPILELIBEXT) $(OBJDIR)/info.$(COMPILEEXT) $(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) $(OBJDIR)/paritygame.$(COMPILEEXT) $(OBJDIR)/generators.$(COMPILEEXT) $(OBJDIR)/$@.$(COMPILEEXT) $(OBJDIR)/rungenerator.$(COMPILEEXT)
@@ -251,6 +251,20 @@ INFOTOOL_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
 
 infotool: $(INTERFACES) $(INFOTOOL_MODULES)
 	$(OCAMLCOMP) $(CPPCOMPILER) -o $(BINDIR)/infotool $(INFOTOOL_MODULES)
+
+WINNINGSTRATS_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
+                   $(OBJDIR)/basics.$(COMPILEEXT) \
+                   $(OBJDIR)/info.$(COMPILEEXT) \
+                   $(OBJDIR)/paritygame.$(COMPILEEXT) \
+                   $(OBJDIR)/solvers.$(COMPILEEXT) \
+                   $(OBJDIR)/specialsolve.$(COMPILEEXT) \
+                   $(OBJDIR)/transformations.$(COMPILEEXT) \
+                   $(OBJDIR)/univsolve.$(COMPILEEXT) \
+                   $(OBJDIR)/recursive.$(COMPILEEXT) \
+                   $(OBJDIR)/winningstrats.$(COMPILEEXT) \
+
+winningstrats: $(INTERFACES) $(WINNINGSTRATS_MODULES)
+	$(OCAMLCOMP) $(CPPCOMPILER) -o $(BINDIR)/winningstrats $(WINNINGSTRATS_MODULES)
 
 IMPRARENA_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
                    $(OBJDIR)/basics.$(COMPILEEXT) \

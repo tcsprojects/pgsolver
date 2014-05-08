@@ -76,6 +76,8 @@ let pg_set_node pg i pr pl delta desc = pg.(i) <- (pr, pl, delta, desc);;
 
 let pg_find_desc pg desc = ArrayUtils.find (fun (_,_,_,desc') -> desc = desc') pg
 
+let pg_get_tr_index_of pg i j = ArrayUtils.find (fun k -> k = j) (pg_get_tr pg i)
+
 
 
 (**************************************************************
