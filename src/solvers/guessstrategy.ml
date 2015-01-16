@@ -34,7 +34,7 @@ let solve game =
 
         let rec iterate_strat game =
 		incr counter;
-		msg_tagged 2 (fun _ -> "Guessing strategies #" ^ string_of_int !counter ^ "\r");
+		msg_tagged 2 (fun _ -> "Guessing strategy #" ^ string_of_int !counter ^ "\r");
 		let (sol, strat) = heuristic_solve game in
 		let c = Array.fold_left (fun c e -> if e = -1 then c else c + 1) 0 sol in
 		if c = 0 then iterate_strat game else (

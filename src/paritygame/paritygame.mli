@@ -18,7 +18,7 @@ type global_solver = (paritygame -> solution * strategy)
  **************************************************************)
 
 val pg_create     : int -> paritygame
-val pg_size		  : paritygame -> int
+val pg_size	  : paritygame -> int
 val pg_node_count : paritygame -> int
 val pg_edge_count : paritygame -> int
 val pg_copy       : paritygame -> paritygame

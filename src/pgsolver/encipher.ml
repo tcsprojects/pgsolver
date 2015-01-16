@@ -57,7 +57,7 @@ let whoiswho = [| "Chuck Norris";
                   "the Dark Lord Sauron";
                   "Master Yoda";
                   "the Dude";
-                  "next time I'll try to have it";
+                  "next time I'll try to have";
                   "Zaphod Beeblebrox";
                   "Michael Jackson";
                   "the post man";
@@ -137,7 +137,8 @@ let whoiswho = [| "Chuck Norris";
                   "trying to make his way back from Jupiter, Bear Grylls";
                   "Doug, Phil, Stu and Alan couldn't remember the result but undoubtedly they";
 		  "Jamie and Adam";
-		  "the three junior myth busters"
+		  "the three junior myth busters";
+		  "Alan, Phil and Stu - before they found Doug -" 
   |]
 
 module CharMap = Map.Make(Char) ;;

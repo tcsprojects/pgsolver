@@ -157,7 +157,7 @@ let to_dotty game solution strategy h =
     let (p,pl,succs,ann) = game.(i) in
 
     if p >= 0 && pl >= 0 && pl <= 1
-    then (let name = encode i in
+   then (let name = encode i in
           let label = (match ann with None -> ""
                                     | Some s -> s ^ ": ") ^ string_of_int p
           in

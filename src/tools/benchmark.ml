@@ -126,12 +126,16 @@ let _ =
 
   let game_count = ref 0 in
   let game_size = ref 0 in
+  let game_edges = ref 0 in
+  let game_index = ref 0 in
   let scc_count = ref 0 in
   let largest_scc = ref 0 in
 
   List.iter (fun g ->
 	incr game_count;
-	game_size := !game_size + Array.length g;
+	game_size := !game_size + pg_node_count g;
+	game_edges := !game_edges + pg_edge_count g;
+	game_index := !game_index + pg_get_index g;
 	let (sccs, _, _, _) = Paritygame.strongly_connected_components g in
 	let larg = ref 0 in
 	Array.iter (fun s -> larg := max !larg (List.length s)) sccs;
@@ -140,6 +144,8 @@ let _ =
   ) games;
 
   let avgsize = !game_size / !game_count in
+  let avgedges = !game_edges / !game_count in
+  let avgindex = !game_index / !game_count in
   let avgsccs = !scc_count / !game_count in
   let avgsccsize = !game_size / !scc_count in
   let avglargestscc = !largest_scc / !game_count in
@@ -201,7 +207,9 @@ let _ =
   else (
 	message 0 (fun _ ->
 	"+-----------------------------------------------------------------------------+\n" ^
-	"| " ^ StringUtils.fillup !title 75 ' ' ^" |\n" ^
+	"| " ^ StringUtils.fillup !title 75 ' ' ^ " |\n" ^
+        "+-----------------------------------------------------------------------------+\n" ^
+        "| " ^ StringUtils.fillup ("Average #nodes: "  ^ string_of_int avgsize ^ ", #edges: " ^ string_of_int avgedges ^ ", index: " ^ string_of_int avgindex) 75 ' ' ^ " |\n" ^
 	"+-----------------------------------------------------------------------------+\n" ^
 	"| Solver                   |           Best |        Average |          Worst |\n" ^
 	"+-----------------------------------------------------------------------------+\n" ^
