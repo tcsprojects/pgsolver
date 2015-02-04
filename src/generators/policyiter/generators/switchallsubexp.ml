@@ -42,10 +42,6 @@ let generator_game_func arguments =
 
 	let add sy pr pl li = SymbolicParityGame.add_node pg sy pr pl (Array.of_list li) (Some (symb_to_str sy)) in
 
-	let rec right_exp = function [] -> failwith "imp" | [a] -> a
-	|	a::r -> incr helpercnt; add (Helper !helpercnt) 0 0 [a; right_exp r]; Helper !helpercnt
-	in
-
 	let rec left_exp = function [] -> failwith "imp" | [a] -> a
 	|	a::b::r -> incr helpercnt; add (Helper !helpercnt) 0 0 [a; b]; left_exp ((Helper !helpercnt)::r)
 	in

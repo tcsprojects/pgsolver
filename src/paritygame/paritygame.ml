@@ -1087,10 +1087,44 @@ let compute_priority_reach_array' game =
 
 
 (**************************************************************
- * Symbolic Parity Game                                       *
+ * Dynamic Parity Game                                        *
  **************************************************************)
 
 type dynamic_paritygame = (int * int * string option) DynamicGraph.dynamic_graph
+
+let paritygame_to_dynamic_paritygame game =
+	let graph = DynamicGraph.make () in
+	Array.iteri (fun i (pr, pl, _, desc) ->
+		DynamicGraph.add_node i (pr, pl, desc) graph
+	) game;
+	Array.iteri (fun i (_, _, tr, _) ->
+		Array.iter (fun j -> DynamicGraph.add_edge i j graph) tr
+	) game;
+	graph
+
+let dynamic_subgame_by_strategy graph strat =
+	DynamicGraph.sub_graph_by_edge_pred (fun v w ->
+		strat.(v) = -1 || strat.(v) = w
+	) graph
+
+let paritygame_to_dynamic_paritygame_by_strategy game strat =
+	let graph = DynamicGraph.make () in
+	Array.iteri (fun i (pr, pl, _, desc) ->
+		DynamicGraph.add_node i (pr, pl, desc) graph
+	) game;
+	Array.iteri (fun i (_, _, tr, _) ->
+		if strat.(i) = -1
+		then Array.iter (fun j -> DynamicGraph.add_edge i j graph) tr
+		else DynamicGraph.add_edge i strat.(i) graph
+	) game;
+	graph
+
+
+
+
+(**************************************************************
+ * Symbolic Parity Game                                       *
+ **************************************************************)
 
 module SymbolicParityGame = struct
 

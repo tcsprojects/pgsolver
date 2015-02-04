@@ -164,6 +164,9 @@ $(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/paritygame/%.ml
 $(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/solvers/%.ml
 	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
 
+$(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/solvers/stratimpralgs/%.ml
+	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
+
 $(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/%.ml
 	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
 
@@ -171,6 +174,9 @@ $(OBJDIR)/%.cmi: $(SRCDIR)/paritygame/%.mli
 	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
 
 $(OBJDIR)/%.cmi: $(SRCDIR)/solvers/%.mli
+	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
+
+$(OBJDIR)/%.cmi: $(SRCDIR)/solvers/stratimpralgs/%.mli
 	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
 
 $(OBJDIR)/%.cmi: $(SRCDIR)/pgsolver/%.mli
@@ -351,11 +357,11 @@ itersat: satsolvers $(ITERSAT_INTERFACES) $(ITERSAT_MODULES) $(OBJDIR)/itersat.$
 benchmark: satsolvers $(INTERFACES) $(MODULES) $(OBJDIR)/benchmark.$(COMPILEEXT)
 	$(OCAMLCOMP) $(LPMODULESCC) -o $(BINDIR)/benchmark $(CPPCOMPILER) nums.$(COMPILELIBEXT) $(SMTMODULES) $(SATSOLVERMODSX) $(SATSOLVERMODS) $(MODULES) $(OBJDIR)/benchmark.$(COMPILEEXT)
 
-benchstratimpr: $(INTERFACES) $(MODULES_WITHOUT_SOLVERS) $(OBJDIR)/stratimpralgs.cmi $(OBJDIR)/stratimpralgs.$(COMPILEEXT) $(OBJDIR)/benchstratimpr.$(COMPILEEXT)
-	$(OCAMLCOMP) -o $(BINDIR)/benchstratimpr $(CPPCOMPILER) nums.$(COMPILELIBEXT) $(MODULES_WITHOUT_SOLVERS) $(OBJDIR)/stratimpralgs.$(COMPILEEXT) $(OBJDIR)/benchstratimpr.$(COMPILEEXT)
+benchstratimpr: $(INTERFACES)  $(MODULES) $(OBJDIR)/benchstratimpr.$(COMPILEEXT)
+	$(OCAMLCOMP) -o $(BINDIR)/benchstratimpr $(CPPCOMPILER) nums.$(COMPILELIBEXT)  $(MODULES) $(OBJDIR)/benchstratimpr.$(COMPILEEXT)
 
-policyitervis: $(INTERFACES) $(MODULES_WITHOUT_SOLVERS) $(OBJDIR)/stratimpralgs.cmi $(OBJDIR)/stratimpralgs.$(COMPILEEXT) $(OBJDIR)/policyitervis.$(COMPILEEXT)
-	$(OCAMLCOMP) -o $(BINDIR)/policyitervis $(CPPCOMPILER) str.$(COMPILELIBEXT) nums.$(COMPILELIBEXT) $(MODULES_WITHOUT_SOLVERS) $(OBJDIR)/stratimpralgs.$(COMPILEEXT) $(OBJDIR)/policyitervis.$(COMPILEEXT)
+policyitervis: $(INTERFACES)  $(MODULES) $(OBJDIR)/policyitervis.$(COMPILEEXT)
+	$(OCAMLCOMP) -o $(BINDIR)/policyitervis $(CPPCOMPILER) str.$(COMPILELIBEXT) nums.$(COMPILELIBEXT) $(MODULES) $(OBJDIR)/policyitervis.$(COMPILEEXT)
 
 COMPRESSOR_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
                    $(OBJDIR)/info.$(COMPILEEXT) \

@@ -269,10 +269,23 @@ val compute_priority_reach_array': paritygame -> int array array
 
 
 (**************************************************************
- * Symbolic Parity Game                                       *
+ * Dynamic Parity Game                                        *
  **************************************************************)
 
 type dynamic_paritygame = (int * int * string option) Tcsgraph.DynamicGraph.dynamic_graph
+
+val paritygame_to_dynamic_paritygame: paritygame -> dynamic_paritygame
+
+val dynamic_subgame_by_strategy: dynamic_paritygame -> strategy -> dynamic_paritygame
+
+val paritygame_to_dynamic_paritygame_by_strategy: paritygame -> strategy -> dynamic_paritygame
+
+
+
+(**************************************************************
+ * Symbolic Parity Game                                       *
+ **************************************************************)
+
 
 module SymbolicParityGame : sig
 
@@ -282,7 +295,7 @@ module SymbolicParityGame : sig
 
 	val to_paritygame: 'a symbolic_paritygame -> paritygame
 
-    val touch_node: 'a symbolic_paritygame -> 'a -> unit
+  val touch_node: 'a symbolic_paritygame -> 'a -> unit
    
 	val add_node: 'a symbolic_paritygame -> 'a -> int -> int -> 'a array -> string option -> unit
 

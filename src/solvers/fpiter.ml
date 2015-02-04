@@ -2,6 +2,7 @@ open Basics ;;
 open Paritygame ;;
 open Univsolve;;
 open Solvers;;
+open Tcsbasedata;;
 
 (*
 let rec repeat_until command condition =
@@ -327,7 +328,7 @@ let solve' game =
       let winner = solution.(v) in
       msg_tagged 3 (fun _ -> "  Processing node " ^ string_of_int v ^ " at time " ^ show_timestamp bound ^ "\n");
       if last_visit.(v) = None || 
-         let Some lstvis = last_visit.(v) in
+         let lstvis = OptionUtils.get_some last_visit.(v) in
 (*         msg_tagged 3 (fun _ -> "Now comparing " ^ show_timestamp bound ^ " against " ^ show_timestamp lstvis ^ " w.r.t. " ^ 
                                 string_of_int prio ^ " ... "); *)
          compare winner prio bound lstvis < 0 then
