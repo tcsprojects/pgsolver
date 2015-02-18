@@ -16,3 +16,4 @@ doc/main.dvi
 *.log
 doc/main.thm
 doc/main.toc
+.paths

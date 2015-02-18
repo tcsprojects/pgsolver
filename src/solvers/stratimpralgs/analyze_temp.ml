@@ -9,6 +9,132 @@ open Tcslist;;
 open Tcsstrings;;
 
 
+let next_bits bits =
+	let keep = ref false in
+	Array.init (Array.length bits) (fun i ->
+		if !keep
+		then bits.(i)
+		else if bits.(i) = 1
+		     then 0
+				 else (
+				   keep := true;
+					 1
+				 )
+	);;
+
+let zero_bits n = Array.make (n+1) 0;;
+
+let up_bits bits = Array.init (Array.length bits) (fun i -> if i < Array.length bits - 1 then bits.(i + 1) else 0);;
+
+let bits_mu bits =
+	let rec helper i =
+		if (bits.(i) = 0 || i == Array.length bits) then i else helper (i+1)
+	in
+	helper 0;; 
+
+let mu_bits bits =
+	let mu = bits_mu bits in
+	Array.init (Array.length bits) (fun i -> if i = mu then 1 else bits.(i));;		
+
+let bits_ptr bits =
+	let next = Array.make (Array.length bits) None in
+	for i = Array.length bits - 1 downto 0 do
+		next.(i) <- if bits.(i) = 1 then Some i else next.(i+1);
+	done;
+	next;;   
+
+		
+		
+let is_initial_strategy game strategy bits =
+		let find x i = pg_find_desc game (Some (x ^ string_of_int i)) in
+		let n = Array.length bits - 1 in
+		let valid = ref "" in
+		let v x y asrt =
+			let r = if strategy.(x) = y then 1 else 0 in 
+			if (r != asrt) then valid := !valid ^ (match pg_get_desc game x with None -> "" | Some y -> y) ^ ", ";
+			()
+		in
+	  for i = 0 to n - 1 do
+			v (find "m" i) (find "d" i) bits.(i);
+			v (find "g" i) (find "c" i) (1 - bits.(i+1));
+			if (i < n-1) then (
+    			v (find "s" i) (find "u" i) bits.(i+1);
+			);
+			if (bits.(i) = 1) then (
+   			v (find "d" i) (find "E" i) (1 - bits.(i+1));
+				if (bits.(i+1) = 0) then (
+     			v (find "a" i) (find "E" i) 1;
+     			v (find "b" i) (find "E" i) 1;
+				) else (
+     			v (find "v" i) (find "X" i) 1;
+     			v (find "w" i) (find "X" i) 1;
+				)
+			);
+	  done;
+		!valid = "";;
+	
+
+let is_phase_1 game strategy bits =
+		let find x i = pg_find_desc game (Some (x ^ string_of_int i)) in
+		let n = Array.length bits - 1 in
+		let valid = ref "" in
+		let v x y asrt =
+			let r = if strategy.(x) = y then 1 else 0 in 
+			if (r != asrt) then valid := !valid ^ (match pg_get_desc game x with None -> "" | Some y -> y) ^ ", ";
+			()
+		in
+	  for i = 0 to n - 1 do
+			v (find "m" i) (find "d" i) bits.(i);
+			v (find "g" i) (find "c" i) (1 - bits.(i+1));
+			if (i < n-1) then (
+    			v (find "s" i) (find "u" i) bits.(i+1);
+			);
+			if (bits.(i) = 1) then (
+   			v (find "d" i) (find "E" i) (1 - bits.(i+1));
+				if (bits.(i+1) = 0) then (
+     			v (find "a" i) (find "E" i) 1;
+     			v (find "b" i) (find "E" i) 1;
+				) else (
+     			v (find "v" i) (find "X" i) 1;
+     			v (find "w" i) (find "X" i) 1;
+				)
+			);
+	  done;
+		!valid;;
+ 
+
+let is_phase_2 game strategy bits =
+		let find x i = pg_find_desc game (Some (x ^ string_of_int i)) in
+		let n = Array.length bits - 1 in
+		let valid = ref "" in
+		let v x y asrt =
+			let r = if strategy.(x) = y then 1 else 0 in 
+			if (r != asrt) then valid := !valid ^ (match pg_get_desc game x with None -> "" | Some y -> y) ^ ", ";
+			()
+		in
+		let mu = bits_mu bits in
+	  for i = 0 to n - 1 do
+			if (i != mu && i != mu - 1) then v (find "m" i) (find "d" i) bits.(i);
+			v (find "g" i) (find "c" i) (1 - bits.(i+1));
+			if (i < n-1 && i != mu - 1) then (
+    			v (find "s" i) (find "u" i) bits.(i+1);
+			);
+			if (bits.(i) = 1 || i = mu) then (
+				if (i != mu) then v (find "d" i) (find "E" i) (1 - bits.(i+1));
+				if (bits.(i+1) = 0) then (
+     			v (find "a" i) (find "E" i) 1;
+     			v (find "b" i) (find "E" i) 1;
+				) else (
+     			v (find "v" i) (find "X" i) 1;
+     			v (find "w" i) (find "X" i) 1;
+				)
+			);
+	  done;
+		!valid;; 
+	
+	
+	
+	
 	
 let my_count_sub_exp = ref 0
 let last_check_sub_exp = ref ""
@@ -90,7 +216,7 @@ let test_assumptions game strategy valu =
 		let (_, path, _) = valu.(i) in
 		TreeSet.mem (j) path
 	in
-	let sigma_is s t = strategy.(find s) == find t in
+	let sigma_is s t = strategy.(find s) = find t in
 	let n = ref 0 in
 	while (try let _ = findf ("m" ^ string_of_int !n) in true with Not_found -> false) do incr n done;
 	let n = !n in
@@ -150,7 +276,7 @@ let test_assumptions game strategy valu =
 	let next x = if (strategy.(x) != -1) then strategy.(x) else counter.(x) in
 	let rec reset x =
 			let y = String.get (match (pg_get_desc game x) with Some s -> s | None -> "Z") 0 in
-			if (y == 'Z' || y == 'm' || y == 'd') then x else reset (next x)
+			if (y = 'Z' || y = 'm' || y = 'd') then x else reset (next x)
 	in 
 	for i = 0 to n - 2 do
 		if niff (cmp_valu (find ("E" ^ string_of_int i)) (find ("X" ^ string_of_int i)) > 0)
@@ -262,55 +388,62 @@ let check_fair_exp_occ game strategy bits occ =
 		!valid;;
 *)
 
-let next_bits bits =
-	let keep = ref false in
-	Array.init (Array.length bits) (fun i ->
-		if !keep then bits.(i) else if bits.(i) = 1 then 0 else (keep := true; 1)
-	);;
-
-let is_phase_1 game strategy bits next_bits =
-		let find x i = pg_find_desc game (Some (x ^ string_of_int i)) in
-		let n = Array.length bits - 1 in
-		let valid = ref "" in
-		let v x y asrt =
-			let r = if strategy.(x) == y then 1 else 0 in 
-			if (r != asrt) then valid := !valid ^ (match pg_get_desc game x with None -> "" | Some y -> y) ^ ", ";
-			()
-		in
-		let next = Array.make (Array.length bits) None in
-		for i = n - 1 downto 0 do
-			next.(i) <- if bits.(i) == 1 then Some i else next.(i+1);
-		done;   
-	  for i = 0 to n - 1 do
-			v (find "m" i) (find "d" i) bits.(i);
-			v (find "g" i) (find "c" i) (1 - bits.(i+1));
-			if (i < n-1) then (
-    			v (find "s" i) (find "u" i) bits.(i+1);
-			);
-			if (bits.(i) == 1) then (
-   			v (find "d" i) (find "E" i) (1 - bits.(i+1));
-				if (bits.(i+1) == 0) then (
-     			v (find "a" i) (find "E" i) 1;
-     			v (find "b" i) (find "E" i) 1;
-				) else (
-     			v (find "v" i) (find "X" i) 1;
-     			v (find "w" i) (find "X" i) 1;
-				)
-			);
-			if (bits.(i) == 0 && bits.(i+1) == 1) then (
-				v (find "d" i) (find "E" i) (bits.(i+1));
-			);
-	  done;
-		!valid
-;; 
-
 let curbits = ref [||] ;;
 let old_phase = ref "";;
 let iteration = ref 0;;
+let last_active_phases = ref TreeSet.empty_def;;
 
+let switch_zadeh_exp_tie_break_callback n game old_strategy v w r s =
 
-let switch_zadeh_exp_tie_break_callback n game old_strategy r s =
-	let msg_tagged_nl v = message_autotagged_newline v (fun _ -> "STRIMPR_FAIR") in
+		let msg_tagged_nl v = message_autotagged_newline v (fun _ -> "ANALYZE") in
+
+		if (Array.length !curbits = 0)
+		then curbits := zero_bits n;
+		
+	  if (not (is_initial_strategy game old_strategy !curbits) && (is_initial_strategy game old_strategy (next_bits !curbits)))
+		then (
+			curbits := next_bits !curbits;
+			msg_tagged_nl 1 (fun _ -> "--------------------------------------------------\n");
+			last_active_phases := TreeSet.empty_def;
+		);
+		
+		let focus = [("m", "M M M"); ("d", "D D D"); ("g", "G G G"); ("s", "S S S");
+		             ("a", "- -"); ("b", "- -"); ("v", "- -"); ("w", "- -");
+								 ("o", "o"); ("p", "o"); ("q", "o"); ("r", "o")
+		] in
+		
+		let phases = [(*
+			("p1", is_phase_1);
+			("p2", is_phase_2)*)
+		] in
+		let active_phases = ref TreeSet.empty_def in
+		let inactive_phases = ref [] in
+		List.iter (fun (p, f) ->
+			let s = f game old_strategy !curbits in
+			if s = ""
+			then active_phases := TreeSet.add p !active_phases
+			else inactive_phases := (p, s)::!inactive_phases
+		) phases;
+		let inactive_now = List.filter (fun (p, _) -> TreeSet.mem p !last_active_phases) !inactive_phases in
+		last_active_phases := !active_phases;		
+		
+		let has_focus = ref None in
+		List.iter (fun (x, t) ->
+			let y = OptionUtils.get_some (pg_get_desc game v) in
+			if String.sub y 0 (String.length x) = x
+			then has_focus := Some t
+	  ) focus;
+		
+		msg_tagged_nl 1 (fun _ ->
+			ListUtils.format string_of_int (List.rev (Array.to_list !curbits)) ^ " : " ^
+			TreeSet.format (fun p -> p) !active_phases ^ " -- " ^
+		  ListUtils.format (fun (p, s) -> p ^ ":" ^ s) inactive_now ^ 
+			" -- " ^ OptionUtils.get_some (pg_get_desc game v) ^ "->" ^ OptionUtils.get_some (pg_get_desc game w) ^
+			(if !has_focus != None then " " ^ OptionUtils.get_some !has_focus else "") ^ 
+			"\n"
+		);
+		
+
 		(*
   let state = fair_exp_get_bit_state game old_strategy in
 	if (compare state !old_state != 0) then (
@@ -327,12 +460,11 @@ let switch_zadeh_exp_tie_break_callback n game old_strategy r s =
 	(*
 	test_assumptions game old_strategy valu;
 	*)
-   
-if (Array.length !curbits = 0) then (
-	curbits := Array.make (n+1) 0;
-);
+   (*
+
+
 let is_next = ref false in
-if (compare (is_phase_1 game old_strategy (next_bits !curbits) (next_bits (next_bits !curbits))) "" == 0) then (
+if (compare (is_phase_1 game old_strategy (next_bits !curbits) (next_bits (next_bits !curbits))) "" = 0) then (
 	curbits := next_bits !curbits;
 	is_next := true;
 );
@@ -343,7 +475,7 @@ done;
 let nextbits = next_bits !curbits in
 	incr iteration;
 let phase = is_phase_1 game old_strategy !curbits nextbits in
-let phase = if compare phase "" == 0 then phase else is_phase_1 game old_strategy nextbits (next_bits nextbits) in
+let phase = if compare phase "" = 0 then phase else is_phase_1 game old_strategy nextbits (next_bits nextbits) in
 
 is_next := !is_next || (compare phase !old_phase != 0);
 old_phase := phase;
@@ -360,3 +492,4 @@ if !last_check_sub_exp <> !r && is_phase_1 game old_strategy state' then (
 		incr my_count_sub_exp;
 	);*)
     msg_tagged_nl 3 (fun _ -> "\n\rState: " ^ s ^ " / " (*^ !t ^ " / "*) ^ r ^ " = " ^ string_of_int !my_count_sub_exp ^ "        \n");
+*)

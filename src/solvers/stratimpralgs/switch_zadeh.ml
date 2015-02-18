@@ -127,8 +127,6 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 		)
 	done;
 	
-	switch_zadeh_exp_tie_break_callback n game old_strategy !r !s;
-
 	let compare_nodes k (soulab0, souidx0) (tarlab0, taridx0) (oldlab0, oldidx0) (soulab1, souidx1) (tarlab1, taridx1) (oldlab1, oldidx1)
 					  state idxmap strat =
 		let nn = 2 * k in
@@ -180,10 +178,13 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 				then (String.get s 0, 0)
 				else (String.get s 0, int_of_string (StringUtils.rest_string s 1))
 	in
-	ListUtils.min_elt (fun (i0,j0,k0) (i1,j1,k1) ->
+	let (i,j,k) = ListUtils.min_elt (fun (i0,j0,k0) (i1,j1,k1) ->
 		compare_nodes (pg_size game) (f i0) (f k0) (f old_strategy.(i0)) (f i1) (f k1) (f old_strategy.(i1)) state' idxmap
 		   (fun s -> f old_strategy.(OptionUtils.get_some (find s)))
-	) l
+	) l in
+	switch_zadeh_exp_tie_break_callback n game old_strategy i k !r !s;
+	(i,j,k)
+
 
 		   
 
