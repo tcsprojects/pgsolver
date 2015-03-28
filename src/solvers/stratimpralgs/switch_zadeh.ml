@@ -182,7 +182,7 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 		compare_nodes (pg_size game) (f i0) (f k0) (f old_strategy.(i0)) (f i1) (f k1) (f old_strategy.(i1)) state' idxmap
 		   (fun s -> f old_strategy.(OptionUtils.get_some (find s)))
 	) l in
-	switch_zadeh_exp_tie_break_callback n game old_strategy i k !r !s;
+	switch_zadeh_exp_tie_break_callback n game old_strategy valu i k !r !s;
 	(i,j,k)
 
 

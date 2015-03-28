@@ -47,11 +47,11 @@ INCLUDES=-I $(SRCDIR) -I $(OBJDIR) -I $(OCAML_DIR) -I $(SATSOLVERSOBJ) -I $(TCSL
 
 include $(SATSOLVERSROOT)/Config.include
 
-# ifeq "$(HASSAT)" "YES"
+ifeq "$(HASSAT)" "YES"
 
 CPPCOMPILER=-cc $(OCAMLOPTCPP)
 
-# endif
+endif
 
 
 ###########################################################
