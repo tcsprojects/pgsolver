@@ -65,14 +65,14 @@ let generator_game_func arguments =
 	add1  (PairSelector n) (2 * n + 11) [FinalSink];
 	
 	for i = 0 to n - 1 do
-		add0  (CycleNodeX1 i)  3  	 		  (FinalSink::CycleCenter1 i::[CycleNodeX1T i]);
-		add0  (CycleNodeX1T i)  3  	 		  (FinalSink::PairSelector 0::[Selector 1]);
-		if i < n-1 then add0  (CycleNodeX2 i)  3  	 		  [FinalSink; CycleCenter2 i;CycleNodeX2T i];
-		if i < n-1 then add0  (CycleNodeX2T i)  3  	 		  [FinalSink; PairSelector 0;Selector 1];
-		add0  (CycleNodeY1 i)  3  	 		  (FinalSink::CycleCenter1 i::[CycleNodeY1T i]);
-		add0  (CycleNodeY1T i)  3  	 		  (FinalSink::PairSelector 0::[Selector 1]);
-		if i < n-1 then add0  (CycleNodeY2 i)  3	 		  [FinalSink; CycleCenter2 i; CycleNodeY2T i];
-		if i < n-1 then add0  (CycleNodeY2T i)  3	 		  [FinalSink; PairSelector 0; Selector 1];
+		add0  (CycleNodeX1 i)  3  	 		                  [CycleCenter1 i; CycleNodeX1T i];
+		add0  (CycleNodeX1T i)  3  	 		                  [PairSelector 0; Selector 1];
+		if i < n-1 then add0  (CycleNodeX2 i)  3  	 		  [CycleCenter2 i;CycleNodeX2T i];
+		if i < n-1 then add0  (CycleNodeX2T i)  3  	 		  [PairSelector 0;Selector 1];
+		add0  (CycleNodeY1 i)  3  	 		                  [CycleCenter1 i; CycleNodeY1T i];
+		add0  (CycleNodeY1T i)  3  	 		                  [PairSelector 0; Selector 1];
+		if i < n-1 then add0  (CycleNodeY2 i)  3	 		    [CycleCenter2 i; CycleNodeY2T i];
+		if i < n-1 then add0  (CycleNodeY2T i)  3	 		    [PairSelector 0; Selector 1];
 
 		add0  (PairSelector i) (2 * i + 11)   (if i < n-1 then [CycleCenter1 i; CycleCenter2 i] else [CycleCenter1 i]);
 		add0  (Selector i) 3 [PairSelector i; (if i < n - 1 then Selector (i+1) else FinalSink)];

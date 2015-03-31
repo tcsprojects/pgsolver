@@ -182,7 +182,7 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 		compare_nodes (pg_size game) (f i0) (f k0) (f old_strategy.(i0)) (f i1) (f k1) (f old_strategy.(i1)) state' idxmap
 		   (fun s -> f old_strategy.(OptionUtils.get_some (find s)))
 	) l in
-	switch_zadeh_exp_tie_break_callback n game old_strategy valu i k !r !s;
+	switch_zadeh_exp_tie_break_callback n game old_strategy valu occ i k !r !s;
 	(i,j,k)
 
 
@@ -197,6 +197,7 @@ let strategy_improvement_optimize_fair_policy game =
 		) game
 	) false "STRIMPR_FAIR";;
 
+
 let strategy_improvement_optimize_fair_sub_exp_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position 
                          (improvement_policy_optimize_fair improvement_policy_optimize_fair_sub_exp_tie_break) (
@@ -208,7 +209,64 @@ let strategy_improvement_optimize_fair_sub_exp_policy game =
 
 
 
+let initial_strategy_for_exp_game game =
+	let n = ref 0 in
+	let find s =
+		let i = ref 0 in
+		while (!i < pg_size game) && (pg_get_desc game !i <> Some s) do
+			incr i
+		done;
+		if !i < pg_size game then !i else -1
+	in
+	while (find ("m" ^ string_of_int !n) != -1) do incr n done;
+	let n = !n in
+	let parse de =
+		let s = OptionUtils.get_some de in
+		(String.get s 0, int_of_string (StringUtils.rest_string s 1))
+	in		
+	let strategy = initial_strategy_by_best_reward game in
+	for i = 0 to Array.length game - 1 do
+		let (pr, pl, tr, de) = game.(i) in
+		if (pr >= 0) && (pl = 0) && (Array.length tr >= 2) then (
+			let (c, j) = parse de in
+			match c with
+			| 'a' -> strategy.(i) <- find ("o" ^ string_of_int j)
+			| 'b' -> strategy.(i) <- find ("p" ^ string_of_int j)
+			| 'v' -> strategy.(i) <- find ("r" ^ string_of_int j)
+			| 'w' -> strategy.(i) <- find ("q" ^ string_of_int j)
+			| 'o' -> strategy.(i) <- find ("m" ^ string_of_int 1)
+			| 'p' -> strategy.(i) <- find ("m" ^ string_of_int 1)
+			| 'q' -> strategy.(i) <- find ("m" ^ string_of_int 1)
+			| 'r' -> strategy.(i) <- find ("m" ^ string_of_int 1)
+			| 'd' -> strategy.(i) <- find ("E" ^ string_of_int j)
+			| 'g' -> strategy.(i) <- find ("c" ^ string_of_int j)
+			| 's' -> strategy.(i) <- find ("m" ^ string_of_int 0)
+			| 'm' -> strategy.(i) <- find (if j < n -1 then ("m" ^ string_of_int (j+1)) else "Y")
+			| _ -> ()
+		)
+  done;
+	strategy;;
 
+let strategy_improvement_optimize_fair_exp_policy game =
+	strategy_improvement game initial_strategy_for_exp_game node_total_ordering_by_position 
+                         (improvement_policy_optimize_fair improvement_policy_optimize_fair_sub_exp_tie_break) (
+		Array.map (fun (_, pl, tr, _) ->
+			if pl = 1 then [||]
+			else Array.make (Array.length tr) 0
+		) game
+	) false "STRIMPR_FAIRSE";;
+
+
+
+let strategy_improvement_optimize_fair_worstcase_policy game =
+	let find s =
+		let i = ref 0 in
+		while (!i < pg_size game) && (pg_get_desc game !i <> Some s) do
+			incr i
+		done;
+		if !i < pg_size game then Some !i else None
+	in
+	if (find "p0" != None) then strategy_improvement_optimize_fair_exp_policy game else strategy_improvement_optimize_fair_sub_exp_policy game;;
 
 
 register_sub_solver
@@ -216,6 +274,6 @@ register_sub_solver
 	"switchfair" "sf" "Zadeh's fair policy iteration";;
 
 register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_fair_sub_exp_policy g)
+	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_fair_worstcase_policy g)
 	"switchfairse" "sfse" "Zadeh's fair policy iteration with lower bound breaking ties";;
 

@@ -16,6 +16,7 @@ STRATIMPRLIST=$(PGSOLVERSOBJ)/stratimpralgs.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/switch_history.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/switch_cunningham.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/analyze_temp.$(COMPILEEXT) \
+	$(PGSOLVERSOBJ)/analyze_helper.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/switch_zadeh.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/switch_globally_best.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/switch_locally_best.$(COMPILEEXT) \
