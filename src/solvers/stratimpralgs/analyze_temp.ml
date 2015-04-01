@@ -1,7 +1,6 @@
 open Basics;;
 open Stratimpralgs;;
 open Paritygame;;
-open Analyze_helper;;
 open Tcsset;;
 open Tcsbasedata;;
 open Univsolve;;
@@ -23,124 +22,116 @@ end;;
 
 
 
+let strategy_length game =
+	let n = ref 0 in 
+	while (
+		try
+			let _ =  pg_find_desc game (Some ("m" ^ string_of_int !n)) in
+			true
+		with Not_found -> false
+	) do
+		incr n 
+	done;
+	!n;;
+
+let strategy_is game strategy v w =
+	try
+		strategy.(pg_find_desc game (Some v)) = pg_find_desc game (Some w)
+	with Not_found -> false;;
+	
+	
+	
+	
+type strategy_info = {
+	len: int;
+	b: int array;
+	s0: int array;
+	s1: int array;
+	e0: int array;
+	e1: int array;
+	e0g: int array;
+	e1g: int array;
+	e0b: int array;
+	e1b: int array;
+	g: int array;
+	good: int array;
+	mu: int;
+	r: int;
+};;
+
+let strategy_info game strategy = 
+	let len = strategy_length game in
+	let strat a i b j = if strategy_is game strategy (a ^ string_of_int i) (b ^ string_of_int j) then 1 else 0 in
+	let b = Array.init len (fun i -> strat "m" i "d" i) in
+	let s0 = Array.init len (fun i -> 1 - strat "g" i "m" 0) in
+	let s1 = Array.init len (fun i -> if i < len - 1 then 1 - strat "s" i "m" 0 else 0) in
+	let e0 = Array.init len (fun i -> strat "a" i "E" i * strat "b" i "E" i) in
+	let e1 = Array.init len (fun i -> if i < len - 1 then strat "v" i "X" i * strat "w" i "X" i else 0) in
+	let g = Array.init len (fun i -> strat "d" i "X" i) in
+	let good = Array.make len 1 in
+	for i = len - 2 downto 0 do
+		good.(i) <- if b.(i) = 0 || (g.(i) = 0 && e0.(i) = 1 && b.(i+1) = 0) || (g.(i) = 1 && e1.(i) = 1 && b.(i+1) = 1 && good.(i+1) = 1) then 1 else 0
+	done;
+	let mu = if Bits.least_zero good = len then Bits.least_one (Bits.mult good (Bits.not b)) else Bits.least_one (Bits.mult good b) in
+	let r = Bits.least_zero (Array.init (len-2) (fun i -> if b.(i) = 0 && (g.(i) = 0 || s1.(i) = 0 || good.(i+1) = 0) then 0 else 1)) in
+	
+	let e0g = Array.init len (fun i -> max (strat "o" i "d" 0 * strat "a" i "o" i) (strat "p" i "d" 0 * strat "b" i "p" i)) in
+	let e0b = Array.init len (fun i -> max (strat "o" i "m" 1 * strat "a" i "o" i) (strat "p" i "m" 1 * strat "b" i "p" i)) in
+	let e1g = Array.init len (fun i -> max (strat "q" i "d" 0 * strat "w" i "q" i) (strat "r" i "d" 0 * strat "v" i "r" i)) in
+	let e1b = Array.init len (fun i -> max (strat "q" i "m" 1 * strat "w" i "q" i) (strat "r" i "m" 1 * strat "v" i "r" i)) in
+	{
+		len = len;
+		b = b;
+		s0 = s0;
+		s1 = s1;
+		e0 = e0;
+		e1 = e1;
+		g = g;
+		good = good;
+		mu = mu;
+		r = r;
+		e0g = e0g;
+		e0b = e0b;
+		e1g = e1g;
+		e1b = e1b;
+	};;
+	
+
 		
 						
-let is_initial_strategy game strategy bits =
-		let find x i = pg_find_desc game (Some (x ^ string_of_int i)) in
-		let n = Array.length bits - 1 in
-		let valid = ref "" in
-		let v x y asrt =
-			let r = if strategy.(x) = y then 1 else 0 in 
-			if (r != asrt) then valid := !valid ^ (match pg_get_desc game x with None -> "" | Some y -> y) ^ ", ";
-			()
-		in
-	  for i = 0 to n - 1 do
-			v (find "m" i) (find "d" i) bits.(i);
-			v (find "g" i) (find "c" i) (1 - bits.(i+1));
-			if (i < n-1) then (
-    			v (find "s" i) (find "u" i) bits.(i+1);
-			);
-			if (bits.(i) = 1) then (
-   			v (find "d" i) (find "E" i) (1 - bits.(i+1));
-				if (bits.(i+1) = 0) then (
-     			v (find "a" i) (find "E" i) 1;
-     			v (find "b" i) (find "E" i) 1;
-				) else (
-     			v (find "v" i) (find "X" i) 1;
-     			v (find "w" i) (find "X" i) 1;
-				)
-			);
-	  done;
-		!valid = "";;
-	
+let is_initial_strategy game strategy bits = Array.init (Array.length bits - 1) (fun i -> bits.(i)) = (strategy_info game strategy).b;;
 
 	
+let strategy_leads_to game valu v w =
+	try
+		let i = pg_find_desc game (Some v) in
+		let j = pg_find_desc game (Some w) in
+		let (_, path, _) = valu.(i) in
+		TreeSet.mem j path
+	with Not_found -> false;;
+	
+
 let test_assumptions game strategy valu =
-	let findf x = pg_find_desc game (Some x) in
-	let find x = try pg_find_desc game (Some x) with Not_found -> failwith ("Not found: " ^ x ^ "\n") in
- 	let leadsto i j =
-		let (_, path, _) = valu.(i) in
-		TreeSet.mem (j) path
-	in
-	let sigma_is s t = strategy.(find s) = find t in
-	let n = ref 0 in
-	while (try let _ = findf ("m" ^ string_of_int !n) in true with Not_found -> false) do incr n done;
-	let n = !n in
+	let info = strategy_info game strategy in
 	(* b_i never meets g_0, b_0, b_1 *)
-	for i = 0 to n - 1 do
-		let bi = find ("m" ^ string_of_int i) in
-		let g0 = find ("d0") in
-		let b0 = find ("m0") in
-		let b1 = find ("m1") in
-		if (i > 0 && leadsto bi g0) then print_string ("\n\nb_i to g_0\n\n");
-		if (i > 0 && leadsto bi b0) then print_string ("\n\nb_i to b_0\n\n");
-		if (i > 1 && leadsto bi b1) then print_string ("\n\nb_i to b_1\n\n");
-		if (i < n-1) then (
-			let si = find ("s" ^ string_of_int i) in
-			if (strategy.(si) != b0) then (
-				if (leadsto si g0) then print_string ("\n\ns_i to g_0\n\n");
-				if (leadsto si g0) then print_string ("\n\ns_i to b_0\n\n");
-			);
-		);
+	for i = 1 to info.len - 1 do
+		if (strategy_leads_to game valu ("m" ^ string_of_int i) "d0") then print_string ("\n\nb_" ^ string_of_int i ^ " to g_0\n\n");
+		if (strategy_leads_to game valu ("m" ^ string_of_int i) "m0") then print_string ("\n\nb_" ^ string_of_int i ^ " to b_0\n\n");
 	done;
+	for i = 2 to info.len - 1 do
+		if (strategy_leads_to game valu ("m" ^ string_of_int i) "m1") then print_string ("\n\nb_" ^ string_of_int i ^ " to b_1\n\n");
+	done;
+	for i = 0 to info.len - 2 do
+		if (info.s1.(i) = 1 && strategy_leads_to game valu ("s" ^ string_of_int i) "d0") then print_string ("\n\ns1_" ^ string_of_int i ^ " to g_0\n\n");
+		if (info.s1.(i) = 1 && strategy_leads_to game valu ("s" ^ string_of_int i) "m0") then print_string ("\n\ns1_" ^ string_of_int i ^ " to b_0\n\n");
+  done;
 	(* g_0 never sees b_0 *)
-	let g0 = find ("d0") in
-	let b0 = find ("m0") in
-	let s0 = find ("s0") in
-	if (leadsto g0 b0) then print_string ("\n\ng_0 to b_0\n\n");
-	if (not (sigma_is "s0" "m0") && (leadsto s0 g0)) then print_string("\ncheck\n");;
-
-	
-let bitstrategyinfo game strategy valu =
-	let findf x = pg_find_desc game (Some x) in
-	let find x = try pg_find_desc game (Some x) with Not_found -> failwith ("Not found: " ^ x ^ "\n") in
-	let sigma_is s t = strategy.(find s) = find t in
- 	let leadsto i j =
-		let (_, path, _) = valu.(i) in
-		TreeSet.mem (j) path
-	in
-	let n = ref 0 in
-	while (try let _ = findf ("m" ^ string_of_int !n) in true with Not_found -> false) do incr n done;
-	let n = !n in
-	let bitinfo = Array.make n (false, false) in (* good, set *)
-	for i = n - 1 downto 0 do
-		if (sigma_is ("m" ^ string_of_int i) ("d" ^ string_of_int i)) then (
-			if (i = n-1) then (
-				bitinfo.(i) <- (true, true)
-			) else (
-				if (leadsto (find ("m" ^ string_of_int i)) (find ("c" ^ string_of_int i)))
-				then let (is_good, is_set) = bitinfo.(i+1) in bitinfo.(i) <- (not is_set, true)
-				else if (leadsto (find ("m" ^ string_of_int i)) (find ("d" ^ string_of_int (i+1))))
-				then let (is_good, is_set) = bitinfo.(i+1) in bitinfo.(i) <- (is_set && is_good, true)
-				else bitinfo.(i) <- (false, true)
-			)
-		) else (
-			bitinfo.(i) <- (true, false)
-		)
-	done;
-	bitinfo;;
-	
-let strategy_mu game strategy valu =
-	let bitinfo =	bitstrategyinfo game strategy valu in
-	let all_good = ref true in
-	let n = Array.length bitinfo in
-	let least_good_one = ref n in
-	let least_good_zero = ref n in
-	for i = n - 1 downto 0 do
-		let (is_good, is_set) = bitinfo.(i) in
-		all_good := !all_good && is_good;
-		if (is_good && is_set) then least_good_one := i;
-		if (is_good && not is_set) then least_good_zero := i;
-	done;
-	if (!all_good) then !least_good_zero else !least_good_one;;
+	if (strategy_leads_to game valu "d0" "m0") then print_string ("\n\ng_0 to b_0\n\n");;
 
 
 let test_valuation_assumptions game strategy valu n =	
-	let bitinfo = bitstrategyinfo game strategy valu in
+	let info = strategy_info game strategy in
 	let find x = try pg_find_desc game (Some x) with Not_found -> failwith ("Not found: " ^ x ^ "\n") in
-	let sigma_is s t = strategy.(find s) = find t in
-	let sigmis s i t j = sigma_is (s ^ string_of_int i) (if j >= 0 then t ^ string_of_int j else t) in
-	let mbits = Array.init (n+1) (fun i -> if i < n && (sigma_is ("m" ^ string_of_int i) ("d" ^ string_of_int i)) then 1 else 0) in
 	let node_valu u =
 		let (_, v_valu, _) = valu.(u) in v_valu
   in
@@ -159,15 +150,15 @@ let test_valuation_assumptions game strategy valu n =
 		let va2 = filter_valu va2 p in
 		let diff = diff_valu va1 va2 p in
 		if (not (TreeSet.is_empty diff)) then (
-			print_string ("\n\n" ^ s ^ " " ^ " " ^ ArrayUtils.format string_of_int mbits ^ " " ^ ff diff ^ " | " ^ ff va1 ^ " | " ^ ff va2 ^ "\n\n")
+			print_string ("\n\n" ^ s ^ " " ^ " " ^ ArrayUtils.format string_of_int info.b ^ " " ^ ff diff ^ " | " ^ ff va1 ^ " | " ^ ff va2 ^ "\n\n")
 		)
 	in
-	let k = strategy_mu game strategy valu in
+	let k = info.mu in
 		
 	let add_walkthrough nodes j =
 		let temp = ref nodes in
 			temp := TreeSet.add (find ("d" ^ string_of_int j) ) !temp;
-			if sigma_is ("d" ^ string_of_int j) ("E" ^ string_of_int j)  then
+			if info.g.(j) = 0 then
 				temp := TreeSet.add (find ("c" ^ string_of_int j) ) !temp
 			else
 				temp := TreeSet.add (find ("z" ^ string_of_int j) ) !temp;
@@ -178,33 +169,17 @@ let test_valuation_assumptions game strategy valu n =
 	let right_b_valus = Array.make (n+1) (TreeSet.add (find "Y") empty_valu) in
 	for i = n - 1 downto 0 do
 		left_b_valus.(i) <- left_b_valus.(i+1);
-		if (mbits.(i) = 1)
+		if (info.b.(i) = 1)
 		then left_b_valus.(i) <- add_walkthrough left_b_valus.(i) i;
 		right_b_valus.(i) <- right_b_valus.(i+1);
-		if (i != k && (mbits.(i) = 1 || i < k))
+		if (i != k && (info.b.(i) = 1 || i < k))
 		then right_b_valus.(i) <- add_walkthrough right_b_valus.(i) i
 	done;
 		
-	let bvalus = Array.init (n+2) (fun i -> if i >= n then (TreeSet.add (find "Y") empty_valu) else if mbits.(i) = 0 || i = k then left_b_valus.(i) else right_b_valus.(i)) in
-	let s = ref n in
-	for i = n - 1 downto 0 do
-	  if (mbits.(i) = 0)
-		then s := i
-  done;
-	let s = !s in
+	let bvalus = Array.init (n+2) (fun i -> if i >= n then (TreeSet.add (find "Y") empty_valu) else if i >= n || info.b.(i) = 0 || i = k then left_b_valus.(i) else right_b_valus.(i)) in
 
-	let r = ref (n-2) in
-	for i = n - 2 downto 0 do
-	  if mbits.(i) = 0 && (
-		    sigma_is ("d" ^ string_of_int i) ("E" ^ string_of_int i) ||
-				sigma_is ("s" ^ string_of_int i) ("m0") ||
-				not (fst bitinfo.(i+1)) 		   
-		)
-		then r := i
-  done;
-	let r = !r in
-	let t_test = (sigma_is ("d" ^ string_of_int r) ("E" ^ string_of_int r) && sigma_is ("g" ^ string_of_int r) ("m0")) ||
-		(sigma_is ("d" ^ string_of_int r) ("X" ^ string_of_int r) && sigma_is ("s" ^ string_of_int r) ("m0"))  in
+	let r = info.r in
+	let t_test = (info.g.(r) = 0 && info.s0.(r) = 0) || (info.g.(r) = 1 && info.s1.(r) = 0)  in
 	let dvalusy = Array.init (r+1) (fun i ->
 		let temp = ref (if r+2 >= n then TreeSet.add (find "Y") empty_valu else bvalus.(r+2)) in
 		temp := TreeSet.add (find ("d" ^ string_of_int r) ) !temp;
@@ -225,61 +200,44 @@ let test_valuation_assumptions game strategy valu n =
 		!temp
 	) in
 	let svalus = Array.init (n-1) (fun i ->
-			if sigma_is ("s" ^ string_of_int i) ("m0")
+			if info.s1.(i) = 0
 			then bvalus.(0)
-			else if mbits.(i+1) = 1 || i >= r
+			else if info.b.(i+1) = 1 || i >= r
 			then TreeSet.add (find ("z" ^ string_of_int i)) bvalus.(i+1)
-			else if s != 0 || not t_test
+			else if k != 0 || not t_test
 			then TreeSet.add (find ("z" ^ string_of_int i) ) dvalusy.(i+1)
 			else TreeSet.add (find ("z" ^ string_of_int i) ) dvalusx.(i+1)
 	) in
-	let gvalus = Array.init n (fun i -> if sigma_is ("g" ^ string_of_int i) ("m0") then bvalus.(0) else TreeSet.add (find ("c" ^ string_of_int i)) bvalus.(i+2)) in
+	let gvalus = Array.init n (fun i -> if info.s0.(i) = 0 then bvalus.(0) else TreeSet.add (find ("c" ^ string_of_int i)) bvalus.(i+2)) in
 	let d_zero = ref (TreeSet.add (find "d0") (TreeSet.add (find "Y") empty_valu)) in
 	let d_comp i =
-		if (sigma_is ("d" ^ string_of_int i) ("E" ^ string_of_int i)) && (sigma_is ("a" ^ string_of_int i) ("E" ^ string_of_int i)) && (sigma_is ("b" ^ string_of_int i) ("E" ^ string_of_int i))
+		if info.g.(i) = 0 && info.e0.(i) = 1
 		then TreeSet.add (find ("d" ^ string_of_int i)) gvalus.(i)
-		else if i < n-1 && (sigma_is ("d" ^ string_of_int i) ("X" ^ string_of_int i)) && (sigma_is ("w" ^ string_of_int i) ("X" ^ string_of_int i)) && (sigma_is ("v" ^ string_of_int i) ("X" ^ string_of_int i))
+		else if i < n-1 && info.g.(i) = 1 && info.e1.(i) = 1
 		then TreeSet.add (find ("d" ^ string_of_int i)) svalus.(i)
 		else
-		if mbits.(i) = 1 || (i > r && not (sigma_is ("s" ^ string_of_int (i-1)) ("m0")))
+		if info.b.(i) = 1 || (i > r && info.s1.(i-1) = 1)
 		then bvalus.(i)
-		else if (i > 0) && not (sigma_is ("s" ^ string_of_int (i-1)) ("m0")) then (
-			if s != 0 || not t_test
+		else if (i > 0) && info.s1.(i-1) = 1 then (
+			if k != 0 || not t_test
 			then dvalusy.(i)
 			else dvalusx.(i)
 		)
-		else if i < n-1 && (sigma_is ("d" ^ string_of_int i) ("X" ^ string_of_int i)) && (not (sigma_is ("s" ^ string_of_int i) ("m0"))) && mbits.(i+1) = 0
+		else if i < n-1 && info.g.(i) = 1 && info.s1.(i) = 1 && (i >= n-1 || info.b.(i+1) = 0)
 		then TreeSet.add (find ("d" ^ string_of_int i)) svalus.(i)
-		else if (sigma_is ("d" ^ string_of_int i) ("E" ^ string_of_int i)) && not (sigma_is ("g" ^ string_of_int i) ("m0")) && mbits.(i+1) = 1
+		else if info.g.(i) = 0 && info.s0.(i) = 1 && (i < n-1 && info.b.(i+1) = 1)
 		then TreeSet.add (find ("d" ^ string_of_int i)) gvalus.(i)
 	  else if i = 0
 		then TreeSet.add (find ("d" ^ string_of_int i)) bvalus.(1)
-
-		else (
-			 let reachable_d0 = ((sigmis "d" i "E" i) && (((sigmis "o" i "d" 0) && (sigmis "a" i "o" i || sigmis "b" i "o" i)) || ((sigmis "p" i "d" 0) && (sigmis "a" i "p" i || sigmis "b" i "p" i)))) ||
-              (i < n-1 && ((sigmis "d" i "X" i) && (((sigmis "q" i "d" 0) && (sigmis "v" i "q" i || sigmis "w" i "q" i)) || ((sigmis "r" i "d" 0) && (sigmis "v" i "r" i || sigmis "w" i "r" i))))) in
-			 let reachable_m1 = ((sigmis "d" i "E" i) && (((sigmis "o" i "m" 1) && (sigmis "a" i "o" i || sigmis "b" i "o" i)) || ((sigmis "p" i "m" 1) && (sigmis "a" i "p" i || sigmis "b" i "p" i)))) ||
-              (i < n-1 && ((sigmis "d" i "X" i) && (((sigmis "q" i "m" 1) && (sigmis "v" i "q" i || sigmis "w" i "q" i)) || ((sigmis "r" i "m" 1) && (sigmis "v" i "r" i || sigmis "w" i "r" i))))) in
-			 let reachable_y = ((sigmis "d" i "E" i) && ((sigmis "a" i "Y" (-1)) || (sigmis "b" i "Y" (-1)) || ((sigmis "o" i "Y" (-1)) && (sigmis "a" i "o" i || sigmis "b" i "o" i)) || ((sigmis "p" i "Y" (-1)) && (sigmis "a" i "p" i || sigmis "b" i "p" i)))) ||
-			       (i < n-1 && ((sigmis "d" i "X" i) && ((sigmis "v" i "Y" (-1)) || (sigmis "w" i "Y" (-1)) || ((sigmis "q" i "Y" (-1)) && (sigmis "v" i "q" i || sigmis "w" i "q" i)) || ((sigmis "r" i "Y" (-1)) && (sigmis "v" i "r" i || sigmis "w" i "r" i))))) in
-
-	  if (reachable_y)
-		then TreeSet.add (find ("d" ^ string_of_int i))(TreeSet.add (find "Y") empty_valu)
-		
-		else if mbits.(0) = 0 && not reachable_d0
+		else if info.b.(0) = 0 && not ((info.g.(i) = 0 && info.e0g.(i) = 1) || (i < n-1 && info.g.(i) = 1 && info.e1g.(i) = 1))
 		then TreeSet.add (find ("d" ^ string_of_int i)) bvalus.(1)
-		
-		else if mbits.(0) = 1 && not reachable_m1
+		else if info.b.(0) = 1 && not ((info.g.(i) = 0 && info.e0b.(i) = 1) || (i < n-1 && info.g.(i) = 1 && info.e1b.(i) = 1))
 		then TreeSet.add (find ("d" ^ string_of_int i)) !d_zero
-		
-		else if mbits.(0) = 1 && not (fst bitinfo.(0))
+		else if info.b.(0) = 1 && info.good.(0) = 0
 		then TreeSet.add (find ("d" ^ string_of_int i)) !d_zero
-		
-		else if mbits.(0) = 0 && k = 0 && not ((sigmis "d" 0 "E" 0 && sigmis "a" 0 "E" 0 && sigmis "b" 0 "E" 0) || (sigmis "d" 0 "X" 0 && sigmis "v" 0 "X" 0 && sigmis "w" 0 "X" 0))
+		else if info.b.(0) = 0 && k = 0 && (info.g.(0) = 1 || info.e0.(0) = 0) && (info.g.(0) = 0 || info.e1.(0) = 0)
 		then TreeSet.add (find ("d" ^ string_of_int i)) !d_zero
-
 		else TreeSet.add (find ("d" ^ string_of_int i)) bvalus.(1)
-		)
 	in
 	d_zero := d_comp 0;
 	let dvalus = Array.init n (fun i ->
