@@ -63,12 +63,16 @@ type strategy_info = {
 	b: int array;
 	s0: int array;
 	s1: int array;
+	s: int array;
 	e0: int array;
 	e1: int array;
+	e: int array;
 	e0g: int array;
 	e1g: int array;
 	e0b: int array;
 	e1b: int array;
+	eg: int array;
+	eb: int array;
 	g: int array;
 	good: int array;
 	mu: int;
@@ -84,17 +88,21 @@ let strategy_info game strategy =
 	let e0 = Array.init len (fun i -> strat "a" i "E" i * strat "b" i "E" i) in
 	let e1 = Array.init len (fun i -> if i < len - 1 then strat "v" i "X" i * strat "w" i "X" i else 0) in
 	let g = Array.init len (fun i -> strat "d" i "X" i) in
+	let e = Array.init len (fun i -> if g.(i) = 0 then e0.(i) else e1.(i)) in
+	let s = Array.init len (fun i -> if g.(i) = 0 then s0.(i) else s1.(i)) in
 	let good = Array.make len 1 in
 	for i = len - 2 downto 0 do
 		good.(i) <- if b.(i) = 0 || (g.(i) = 0 && e0.(i) = 1 && b.(i+1) = 0) || (g.(i) = 1 && e1.(i) = 1 && b.(i+1) = 1 && good.(i+1) = 1) then 1 else 0
 	done;
-	let mu = if Bits.least_zero good = len then Bits.least_one (Bits.mult good (Bits.not b)) else Bits.least_one (Bits.mult good b) in
-	let r = Bits.least_zero (Array.init (len-2) (fun i -> if b.(i) = 0 && (g.(i) = 0 || s1.(i) = 0 || good.(i+1) = 0) then 0 else 1)) in
+	let mu = if Bits.least_zero good = len then Bits.least_zero b else Bits.least_one (Bits.mult good b) in
+	let r = Bits.least_zero (Array.init (len-2) (fun i -> if b.(i) = 1 || (g.(i) = 1 && s1.(i) = 1 && good.(i+1) = 1) then 1 else 0)) in
 	
 	let e0g = Array.init len (fun i -> max (strat "o" i "d" 0 * strat "a" i "o" i) (strat "p" i "d" 0 * strat "b" i "p" i)) in
 	let e0b = Array.init len (fun i -> max (strat "o" i "m" 1 * strat "a" i "o" i) (strat "p" i "m" 1 * strat "b" i "p" i)) in
 	let e1g = Array.init len (fun i -> max (strat "q" i "d" 0 * strat "w" i "q" i) (strat "r" i "d" 0 * strat "v" i "r" i)) in
 	let e1b = Array.init len (fun i -> max (strat "q" i "m" 1 * strat "w" i "q" i) (strat "r" i "m" 1 * strat "v" i "r" i)) in
+	let eg = Array.init len (fun i -> if g.(i) = 0 then e0g.(i) else e1g.(i)) in
+	let eb = Array.init len (fun i -> if g.(i) = 0 then e0b.(i) else e1b.(i)) in
 	{
 		len = len;
 		b = b;
@@ -102,6 +110,8 @@ let strategy_info game strategy =
 		s1 = s1;
 		e0 = e0;
 		e1 = e1;
+		e = e;
+		s = s;
 		g = g;
 		good = good;
 		mu = mu;
@@ -110,6 +120,8 @@ let strategy_info game strategy =
 		e0b = e0b;
 		e1g = e1g;
 		e1b = e1b;
+		eg = eg;
+		eb = eb;
 	};;
 	
 	
@@ -127,21 +139,21 @@ type valuation_info = {
 let valuation_info game strategy compare =
 	let info = strategy_info game strategy in
 	let n = info.len in
-	let find a i = pg_find_desc game (Some (a ^ string_of_int i)) in
+	let find a i = pg_find_desc game (Some (a ^ string_of_int i)) in 
 	let y = TreeSet.singleton compare (pg_find_desc game (Some "Y")) in
 	let w = Array.init info.len (fun i -> TreeSet.add (find (if info.g.(i) = 0 then "c" else "z") i) (TreeSet.add (find "d" i) y)) in
 	let lr_b = Array.make (info.len+1) (y, y) in
 	for i = info.len - 1 downto 0 do
 		lr_b.(i) <- (
-			(if info.b.(i) = 1                                    then TreeSet.union (fst lr_b.(i+1)) w.(i) else fst lr_b.(i+1)),
-			(if (i != info.mu && (info.b.(i) = 1 || i < info.mu)) then TreeSet.union (snd lr_b.(i+1)) w.(i) else snd lr_b.(i+1))
+			(if info.b.(i) = 1 then TreeSet.union (fst lr_b.(i+1)) w.(i) else fst lr_b.(i+1)),
+			(if i < info.mu    then TreeSet.union (snd lr_b.(i+1)) w.(i) else fst lr_b.(i+1))
 		)
 	done;
-	let b = Array.init (n+2) (fun i -> if i >= n then y else if i >= n || info.b.(i) = 0 || i = info.mu then fst lr_b.(i) else snd lr_b.(i)) in
+	let b = Array.init (n+2) (fun i -> if i >= n then y else if i >= info.mu || info.b.(i) = 0 then fst lr_b.(i) else snd lr_b.(i)) in
 	let g = Array.init n (fun i -> if info.s0.(i) = 0 then b.(0) else TreeSet.add (find "c" i) b.(i+2)) in
 	let d = Array.init (info.r + 1) (fun i ->
 		let result = ref (TreeSet.add (find "d" info.r) (
-			if info.mu = 0 && ((info.g.(info.r) = 0 && info.s0.(info.r) = 0) || (info.g.(info.r) = 1 && info.s1.(info.r) = 0))
+			if info.mu = 0 && info.s.(info.r) = 0
 			then b.(0)
 			else TreeSet.add (find "c" info.r) (if info.r + 2 >= n then y else b.(info.r+2))
 		)) in
@@ -155,31 +167,18 @@ let valuation_info game strategy compare =
 			then b.(0)
 			else TreeSet.add (find "z" i) (if info.b.(i+1) = 1 || i >= info.r then b.(i+1) else d.(i+1))
 	) in
-	let x0 = TreeSet.add (find "d" 0) (
-		if info.g.(0) = 0 && (info.e0.(0) = 1 || (info.s0.(0) = 1 && info.b.(1) = 1))
-		then g.(0)
-		else if info.g.(0) = 1 && (info.e1.(0) = 1 || (info.s1.(0) = 1 && info.b.(1) = 0))
-		then s.(0)
-		else if info.b.(0) = 1
-		then b.(0)
-	  else b.(1)
-	) in
 	let x = Array.init n (fun i -> TreeSet.add (find "d" i) (
-		if i = 0
-		then x0
-		else if info.g.(i) = 0 && (info.e0.(i) = 1 || (info.s0.(i) = 1 && i < n-1 && info.b.(i+1) = 1))
-		then g.(i)
-		else if i < n-1 && info.g.(i) = 1 && (info.e1.(i) = 1 || (info.s1.(i) = 1 && (i = n-1 || info.b.(i+1) = 0)))
-		then s.(i)
-		else if info.b.(i) = 1 || (i > info.r && info.s1.(i-1) = 1)
+		if (info.g.(i) = 0 || i < n-1) && (info.e.(i) = 1 || (info.s.(i) = 1 && i < n-1 && info.b.(i+1) != info.g.(i)))
+		then (if info.g.(i) = 0 then g.(i) else s.(i))
+		else if i = 0 || info.b.(i) = 1
 		then b.(i)
-		else if info.s1.(i-1) = 1
-		then d.(i)
-	  else if (info.b.(0) = 0 && (info.g.(i) = 1 || info.e0g.(i) = 0) && (i = n-1 || info.g.(i) = 0 || info.e1g.(i) = 0)) ||
-		        ((info.b.(0) = 0 || (info.good.(0) = 1 && ((info.g.(i) = 0 && info.e0b.(i) = 1) || (i < n-1 && info.g.(i) = 1 && info.e1b.(i) = 1))))
-					 &&(info.b.(0) = 1 || info.mu > 0 || (info.g.(0) = 0 && info.e0.(0) = 1) || (info.g.(0) = 1 && info.e1.(0) = 1)))
+	  else if (info.b.(0) = 0 && info.eg.(i) = 0) ||
+		        (info.b.(0) = 0 && info.e.(0) = 1) ||
+		        (info.b.(0) = 1 && info.good.(0) = 1 && info.eb.(i) = 1 && info.e.(0) = 1)
 		then b.(1)
-		else x0
+		else if info.g.(0) = 0
+		then TreeSet.add (find "d" 0) g.(0)
+		else TreeSet.add (find "d" 0) s.(0)
 	)) in
 	{
 		y = y;
@@ -198,7 +197,29 @@ let valuation_info game strategy compare =
 
 let test_assumptions game strategy valu =
 	let info = strategy_info game strategy in
-	(* b_i never meets g_0, b_0, b_1 *)
+	for i = 0 to info.len - 1 do
+		(* A1 *)
+		if (i >= info.mu && info.b.(i) = 1) then (
+			if (info.e.(i) != 1) then print_string ("\n\nA1-1\n\n"); 
+			if (info.s.(i) != 1) then print_string ("\n\nA1-2\n\n");
+		);
+		(* A2 *)
+		if (i < info.mu && info.b.(i) = 0) then (
+			for j = i + 1 to info.mu - 1 do
+				if (info.b.(j) != 0) then print_string ("\n\nA2-1\n\n");
+			done;
+		);
+		(* A3 *)
+		if (i < info.mu && info.b.(i) = 1) then (
+			for j = i to info.mu - 1 do
+				if (info.e.(j) != 1 && info.b.(1) != (if info.mu > 1 then 0 else 1)) then print_string ("\n\nA3-1\n\n");
+				if (info.s.(j) != 1) then print_string ("\n\nA3-2\n\n");
+				if (info.g.(j) != 1 && j < info.mu - 1) then print_string ("\n\nA3-3\n\n");
+				if (info.g.(j) != 0 && j = info.mu - 1) then print_string ("\n\nA3-4\n\n");
+			done;
+		);
+	done;	
+	(* b_i never meets g_0, b_0, b_1 *)	
 	for i = 1 to info.len - 1 do
 		if (StrategyHelper.leads_to game valu ("m" ^ string_of_int i) "d0") then print_string ("\n\nb_" ^ string_of_int i ^ " to g_0\n\n");
 		if (StrategyHelper.leads_to game valu ("m" ^ string_of_int i) "m0") then print_string ("\n\nb_" ^ string_of_int i ^ " to b_0\n\n");
