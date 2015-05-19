@@ -61,12 +61,10 @@ end;;
 type strategy_info = {
 	len: int;
 	b: int array;
-	s0: int array;
-	s1: int array;
+	sx: int array array;
 	s: int array;
 	e: int array;
-	e0: int array;
-	e1: int array;
+	ex: int array array;
 	eg: int array;
 	eb: int array;
 	e0g: int array;
@@ -86,8 +84,10 @@ let strategy_info game strategy =
 	let g = Array.init len (fun i -> strat "d" i "X" i) in
 	let e0 = Array.init len (fun i -> strat "a" i "E" i * strat "b" i "E" i) in
 	let e1 = Array.init len (fun i -> strat "v" i "X" i * strat "w" i "X" i) in
+	let ex = [|e0; e1|] in
 	let e = Array.init len (fun i -> if g.(i) = 0 then e0.(i) else e1.(i)) in
 	let s = Array.init len (fun i -> if g.(i) = 0 then s0.(i) else s1.(i)) in
+	let sx = [|s0; s1|] in
 	
 	let last = ref len in
 	let searching = ref true in
@@ -110,16 +110,14 @@ let strategy_info game strategy =
 	{
 		len = len;
 		b = b;
-		s0 = s0;
-		s1 = s1;
-		e0 = e0;
-		e1 = e1;
+		ex = ex;
 		e1b = e1b;
 		e1g = e1g;
 		e0b = e0b;
 		e0g = e0g;
 		e = e;
 		s = s;
+		sx = sx;
 		g = g;
 		mu = mu;
 		eg = eg;
@@ -150,10 +148,10 @@ let valuation_info game strategy compare =
 		rr.(i) <- if i < info.mu then TreeSet.union rr.(i+1) w.(i) else ll.(i+1);
 	done;
 	let b = Array.init (n+2) (fun i -> if i >= n then y else if i >= info.mu || info.b.(i) = 0 then ll.(i) else rr.(i)) in
-	let g = Array.init n (fun i -> if info.s0.(i) = 0 then b.(0) else TreeSet.add (find "c" i) b.(i+2)) in
+	let g = Array.init n (fun i -> if info.sx.(0).(i) = 0 then b.(0) else TreeSet.add (find "c" i) b.(i+2)) in
 	let s = Array.make (n-1) y in
 	for i = n - 2 downto 0 do
-			s.(i) <- if info.s1.(i) = 0
+			s.(i) <- if info.sx.(1).(i) = 0
 							 then b.(0)
 							 else if info.b.(i+1) = 1
 							 then TreeSet.add (find "z" i) b.(i+1)
@@ -220,8 +218,8 @@ let test_assumptions game strategy valu =
 		if (StrategyHelper.leads_to game valu ("m" ^ string_of_int i) "m1") then print_string ("\n\nb_" ^ string_of_int i ^ " to b_1\n\n");
 	done;
 	for i = 0 to info.len - 2 do
-		if (info.s1.(i) = 1 && StrategyHelper.leads_to game valu ("s" ^ string_of_int i) "d0") then print_string ("\n\ns1_" ^ string_of_int i ^ " to g_0\n\n");
-		if (info.s1.(i) = 1 && StrategyHelper.leads_to game valu ("s" ^ string_of_int i) "m0") then print_string ("\n\ns1_" ^ string_of_int i ^ " to b_0\n\n");
+		if (info.sx.(1).(i) = 1 && StrategyHelper.leads_to game valu ("s" ^ string_of_int i) "d0") then print_string ("\n\ns1_" ^ string_of_int i ^ " to g_0\n\n");
+		if (info.sx.(1).(i) = 1 && StrategyHelper.leads_to game valu ("s" ^ string_of_int i) "m0") then print_string ("\n\ns1_" ^ string_of_int i ^ " to b_0\n\n");
   done;
 	(* g_0 never sees b_0 *)
 	if (StrategyHelper.leads_to game valu "d0" "m0") then print_string ("\n\ng_0 to b_0\n\n");;
@@ -252,6 +250,7 @@ let test_valuation_assumptions game strategy valu n =
 	
 let test_improving_switches game strategy valu n =
 	let info = strategy_info game strategy in
+	let strat a i b j = if StrategyHelper.is game strategy (a ^ string_of_int i) (b ^ string_of_int j) then 1 else 0 in
 	let impr = Array.init (Array.length game) (fun i ->
     (pg_get_pl game i = 0) && (strategy.(i) != best_decision_by_valuation_ordering game node_total_ordering_by_position valu i)
   ) in
@@ -259,7 +258,7 @@ let test_improving_switches game strategy valu n =
 		let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
 		let v = pg_find_desc game (Some (s ^ string_of_int i)) in
 		if (impr.(v) != assrt) then (
-			let ttt = "(b,g,e0,e1,s0,s1,e0b,e1b,e0g,e1g)=" ^ string_of_int info.b.(i) ^string_of_int info.g.(i) ^string_of_int info.e0.(i) ^string_of_int info.e1.(i) ^string_of_int info.s0.(i) ^string_of_int info.s1.(i)^string_of_int info.e0b.(i)^string_of_int info.e1b.(i)^string_of_int info.e0g.(i)^string_of_int info.e1g.(i) in    
+			let ttt = "(b,g,e0,e1,s0,s1,e0b,e1b,e0g,e1g)=" ^ string_of_int info.b.(i) ^string_of_int info.g.(i) ^string_of_int info.ex.(0).(i) ^string_of_int info.ex.(1).(i) ^string_of_int info.sx.(0).(i) ^string_of_int info.sx.(1).(i)^string_of_int info.e0b.(i)^string_of_int info.e1b.(i)^string_of_int info.e0g.(i)^string_of_int info.e1g.(i) in    
 			print_string ("\n\n" ^ desc ^ " " ^ s ^ string_of_int i ^ " (false " ^ (if assrt then "+ + + + + +" else "- - - - - -") ^ ") -- " ^ ttt ^ "\n\n");
 		)
   in
@@ -269,38 +268,83 @@ let test_improving_switches game strategy valu n =
 		   (i < info.mu - 1 && info.b.(i) = 1 && info.b.(i+1) = 0)
 	) in
 	let impr_s_0 = Array.init n (fun i ->
-		   (i = info.mu - 2 && info.b.(i+2) = 1 && info.s0.(i) = 0) ||
-			 (i < info.mu - 2 && info.b.(i+2) = 0 && info.s0.(i) = 0) ||  
-			 (i > info.mu - 2 && i < n-2 && info.s0.(i) = 0 && info.b.(i+1) = 0 ) ||  
-			 (i > info.mu - 2 && i < n-2 && info.s0.(i) = 1 && info.b.(i+1) = 1 && info.b.(0) = 0)
+		   (i = info.mu - 2 && info.b.(i+2) = 1 && info.sx.(0).(i) = 0) ||
+			 (i < info.mu - 2 && info.b.(i+2) = 0 && info.sx.(0).(i) = 0) ||  
+			 (i > info.mu - 2 && i < n-2 && info.sx.(0).(i) = 0 && info.b.(i+1) = 0 ) ||  
+			 (i > info.mu - 2 && i < n-2 && info.sx.(0).(i) = 1 && info.b.(i+1) = 1 && info.b.(0) = 0)
   ) in
 	let impr_s_1 = Array.init n (fun i ->
-		   (i = info.mu - 1 && info.e.(i+1) = 1 && info.g.(i+1) = info.b.(i+2) && info.s1.(i) = 0) ||
-			 (i < info.mu - 1 && info.b.(0) = 0 && info.s1.(i) = 1) ||  
-			 (i > info.mu - 1 && i < n-1 && info.s1.(i) = 0 && info.b.(i+1) = 1) ||  
-			 (i > info.mu - 1 && i < n-1 && info.s1.(i) = 1 && info.b.(i+1) = 0 && info.b.(0) = 0)
+		   (i = info.mu - 1 && info.e.(i+1) = 1 && info.g.(i+1) = info.b.(i+2) && info.sx.(1).(i) = 0) ||
+			 (i < info.mu - 1 && info.b.(0) = 0 && info.sx.(1).(i) = 1) ||  
+			 (i > info.mu - 1 && i < n-1 && info.sx.(1).(i) = 0 && info.b.(i+1) = 1) ||  
+			 (i > info.mu - 1 && i < n-1 && info.sx.(1).(i) = 1 && info.b.(i+1) = 0 && info.b.(0) = 0)
   ) in
 	let impr_g = Array.init n (fun i ->
-		(info.e1.(i) = 1 && (
-			  (info.e0.(i) = 1 && i  = info.mu && info.g.(i) != info.b.(i+1)) ||
-		    (info.e0.(i) = 0 && i >= info.mu && info.g.(i) = 0 && info.b.(i) = 0 && info.s0.(i) != info.s1.(i))
+		(info.ex.(1).(i) = 1 && (
+			  (info.ex.(0).(i) = 1 && i  = info.mu && info.g.(i) != info.b.(i+1)) ||
+		    (info.ex.(0).(i) = 0 && i >= info.mu && info.g.(i) = 0 && info.b.(i) = 0 && info.sx.(0).(i) != info.sx.(1).(i))
 		)) ||
-		(info.e1.(i) = 0 && info.e0.(i) = 0 && (
+		(info.ex.(1).(i) = 0 && info.ex.(0).(i) = 0 && (
 			(info.g.(i) = 1 && info.e0b.(i) <= info.e1b.(i) && info.e0g.(i) <= info.e1g.(i)) ||
 			(info.b.(i) = 0 && info.g.(i) = 0 && info.e0b.(i) = 1 && info.e0g.(i) >= info.e1g.(i) && (
 				(i >= info.mu && info.e1b.(i) = 0 && info.e1g.(i) = 1) ||
-				(info.mu = 0 && info.s0.(i) = 1 && info.e1b.(i) = 1 && (
-          (info.s1.(i) = 0 && info.e0g.(i) = 1 && info.e1g.(i) = 0) ||
+				(info.mu = 0 && info.sx.(0).(i) = 1 && info.e1b.(i) = 1 && (
+          (info.sx.(1).(i) = 0 && info.e0g.(i) = 1 && info.e1g.(i) = 0) ||
 					(i = 0 && info.b.(1) = 1)
 				))
 			)
 		)))
   ) in
+	let impr_e i value =
+		(info.mu >= 1 && info.b.(1) = (if info.mu > 1 then value else 1 - value)) ||
+		(info.mu = 0 && value = if info.e.(0) = 1 && info.g.(0) = info.b.(1) then 1 else 0)
+	in
+	let impr_d i value other_value exit other_exit side =
+		(value = 1 && (
+		((info.b.(i) = 0 || info.g.(i) != side) && ((info.mu = 0 && info.e.(0) = 1 && info.g.(0) = info.b.(1) && exit = 0 && (info.sx.(side).(i) = 1 || info.b.(0) = 0) && i > 0) 
+		
+		
+		|| (info.mu = 1 && info.b.(1) = 1 && exit = 1) || (info.mu > 1 && info.b.(1) = 0 && exit = 1)))
+||
+  (side = 1 && info.ex.(side).(i) = 1 && info.mu > 1 && i < info.mu && info.b.(1) = 0 && exit = 1) ||
+	(info.mu = 1 && i = 0 && info.b.(1) = 1 && exit = 1) ||
+	(info.mu = 0 && i = 0 && info.g.(0) = info.b.(1) && exit = 0 && side != info.g.(0)) ||
+	(i = 0 && side = 1 && info.mu > 1 && exit = 1 && info.b.(1) = 0))) 
+	
+	||
+
+	(value = 0 && other_value = 1 && (
+	
+	(info.sx.(side).(i) = 1 && ((side = 0 && (i >= n-1 || info.b.(i+1) = 0)) || (side = 1 && (i < n-1 && info.b.(i+1) = 1)))) ||
+	(info.sx.(side).(i) = 0 && info.mu > 0 && exit = 0) ||
+	(info.mu = 0 && info.b.(0) = 0 && info.sx.(side).(i) = 0 && exit = 1)
+		)) ||
+		
+		
+		(value = 0 && other_value = 0 && (
+			
+			let better_exit = (info.mu >= 1 && info.b.(1) = (if info.mu > 1 then exit else 1 - exit)) || (info.mu = 0 && exit = if info.e.(0) = 1 && info.g.(0) = info.b.(1) then 1 else 0) in
+			(info.sx.(side).(i) = 1 && (exit = other_exit || better_exit) && ((side = 0 && info.b.(i) = 1) || i >= n-1 || info.b.(i+1) = side) && (side = 1 || i > 0 || info.mu != 1)) ||
+			(info.sx.(side).(i) = 0 && ((exit != other_exit && better_exit) || (exit = other_exit && ((info.b.(0) = 0 && info.mu = 0 && exit = 1) || (info.b.(0) = 1 && info.mu != 0 && exit = 0)))))
+			
+			))
+	
+	in
 	for i = 0 to n - 1 do
 		check_impr "b" "m" i impr_b.(i);		
 		check_impr "s0" "g" i impr_s_0.(i);
 		if i < n-1 then check_impr "s1" "s" i impr_s_1.(i);	
 		check_impr "g" "d" i impr_g.(i);
+		check_impr "e" "o" i (impr_e i (strat "o" i "m" 1));
+		check_impr "e" "p" i (impr_e i (strat "p" i "m" 1));
+		if i < n-1 then check_impr "e" "q" i (impr_e i (strat "q" i "m" 1));
+		if i < n-1 then check_impr "e" "r" i (impr_e i (strat "r" i "m" 1));
+		check_impr "d" "a" i (impr_d i (strat "a" i "E" i) (strat "b" i "E" i) (strat "o" i "m" 1) (strat "p" i "m" 1) 0);
+		check_impr "d" "b" i (impr_d i (strat "b" i "E" i) (strat "a" i "E" i) (strat "p" i "m" 1) (strat "o" i "m" 1) 0);
+ 		if i < n-1 then
+		check_impr "d" "w" i (impr_d i (strat "w" i "X" i) (strat "v" i "X" i) (strat "q" i "m" 1) (strat "r" i "m" 1) 1);
+		if i < n-1 then
+		check_impr "d" "v" i (impr_d i (strat "v" i "X" i) (strat "w" i "X" i) (strat "r" i "m" 1) (strat "q" i "m" 1) 1);
 	done;;
 
 
