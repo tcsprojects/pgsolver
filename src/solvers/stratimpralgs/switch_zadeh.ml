@@ -126,7 +126,7 @@ let strategy_info game strategy =
 	
 	
 	
-type valuation_info = {
+type val_info = {
 	b: int TreeSet.t array;
 	g: int TreeSet.t array;
 	s: int TreeSet.t array;
