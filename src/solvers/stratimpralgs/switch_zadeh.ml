@@ -263,18 +263,18 @@ let test_improving_switches game strategy valu n =
 		)
   in
 	let impr_b = Array.init n (fun i ->
-		   (i = info.mu && info.b.(i) = 0 && info.e.(i) = 1 && info.g.(i) = info.b.(i+1)) ||
+		   (i = info.mu && info.b.(i) = 0 && info.e.(i) = 1 && info.g.(i) = (if i = n-1 then 0 else info.b.(i+1))) ||
 			 (i = info.mu - 1 && info.b.(i) = 1 && info.b.(i+1) = 1) ||
 		   (i < info.mu - 1 && info.b.(i) = 1 && info.b.(i+1) = 0)
 	) in
 	let impr_s_0 = Array.init n (fun i ->
 		   (i = info.mu - 2 && info.b.(i+2) = 1 && info.sx.(0).(i) = 0) ||
 			 (i < info.mu - 2 && info.b.(i+2) = 0 && info.sx.(0).(i) = 0) ||  
-			 (i > info.mu - 2 && i < n-2 && info.sx.(0).(i) = 0 && info.b.(i+1) = 0 ) ||  
-			 (i > info.mu - 2 && i < n-2 && info.sx.(0).(i) = 1 && info.b.(i+1) = 1 && info.b.(0) = 0)
+			 (i > info.mu - 2 && i < n-1 && info.sx.(0).(i) = 0 && info.b.(i+1) = 0 ) ||  
+			 (i > info.mu - 2 && i < n-1 && info.sx.(0).(i) = 1 && info.b.(i+1) = 1 && info.b.(0) = 0)
   ) in
-	let impr_s_1 = Array.init n (fun i ->
-		   (i = info.mu - 1 && info.e.(i+1) = 1 && info.g.(i+1) = info.b.(i+2) && info.sx.(1).(i) = 0) ||
+	let impr_s_1 = Array.init (n-1) (fun i ->
+		   (i = info.mu - 1 && info.e.(i+1) = 1 && info.g.(i+1) = (if i < n-2 then info.b.(i+2) else 0) && info.sx.(1).(i) = 0) ||
 			 (i < info.mu - 1 && info.b.(0) = 0 && info.sx.(1).(i) = 1) ||  
 			 (i > info.mu - 1 && i < n-1 && info.sx.(1).(i) = 0 && info.b.(i+1) = 1) ||  
 			 (i > info.mu - 1 && i < n-1 && info.sx.(1).(i) = 1 && info.b.(i+1) = 0 && info.b.(0) = 0)
@@ -344,7 +344,7 @@ let test_improving_switches game strategy valu n =
  		if i < n-1 then
 		check_impr "d" "w" i (impr_d i (strat "w" i "X" i) (strat "v" i "X" i) (strat "q" i "m" 1) (strat "r" i "m" 1) 1);
 		if i < n-1 then
-		check_impr "d" "v" i (impr_d i (strat "v" i "X" i) (strat "w" i "X" i) (strat "r" i "m" 1) (strat "q" i "m" 1) 1);
+		check_impr "d" "v" i (impr_d i (strat "v" i "X" i) (strat "w" i "X" i) (strat "r" i "m" 1) (strat "q" i "m" 1) 1); 
 	done;;
 
 
