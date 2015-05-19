@@ -127,10 +127,10 @@ let strategy_info game strategy =
 	
 	
 type val_info = {
-	b: int TreeSet.t array;
-	g: int TreeSet.t array;
-	s: int TreeSet.t array;
-	x: int TreeSet.t array;
+	bv: int TreeSet.t array;
+	gv: int TreeSet.t array;
+	sv: int TreeSet.t array;
+	xv: int TreeSet.t array;
 };;	
 
 let valuation_info game strategy compare =
@@ -176,10 +176,10 @@ let valuation_info game strategy compare =
 		else TreeSet.add (find "d" 0) sg.(0)
 	)) in
 	{
-		b = b;
-		g = g;
-		s = s;
-		x = x;
+		bv = b;
+		gv = g;
+		sv = s;
+		xv = x;
 	};;
 
 
@@ -240,10 +240,10 @@ let test_valuation_assumptions game strategy valu n =
 		then print_string ("\n\n" ^ desc ^ " " ^ " " ^ ArrayUtils.format string_of_int info.b ^ " " ^ ff diff ^ " | " ^ ff va ^ " | " ^ ff assrt ^ "\n\n");
 	in
 	for i = 0 to n - 1 do
-			check_valu "ladder" "m" i vinfo.b.(i);
-			check_valu "left_up" "g" i vinfo.g.(i);
-			if (i < n-1) then check_valu "right_up" "s" i vinfo.s.(i);
-			check_valu "bisel" "d" i vinfo.x.(i);
+			check_valu "ladder" "m" i vinfo.bv.(i);
+			check_valu "left_up" "g" i vinfo.gv.(i);
+			if (i < n-1) then check_valu "right_up" "s" i vinfo.sv.(i);
+			check_valu "bisel" "d" i vinfo.xv.(i);
  	done;;
 	
 	
