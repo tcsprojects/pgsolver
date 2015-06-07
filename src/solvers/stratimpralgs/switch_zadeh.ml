@@ -73,6 +73,8 @@ type strategy_info = {
 	e1b: int array;
 	g: int array;
 	mu: int;
+	eee: int array array array;
+	ddd: int array array array;
 };;
 
 let strategy_info game strategy = 
@@ -101,10 +103,25 @@ let strategy_info game strategy =
 	let mu = if !searching then Bits.least_zero b else !last in
 	
 	
-	let e0g = Array.init len (fun i -> max (strat "o" i "d" 0 * strat "a" i "o" i) (strat "p" i "d" 0 * strat "b" i "p" i)) in
-	let e0b = Array.init len (fun i -> max (strat "o" i "m" 1 * strat "a" i "o" i) (strat "p" i "m" 1 * strat "b" i "p" i)) in
-	let e1g = Array.init len (fun i -> max (strat "q" i "d" 0 * strat "w" i "q" i) (strat "r" i "d" 0 * strat "v" i "r" i)) in
-	let e1b = Array.init len (fun i -> max (strat "q" i "m" 1 * strat "w" i "q" i) (strat "r" i "m" 1 * strat "v" i "r" i)) in
+	let eee = [|[|
+	Array.init len (fun i -> strat "o" i "m" 1);
+	Array.init len (fun i -> strat "p" i "m" 1)
+	|];[|
+	Array.init len (fun i -> strat "r" i "m" 1);
+	Array.init len (fun i -> strat "q" i "m" 1)
+	|]|] in
+	let ddd = [|[|
+	Array.init len (fun i -> strat "a" i "E" i);
+	Array.init len (fun i -> strat "b" i "E" i)
+	|];[|
+	Array.init len (fun i -> 1-strat "v" i "r" i);
+	Array.init len (fun i -> 1-strat "w" i "q" i)
+	|]|] in
+
+	let e0g = Array.init len (fun i -> max ((1-eee.(0).(0).(i)) * (1-ddd.(0).(0).(i))) ((1-eee.(0).(1).(i)) * (1-ddd.(0).(1).(i)))) in
+	let e0b = Array.init len (fun i -> max (eee.(0).(0).(i) * (1-ddd.(0).(0).(i))) (eee.(0).(1).(i) * (1-ddd.(0).(1).(i)))) in
+	let e1g = Array.init len (fun i -> max ((1-eee.(1).(1).(i)) * (1-ddd.(1).(1).(i))) ((1-eee.(1).(0).(i)) * (1-ddd.(1).(0).(i)))) in
+	let e1b = Array.init len (fun i -> max (eee.(1).(1).(i) * (1-ddd.(1).(1).(i))) (eee.(1).(0).(i) * (1-ddd.(1).(0).(i)))) in
 	let eg = Array.init len (fun i -> if g.(i) = 0 then e0g.(i) else e1g.(i)) in
 	let eb = Array.init len (fun i -> if g.(i) = 0 then e0b.(i) else e1b.(i)) in
 	{
@@ -122,6 +139,8 @@ let strategy_info game strategy =
 		mu = mu;
 		eg = eg;
 		eb = eb;
+		eee = eee;
+		ddd = ddd;
 	};;
 	
 	
@@ -348,6 +367,139 @@ let test_improving_switches game strategy valu n =
 	done;;
 
 
+let initial_strategy_check game strategy n =
+	let info = strategy_info game strategy in
+	let result = ref true in
+	for i = 0 to n - 1 do
+		if (info.b.(i) = 1) then (
+			if not (info.g.(i) = (if i = n-1 then 0 else info.b.(i+1)) && info.e.(i) = 1 && info.s.(i) = 1)
+			then result := false; 
+		);
+		if (i < n - 1) then (
+			if (info.sx.(0).(i) = info.b.(i+1) || info.sx.(1).(i) != info.b.(i+1))
+			then result := false;
+		);
+		if info.eee.(0).(0).(i) = info.b.(0)
+		then result := false;
+		if info.eee.(0).(1).(i) = info.b.(0)
+		then result := false;
+		if (i < n - 1) then (
+			if info.eee.(1).(0).(i) = info.b.(0)
+			then result := false;
+			if info.eee.(1).(1).(i) = info.b.(0)
+			then result := false;
+		);
+		if (info.b.(i) = 0 || info.g.(i) = 1) then (
+			if (info.ddd.(0).(0).(i) = 0 && info.ddd.(0).(1).(i) = 0)
+			then result := false;
+		);
+		if (info.b.(i) = 0 || info.g.(i) = 0) then (
+			if (info.ddd.(1).(0).(i) = 0 && info.ddd.(1).(1).(i) = 0)
+			then result := false;
+		);
+	done;
+	!result;;
+
+
+
+let oldoccrec = ref [||];;
+let oldinfo = ref None;;
+
+let test_occrec_assumptions game strategy valu occrec n =
+	let info = strategy_info game strategy in
+	if (Array.length !oldoccrec = 0) then (
+		oldoccrec := Array.init (Array.length occrec) (fun i -> Array.init (Array.length occrec.(i)) (fun j -> occrec.(i).(j)));
+		oldinfo := Some info;
+	) else if (info.b = (OptionUtils.get_some !oldinfo).b || not (initial_strategy_check game strategy n)) then () else (
+		print_string "Check\n";
+		let oi = OptionUtils.get_some !oldinfo in
+		let check desc s i assrt =
+			let v = pg_find_desc game (Some (s ^ string_of_int i)) in
+			let delta = ref 0 in
+			for j = 0 to Array.length occrec.(v) - 1 do
+			  delta := !delta + occrec.(v).(j) - !oldoccrec.(v).(j);
+			done;
+			if (!delta != assrt)
+			then print_string ("\n\n" ^ desc ^ " " ^ string_of_int oi.ddd.(0).(1).(i) ^ string_of_int oi.ddd.(0).(0).(i) ^ " " ^ s ^ string_of_int i ^ " : " ^ string_of_int !delta ^ " vs " ^ string_of_int assrt ^ " " ^ ArrayUtils.format string_of_int oi.b ^ " --> " ^ ArrayUtils.format string_of_int info.b ^ "\n\n");
+		in	
+		
+		let delta_b = Array.init n (fun i ->
+			if (i <= oi.mu) then 1 else 0 
+		) in
+		let delta_s_0 = Array.init n (fun i ->
+			if (i < oi.mu) then 1 else 0 
+		) in
+		let delta_s_1 = Array.init n (fun i ->
+			if (i < oi.mu) then 1 else 0 
+		) in
+		let delta_e = Array.init n (fun i ->
+			1
+		) in
+
+		let delta_d = Array.init 2 (fun k -> Array.init 2 (fun l -> Array.init n (fun i ->
+			let ii = oi in
+			let zbfl = BitScheme.bit_flips ii.b 0 TreeSet.empty_def in
+			let ipbmfl = if i < n-1 then BitScheme.max_flip_number ii.b (i+1) TreeSet.empty_def else 0 in
+			let bits_as_int = Bits.to_int ii.b in
+			let ibfla0 = BitScheme.max_flip_number ii.b i (TreeSet.singleton_def (i+1, 0)) in
+			let limit = if zbfl - ((ibfla0/2) + bits_as_int - ipbmfl) > 1 then 2 else 1 in
+			
+			if oi.b.(i) = 1 && i >= oi.mu && (i = n-1 || oi.b.(i+1) = k) then 0
+			else if oi.b.(i) = 1 && i >= oi.mu then 1
+			else if oi.b.(i) = 0 && i = oi.mu && i < n-1 && oi.b.(i+1) = 1 && i > 0 then 2
+			else (
+					if oi.b.(i) = 0 && i > oi.mu then limit
+					else if oi.b.(i) = 0 && i = oi.mu && (i = n-1 || oi.b.(i+1) = 0) && i > 0 then 0
+					else if oi.b.(i) = 0 && i = oi.mu && i = 0 then 1
+					else if oi.b.(0) = 1 && oi.b.(1) = 1 && i = 1 && oi.mu = 2 && l = 1 then 1
+					else if i = oi.mu - 1 && i > 0 then 2
+					else if i = 0 && oi.b.(0) = 1 && l = 1 && oi.b.(1) = 0 then 2
+					else 1
+			)
+		)))	in
+(*
+		
+		let delta_g = Array.init n (fun i ->
+			if (i > oi.mu && (oi.b.(i) = 1 || i = n-1)) then 0
+			else if (i > oi.mu) then 1 else 2
+		) in
+	*)	
+		(* TODO: more *)
+		
+		for i = 0 to n - 1 do
+			check "b" "m" i delta_b.(i);
+			if i < n - 1 then
+			check "s0" "g" i delta_s_0.(i);
+			if i < n - 1 then
+			check "s1" "s" i delta_s_1.(i);
+			
+			
+			check "d00" "a" i delta_d.(0).(0).(i);
+			if (oi.b.(i) = 1) then
+			check "d01" "b" i delta_d.(0).(1).(i);
+			if (oi.b.(i) = 1 && i >= oi.mu) then
+			if i < n - 1 then
+			check "d10" "w" i delta_d.(1).(0).(i);
+			if (oi.b.(i) = 1 && i >= oi.mu) then
+			if i < n - 1 then
+			check "d11" "v" i delta_d.(1).(1).(i);
+
+						(*
+			if (i < oi.mu) then
+			check "g" "d" i delta_g.(i);
+			*)
+			check "e*" "o" i delta_e.(i);
+			check "e*" "p" i delta_e.(i);
+			if i < n - 1 then
+			check "e*" "q" i delta_e.(i);
+			if i < n - 1 then
+			check "e*" "r" i delta_e.(i);
+		done;
+		
+		oldoccrec := Array.init (Array.length occrec) (fun i -> Array.init (Array.length occrec.(i)) (fun j -> occrec.(i).(j)));
+		oldinfo := Some info;
+	);;
+
 
 let check_fair_exp_occ game strategy bits occ =
 		let find x i = pg_find_desc game (Some (x ^ string_of_int i)) in
@@ -453,12 +605,13 @@ let switch_zadeh_exp_tie_break_callback n game old_strategy valu occ v w r s =
 		then (
 			curbits := Bits.inc !curbits;
 			incr count_bits;
-			msg_tagged_nl 1 (fun _ -> "-----" ^  "------" ^ ArrayUtils.format string_of_int !curbits ^ "--------" ^ string_of_int !count_bits ^ " of " ^ string_of_int (1 lsl n) ^ "\n");
+			msg_tagged_nl 1 (fun _ -> "\n-----" ^  "------" ^ ArrayUtils.format string_of_int !curbits ^ "--------" ^ string_of_int !count_bits ^ " of " ^ string_of_int (1 lsl n) ^ "\n");
 			let check = check_fair_exp_occ game old_strategy !curbits occ in
-			msg_tagged_nl 1 (fun _ -> "Occ - " ^ (if check then "yes" else "no") ^ "\n");
+			msg_tagged_nl 1 (fun _ -> "\nOcc - " ^ (if check then "yes" else "no") ^ "\n");
 			last_active_phases := TreeSet.empty_def;
 		);
-		
+
+  	test_occrec_assumptions game old_strategy valu occ n;
 		test_assumptions game old_strategy valu;
 		test_valuation_assumptions game old_strategy valu n;
 		test_improving_switches game old_strategy valu n;;
