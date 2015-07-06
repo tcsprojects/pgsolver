@@ -1,10 +1,10 @@
 PGSolver
 ========
 
-Version 3.3, Copyright (c) 2008-2013
+Version 3.4, Copyright (c) 2008-2015
 
 It is developed and maintained by:
-- (c) Oliver Friedmann, University of Munich (http://oliverfriedmann.de)
+- (c) Oliver Friedmann, University of Munich (http://oliverfriedmann.com)
 - (c) Martin Lange, University of Kassel (http://carrick.fmv.informatik.uni-kassel.de/~mlange/)
 
 

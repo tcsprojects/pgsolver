@@ -420,7 +420,7 @@ let test_occrec_assumptions game strategy valu occrec n =
 			  delta := !delta + occrec.(v).(j) - !oldoccrec.(v).(j);
 			done;
 			if (!delta != assrt)
-			then print_string ("\n\n" ^ desc ^ " " ^ string_of_int oi.ddd.(0).(1).(i) ^ string_of_int oi.ddd.(0).(0).(i) ^ " " ^ s ^ string_of_int i ^ " : " ^ string_of_int !delta ^ " vs " ^ string_of_int assrt ^ " " ^ ArrayUtils.format string_of_int oi.b ^ " --> " ^ ArrayUtils.format string_of_int info.b ^ "\n\n");
+			then print_string ("\n\n" ^ desc ^ " " ^ s ^ string_of_int i ^ " : " ^ string_of_int !delta ^ " vs " ^ string_of_int assrt ^ " " ^ ArrayUtils.format string_of_int oi.b ^ " --> " ^ ArrayUtils.format string_of_int info.b ^ "\n\n");
 		in	
 		
 		let delta_b = Array.init n (fun i ->
@@ -437,34 +437,59 @@ let test_occrec_assumptions game strategy valu occrec n =
 		) in
 
 		let delta_d = Array.init 2 (fun k -> Array.init 2 (fun l -> Array.init n (fun i ->
-			let ii = oi in
-			let zbfl = BitScheme.bit_flips ii.b 0 TreeSet.empty_def in
-			let ipbmfl = if i < n-1 then BitScheme.max_flip_number ii.b (i+1) TreeSet.empty_def else 0 in
-			let bits_as_int = Bits.to_int ii.b in
-			let ibfla0 = BitScheme.max_flip_number ii.b i (TreeSet.singleton_def (i+1, 0)) in
-			let limit = if zbfl - ((ibfla0/2) + bits_as_int - ipbmfl) > 1 then 2 else 1 in
-			
-			if oi.b.(i) = 1 && i >= oi.mu && (i = n-1 || oi.b.(i+1) = k) then 0
-			else if oi.b.(i) = 1 && i >= oi.mu then 1
-			else if oi.b.(i) = 0 && i = oi.mu && i < n-1 && oi.b.(i+1) = 1 && i > 0 then 2
-			else (
-					if oi.b.(i) = 0 && i > oi.mu then limit
-					else if oi.b.(i) = 0 && i = oi.mu && (i = n-1 || oi.b.(i+1) = 0) && i > 0 then 0
-					else if oi.b.(i) = 0 && i = oi.mu && i = 0 then 1
-					else if oi.b.(0) = 1 && oi.b.(1) = 1 && i = 1 && oi.mu = 2 && l = 1 then 1
-					else if i = oi.mu - 1 && i > 0 then 2
-					else if i = 0 && oi.b.(0) = 1 && l = 1 && oi.b.(1) = 0 then 2
-					else 1
-			)
+			if (i > oi.mu) then (
+				if oi.b.(i) = 1 && (i = n-1 || oi.b.(i+1) = k) then 0				
+				else if oi.b.(i) = 1 then 1
+				else if l = 1 && Bits.greatest_one oi.b = n then 2
+				else if i < n-1 && oi.b.(i+1) = 1-k && oi.b.(0) = 0 && (ArrayUtils.forall oi.b (fun j x -> j < 1 || j >= i || x = 1)) then 1
+				else if oi.b.(0) >= l && i <= n-1-k && (ArrayUtils.forall oi.b (fun j x -> j = 0 || x = 0)) && i > oi.b.(0) then 1
+				else if i > 0 && (i = n-1 || oi.b.(i+1) = k) && ((ArrayUtils.exists oi.b (fun j x -> j < i && x = 0))) then 1
+				else if k = 1 && (ArrayUtils.forall oi.b (fun j x -> j <= i || x = 0)) then 1
+				else if l = 0 then 2
+				else if i < n-1 && oi.b.(i+1) = 1-k && i > 2 && (ArrayUtils.exists oi.b (fun j x -> j >= 2 && j < i && x = 0)) then 2
+				else if oi.b.(0) = 0 && oi.b.(1) = 0 && oi.b.(i) = 0 && (i = n-1 || oi.b.(i+1) = 1-k) then 1
+				else 2
+			) else if (i = oi.mu) then (
+				if k = 1 && Bits.greatest_one oi.b < i then 1
+				else if l = 1 && Bits.greatest_one oi.b = n then 1 + k
+				else if i < n-1 && oi.b.(i+1) = 1-k && i > 0 then 2
+				else if (i = n-1 || oi.b.(i+1) = k) && i > 0 then l
+				else if i = 0 && oi.b.(1) = 1-k then 1
+				else 1-l
+			) else (
+				if k = 1 && l = 1 && oi.b.(i+1) = 1 && i = 1 then 1
+				else if k = 1 && oi.b.(i+1) = 1 && i > 0 then 2
+				else if i = 0 && oi.b.(0) = 1 && l = 1 && oi.b.(1) = k then 2					
+			  else if oi.b.(0) = 1 && oi.b.(1) = 1 && i = 1 && oi.mu = 2 && l = 1 then 1
+				else if k = 1 && oi.b.(0) = 1 && oi.b.(1) = 1 && oi.b.(i) = 1 then 1
+				else if i = oi.mu - 1 && i > 0 then 2
+				else 1
+			)			
 		)))	in
-(*
-		
+
 		let delta_g = Array.init n (fun i ->
-			if (i > oi.mu && (oi.b.(i) = 1 || i = n-1)) then 0
-			else if (i > oi.mu) then 1 else 2
+			if (i > oi.mu && (oi.b.(i) = 1 || i = n-1)) then 0			
+			else if (i > oi.mu) then (
+				if oi.b.(0) = 0 && oi.b.(1) = 0 && oi.b.(i+1) = 0 && Bits.greatest_one oi.b > i && Bits.least_one oi.b >= 0 && i > 1 && (ArrayUtils.forall oi.b (fun j x -> j < 2 || j >= i || x = 1))  then 1
+				else if oi.b.(i+1) = 0 && oi.b.(0) = 0 && (ArrayUtils.forall oi.b (fun j x -> j < 1 || j >= i || x = 1))  && Bits.least_one oi.b >= 0 then 2
+				else if oi.b.(0) = 0 && Bits.greatest_one oi.b < i then 2
+				else if i = 2 && oi.b.(1) = 0 && oi.b.(3) = 0 && Bits.greatest_one oi.b > i && Bits.least_one oi.b >= 0 then 2
+				else if i > 2 && oi.b.(0) = 1 && oi.b.(i+1) = 0 && oi.b.(1) + oi.b.(2) = 1 && Bits.greatest_one oi.b > i && Bits.least_one oi.b >= 0 && (ArrayUtils.forall oi.b (fun j x -> j < 3 || j >= i || x = 1)) then 2
+				else 0
+			)
+			else if (i = oi.mu) then (
+				if i = 0 && oi.b.(1) = 0 then 0
+				else if Bits.greatest_one oi.b < i then 0
+				else if Bits.least_zero oi.b = i && oi.b.(0) = 1 && oi.b.(i+1) = 0 then 2
+				else 1
+			)
+			else if (i < oi.mu) then (
+				if i = 2 && oi.mu > 3 then 2
+				else if i < 2 && i + 1 < oi.mu then 1
+				else 0
+			)
+			else 0
 		) in
-	*)	
-		(* TODO: more *)
 		
 		for i = 0 to n - 1 do
 			check "b" "m" i delta_b.(i);
@@ -475,19 +500,14 @@ let test_occrec_assumptions game strategy valu occrec n =
 			
 			
 			check "d00" "a" i delta_d.(0).(0).(i);
-			if (oi.b.(i) = 1) then
 			check "d01" "b" i delta_d.(0).(1).(i);
-			if (oi.b.(i) = 1 && i >= oi.mu) then
 			if i < n - 1 then
 			check "d10" "w" i delta_d.(1).(0).(i);
-			if (oi.b.(i) = 1 && i >= oi.mu) then
 			if i < n - 1 then
 			check "d11" "v" i delta_d.(1).(1).(i);
 
-						(*
-			if (i < oi.mu) then
 			check "g" "d" i delta_g.(i);
-			*)
+
 			check "e*" "o" i delta_e.(i);
 			check "e*" "p" i delta_e.(i);
 			if i < n - 1 then
