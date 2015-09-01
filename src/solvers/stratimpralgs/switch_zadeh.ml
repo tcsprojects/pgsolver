@@ -19,6 +19,7 @@ module BitScheme = struct
 	let flip_set bits i scheme = match_set bits (TreeSet.union (TreeSet.add (i,1) scheme) (TreeSet.of_array_def (Array.init i (fun j -> (j, 0)))))
 	let unflip_set bits i scheme = match_set bits (TreeSet.union (TreeSet.add (i,0) scheme) (TreeSet.of_array_def (Array.init i (fun j -> (j, 0)))))
 	let bit_flips bits i scheme = TreeSet.cardinal (flip_set bits i scheme)
+	let bit_unflips bits i scheme = TreeSet.cardinal (unflip_set bits i scheme)
 	let max_flip_number bits i scheme = TreeSet.max_elt (TreeSet.add 0 (TreeSet.map2_def Bits.to_int (flip_set bits i scheme)))
 	let max_unflip_number bits i scheme = TreeSet.max_elt (TreeSet.add 0 (TreeSet.map2_def Bits.to_int (unflip_set bits i scheme)))
 end;;
@@ -405,7 +406,7 @@ let initial_strategy_check game strategy n =
 let oldoccrec = ref [||];;
 let oldinfo = ref None;;
 
-let test_occrec_assumptions game strategy valu occrec n =
+let test_occrec_delta_assumptions game strategy valu occrec n =
 	let info = strategy_info game strategy in
 	if (Array.length !oldoccrec = 0) then (
 		oldoccrec := Array.init (Array.length occrec) (fun i -> Array.init (Array.length occrec.(i)) (fun j -> occrec.(i).(j)));
@@ -456,7 +457,7 @@ let test_occrec_assumptions game strategy valu occrec n =
 				else if (i = n-1 || oi.b.(i+1) = k) && i > 0 then l
 				else if i = 0 && oi.b.(1) = 1-k then 1
 				else 1-l
-			) else (
+			) else (				
 				if k = 1 && l = 1 && oi.b.(i+1) = 1 && i = 1 then 1
 				else if k = 1 && oi.b.(i+1) = 1 && i > 0 then 2
 				else if i = 0 && oi.b.(0) = 1 && l = 1 && oi.b.(1) = k then 2					
@@ -468,26 +469,17 @@ let test_occrec_assumptions game strategy valu occrec n =
 		)))	in
 
 		let delta_g = Array.init n (fun i ->
-			if (i > oi.mu && (oi.b.(i) = 1 || i = n-1)) then 0			
-			else if (i > oi.mu) then (
-				if oi.b.(0) = 0 && oi.b.(1) = 0 && oi.b.(i+1) = 0 && Bits.greatest_one oi.b > i && Bits.least_one oi.b >= 0 && i > 1 && (ArrayUtils.forall oi.b (fun j x -> j < 2 || j >= i || x = 1))  then 1
-				else if oi.b.(i+1) = 0 && oi.b.(0) = 0 && (ArrayUtils.forall oi.b (fun j x -> j < 1 || j >= i || x = 1))  && Bits.least_one oi.b >= 0 then 2
-				else if oi.b.(0) = 0 && Bits.greatest_one oi.b < i then 2
-				else if i = 2 && oi.b.(1) = 0 && oi.b.(3) = 0 && Bits.greatest_one oi.b > i && Bits.least_one oi.b >= 0 then 2
-				else if i > 2 && oi.b.(0) = 1 && oi.b.(i+1) = 0 && oi.b.(1) + oi.b.(2) = 1 && Bits.greatest_one oi.b > i && Bits.least_one oi.b >= 0 && (ArrayUtils.forall oi.b (fun j x -> j < 3 || j >= i || x = 1)) then 2
-				else 0
-			)
-			else if (i = oi.mu) then (
-				if i = 0 && oi.b.(1) = 0 then 0
-				else if Bits.greatest_one oi.b < i then 0
-				else if Bits.least_zero oi.b = i && oi.b.(0) = 1 && oi.b.(i+1) = 0 then 2
-				else 1
-			)
-			else if (i < oi.mu) then (
-				if i = 2 && oi.mu > 3 then 2
-				else if i < 2 && i + 1 < oi.mu then 1
-				else 0
-			)
+			if i = 2 && (oi.mu > 3 || (oi.mu = 1 && oi.b.(2) = 0 && oi.b.(3) = 0 && Bits.greatest_one oi.b > 2)) then 2
+			else if i < n-1 && oi.b.(0) = 1 && oi.b.(i+1) = 0 && i = oi.mu && Bits.greatest_one oi.b >= i then 2
+			else if oi.b.(0) = 0 && Bits.greatest_one oi.b < i && i < n-1 then 2
+			else if i < n-1 && i > 0 && oi.b.(i+1) = 0 && oi.b.(i) = 0 && (ArrayUtils.forall oi.b (fun j x -> j < 1 + 2 * oi.b.(0) || j >= i || x = 1)) &&
+			        Bits.least_one oi.b >= 0 && Bits.greatest_one oi.b > i && (oi.b.(0) = 0 || oi.b.(1) + oi.b.(2) = 1) then 2
+
+			else if i < 2 && i + 1 < oi.mu then 1
+			else if i = oi.mu && (oi.b.(1) = 1 || i > 0) && Bits.greatest_one oi.b >= i then 1
+			else if i < n-1 && oi.b.(0) = 0 && oi.b.(1) = 0 && oi.b.(i+1) = 0 && Bits.greatest_one oi.b > i && Bits.least_one oi.b >= 0 && i > 1 &&
+			        (ArrayUtils.forall oi.b (fun j x -> j < 2 || j >= i || x = 1)) && oi.b.(i) = 0 then 1
+			
 			else 0
 		) in
 		
@@ -519,6 +511,107 @@ let test_occrec_assumptions game strategy valu occrec n =
 		oldoccrec := Array.init (Array.length occrec) (fun i -> Array.init (Array.length occrec.(i)) (fun j -> occrec.(i).(j)));
 		oldinfo := Some info;
 	);;
+
+
+
+let oldoccrecx = ref [||];;
+let oldinfox = ref None;;
+
+let test_occrec_assumptions game strategy valu occrec n =
+	let info = strategy_info game strategy in
+	if (Array.length !oldoccrecx = 0) then (
+		oldoccrecx := Array.init (Array.length occrec) (fun i -> Array.init (Array.length occrec.(i)) (fun j -> occrec.(i).(j)));
+		oldinfox := Some info;
+	) else if (info.b = (OptionUtils.get_some !oldinfox).b || not (initial_strategy_check game strategy n)) then () else (
+		print_string "CheckGlobal\n";
+		let oi = OptionUtils.get_some !oldinfox in
+		let check desc s i assrt =
+			let v = pg_find_desc game (Some (s ^ string_of_int i)) in
+			let acc = ref 0 in
+			for j = 0 to Array.length occrec.(v) - 1 do
+			  acc := !acc + occrec.(v).(j);
+			done;
+			if (!acc != assrt)
+			then print_string ("\n\n" ^ desc ^ " " ^ s ^ string_of_int i ^ " : " ^ string_of_int (!acc-assrt) ^ " " ^ ArrayUtils.format string_of_int oi.b ^ " --> " ^ ArrayUtils.format string_of_int info.b ^ "\n\n");
+		in
+		
+		let assrt_b = Array.init n (fun i ->
+			BitScheme.bit_flips info.b i TreeSet.empty_def + BitScheme.bit_unflips info.b i TreeSet.empty_def - 1
+		) in
+		let assrt_s_0 = Array.init n (fun i ->
+			BitScheme.bit_flips info.b (i+1) TreeSet.empty_def + BitScheme.bit_unflips info.b (i+1) TreeSet.empty_def - 1
+		) in
+		let assrt_s_1 = Array.init n (fun i ->
+			BitScheme.bit_flips info.b (i+1) TreeSet.empty_def + BitScheme.bit_unflips info.b (i+1) TreeSet.empty_def - 1
+		) in
+		let assrt_e = Array.init n (fun i ->
+			Bits.to_int info.b
+		) in
+		
+		let sgn i = if i = 0 then 0 else if i > 0 then 1 else -1 in
+		
+		let assrt_d = Array.init 2 (fun k -> Array.init 2 (fun l -> Array.init n (fun i ->
+			if (info.b.(i) = 1 && (i = n-1 || info.b.(i+1) = k))
+			then BitScheme.max_flip_number info.b i (TreeSet.singleton_def (i+1, k)) + (2 * l - 1) * sgn i
+			else if (info.b.(i) = 0 && (i = n-1 || info.b.(i+1) = k))
+			then 2 * BitScheme.bit_flips info.b 0 TreeSet.empty_def - info.b.(0) * sgn i + l 
+			else if (info.b.(i) = 1)
+			then 2 * BitScheme.bit_flips info.b 0 TreeSet.empty_def - info.b.(0) + l
+			else 
+					 BitScheme.max_flip_number info.b i (TreeSet.singleton_def (i+1, k))
+				 + (2 - k) * Bits.to_int info.b
+				 - 2 * (if i < n-1 then (if k = 0 then BitScheme.max_flip_number else BitScheme.max_unflip_number) info.b (i+1) TreeSet.empty_def else 0)
+				 + (if i > 0 && Bits.least_zero info.b = i then 0 else 1-k)
+				 + k * (if Bits.greatest_one info.b < i then 0 else Bits.to_int info.b + (if i > 0 && Bits.least_zero info.b = i then 0 else 1))
+				 + l
+				 + (1-k) * l * (if (i = 0 || Bits.least_zero info.b < i) && i != 1 then (if info.b.(0) + info.b.(1) = 1 && ArrayUtils.forall info.b (fun j x -> j < 2 || j >= i || x = 1) then 0 else 1) else 0)
+				 + k * l * (if i = 2 && Bits.least_one info.b > 3 then 1 else 0)
+				 + k * l * (if i > 2 && i < n-1 && info.b.(i+1) = 0 && Bits.greatest_one info.b > i && (info.b.(i-1) = 0 || Bits.numb_zero_below info.b i > 1 || (i > 3 && info.b.(0) + info.b.(1) != 1) || (i > 3 && info.b.(i+2) = 1)) then 1 else 0)
+				 + k * l * (if i > 3 && i < n-2 && info.b.(i+1) = 0 && (if Bits.numb_zero_below info.b i > 0 then info.b.(i+2) = 1 else Bits.greatest_one info.b > i) && info.b.(i-1) = 1 && Bits.numb_zero_below info.b i < 2 && Bits.numb_zero_below info.b i = Bits.numb_zero_below info.b 2 then -1 else 0)
+		))) in
+				
+		let assrt_g = Array.init n (fun i ->
+			if i = n-1 then 0
+			else if (Bits.greatest_one info.b < i)
+			then Bits.to_int info.b - 2 + Bits.to_int info.b mod 2
+			else if i = 0 then info.b.(i) * info.b.(i+1) + Bits.to_int (Bits.shri info.b (i+2)) * 2
+			else if i = 1 then info.b.(i) * info.b.(i+1) + Bits.to_int (Bits.shri info.b (i+2)) * 6 + (1-info.b.(i)) * (1-info.b.(i+1)) * (2 * info.b.(0) - 4)
+			else info.b.(i) * info.b.(i+1) + Bits.to_int (Bits.shri info.b (i+2)) * 10 +
+			     Bits.to_int (Bits.onei n i) - 2 + (1-info.b.(i)) * (1-info.b.(i+1)) * (
+				if (ArrayUtils.forall info.b (fun j x -> j < 2 || j >= i || x = 1)) && info.b.(i+1) = 0 then info.b.(1) * 3 + info.b.(0) + info.b.(0) * info.b.(1) - 7 else -9
+			)
+		) in
+				
+		for i = 0 to n - 1 do
+			check "b" "m" i assrt_b.(i);
+			if i < n - 1 then
+			check "s0" "g" i assrt_s_0.(i);
+			if i < n - 1 then
+			check "s1" "s" i assrt_s_1.(i);
+			
+			check "d00" "a" i assrt_d.(0).(0).(i);
+			check "d01" "b" i assrt_d.(0).(1).(i);
+			if i < n - 1 then 
+			check "d10" "w" i assrt_d.(1).(0).(i);
+			if i < n - 1 then
+			check "d11" "v" i assrt_d.(1).(1).(i);
+
+			check "g" "d" i assrt_g.(i);
+
+			
+			check "e*" "o" i assrt_e.(i);
+			check "e*" "p" i assrt_e.(i);
+			if i < n - 1 then
+			check "e*" "q" i assrt_e.(i);
+			if i < n - 1 then
+			check "e*" "r" i assrt_e.(i);
+		done;
+		
+		oldoccrecx := Array.init (Array.length occrec) (fun i -> Array.init (Array.length occrec.(i)) (fun j -> occrec.(i).(j)));
+		oldinfox := Some info;
+	);;
+
+
 
 
 let check_fair_exp_occ game strategy bits occ =
@@ -621,17 +714,18 @@ let switch_zadeh_exp_tie_break_callback n game old_strategy valu occ v w r s =
 		if (Array.length !curbits = 0)
 		then curbits := Bits.zero (n+1);
 
-	  if (not (is_initial_strategy !curbits) && (is_initial_strategy (Bits.inc !curbits))) 
+	  if (not (is_initial_strategy !curbits) && (is_initial_strategy (Bits.inc !curbits)) && initial_strategy_check game old_strategy n) 
 		then (
 			curbits := Bits.inc !curbits;
 			incr count_bits;
 			msg_tagged_nl 1 (fun _ -> "\n-----" ^  "------" ^ ArrayUtils.format string_of_int !curbits ^ "--------" ^ string_of_int !count_bits ^ " of " ^ string_of_int (1 lsl n) ^ "\n");
-			let check = check_fair_exp_occ game old_strategy !curbits occ in
-			msg_tagged_nl 1 (fun _ -> "\nOcc - " ^ (if check then "yes" else "no") ^ "\n");
+			(*let check = check_fair_exp_occ game old_strategy !curbits occ in
+			msg_tagged_nl 1 (fun _ -> "\nOcc - " ^ (if check then "yes" else "no") ^ "\n"); *)
 			last_active_phases := TreeSet.empty_def;
 		);
 
   	test_occrec_assumptions game old_strategy valu occ n;
+		test_occrec_delta_assumptions game old_strategy valu occ n;
 		test_assumptions game old_strategy valu;
 		test_valuation_assumptions game old_strategy valu n;
 		test_improving_switches game old_strategy valu n;;
@@ -653,7 +747,7 @@ let improvement_policy_optimize_fair tie_break
     let msg_tagged_nl v = message_autotagged_newline v (fun _ -> "STRIMPR_FAIR") in
 	let desc i = match (pg_get_desc game i) with Some s -> s | None -> string_of_int i in
   
-    msg_tagged_nl 3 (fun _ ->
+    msg_tagged_nl 4 (fun _ ->
     	"Occ: " ^ 
     	ArrayUtils.formati (fun i a -> desc i ^ ":" ^
     		let tr = pg_get_tr game i in
@@ -680,7 +774,7 @@ let improvement_policy_optimize_fair tie_break
 				)
 			) tr
 	) game;
-	msg_tagged_nl 3 (fun _ -> "Occurrence-Arena: " ^ ListUtils.format (fun (i,_,k) -> desc i ^ "->" ^ desc k) (List.rev !l) ^ "\n");
+	msg_tagged_nl 4 (fun _ -> "Occurrence-Arena: " ^ ListUtils.format (fun (i,_,k) -> desc i ^ "->" ^ desc k) (List.rev !l) ^ "\n");
 	if !l != [] then (
 		let (i,j,k) = tie_break game node_total_ordering occ old_strategy valu !l in 
 		strategy.(i) <- k;
