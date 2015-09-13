@@ -64,33 +64,38 @@ type strategy_info = {
 	b: int array;
 	sx: int array array;
 	s: int array;
+  g: int array;
 	e: int array;
 	ex: int array array;
+  ddd: int array array array;	
 	eg: int array;
 	eb: int array;
 	e0g: int array;
 	e1g: int array;
 	e0b: int array;
 	e1b: int array;
-	g: int array;
 	mu: int;
 	eee: int array array array;
-	ddd: int array array array;
 };;
 
 let strategy_info game strategy = 
 	let len = StrategyHelper.length game in
 	let strat a i b j = if StrategyHelper.is game strategy (a ^ string_of_int i) (b ^ string_of_int j) then 1 else 0 in
+    let ddd = [|[|
+    Array.init len (fun i -> strat "a" i "E" i);
+    Array.init len (fun i -> strat "b" i "E" i)
+    |];[|
+    Array.init len (fun i -> strat "v" i "X" i);
+    Array.init len (fun i -> strat "w" i "X" i)
+    |]|] in
 	let b = Array.init len (fun i -> strat "m" i "d" i) in
 	let s0 = Array.init len (fun i -> 1 - strat "g" i "m" 0) in
 	let s1 = Array.init len (fun i -> if i < len - 1 then 1 - strat "s" i "m" 0 else 0) in
 	let g = Array.init len (fun i -> strat "d" i "X" i) in
-	let e0 = Array.init len (fun i -> strat "a" i "E" i * strat "b" i "E" i) in
-	let e1 = Array.init len (fun i -> strat "v" i "X" i * strat "w" i "X" i) in
-	let ex = [|e0; e1|] in
-	let e = Array.init len (fun i -> if g.(i) = 0 then e0.(i) else e1.(i)) in
-	let s = Array.init len (fun i -> if g.(i) = 0 then s0.(i) else s1.(i)) in
-	let sx = [|s0; s1|] in
+	let ex = Array.init 2 (fun j -> Array.init len (fun i -> ddd.(j).(0).(i) * ddd.(j).(1).(i))) in
+  let sx = [|s0; s1|] in
+	let e = Array.init len (fun i -> ex.(g.(i)).(i)) in
+	let s = Array.init len (fun i -> sx.(g.(i)).(i)) in
 	
 	let last = ref len in
 	let searching = ref true in
@@ -111,18 +116,11 @@ let strategy_info game strategy =
 	Array.init len (fun i -> strat "r" i "m" 1);
 	Array.init len (fun i -> strat "q" i "m" 1)
 	|]|] in
-	let ddd = [|[|
-	Array.init len (fun i -> strat "a" i "E" i);
-	Array.init len (fun i -> strat "b" i "E" i)
-	|];[|
-	Array.init len (fun i -> 1-strat "v" i "r" i);
-	Array.init len (fun i -> 1-strat "w" i "q" i)
-	|]|] in
 
 	let e0g = Array.init len (fun i -> max ((1-eee.(0).(0).(i)) * (1-ddd.(0).(0).(i))) ((1-eee.(0).(1).(i)) * (1-ddd.(0).(1).(i)))) in
 	let e0b = Array.init len (fun i -> max (eee.(0).(0).(i) * (1-ddd.(0).(0).(i))) (eee.(0).(1).(i) * (1-ddd.(0).(1).(i)))) in
-	let e1g = Array.init len (fun i -> max ((1-eee.(1).(1).(i)) * (1-ddd.(1).(1).(i))) ((1-eee.(1).(0).(i)) * (1-ddd.(1).(0).(i)))) in
-	let e1b = Array.init len (fun i -> max (eee.(1).(1).(i) * (1-ddd.(1).(1).(i))) (eee.(1).(0).(i) * (1-ddd.(1).(0).(i)))) in
+	let e1g = Array.init len (fun i -> if i < len - 1 then max ((1-eee.(1).(1).(i)) * (1-ddd.(1).(1).(i))) ((1-eee.(1).(0).(i)) * (1-ddd.(1).(0).(i))) else 0) in
+	let e1b = Array.init len (fun i -> if i < len - 1 then max (eee.(1).(1).(i) * (1-ddd.(1).(1).(i))) (eee.(1).(0).(i) * (1-ddd.(1).(0).(i))) else 0) in
 	let eg = Array.init len (fun i -> if g.(i) = 0 then e0g.(i) else e1g.(i)) in
 	let eb = Array.init len (fun i -> if g.(i) = 0 then e0b.(i) else e1b.(i)) in
 	{
@@ -278,10 +276,10 @@ let test_improving_switches game strategy valu n =
 		let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
 		let v = pg_find_desc game (Some (s ^ string_of_int i)) in
 		if (impr.(v) != assrt) then (
-			let ttt = "(b,g,e0,e1,s0,s1,e0b,e1b,e0g,e1g)=" ^ string_of_int info.b.(i) ^string_of_int info.g.(i) ^string_of_int info.ex.(0).(i) ^string_of_int info.ex.(1).(i) ^string_of_int info.sx.(0).(i) ^string_of_int info.sx.(1).(i)^string_of_int info.e0b.(i)^string_of_int info.e1b.(i)^string_of_int info.e0g.(i)^string_of_int info.e1g.(i) in    
-			print_string ("\n\n" ^ desc ^ " " ^ s ^ string_of_int i ^ " (false " ^ (if assrt then "+ + + + + +" else "- - - - - -") ^ ") -- " ^ ttt ^ "\n\n");
+			print_string ("\n\n" ^ desc ^ " " ^ s ^ string_of_int i ^ " (false " ^ (if assrt then "+ + + + + +" else "- - - - - -") ^ ") -- " ^ "\n\n");
 		)
   in
+	let sgn i = if i > 0 then 1 else 0 in
 	let impr_b = Array.init n (fun i ->
 		   (i = info.mu && info.b.(i) = 0 && info.e.(i) = 1 && info.g.(i) = (if i = n-1 then 0 else info.b.(i+1))) ||
 			 (i = info.mu - 1 && info.b.(i) = 1 && info.b.(i+1) = 1) ||
@@ -290,65 +288,183 @@ let test_improving_switches game strategy valu n =
 	let impr_s_0 = Array.init n (fun i ->
 		   (i = info.mu - 2 && info.b.(i+2) = 1 && info.sx.(0).(i) = 0) ||
 			 (i < info.mu - 2 && info.b.(i+2) = 0 && info.sx.(0).(i) = 0) ||  
-			 (i > info.mu - 2 && i < n-1 && info.sx.(0).(i) = 0 && info.b.(i+1) = 0 ) ||  
-			 (i > info.mu - 2 && i < n-1 && info.sx.(0).(i) = 1 && info.b.(i+1) = 1 && info.b.(0) = 0)
+			 (i > info.mu - 2 && i < n-1 && info.sx.(0).(i) = info.b.(i+1) && info.sx.(0).(i) * info.b.(0) = 0)
   ) in
 	let impr_s_1 = Array.init (n-1) (fun i ->
 		   (i = info.mu - 1 && info.e.(i+1) = 1 && info.g.(i+1) = (if i < n-2 then info.b.(i+2) else 0) && info.sx.(1).(i) = 0) ||
 			 (i < info.mu - 1 && info.b.(0) = 0 && info.sx.(1).(i) = 1) ||  
-			 (i > info.mu - 1 && i < n-1 && info.sx.(1).(i) = 0 && info.b.(i+1) = 1) ||  
-			 (i > info.mu - 1 && i < n-1 && info.sx.(1).(i) = 1 && info.b.(i+1) = 0 && info.b.(0) = 0)
-  ) in
-	let impr_g = Array.init n (fun i ->
-		(info.ex.(1).(i) = 1 && (
-			  (info.ex.(0).(i) = 1 && i  = info.mu && info.g.(i) != info.b.(i+1)) ||
-		    (info.ex.(0).(i) = 0 && i >= info.mu && info.g.(i) = 0 && info.b.(i) = 0 && info.sx.(0).(i) != info.sx.(1).(i))
-		)) ||
-		(info.ex.(1).(i) = 0 && info.ex.(0).(i) = 0 && (
-			(info.g.(i) = 1 && info.e0b.(i) <= info.e1b.(i) && info.e0g.(i) <= info.e1g.(i)) ||
-			(info.b.(i) = 0 && info.g.(i) = 0 && info.e0b.(i) = 1 && info.e0g.(i) >= info.e1g.(i) && (
-				(i >= info.mu && info.e1b.(i) = 0 && info.e1g.(i) = 1) ||
-				(info.mu = 0 && info.sx.(0).(i) = 1 && info.e1b.(i) = 1 && (
-          (info.sx.(1).(i) = 0 && info.e0g.(i) = 1 && info.e1g.(i) = 0) ||
-					(i = 0 && info.b.(1) = 1)
-				))
-			)
-		)))
+			 (i > info.mu - 1 && i < n-1 && info.sx.(1).(i) != info.b.(i+1) && info.sx.(1).(i) * info.b.(0) = 0)
   ) in
 	let impr_e i value =
 		(info.mu >= 1 && info.b.(1) = (if info.mu > 1 then value else 1 - value)) ||
 		(info.mu = 0 && value = if info.e.(0) = 1 && info.g.(0) = info.b.(1) then 1 else 0)
 	in
+	let impr_g = Array.init n (fun i ->
+		(
+			info.ex.(1).(i) = 1 &&
+			(
+			  (
+					info.ex.(0).(i) = 1 &&
+					i = info.mu &&
+					info.g.(i) != info.b.(i+1)
+				) ||
+		    (
+					info.ex.(0).(i) = 0 &&
+					i >= info.mu &&
+					info.g.(i) = 0 &&
+					info.b.(i) = 0 &&
+					info.sx.(0).(i) != info.sx.(1).(i)
+				)
+			)
+		) ||
+		(
+			info.ex.(1).(i) = 0 &&
+			info.ex.(0).(i) = 0 &&
+			(
+				(
+					info.g.(i) = 1 &&
+					info.e0b.(i) <= info.eb.(i) &&
+					info.e0g.(i) <= info.eg.(i)
+				) ||
+				(
+					info.b.(i) = 0 &&
+					info.g.(i) = 0 && 
+					info.eb.(i) = 1 && 
+					info.eg.(i) >= info.e1g.(i) &&
+					(
+						(
+							i >= info.mu && 
+							info.e1b.(i) = 0 && 
+							info.e1g.(i) = 1
+						) ||
+						(
+							info.mu = 0 && 
+							info.sx.(0).(i) = 1 && 
+							info.e1b.(i) = 1 && 
+							(
+          			(
+									info.sx.(1).(i) = 0 &&
+									info.eg.(i) = 1 &&
+									info.e1g.(i) = 0
+								) ||
+								(
+									i = 0 && 
+									info.b.(1) = 1
+								)
+							)
+						)
+					)
+				)
+			)
+		)
+  ) in
 	let impr_d i value other_value exit other_exit side =
-		(value = 1 && (
-		((info.b.(i) = 0 || info.g.(i) != side) && ((info.mu = 0 && info.e.(0) = 1 && info.g.(0) = info.b.(1) && exit = 0 && (info.sx.(side).(i) = 1 || info.b.(0) = 0) && i > 0) 
-		
-		
-		|| (info.mu = 1 && info.b.(1) = 1 && exit = 1) || (info.mu > 1 && info.b.(1) = 0 && exit = 1)))
-||
-  (side = 1 && info.ex.(side).(i) = 1 && info.mu > 1 && i < info.mu && info.b.(1) = 0 && exit = 1) ||
-	(info.mu = 1 && i = 0 && info.b.(1) = 1 && exit = 1) ||
-	(info.mu = 0 && i = 0 && info.g.(0) = info.b.(1) && exit = 0 && side != info.g.(0)) ||
-	(i = 0 && side = 1 && info.mu > 1 && exit = 1 && info.b.(1) = 0))) 
-	
-	||
-
-	(value = 0 && other_value = 1 && (
-	
-	(info.sx.(side).(i) = 1 && ((side = 0 && (i >= n-1 || info.b.(i+1) = 0)) || (side = 1 && (i < n-1 && info.b.(i+1) = 1)))) ||
-	(info.sx.(side).(i) = 0 && info.mu > 0 && exit = 0) ||
-	(info.mu = 0 && info.b.(0) = 0 && info.sx.(side).(i) = 0 && exit = 1)
-		)) ||
-		
-		
-		(value = 0 && other_value = 0 && (
-			
-			let better_exit = (info.mu >= 1 && info.b.(1) = (if info.mu > 1 then exit else 1 - exit)) || (info.mu = 0 && exit = if info.e.(0) = 1 && info.g.(0) = info.b.(1) then 1 else 0) in
-			(info.sx.(side).(i) = 1 && (exit = other_exit || better_exit) && ((side = 0 && info.b.(i) = 1) || i >= n-1 || info.b.(i+1) = side) && (side = 1 || i > 0 || info.mu != 1)) ||
-			(info.sx.(side).(i) = 0 && ((exit != other_exit && better_exit) || (exit = other_exit && ((info.b.(0) = 0 && info.mu = 0 && exit = 1) || (info.b.(0) = 1 && info.mu != 0 && exit = 0)))))
-			
-			))
-	
+		(
+			value = 1 &&
+			(
+		  	(
+					(
+						info.b.(i) = 0 ||
+						info.g.(i) != side
+					) &&
+					(
+						(
+							info.mu = 0 &&
+							info.e.(0) = 1 &&
+							info.g.(0) = info.b.(1) &&
+							exit = 0 &&
+							info.sx.(side).(i) >= info.b.(0) &&
+							i > 0
+						) ||
+						(
+							info.mu > 0 &&
+							exit = 1 &&
+							info.b.(1) = 1 - sgn (info.mu - 1)
+						)
+					)
+				) ||
+        (
+					side = 1 &&
+					exit = 1 &&
+					info.mu > 1 &&
+					i < info.mu &&
+					info.b.(1) = 0 &&
+					info.ex.(side).(i) >= i
+				) ||
+				(
+					i = 0 &&
+					info.mu = exit && 
+					info.b.(1) = 1 &&
+					exit = 1
+				) ||
+				(
+					i = 0 &&
+					info.mu = exit &&
+					info.g.(0) = info.b.(1) &&
+					exit = 0 &&
+					side != info.g.(0)
+				)
+			)
+		) ||
+		(
+			value = 0 &&
+			other_value = 1 &&
+			(
+				(
+					info.sx.(side).(i) = 1 &&
+					side = (if i >= n-1 then 0 else info.b.(i+1))
+				) ||
+				(
+					info.sx.(side).(i) = 0 &&
+					info.mu > 0 &&
+					exit = 0
+				) ||
+				(
+					info.mu = 0 &&
+					info.b.(0) = 0 &&
+					info.sx.(side).(i) = 0 &&
+					exit = 1
+				)
+			)
+		) ||
+		(
+			value = 0 &&
+			other_value = 0 &&
+			(
+				let better_exit = (info.mu >= 1 && info.b.(1) = (if info.mu > 1 then exit else 1 - exit)) || (info.mu = 0 && exit = if info.e.(0) = 1 && info.g.(0) = info.b.(1) then 1 else 0) in
+				(
+					info.sx.(side).(i) = 1 &&
+					(
+						exit = other_exit ||
+						better_exit
+					) &&
+					(
+						i >= n-1 ||
+						(
+							side = 1 &&
+							info.b.(i+1) = 1
+						) || (
+							side = 0 &&
+							info.b.(i) >= info.b.(i+1) &&
+							(
+								i > 0 ||
+								info.mu != 1
+							)						
+						)
+					)
+				) ||
+			  (
+					info.sx.(side).(i) = 0 &&
+					(
+						(
+							exit != other_exit &&
+							better_exit
+						) ||
+						exit = other_exit && exit != info.b.(0) && info.b.(0) = sgn info.mu
+					)
+				)
+			)
+		)
 	in
 	for i = 0 to n - 1 do
 		check_impr "b" "m" i impr_b.(i);		
@@ -395,7 +511,7 @@ let initial_strategy_check game strategy n =
 			then result := false;
 		);
 		if (info.b.(i) = 0 || info.g.(i) = 0) then (
-			if (info.ddd.(1).(0).(i) = 0 && info.ddd.(1).(1).(i) = 0)
+			if (i < n - 1 && info.ddd.(1).(0).(i) = 0 && info.ddd.(1).(1).(i) = 0)
 			then result := false;
 		);
 	done;
@@ -557,16 +673,28 @@ let test_occrec_assumptions game strategy valu occrec n =
 			then 2 * BitScheme.bit_flips info.b 0 TreeSet.empty_def - info.b.(0) * sgn i + l 
 			else if (info.b.(i) = 1)
 			then 2 * BitScheme.bit_flips info.b 0 TreeSet.empty_def - info.b.(0) + l
-			else 
-					 BitScheme.max_flip_number info.b i (TreeSet.singleton_def (i+1, k))
-				 + (2 - k) * Bits.to_int info.b
-				 - 2 * (if i < n-1 then (if k = 0 then BitScheme.max_flip_number else BitScheme.max_unflip_number) info.b (i+1) TreeSet.empty_def else 0)
-				 + (if i > 0 && Bits.least_zero info.b = i then 0 else 1-k)
-				 + k * (if Bits.greatest_one info.b < i then 0 else Bits.to_int info.b + (if i > 0 && Bits.least_zero info.b = i then 0 else 1))
-				 + l
-				 + (1-k) * l * (if (i = 0 || Bits.least_zero info.b < i) && i != 1 then (if info.b.(0) + info.b.(1) = 1 && ArrayUtils.forall info.b (fun j x -> j < 2 || j >= i || x = 1) then 0 else 1) else 0)
-				 + k * l * (if i = 2 && Bits.least_one info.b > 3 then 1 else 0)
-				 + k * l * (if i > 2 && i < n-1 && info.b.(i+1) = 0 && Bits.greatest_one info.b > i && (info.b.(i-1) = 0 || Bits.numb_zero_below info.b i > 1 || (i > 3 && info.b.(0) + info.b.(1) != 1) || (i > 3 && info.b.(i+2) = 1)) then 1 else 0)
+			else if i = 0
+		  then BitScheme.max_flip_number info.b i (TreeSet.singleton_def (i+1, k)) + 2 * Bits.to_int info.b + 1 + l				 
+				   - 2 * ((if k = 0 then BitScheme.max_flip_number else BitScheme.max_unflip_number) info.b (i+1) TreeSet.empty_def)
+			else if i = 1
+			then BitScheme.max_flip_number info.b i (TreeSet.singleton_def (i+1, k))
+				 + (2 - k) * Bits.to_int info.b + l + (1-k) * (1-info.b.(0))
+				 - 2 * ((if k = 0 then BitScheme.max_flip_number else BitScheme.max_unflip_number) info.b (i+1) TreeSet.empty_def)
+				 + k * (if Bits.to_int info.b < 2 then 0 else 1) * (Bits.to_int info.b + 1 - info.b.(0))
+			else if i = 2
+			then BitScheme.max_flip_number info.b i (TreeSet.singleton_def (i+1, k))
+				 + (2 - k) * Bits.to_int info.b + l + (if Bits.least_zero info.b = i then 0 else 1-k)
+				 - 2 * ((if k = 0 then BitScheme.max_flip_number else BitScheme.max_unflip_number) info.b (i+1) TreeSet.empty_def)
+				 + k * (if Bits.greatest_one info.b < i then 0 else Bits.to_int info.b + (if Bits.least_zero info.b = i then 0 else 1))
+				 + l * (1-info.b.(0)) * (1-info.b.(1)) * (1 - k + k *(1-info.b.(2)) * (1-info.b.(3)))
+			else if i = n-1
+			then 2 * Bits.to_int info.b + (if Bits.least_zero info.b = i then 0 else 1)
+			else BitScheme.max_flip_number info.b i (TreeSet.singleton_def (i+1, k))
+				 + (2 - k) * Bits.to_int info.b + l + (if Bits.least_zero info.b = i then 0 else 1-k)
+				 - 2 * ((if k = 0 then BitScheme.max_flip_number else BitScheme.max_unflip_number) info.b (i+1) TreeSet.empty_def)				 
+				 + k * (if Bits.greatest_one info.b < i then 0 else Bits.to_int info.b + (if Bits.least_zero info.b = i then 0 else 1))
+				 + (1-k) * l * (if (Bits.least_zero info.b < i) then (if info.b.(0) + info.b.(1) = 1 && ArrayUtils.forall info.b (fun j x -> j < 2 || j >= i || x = 1) then 0 else 1) else 0)
+				 + k * l * (if info.b.(i+1) = 0 && Bits.greatest_one info.b > i && (info.b.(i-1) = 0 || Bits.numb_zero_below info.b i > 1 || (i > 3 && info.b.(0) + info.b.(1) != 1) || (i > 3 && info.b.(i+2) = 1)) then 1 else 0)
 				 + k * l * (if i > 3 && i < n-2 && info.b.(i+1) = 0 && (if Bits.numb_zero_below info.b i > 0 then info.b.(i+2) = 1 else Bits.greatest_one info.b > i) && info.b.(i-1) = 1 && Bits.numb_zero_below info.b i < 2 && Bits.numb_zero_below info.b i = Bits.numb_zero_below info.b 2 then -1 else 0)
 		))) in
 				
