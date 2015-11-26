@@ -76,6 +76,8 @@ type strategy_info = {
 	e1b: int array;
 	mu: int;
 	eee: int array array array;
+	eeb: int array array;
+	eeg: int array array;
 };;
 
 let strategy_info game strategy = 
@@ -121,6 +123,8 @@ let strategy_info game strategy =
 	let e0b = Array.init len (fun i -> max (eee.(0).(0).(i) * (1-ddd.(0).(0).(i))) (eee.(0).(1).(i) * (1-ddd.(0).(1).(i)))) in
 	let e1g = Array.init len (fun i -> if i < len - 1 then max ((1-eee.(1).(1).(i)) * (1-ddd.(1).(1).(i))) ((1-eee.(1).(0).(i)) * (1-ddd.(1).(0).(i))) else 0) in
 	let e1b = Array.init len (fun i -> if i < len - 1 then max (eee.(1).(1).(i) * (1-ddd.(1).(1).(i))) (eee.(1).(0).(i) * (1-ddd.(1).(0).(i))) else 0) in
+	let eeg = [|e0g;e1g|] in
+	let eeb = [|e0b;e1b|] in
 	let eg = Array.init len (fun i -> if g.(i) = 0 then e0g.(i) else e1g.(i)) in
 	let eb = Array.init len (fun i -> if g.(i) = 0 then e0b.(i) else e1b.(i)) in
 	{
@@ -128,7 +132,9 @@ let strategy_info game strategy =
 		b = b;
 		ex = ex;
 		e1b = e1b;
+		eeb = eeb;
 		e1g = e1g;
+		eeg = eeg;
 		e0b = e0b;
 		e0g = e0g;
 		e = e;
@@ -149,6 +155,7 @@ type val_info = {
 	gv: int TreeSet.t array;
 	sv: int TreeSet.t array;
 	xv: int TreeSet.t array;
+	fv: int TreeSet.t array array;
 };;	
 
 let valuation_info game strategy compare =
@@ -165,6 +172,7 @@ let valuation_info game strategy compare =
 	for i = info.len - 1 downto 0 do
 		rr.(i) <- if i < info.mu then TreeSet.union rr.(i+1) w.(i) else ll.(i+1);
 	done;
+	let sgn i = if i > 0 then 1 else 0 in
 	let b = Array.init (n+2) (fun i -> if i >= n then y else if i >= info.mu || info.b.(i) = 0 then ll.(i) else rr.(i)) in
 	let g = Array.init n (fun i -> if info.sx.(0).(i) = 0 then b.(0) else TreeSet.add (find "c" i) b.(i+2)) in
 	let s = Array.make (n-1) y in
@@ -181,23 +189,21 @@ let valuation_info game strategy compare =
 							 then TreeSet.add (find "z" i) (TreeSet.add (find "d" (i+1)) b.(0))
 							 else TreeSet.add (find "z" i) (TreeSet.union w.(i+1) b.(i+3))					
 	done;
-	let sg = Array.init n (fun i -> if info.g.(i) = 0 then g.(i) else s.(i)) in
-	let x = Array.init n (fun i -> TreeSet.add (find "d" i) (
-		if (info.g.(i) = 0 || i < n-1) && (info.e.(i) = 1 || (info.s.(i) = 1 && i < n-1 && info.b.(i+1) != info.g.(i)))
-		then sg.(i)
-		else if i = 0 || info.b.(i) = 1
-		then b.(i)
-	  else if (info.b.(0) = 0 && info.eg.(i) = 0) ||
-		        (info.b.(0) = 0 && info.e.(0) = 1) ||
-		        (info.b.(0) = 1 && (info.b.(info.mu) = 0 || info.mu = 0) && info.eb.(i) = 1 && info.e.(0) = 1)
-		then b.(1)
-		else TreeSet.add (find "d" 0) sg.(0)
+	let sss = [|g;s|] in
+	let sg = Array.init n (fun i -> sss.(info.g.(i)).(i)) in
+	let fv = Array.init 2 (fun k -> Array.init n (fun i ->
+		if k = 1 && i = n - 1 then y
+		else if info.ex.(k).(i) = 1 || (info.g.(i) = k && info.s.(i) = 1 && i < n-1 && info.b.(i+1) != info.g.(i)) then sss.(k).(i)
+    else if info.eeg.(k).(i) = 1 && info.b.(0) = 0 && info.mu = 0 && info.e.(0) = 0 then TreeSet.add (find "d" 0) sg.(0)
+    else b.(if ((info.eeg.(k).(i) = 0 || info.mu > 0) && info.b.(0) = 0) || ((info.eeb.(k).(i) = 0 || info.mu = 0) && info.b.(0) = 1) then 0 else if info.mu > 1 then info.b.(1) else 1 - info.b.(1) * sgn info.mu)
 	)) in
+  let x = Array.init n (fun i -> TreeSet.add (find "d" i) (fv.(info.g.(i)).(i))) in
 	{
 		bv = b;
 		gv = g;
 		sv = s;
 		xv = x;
+		fv = fv;
 	};;
 
 
@@ -208,6 +214,10 @@ let valuation_info game strategy compare =
 let test_assumptions game strategy valu =
 	let info = strategy_info game strategy in
 	for i = 0 to info.len - 1 do
+		(*
+    if (i < info.len-1 && (info.mu > 0)) then (
+        if (info.sx.(1).(i) = 1 && info.e.(i+1) != 1) then print_string ("\n\ndamn\n\n");
+    );*)
 		(* A1 *)
 		if (i < info.mu || info.b.(i) = 1) then (
 			if (info.s.(i) != 1) then print_string ("\n\nAs\n\n");
@@ -219,6 +229,7 @@ let test_assumptions game strategy valu =
 		(* A3 *)
 		if (info.b.(i) = 1 && i > 0) ||
 		   (info.b.(i) = 1 && i = 0 && info.mu = 0) ||
+			 (info.b.(1) = 1 && i > 0 && i < info.mu) ||
 			 (info.b.(i) = 1 && i = 0 && info.b.(1) = (if info.mu = 1 then 0 else 1)) then (
 				if (info.e.(i) != 1) then print_string ("\n\nAF\n\n");
 		);
@@ -226,6 +237,13 @@ let test_assumptions game strategy valu =
 		if (i < info.mu) then (
 				if (info.g.(i) != (if i != info.mu - 1 then 1 else 0)) then print_string ("\n\nAg\n\n");
 		);
+		(* A5 Consequence *)
+		(*
+		if (info.b.(i) = 1) then (
+			if (info.g.(i) = 0 && not (StrategyHelper.leads_to game valu ("m" ^ string_of_int i) ("g" ^ string_of_int i))) then print_string "\nWrong\n";
+			if (info.g.(i) = 1 && not (StrategyHelper.leads_to game valu ("m" ^ string_of_int i) ("s" ^ string_of_int i))) then print_string "\nWrong!\n";
+		);
+		*)
 	done;	
 	(* b_i never meets g_0, b_0, b_1 *)	
 	for i = 1 to info.len - 1 do
@@ -262,6 +280,8 @@ let test_valuation_assumptions game strategy valu n =
 			check_valu "left_up" "g" i vinfo.gv.(i);
 			if (i < n-1) then check_valu "right_up" "s" i vinfo.sv.(i);
 			check_valu "bisel" "d" i vinfo.xv.(i);
+			check_valu "leftcyc" "E" i vinfo.fv.(0).(i);			
+			if (i < n-1) then check_valu "ritecyc" "X" i vinfo.fv.(1).(i);
  	done;;
 	
 	
