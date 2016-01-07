@@ -67,3 +67,10 @@ val initial_strategy_by_last_edge: paritygame -> strategy
 val winning_strategies: paritygame -> node_total_ordering_fun -> strategy -> game_valuation -> strategy
 
 
+
+type mdplike_valuation = (((int, float) TreeMap.t) * bool option) array 
+
+val mdplike_valuation: paritygame -> int -> strategy -> mdplike_valuation
+
+val compare_mdplike_valuation: paritygame -> mdplike_valuation -> int -> int -> int
+

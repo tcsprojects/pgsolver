@@ -710,3 +710,106 @@ open CommandLine ;;
 
 let _ = register_solver_factory (fun s -> parse s) "policyiter" "pi" "use policy iteration (see additional args)";;
 
+
+
+
+type mdplike_valuation = (((int, float) TreeMap.t) * bool option) array 
+
+let mdplike_valuation game minprio strategy =
+	let counter = compute_counter_strategy game strategy in
+	let n = pg_size game in
+	let transp = game_to_transposed_graph game in
+	let valu = Array.make n (TreeMap.empty (flip (relevance_total_ordering game node_total_ordering_by_priority_and_position)), None) in
+	let finished = Array.make n false in
+	let queue = ref [] in 
+	for i = 0 to n - 1 do
+		if pg_get_pr game i = 1 then (
+			finished.(i) <- true;
+			queue := [i];
+		);
+	done; 
+  while !queue != [] do
+		let head = List.hd !queue in
+		queue := List.tl !queue;
+		List.iter (fun i ->
+			let is_cycle_node j = pg_get_pl game j = 0 && List.exists (fun k -> List.exists (fun l -> l = j) (Array.to_list (pg_get_tr game k))) (Array.to_list (pg_get_tr game j)) in
+			if not finished.(i) then (
+				if pg_get_pl game i = 0 && finished.(strategy.(i)) then (
+					valu.(i) <- valu.(strategy.(i));
+					if (pg_get_pr game i >= minprio) then valu.(i) <- (TreeMap.add i 1.0 (fst valu.(i)), None);
+					finished.(i) <- true;
+					queue := i::!queue
+				) else if pg_get_pl game i = 1 then (
+					(* This is not the most general approach but good enough for what we are trying to do right now *)
+					let nodes = List.filter (fun j -> pg_get_pl game j = 1 || strategy.(j) != i) (Array.to_list (pg_get_tr game i)) in
+  					let len = List.length nodes in
+	  				let nodes = if List.length nodes < 2 then nodes else List.filter is_cycle_node nodes in
+					if (List.for_all (fun j -> finished.(j)) nodes) then (
+						List.iter (fun j ->
+							TreeMap.iter (fun k v ->
+								match TreeMap.find_opt k (fst valu.(i)) with
+								| None -> valu.(i) <- (TreeMap.add k v (fst valu.(i)), None)
+								| Some x -> valu.(i) <- (TreeMap.add k (v +. x) (fst valu.(i)), None)
+							) (fst valu.(j))
+						) nodes;
+						TreeMap.iter (fun k v ->
+							valu.(i) <- (TreeMap.add k (v /. float (List.length nodes)) (fst valu.(i)), None)
+						) (fst valu.(i));
+						if (pg_get_pr game i >= minprio) then valu.(i) <- (TreeMap.add i 1.0 (fst valu.(i)), snd valu.(i));
+						if (len > 1) then valu.(i) <- (fst valu.(i), Some (is_cycle_node counter.(i)));
+						finished.(i) <- true;
+						queue := i::!queue
+					)
+				) 
+			)
+		) transp.(head);
+	done;	
+	let failed = ref false in
+	for i = 0 to n - 1 do
+		if (not finished.(i)) then failed := true;
+	done;
+	if (!failed) then (
+		let g = subgame_by_strat game strategy in
+		Array.iteri (fun i (_, _, _, de) ->
+			pg_set_desc g i (Some ((OptionUtils.get_some de) ^ " - " ^ (if finished.(i) then "GOOD" else "BAD")))
+		) g;
+		print_game (g);
+		failwith "failed";
+	);
+	valu;;
+	
+	
+	
+let compare_mdplike_valuation game valu v w =
+	let cmprew = reward_total_ordering game node_total_ordering_by_priority_and_position in
+	let vset = ref (empty_descending_relevance_ordered_set game node_total_ordering_by_priority_and_position) in
+	let wset = ref (empty_descending_relevance_ordered_set game node_total_ordering_by_priority_and_position) in
+	TreeMap.iter (fun k f -> vset := TreeSet.add k !vset) (fst valu.(v));
+	TreeMap.iter (fun k f -> wset := TreeSet.add k !wset) (fst valu.(w));
+	let c = ref 0 in
+	while !c = 0 && not (TreeSet.is_empty !vset) && not (TreeSet.is_empty ! wset) do
+		let vmax = TreeSet.min_elt !vset in
+		vset := TreeSet.remove vmax !vset;
+		let wmax = TreeSet.min_elt !wset in
+		wset := TreeSet.remove wmax !wset;
+		if (wmax = vmax) then (
+		  let delta = TreeMap.find vmax (fst valu.(v)) -. TreeMap.find wmax (fst valu.(w)) in
+			if (delta > 0.0 || delta < 0.0) then c := (if pg_get_pr game vmax mod 2 = 0 then 1 else -1) * (if delta > 0.0 then 1 else -1)
+		) else (
+			c := cmprew vmax wmax
+		)
+	done;
+	if (!c = 0 && not (TreeSet.is_empty !vset)) then c := (if pg_get_pr game (TreeSet.min_elt !vset) mod 2 = 0 then 1 else -1)
+	else if (!c = 0 && not (TreeSet.is_empty !wset)) then c := (if pg_get_pr game (TreeSet.min_elt !wset) mod 2 = 0 then -1 else 1);
+	(if (!c = 0 && snd valu.(v) != snd valu.(w)) then
+		c := match (snd valu.(v), snd valu.(w)) with
+		| (Some false, _) -> -1
+		| (Some true, _) -> 1
+		| (_, Some false) -> 1
+		| (_, Some true) -> -1
+		| _ -> 0);
+	!c;;
+	
+	
+	
+	

@@ -156,6 +156,8 @@ type val_info = {
 	sv: int TreeSet.t array;
 	xv: int TreeSet.t array;
 	fv: int TreeSet.t array array;
+	ll: int TreeSet.t array;
+	rr: int TreeSet.t array;
 };;	
 
 let valuation_info game strategy compare =
@@ -204,23 +206,55 @@ let valuation_info game strategy compare =
 		sv = s;
 		xv = x;
 		fv = fv;
+		ll = ll;
+		rr = rr;
 	};;
 
+type mdpval_info = {
+	mbv: (int, float) TreeMap.t array;
+	mll: (int, float) TreeMap.t array;
+	mrr: (int, float) TreeMap.t array;
+};;	
 
+let mdpvaluation_info game strategy compare =
+	let info = strategy_info game strategy in
+	let valinfo = valuation_info game strategy compare in
+	let find a i = pg_find_desc game (Some (a ^ string_of_int i)) in
+	let mbv = Array.map (fun s -> TreeMap.by_set s (fun _ -> 1.0)) valinfo.bv in
+	if (info.b.(0) = 1 && info.mu > 0) then (
+		let found = ref None in
+		for i = info.mu-1 downto 0 do
+			if (info.e.(i) = 0)
+			then found := Some i;
+		done;
+		if (!found != None) then (
+			let j = OptionUtils.get_some !found in
+			mbv.(0) <- TreeMap.add (find "d" j) 1.0 mbv.(1);
+			for i = j-1 downto 0 do
+				mbv.(0) <- TreeMap.add (find "d" i) 1.0 (TreeMap.add (find "z" i) 1.0 mbv.(0));
+			done; 
+		);
+	);
+	{
+		mbv = mbv;
+		mll = Array.map (fun s -> TreeMap.by_set s (fun _ -> 1.0)) valinfo.ll;
+		mrr = Array.map (fun s -> TreeMap.by_set s (fun _ -> 1.0)) valinfo.rr;
+	};;
 
 						
 	
 
 let test_assumptions game strategy valu =
 	let info = strategy_info game strategy in
-	for i = 0 to info.len - 1 do
-		(*
-    if (i < info.len-1 && (info.mu > 0)) then (
-        if (info.sx.(1).(i) = 1 && info.e.(i+1) != 1) then print_string ("\n\ndamn\n\n");
-    );*)
+	
+	for i = 0 to info.len - 1 do		
+		
 		(* A1 *)
 		if (i < info.mu || info.b.(i) = 1) then (
 			if (info.s.(i) != 1) then print_string ("\n\nAs\n\n");
+		);
+		if (i < info.len-1 && info.mu > 0 && i >= info.mu) then (
+			 if (info.sx.(1 - info.b.(i+1)).(i) != 0) then print_string ("\n\nAs!\n\n");
 		);
 		(* A2 *)
 		if (i < info.mu - 1 && info.b.(i+1) = 1) then (
@@ -233,6 +267,7 @@ let test_assumptions game strategy valu =
 			 (info.b.(i) = 1 && i = 0 && info.b.(1) = (if info.mu = 1 then 0 else 1)) then (
 				if (info.e.(i) != 1) then print_string ("\n\nAF\n\n");
 		);
+
 		(* A4 *)
 		if (i < info.mu) then (
 				if (info.g.(i) != (if i != info.mu - 1 then 1 else 0)) then print_string ("\n\nAg\n\n");
@@ -262,7 +297,8 @@ let test_assumptions game strategy valu =
 
 
 
-let test_valuation_assumptions game strategy valu n =	
+let test_valuation_assumptions game strategy valu n =
+	let find a i = pg_find_desc game (Some (a ^ string_of_int i)) in	
 	let info = strategy_info game strategy in
 	let vinfo = valuation_info game strategy (TreeSet.get_compare (let (_, v_valu, _) = valu.(0) in v_valu)) in
 	let check_valu desc s i assrt =
@@ -275,6 +311,16 @@ let test_valuation_assumptions game strategy valu n =
 		if not (TreeSet.is_empty diff)
 		then print_string ("\n\n" ^ desc ^ " " ^ " " ^ ArrayUtils.format string_of_int info.b ^ " " ^ ff diff ^ " | " ^ ff va ^ " | " ^ ff assrt ^ "\n\n");
 	in
+let check_valu_range desc s i assrt_low assrt_high =
+    let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
+    let v = pg_find_desc game (Some (s ^ string_of_int i)) in
+    let (_, v_valu, _) = valu.(v) in
+    let va = TreeSet.filter (fun u -> pg_get_pr game u >= 11) v_valu in
+    let diff_low = TreeSet.sym_diff va assrt_low in
+		let diff_high = TreeSet.sym_diff va assrt_high in
+    if not (TreeSet.is_empty diff_low) && not (TreeSet.is_empty diff_high)
+    then print_string ("\n\n" ^ desc ^ " " ^ " " ^ ArrayUtils.format string_of_int info.b ^ "\n\n");
+in
 	for i = 0 to n - 1 do
 			check_valu "ladder" "m" i vinfo.bv.(i);
 			check_valu "left_up" "g" i vinfo.gv.(i);
@@ -282,7 +328,32 @@ let test_valuation_assumptions game strategy valu n =
 			check_valu "bisel" "d" i vinfo.xv.(i);
 			check_valu "leftcyc" "E" i vinfo.fv.(0).(i);			
 			if (i < n-1) then check_valu "ritecyc" "X" i vinfo.fv.(1).(i);
+			
+			if (i < info.mu && info.b.(1) = 1) then check_valu "bisel-l3" "d" i vinfo.rr.(i);
+			if (i < info.mu) then check_valu_range "bisel-l4" "d" i vinfo.rr.(i) (TreeSet.add (find "d" i) vinfo.bv.(1));
+			if (info.mu = 0 && i = 0 && info.g.(0) = 0 && info.b.(0) = 0 && info.b.(1) = 0) then check_valu_range "test" "d" i (TreeSet.add (find "d" i) vinfo.bv.(2)) (TreeSet.add (find "c" i) (TreeSet.add (find "d" i) vinfo.bv.(1)));
+      if (info.mu = 0 && i = 0 && info.g.(0) = 0 && info.b.(0) = 0 && info.b.(1) = 1) then check_valu_range "test" "d" i (TreeSet.add (find "c" i) (TreeSet.add (find "d" i) vinfo.bv.(2))) (TreeSet.add (find "d" i) vinfo.bv.(1));
+      if (info.mu = 0 && i = 0 && info.g.(0) = 1 && info.b.(0) = 0 && info.b.(1) = 1) then check_valu_range "test" "d" i (TreeSet.add (find "d" i) vinfo.bv.(1)) (TreeSet.add (find "z" i) (TreeSet.add (find "d" i) vinfo.bv.(1)));
  	done;;
+	
+	
+	
+let test_mdpvaluation_assumptions game strategy valu mdpvalu n =
+	let info = strategy_info game strategy in
+	let vinfo = mdpvaluation_info game strategy (TreeSet.get_compare (let (_, v_valu, _) = valu.(0) in v_valu)) in
+	let check_valu desc s i assrt =
+		let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
+		let v = pg_find_desc game (Some (s ^ string_of_int i)) in
+		let ff = TreeMap.format (fun (i, v) -> OptionUtils.get_some (pg_get_desc game i) ^ ":" ^ string_of_float v) in
+		let va = mdpvalu.(v) in
+		let va = TreeMap.filter (fun u v -> pg_get_pr game u >= 11) va in
+		if not (TreeMap.equal (fun v1 v2 -> not (v1 > v2) && not (v1 < v2)) va assrt) 
+		then print_string ("\n\n" ^ desc ^ " " ^ " " ^ ArrayUtils.format string_of_int info.b ^ " " ^ " | " ^ ff va ^ " | " ^ ff assrt ^ "\n\n");
+	in
+	for i = 0 to n - 1 do
+			check_valu "ladder" "m" i vinfo.mbv.(i);
+ 	done;;
+		
 	
 	
 	
@@ -870,13 +941,16 @@ let switch_zadeh_exp_tie_break_callback n game old_strategy valu occ v w r s =
 			(*let check = check_fair_exp_occ game old_strategy !curbits occ in
 			msg_tagged_nl 1 (fun _ -> "\nOcc - " ^ (if check then "yes" else "no") ^ "\n"); *)
 			last_active_phases := TreeSet.empty_def;
-		);
+		);;
+(*
+    let mdpvalu = mdplike_valuation game old_strategy in
 
   	test_occrec_assumptions game old_strategy valu occ n;
 		test_occrec_delta_assumptions game old_strategy valu occ n;
 		test_assumptions game old_strategy valu;
 		test_valuation_assumptions game old_strategy valu n;
-		test_improving_switches game old_strategy valu n;;
+		test_mdpvaluation_assumptions game old_strategy valu mdpvalu n;
+		test_improving_switches game old_strategy valu n;;*)
 		
 	
 (***************************************** ANALYZE ********************************************)		
@@ -895,6 +969,12 @@ let improvement_policy_optimize_fair tie_break
     let msg_tagged_nl v = message_autotagged_newline v (fun _ -> "STRIMPR_FAIR") in
 	let desc i = match (pg_get_desc game i) with Some s -> s | None -> string_of_int i in
   
+	let cmp i j = node_valuation_ordering game node_total_ordering valu.(i) valu.(j) in
+(*
+		let mdplike_valu = mdplike_valuation game 7 old_strategy in
+
+	let cmp = compare_mdplike_valuation game mdplike_valu in
+	*)
     msg_tagged_nl 4 (fun _ ->
     	"Occ: " ^ 
     	ArrayUtils.formati (fun i a -> desc i ^ ":" ^
@@ -912,7 +992,7 @@ let improvement_policy_optimize_fair tie_break
 	Array.iteri (fun i (_, pl, tr, _) ->
 		if pl = 0 then
 			Array.iteri (fun j k ->		
-				if node_valuation_ordering game node_total_ordering valu.(strategy.(i)) valu.(k) < 0 then (
+				if cmp strategy.(i) k < 0 then (
 					if !minvalue = -1 then minvalue := occ.(i).(j);
 					if !minvalue = occ.(i).(j) then l := (i,j,k)::!l
 					else if !minvalue > occ.(i).(j) then (
