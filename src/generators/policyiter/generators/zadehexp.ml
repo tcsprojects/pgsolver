@@ -62,7 +62,7 @@ let generator_game_func arguments =
 	
 	add1  FinalCycle 1 [FinalCycle];
 	add1  FinalSink (2 * n + 12) [FinalCycle];
-	add1  (PairSelector n) (2 * n + 11) [FinalSink];
+(*	add1  (PairSelector n) (2 * n + 11) [FinalSink];*)
 	
 	for i = 0 to n - 1 do
 		add0  (CycleNodeX1 i)  3  	 		                  [CycleCenter1 i; CycleNodeX1T i];

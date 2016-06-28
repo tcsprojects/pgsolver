@@ -12,6 +12,8 @@ open Tcsstrings;;
 
 (************************ ANALYZE **************************)
 
+let mdplike = false;;
+
 module BitScheme = struct
 	let models_scheme scheme bits = TreeSet.for_all (fun (i,j) -> (if i < Array.length bits then bits.(i) else 0) = j) scheme
 	let leq_bits bits = TreeSet.of_array_def (Array.init (Bits.to_int bits + 1) Bits.of_int)
@@ -75,6 +77,8 @@ type strategy_info = {
 	e0b: int array;
 	e1b: int array;
 	mu: int;
+	least_one: int;
+	greatest_one: int;
 	eee: int array array array;
 	eeb: int array array;
 	eeg: int array array;
@@ -146,6 +150,8 @@ let strategy_info game strategy =
 		eb = eb;
 		eee = eee;
 		ddd = ddd;
+		least_one = Bits.least_one b;
+		greatest_one = Bits.greatest_one b;
 	};;
 	
 	
@@ -214,6 +220,7 @@ type mdpval_info = {
 	mbv: (int, float) TreeMap.t array;
 	mll: (int, float) TreeMap.t array;
 	mrr: (int, float) TreeMap.t array;
+	mgg: (int, float) TreeMap.t array;
 };;	
 
 let mdpvaluation_info game strategy compare =
@@ -235,23 +242,156 @@ let mdpvaluation_info game strategy compare =
 			done; 
 		);
 	);
+		let mrr = Array.map (fun s -> TreeMap.by_set s (fun _ -> 1.0)) valinfo.rr in
+		let mgg = Array.init info.len (fun i -> mrr.(i)) in
+		for j = (if info.b.(1) = 1 then 0 else info.mu - 1) downto 0 do
+				if (info.e.(j) = 0)
+				then mgg.(j) <- TreeMap.add (find "d" j) 1.0 mbv.(1)
+				else mgg.(j) <- TreeMap.add (find "d" j) 1.0 (TreeMap.add (find (if j = info.mu-1 then "c" else "z") j) 1.0 mgg.(j+1));
+		done;
 	{
 		mbv = mbv;
 		mll = Array.map (fun s -> TreeMap.by_set s (fun _ -> 1.0)) valinfo.ll;
-		mrr = Array.map (fun s -> TreeMap.by_set s (fun _ -> 1.0)) valinfo.rr;
+		mrr = mrr;
+		mgg = mgg;
 	};;
 
 						
 	
 
+let counter_strategy_lookup game strategy len = 
+	let counter = compute_counter_strategy game strategy in
+	let find a i = pg_find_desc game (Some (a ^ string_of_int i)) in
+	([| Array.init len (fun i -> if counter.(find "E" i) = find "g" i then 1 else 0);
+	   Array.init (len-1) (fun i -> if counter.(find "X" i) = find "s" i then 1 else 0) |],
+	 [| Array.init len (fun i -> if strategy.(strategy.(counter.(find "E" i))) = find "d" 0 then 0 else 1);
+	   Array.init (len-1) (fun i -> if strategy.(strategy.(counter.(find "X" i))) = find "d" 0 then 0 else 1) |]);;
+
 let test_assumptions game strategy valu =
 	let info = strategy_info game strategy in
-	
-	for i = 0 to info.len - 1 do		
+	let (counter, counterx) = counter_strategy_lookup game strategy info.len in  
+		for i = 0 to info.len - 1 do	
+(**)
+(* - s_i,0 can be 0 instead of 1 iff i + 2 = nu sigma
+- s_i,0 can be 1 instead of 0 iff i + 1 = nu sigma
+
+- s_i,1 can be 0 instead of 1 iff i + 1 = nu sigma
+- s_i,1 can be 1 instead of 0 iff i + 1 < nu sigma
+*)
+
+			
+      let bpo = if i = info.len-1 then 0 else info.b.(i+1) in
+		  let sxb = if i = info.len-1 then 0 else 1-info.b.(i+1) in
+			let mui = if info.mu <= i + 1 then 1 else 0 in
+			let lei = if info.least_one > i + 1 then 1 else 0 in
+
+			if info.sx.(0).(i) != sxb && info.sx.(0).(i) != mui
+			then print_string ("\nWrong" ^ string_of_int i ^ "/" ^ string_of_int info.least_one ^ "\n");
+			if info.sx.(1).(i) = sxb && info.sx.(1).(i) = mui && (mdplike || info.sx.(1).(i) = 0 || info.b.(0) = 1)
+			then print_string ("\nXrong" ^ string_of_int i ^ "/" ^ string_of_int info.sx.(1).(i) ^ "\n");
+			if info.sx.(1).(i) = sxb && info.sx.(1).(i) = 1 && info.b.(0) = 0 && info.sx.(1).(i) != lei && not mdplike
+			then print_string ("\nXrong" ^ string_of_int i ^ "/" ^ string_of_int info.least_one ^ "\n");
+			
+			(*
+			if (info.e0g.(i) = 1 && info.e0b.(i) = 1) then (
+				if (info.eb.(0) = 0) then (
+					  if (info.s.(0) = 0) then print_string("aksdfasdkf");
+						if (info.mu = 0) then (
+					  	if (info.g.(0) != info.b.(1)) then print_string("aksdfasdkf");
+						);
+						if (info.mu > 0) then (
+					  	if (info.b.(0) = 0) then print_string("aksdfasdkf");
+							if (info.mu = 1) then (
+								if (info.g.(0) = 1) then print_string "asdfasdfasdf";
+							);
+							if (info.mu > 1) then (
+								if (info.g.(0) = 0) then print_string "asdfasdfasdf";
+							);
+						);
+				);
+				if (info.b.(0) = 1) then (
+					if (info.mu = 0) then print_string "\nLoops\n";
+				);
+				if (info.b.(0) = 0) then (
+					if (info.mu > 0) then print_string "\nWhoops\n";
+					if (info.eb.(0) = 0) then (
+							if (info.g.(0) != info.b.(1)) then print_string "asdhfk";
+							if (info.s.(0) = 0) then print_string "aksjdhf";
+					);
+				);
+			);
+			*)
+			
+			if (info.e0g.(i) = 0 && info.e0b.(i) = 1 && info.b.(0) = 1 && i < info.len - 1 && info.b.(i+1) = 0) then print_string("S0\n");
+			if (info.e0g.(i) = 0 && info.e0b.(i) = 1 && info.b.(0) = 1 && info.sx.(0).(i) = 0 && (info.mu = 0 || info.b.(info.mu) = 0)) then print_string("S0\n");
+			
+			if (info.e0g.(i) = 1 && info.e0b.(i) = 0) then (
+				if (info.mu = 0) then (
+					  (* Assumptions *)
+						if (info.sx.(0).(i) = 1) then print_string("\nasdfasdf\n");
+						if (info.b.(0) = 1) then print_string("\nasdfasdf\n");
+					);
+					let x = if (info.mu = 0) then 0 else 1 in
+					if (counter.(0).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int counter.(0).(i) ^ "\n");
+			);
+			if (info.e0g.(i) = 0 && info.e0b.(i) = 1) then (
+					let x = if info.b.(0) = 0 && (info.sx.(0).(i) = 0 || i = info.len - 1 || info.b.(i+1) = 0) then 1 else 0 in
+					if (counter.(0).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int x ^ "\n");
+			);
+			
+			if (info.e1g.(i) = 1 && info.e1b.(i) = 0) then (
+				if (info.mu = 0) then (
+					  (* Assumptions *)
+						if (info.sx.(1).(i) = 1) then print_string("\nasdfasdf\n");
+						if (info.b.(0) = 1) then print_string("\nasdfasdf\n");
+					);
+					let x = if (info.mu = 0) then 0 else 1 in
+					if (counter.(1).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int counter.(0).(i) ^ "\n");
+			);
+			if (info.e1g.(i) = 0 && info.e1b.(i) = 1) then (
+					let x = if info.b.(0) = 0 && (info.sx.(1).(i) = 0 || i = info.len - 1 || info.b.(i+1) = 1) then 1 else 0 in
+					if (counter.(1).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int x ^ "\n");
+			);
+			if (info.e1g.(i) = 1 && info.e1b.(i) = 1) then (
+					if (counter.(1).(i) = 1) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int counter.(1).(i) ^ "\n");
+					let x = if info.e.(0) = 0 || info.g.(0) != info.b.(1) then 1 else 0 in
+
+					if (counterx.(1).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int x ^ "\n");
+			);
+			(* We are here now *)
+															
+																																													
+		  if info.b.(i) = 0 && i >= info.mu && i > 0 then (
+				(*
+				if (info.g.(i) =0 && info.eb.(i) = 1 && info.eg.(i) = 1 && info.b.(0) = 1) then print_string ("\ndubbelju\n");
+				*)
+(*
+			 if (info.g.(i) = bpo) then print_string("\nasdf\n");*)
+				     (* FOR MDP: even inequality. *)
+				(*
+		     if info.g.(i) = 1 && info.s.(i) < bpo && (not mdplike || info.s.(i) != bpo) then print_string ("\nWrong" ^ string_of_int info.s.(i) ^ "\n");
+				*)
+		     
+		     (*
+		     if i < info.len - 1 && info.b.(i+1) = 1 && info.g.(i) = 1 then print_string ("\nW00t  " ^ string_of_int i ^ "\n");
+		     *)
+		     
+		     (* Probably more interesting to look at F_i *)
+				(*if (info.g.(i) = 0 && info.e.(i) = 0 && counter.(0).(i) = 0) then print_string("\nFuck\n");*)
+				(* FOR PG: on the left side; PG does everything; valuation needs to be pretty direct *)
+				
+		  ); 
 		
+				
+(*
+		if (info.b.(0) = 0 && info.g.(0) = 1 && info.mu = 0 && info.b.(1) = 0 && i < info.least_one - 1) then (
+				if (info.s.(i) = 0) then print_string ("shit " ^ string_of_int i ^ "\n");
+		);
+	*)	
 		(* A1 *)
-		if (i < info.mu || info.b.(i) = 1) then (
-			if (info.s.(i) != 1) then print_string ("\n\nAs\n\n");
+(*	if (i >= info.mu && info.b.(i) = 1) || (i < info.mu) then ( *)
+		if (i >= info.mu && info.b.(i) = 1) || (i < info.mu && i > 0 && info.b.(1) = 1) || (i < info.mu && info.e.(i) = 1) || (i < info.mu && info.b.(0) = 0) then (
+			if (info.s.(i) != 1) then print_string ("\n\nAs" ^ string_of_int i ^ "/" ^ string_of_int info.mu ^ "\n\n");
 		);
 		if (i < info.len-1 && info.mu > 0 && i >= info.mu) then (
 			 if (info.sx.(1 - info.b.(i+1)).(i) != 0) then print_string ("\n\nAs!\n\n");
@@ -279,6 +419,10 @@ let test_assumptions game strategy valu =
 			if (info.g.(i) = 1 && not (StrategyHelper.leads_to game valu ("m" ^ string_of_int i) ("s" ^ string_of_int i))) then print_string "\nWrong!\n";
 		);
 		*)
+		if info.mu = 0 && info.b.(0) = 0 && Bits.least_one info.b <= Bits.least_zero info.s && Bits.least_one info.b <= Bits.least_zero info.g && info.eb.(i) = 1 && i < Bits.least_one info.b then print_string  ("\n\nEbbb\n\n");
+		if info.mu = 0 && info.b.(0) = 0 && Bits.least_zero info.g <= Bits.least_one info.b && Bits.least_zero info.g <= Bits.least_zero info.s && info.eb.(i) = 1 && i < Bits.least_zero info.g && (mdplike || info.b.(Bits.least_zero info.g + 1) = 0) then print_string  ("\n\nAbbb\n\n");
+		if info.mu = 0 && info.b.(0) = 0 && Bits.least_zero info.s <= Bits.least_one info.b && Bits.least_zero info.s <= Bits.least_zero info.g && info.eb.(i) = 1 && i < Bits.least_zero info.s && mdplike then print_string  ("\n\nCbbb\n\n");
+		
 	done;	
 	(* b_i never meets g_0, b_0, b_1 *)	
 	for i = 1 to info.len - 1 do
@@ -321,6 +465,26 @@ let check_valu_range desc s i assrt_low assrt_high =
     if not (TreeSet.is_empty diff_low) && not (TreeSet.is_empty diff_high)
     then print_string ("\n\n" ^ desc ^ " " ^ " " ^ ArrayUtils.format string_of_int info.b ^ "\n\n");
 in
+  if (info.mu = 0 && info.b.(0) = 0) then (
+		let k = ref (n-1) in
+		for i = n - 1 downto 0 do
+			if info.g.(i) = 0 || info.s.(i) = 0 || info.b.(i) = 1 then k := i;
+		done;
+		let k = !k in
+		let set = if (info.b.(k) = 1) then vinfo.bv.(k)
+			        else if info.g.(k) = 0 && info.s.(k) = 1 && (info.eb.(k) = 0 || info.b.(k+1) = 1) then TreeSet.add (find "d" k) (TreeSet.add (find "c" k) vinfo.bv.(k+2))
+			        else TreeSet.add (find "d" k) vinfo.bv.(0) in
+    let set = ref set in
+		for i = k-1 downto 0 do
+			(*
+			if (info.b.(k) = 1 && info.eb.(i) = 1) then failwith "akjsdhfa";
+			if (info.b.(k) = 0 && info.s.(k) = 1 && info.b.(k+1) = 0 && info.eb.(i) = 1) then failwith "foobar";
+			*)
+			set := TreeSet.add (find "d" i) (TreeSet.add (find "z" i) !set)
+		done;
+		let set = !set in
+		check_valu "bisel" "d" 0 set
+	);
 	for i = 0 to n - 1 do
 			check_valu "ladder" "m" i vinfo.bv.(i);
 			check_valu "left_up" "g" i vinfo.gv.(i);
@@ -331,27 +495,47 @@ in
 			
 			if (i < info.mu && info.b.(1) = 1) then check_valu "bisel-l3" "d" i vinfo.rr.(i);
 			if (i < info.mu) then check_valu_range "bisel-l4" "d" i vinfo.rr.(i) (TreeSet.add (find "d" i) vinfo.bv.(1));
+			(*
 			if (info.mu = 0 && i = 0 && info.g.(0) = 0 && info.b.(0) = 0 && info.b.(1) = 0) then check_valu_range "test" "d" i (TreeSet.add (find "d" i) vinfo.bv.(2)) (TreeSet.add (find "c" i) (TreeSet.add (find "d" i) vinfo.bv.(1)));
       if (info.mu = 0 && i = 0 && info.g.(0) = 0 && info.b.(0) = 0 && info.b.(1) = 1) then check_valu_range "test" "d" i (TreeSet.add (find "c" i) (TreeSet.add (find "d" i) vinfo.bv.(2))) (TreeSet.add (find "d" i) vinfo.bv.(1));
       if (info.mu = 0 && i = 0 && info.g.(0) = 1 && info.b.(0) = 0 && info.b.(1) = 1) then check_valu_range "test" "d" i (TreeSet.add (find "d" i) vinfo.bv.(1)) (TreeSet.add (find "z" i) (TreeSet.add (find "d" i) vinfo.bv.(1)));
+			*)
  	done;;
 	
 	
 	
 let test_mdpvaluation_assumptions game strategy valu mdpvalu n =
+	let find a i = pg_find_desc game (Some (a ^ string_of_int i)) in
 	let info = strategy_info game strategy in
 	let vinfo = mdpvaluation_info game strategy (TreeSet.get_compare (let (_, v_valu, _) = valu.(0) in v_valu)) in
 	let check_valu desc s i assrt =
 		let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
 		let v = pg_find_desc game (Some (s ^ string_of_int i)) in
 		let ff = TreeMap.format (fun (i, v) -> OptionUtils.get_some (pg_get_desc game i) ^ ":" ^ string_of_float v) in
-		let va = mdpvalu.(v) in
+		let va = fst mdpvalu.(v) in
 		let va = TreeMap.filter (fun u v -> pg_get_pr game u >= 11) va in
 		if not (TreeMap.equal (fun v1 v2 -> not (v1 > v2) && not (v1 < v2)) va assrt) 
 		then print_string ("\n\n" ^ desc ^ " " ^ " " ^ ArrayUtils.format string_of_int info.b ^ " " ^ " | " ^ ff va ^ " | " ^ ff assrt ^ "\n\n");
 	in
-	for i = 0 to n - 1 do
+if (info.mu = 0 && info.b.(0) = 0) then (
+		let k = ref (n-1) in
+		for i = n - 1 downto 0 do
+			if info.g.(i) = 0 || info.s.(i) = 0 || info.b.(i) = 1 then k := i;
+		done;
+		let k = !k in
+		let set = if info.b.(k) = 1 then vinfo.mbv.(0)
+							else if info.g.(k) = 0 && info.s.(k) = 1 && (info.eb.(k) = 0 (*|| info.b.(k+1) = 1*)) then TreeMap.add (find "d" k) 1.0 (TreeMap.add (find "c" k) 1.0 vinfo.mbv.(k+2))
+					    else TreeMap.add (find "d" k) 1.0 vinfo.mbv.(0) in
+    let set = ref set in
+		for i = k-1 downto 0 do
+			set := TreeMap.add (find "d" i) 1.0 (TreeMap.add (find "z" i) 1.0 !set)
+		done;
+		let set = !set in
+		check_valu "bisel" "d" 0 set
+	);
+		for i = 0 to n - 1 do
 			check_valu "ladder" "m" i vinfo.mbv.(i);
+			if (i < info.mu) then check_valu "bisel" "d" i vinfo.mgg.(i);
  	done;;
 		
 	
@@ -941,16 +1125,24 @@ let switch_zadeh_exp_tie_break_callback n game old_strategy valu occ v w r s =
 			(*let check = check_fair_exp_occ game old_strategy !curbits occ in
 			msg_tagged_nl 1 (fun _ -> "\nOcc - " ^ (if check then "yes" else "no") ^ "\n"); *)
 			last_active_phases := TreeSet.empty_def;
-		);;
+		);
+
+		test_assumptions game old_strategy valu;
+
+	  if mdplike then (
+	    let mdpvalu = mdplike_valuation game 7 old_strategy in
+			test_mdpvaluation_assumptions game old_strategy valu mdpvalu n;
+		) else (
+  		test_valuation_assumptions game old_strategy valu n;
+		);
+
 (*
-    let mdpvalu = mdplike_valuation game old_strategy in
 
   	test_occrec_assumptions game old_strategy valu occ n;
 		test_occrec_delta_assumptions game old_strategy valu occ n;
-		test_assumptions game old_strategy valu;
-		test_valuation_assumptions game old_strategy valu n;
-		test_mdpvaluation_assumptions game old_strategy valu mdpvalu n;
 		test_improving_switches game old_strategy valu n;;*)
+		
+		();;
 		
 	
 (***************************************** ANALYZE ********************************************)		
@@ -969,12 +1161,13 @@ let improvement_policy_optimize_fair tie_break
     let msg_tagged_nl v = message_autotagged_newline v (fun _ -> "STRIMPR_FAIR") in
 	let desc i = match (pg_get_desc game i) with Some s -> s | None -> string_of_int i in
   
-	let cmp i j = node_valuation_ordering game node_total_ordering valu.(i) valu.(j) in
-(*
-		let mdplike_valu = mdplike_valuation game 7 old_strategy in
-
-	let cmp = compare_mdplike_valuation game mdplike_valu in
-	*)
+	let cmp =
+		if not mdplike
+		then fun i j -> node_valuation_ordering game node_total_ordering valu.(i) valu.(j)
+		else let mdplike_valu = mdplike_valuation game 7 old_strategy in
+  	     compare_mdplike_valuation game mdplike_valu
+	in
+	
     msg_tagged_nl 4 (fun _ ->
     	"Occ: " ^ 
     	ArrayUtils.formati (fun i a -> desc i ^ ":" ^
