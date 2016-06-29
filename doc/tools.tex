@@ -55,10 +55,10 @@ It takes a parity game on \texttt{stdin} in the specification format described a
 and returns the permuted game on \texttt{stdout}. The currently understood command-line
 parameters are:
 \begin{description}
-\item[{\tt --disablenodeobfuscation}] \enspace or {\tt -dn} \\
+\item[{\ttfamily --disablenodeobfuscation}] \enspace or {\ttfamily -dn} \\
 	Disables the obfuscation of the ordering of nodes.
 
-\item[{\tt --disableedgeobfuscation}] \enspace or {\tt -de} \\
+\item[{\ttfamily --disableedgeobfuscation}] \enspace or {\ttfamily -de} \\
     Disables the obfuscation of the ordering of the edges.
 \end{description}
 
@@ -130,11 +130,11 @@ understood command-line parameters are:
    Tells the tool to look for the specification of the parity game to transform in the file
    \nonterminal{filename}.
 
-\item[{\tt --priorities}] \enspace or {\tt -pr} \\
+\item[{\ttfamily --priorities}] \enspace or {\ttfamily -pr} \\
     It reduces the priority of each node preserving their parities as well as the relation $\le$
     among priorities of nodes within an SCC of the game graph.
 
-\item[{\tt --priopropagation}] \enspace or {\tt -pp} \\
+\item[{\ttfamily --priopropagation}] \enspace or {\ttfamily -pp} \\
     It tries to reduce the overall number of priorities occurring in the game by pushing priorities
     along edges of the game graph overriding smaller ones. If all nodes leading to a node $v$ have a
     greater priority than the node itself, the priority of this node is altered to the least predecessing
@@ -144,27 +144,27 @@ understood command-line parameters are:
     Obviously, this process may destroy the preservation of parities and the less-or-equals relation among
     priorites described above.
 
-\item[{\tt --antipropagation}] \enspace or {\tt -ap} \\
+\item[{\ttfamily --antipropagation}] \enspace or {\ttfamily -ap} \\
 	It tries to set the priority of as many nodes as possible to zero. If all nodes leading to a node
 	$v$ have a greater priority than the node itself, the priority of this node can be set to zero.
 	Similarly the priority of a node is adapted if all successors of a node have a greater priority than
 	the node itself. This process is iterated until stability is reached.
 
-\item[{\tt  --fakealt}] \enspace or {\tt -fa} \\
+\item[{\ttfamily  --fakealt}] \enspace or {\ttfamily -fa} \\
     Keep fake alternation w.r.t.\ priorities. If this option is enabled the compaction of priorities
     never assigns the same priority to nodes that had different priorities before, even if there is
     no other priority occurring inbetween and both priorities in question are of the same parity.
 
-\item[{\tt --wholegame}] \enspace or {\tt -pp} \\
+\item[{\ttfamily --wholegame}] \enspace or {\ttfamily -pp} \\
     The compression of priorities is usually done independently for each SCC of the game graph.
     This switch causes the graph's SCC decomposition to be ignored. This will in general result
     in a worse compression rate.
 
-\item[{\tt --nodes}] \enspace or {\tt -no} \\
+\item[{\ttfamily --nodes}] \enspace or {\ttfamily -no} \\
     Performs a compression of the space of identifiers of a parity game, resulting in a possible
     down-shift of identifiers.
 
-\item[{\tt --minmaxswap}] \enspace or {\tt -mm} \\
+\item[{\ttfamily --minmaxswap}] \enspace or {\ttfamily -mm} \\
     Transforms a min-parity game into a max-parity one and vice versa.
 \end{description}
 
@@ -271,40 +271,40 @@ and returns the transformed game on \texttt{stdout}. The currently understood co
    Tells the tool to look for the specification of the parity game to transform in the file
    \nonterminal{filename}.
 
-\item[{\tt --total}] \enspace or {\tt -to} \\
+\item[{\ttfamily --total}] \enspace or {\ttfamily -to} \\
    Perform a totality transformation on the given parity game.
 
-\item[{\tt --alternating}] \enspace or {\tt -al} \\
+\item[{\ttfamily --alternating}] \enspace or {\ttfamily -al} \\
    Perform a choice-alternation transformation on the given parity game.
 
- \item[{\tt --singlescc}] \enspace or {\tt -scc} \\
+ \item[{\ttfamily --singlescc}] \enspace or {\ttfamily -scc} \\
    Perform a simple transformation that results in a single-scc-parity game. The winning sets and
    strategies of the original game and the transformed game match.
 
- \item[{\tt --prioalignment}] \enspace or {\tt -pa} \\
+ \item[{\ttfamily --prioalignment}] \enspace or {\ttfamily -pa} \\
    Performs a transformation s.t.\ the parity of each node of the resulting game matches its player
    unless its priority is zero.
 
-\item[{\tt --dummynodes}] \enspace or {\tt -dn} \\
+\item[{\ttfamily --dummynodes}] \enspace or {\ttfamily -dn} \\
    Performs a transformation that divides each edge by an additional node with priority $0$.
 
-\item[{\tt --uniquizeprios}] \enspace or {\tt -up} \\
+\item[{\ttfamily --uniquizeprios}] \enspace or {\ttfamily -up} \\
    Performs a transformation of the occurring priorities s.t.\ every occurring priority occurs only once.
 
- \item[{\tt --cheapescapecycles}] \enspace or {\tt -ce} \\
+ \item[{\ttfamily --cheapescapecycles}] \enspace or {\ttfamily -ce} \\
    Adds two low-priority cycles $c_0$ and $c_1$ to the game that are profitable for either one of the
    player ($c_0$ for player $0$ and $c_1$ for player $1$). All nodes in the original belonging to
    player $0$ get additional edges leading to $c_1$ and all nodes belonging to player $1$ get
    additional edges leading to $c_0$.
 
-\item[{\tt --bouncingnode}] \enspace or {\tt -bn} \\
+\item[{\ttfamily --bouncingnode}] \enspace or {\ttfamily -bn} \\
    Replaces every self-cycle by a bouncing node.
 
- \item[{\tt --increasepriorityoccurrence}] \enspace or {\tt -ip} \\
+ \item[{\ttfamily --increasepriorityoccurrence}] \enspace or {\ttfamily -ip} \\
    Increases the occurrence of all priorities by one by simply inserting a long cycle that is not
    connected to the rest of the game.
 
-\item[{\tt --antiprioritycompactation}] \enspace or {\tt -ap} \\
+\item[{\ttfamily --antiprioritycompactation}] \enspace or {\ttfamily -ap} \\
    Adds additional nodes that prohibits any priority compactation.
 \end{description}
 
@@ -361,27 +361,27 @@ from files, and carries out the benchmark. The currently understood command-line
    Tells the tool to look for the specification of the parity game in the file
    \nonterminal{filename}.
 
-\item[{\tt --\nonterminal{solver} `solver options`}] \ \\
+\item[{\ttfamily --\nonterminal{solver} `solver options`}] \ \\
    Benchmark the specified solver. All solvers that are compiled into \pgsolver are available here. Note: even if you don't want to pass any options to the solver, you still need to add ``.
 
-\item[{\tt --silent}] \enspace or {\tt -s} \\
+\item[{\ttfamily --silent}] \enspace or {\ttfamily -s} \\
    Only print the final statistics on \texttt{stdout}.
 
-\item[{\tt --gnuplotformat}] \enspace or {\tt -gp} \\
+\item[{\ttfamily --gnuplotformat}] \enspace or {\ttfamily -gp} \\
    Only print a gnuplot-compatible line.
 
- \item[{\tt --timeout \nonterminal{timeout}}] \enspace or {\tt -to \nonterminal{timeout}} \\
+ \item[{\ttfamily --timeout \nonterminal{timeout}}] \enspace or {\ttfamily -to \nonterminal{timeout}} \\
    If one of the solvers requires more than $t$ seconds on one of the test cases, the solver is ignored
    for the rest of the series. There is no timeout by default.
 
-\item[{\tt --name \nonterminal{title}}] \enspace or {\tt -n \nonterminal{title}} \\
+\item[{\ttfamily --name \nonterminal{title}}] \enspace or {\ttfamily -n \nonterminal{title}} \\
    Specifies the title of the benchmark that is to be printed in the final statistics.
 
- \item[{\tt --times \nonterminal{n}}] \enspace or {\tt -t \nonterminal{n}} \\
+ \item[{\ttfamily --times \nonterminal{n}}] \enspace or {\ttfamily -t \nonterminal{n}} \\
    Specifies the number of iterations a single test case is carried out per algorithm. By default, $n$
    is 10.
 
-\item[{\tt --\nonterminal{optimisation-option}}] \ \\
+\item[{\ttfamily --\nonterminal{optimisation-option}}] \ \\
    All optimisation options that are available to \texttt{pgsolver} are also available here.
 \end{description}
 
