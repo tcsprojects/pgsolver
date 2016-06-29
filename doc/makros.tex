@@ -1,4 +1,5 @@
-\newcommand{\pgsolver}{{\sc PGSolver}\xspace}
+% Kill any active \bfseries etc. with \normalfont to get the old behavior of \sc
+\newcommand{\pgsolver}{{\normalfont\textsc{PGSolver}}\xspace}
 
 \newcommand{\Nat}{\ensuremath{\mathbb{N}}}
 
@@ -10,7 +11,7 @@
 \newcommand{\nextheur}{\stepcounter{heurcounter}\arabic{heurcounter}}
 
 \newcommand{\nonterminal}[1]{\ensuremath{\langle\mathit{#1}\rangle}}
-\newcommand{\terminal}[1]{\ensuremath{{\tt #1}}}
+\newcommand{\terminal}[1]{\ensuremath{\texttt{#1}}}
 \newcommand{\sem}[1]{\ensuremath{[\![ #1 ]\!]}}
 \newcommand{\hide}[1]{}
 

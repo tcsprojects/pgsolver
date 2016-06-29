@@ -18,8 +18,8 @@ name of the node. The format can easily be described in EBNF.
 \nonterminal{owner} \enspace &::= \enspace \terminal{0} \mid \terminal{1} \\[2mm]
 \nonterminal{successors} \enspace &::= \enspace \nonterminal{identifier}\enspace
   (\terminal{,}\enspace \nonterminal{identifier})^* \\[2mm]
-\nonterminal{name} \enspace &::= \enspace \mbox{{\tt "}}\enspace
-  (\mbox{ any ASCII string not containing `{\tt "}'}) \enspace \mbox{{\tt "}}
+\nonterminal{name} \enspace &::= \enspace \texttt{"}\enspace
+  (\mbox{ any ASCII string not containing `{\texttt{"}}'}) \enspace \texttt{"}
 \end{align*}
 There must be whitespace characters between the following pairs of tokens:
 \nonterminal{identifier} and \nonterminal{priority}, \nonterminal{priority} and \nonterminal{owner},
