@@ -17,6 +17,9 @@
 \definecolor{darkgreen}{rgb}{.1,.6,.1}
 \definecolor{darkred}{rgb}{.6,.1,.1}
 
+\definecolor{light-blue}{rgb}{0.7,0.8,1}
+\usepackage[allbordercolors={light-blue},pdfborderstyle={/S/U/W 0.8}]{hyperref}
+
 \begin{document}
 
 \begin{titlepage}
@@ -73,6 +76,8 @@ Institut f\"ur Informatik \\ Ludwig-Maximilians-Universit\"at M\"unchen, Germany
 \end{titlepage}
 \maketitle[0]
 
+\cleardoublepage
+\pdfbookmark{Contents}{table-of-contents}
 \tableofcontents
 
 \chapter{Introduction}
@@ -119,7 +124,8 @@ Institut f\"ur Informatik \\ Ludwig-Maximilians-Universit\"at M\"unchen, Germany
 
 
 
-
+\cleardoublepage
+\pdfbookmark{Bibliography}{bibliography}
 \bibliographystyle{alpha}
 \bibliography{./literature}
 
