@@ -29,6 +29,7 @@ val pg_get_pl     : paritygame -> int -> int
 val pg_set_pl     : paritygame -> int -> int -> unit
 val pg_get_tr     : paritygame -> int -> int array
 val pg_set_tr     : paritygame -> int -> int array -> unit
+val pg_get_succs  : paritygame -> int -> int array
 val pg_get_desc   : paritygame -> int -> string option
 val pg_set_desc   : paritygame -> int -> string option -> unit
 val pg_get_desc'  : paritygame -> int -> string

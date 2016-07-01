@@ -1,29 +1,27 @@
+(* The Fixpoint-Iteration Algorithm
+ *
+ * from:
+ * F. Bruse, M. Falk, M. Lange. The Fixpoint-Iteration Algorithm for Parity Games
+ * In Proc. of the 5th Int. Symp. on Games, Automata, Logics and Formal Verification, Gandalf'14, Verona, IT, 2014
+ * vol. 161 of Elect. Proc. in Theor. Computer Science, pages 116-130
+ *)
+
+
 open Basics ;;
 open Paritygame ;;
 open Univsolve;;
 open Solvers;;
 open Tcsbasedata;;
 
-(*
-let rec repeat_until command condition =
-  command (); 
-  if not (condition ()) then 
-    repeat_until command condition
-
-let rec repeat_while command condition =
-  command (); 
-  if condition () then 
-    repeat_while command condition
-*)
 
 let even i = (i mod 2 = 0)
 let odd i = (i mod 2 = 1)
 
+(* convert a list to a set of nodes *)
 let list_to_set = List.fold_left (fun s -> fun v -> NodeSet.add v s) NodeSet.empty
  
 let solve' game =
   let msg_tagged v = message_autotagged v (fun _ -> "FPITER") in
-(*  let msg_plain = message in *)
   
   let show_nodeSet s = "{" ^ String.concat "," (List.map string_of_int (NodeSet.elements s)) ^ "}" in
   
@@ -40,8 +38,6 @@ let solve' game =
 
   let strategy = Array.make n (-1) in
   let evt_pos_strategy = Array.make n [] in
-(*  let captainslog = Array.make n [] in
-  let birthday = Array.make n None in *)
   
   let all_nodes_list = collect_nodes game (fun _ -> fun _ -> true) in
   let all_nodes = list_to_set all_nodes_list in
@@ -130,14 +126,14 @@ let solve' game =
   (* returns a node in the list ws of some priority p which also belongs to x.(p) *)
 
   let rec find_witness = function []    -> failwith "Solvers.Fpiter.find_witness: no witness found!"
-                                | w::ws -> let (pr,_,_,_) = game.(w) in
+                                | w::ws -> let pr = pg_get_pr game w in
                                            if NodeSet.mem w (get x pr) then w else find_witness ws
   in
 
   (* returns a node in the list ws of some priority p which does not belong to x.(p) *)
 
   let rec find_cntexmpl = function []    -> failwith "Solvers.Fpiter.find_cntexmpl: no counterexample found!"
-                                 | w::ws -> let (pr,_,_,_) = game.(w) in
+                                 | w::ws -> let pr = pg_get_pr game w in
                                             if not (NodeSet.mem w (get x pr)) then w else find_cntexmpl ws
   in
 
@@ -185,10 +181,9 @@ let solve' game =
             begin 
               msg_tagged 3 (fun _ -> show_moment () ^ " Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
                                      show_nodeSet win_mod_prio ^ "\n"); 
-              NodeSet.iter (fun v -> let (_,ow,ws,_) = game.(v) in
-                                     if ow=0 then
+              NodeSet.iter (fun v -> if pg_get_pl game v = 0 then
                                        begin
-                                         let w = find_witness (Array.to_list ws) in
+                                         let w = find_witness (Array.to_list (pg_get_succs game v)) in
                                          record_decision 0 v w 
                                        end)
                            win_mod_prio; 
@@ -200,10 +195,9 @@ let solve' game =
               let old = get x !curr_prio in
               let now_out = NodeSet.diff old win_mod_prio in
 
-              NodeSet.iter (fun v -> let (_,ow,ws,_) = game.(v) in
-                                     if ow = 1 then
+              NodeSet.iter (fun v -> if pg_get_pl game v = 1 then
                                        begin
-                                         let w = find_cntexmpl (Array.to_list ws) in
+                                         let w = find_cntexmpl (Array.to_list (pg_get_succs game v)) in
                                          record_decision 1 v w 
                                        end)
                            now_out;
@@ -222,10 +216,9 @@ let solve' game =
             begin
               msg_tagged 3 (fun _ -> show_moment () ^ " Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
                                      show_nodeSet win_mod_prio ^ "\n");
-              NodeSet.iter (fun v -> let (_,ow,ws,_) = game.(v) in
-                                     if ow=1 then
+              NodeSet.iter (fun v -> if pg_get_pl game v = 1 then
                                        begin
-                                         let w = find_cntexmpl (Array.to_list ws) in
+                                         let w = find_cntexmpl (Array.to_list (pg_get_succs game v)) in
                                          record_decision 1 v w
                                        end)
                            (NodeSet.diff (get pr !curr_prio) win_mod_prio); 
@@ -237,10 +230,9 @@ let solve' game =
               let old = get x !curr_prio in
               let now_in = NodeSet.diff win_mod_prio old in
 
-              NodeSet.iter (fun v -> let (_,ow,ws,_) = game.(v) in
-                                     if ow = 0 then
+              NodeSet.iter (fun v -> if pg_get_pl game v = 0 then
                                        begin
-                                         let w = find_witness (Array.to_list ws) in
+                                         let w = find_witness (Array.to_list (pg_get_succs game v)) in
                                          record_decision 0 v w
                                        end)
                            now_in;
@@ -324,7 +316,7 @@ let solve' game =
     while !todo <> [] do
       let (v, bound) = List.hd !todo in
       todo := List.tl !todo;
-      let (prio,owner,ws,_) = game.(v) in
+      let (prio,owner,ws,_) = pg_get_node game v in
       let winner = solution.(v) in
       msg_tagged 3 (fun _ -> "  Processing node " ^ string_of_int v ^ " at time " ^ show_timestamp bound ^ "\n");
       if last_visit.(v) = None || 
@@ -352,7 +344,7 @@ let solve' game =
         message 3 (fun _ -> " greater or equal!\n") *)
     done;
     msg_tagged 3 (fun _ -> "Searching for next node to visit after " ^ string_of_int !next_node ^ " ");
-    while !next_node < n && (strategy.(!next_node) > -1 || let (_,o,_,_) = game.(!next_node) in solution.(!next_node) <> o) do
+    while !next_node < n && (strategy.(!next_node) > -1 || let o = pg_get_pl game !next_node in solution.(!next_node) <> o) do
       incr next_node;
       message 3 (fun _ -> ".")
     done;
@@ -364,6 +356,8 @@ let solve' game =
   (solution, strategy)
 
 
+(* use the universal solver with the fixpoint-iteration algorithm as backend *)
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
  
+
 register_solver solve "fpiter" "fi" "use the (optimised) iterative fixpoint iteration algorithm";;

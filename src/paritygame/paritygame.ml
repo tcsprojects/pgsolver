@@ -59,6 +59,7 @@ let pg_get_pl pg i = let (_, pl, _, _) = pg.(i) in pl;;
 let pg_set_pl pg i pl = let (pr, _, delta, desc) = pg.(i) in pg.(i) <- (pr, pl, delta, desc);;
 
 let pg_get_tr pg i = let (_, _, tr, _) = pg.(i) in tr;;
+let pg_get_succs = pg_get_tr ;;
 
 let pg_set_tr pg i tr = let (pr, pl, _, desc) = pg.(i) in pg.(i) <- (pr, pl, tr, desc);;
 
