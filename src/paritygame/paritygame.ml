@@ -59,7 +59,6 @@ let pg_get_pl pg i = let (_, pl, _, _) = pg.(i) in pl;;
 let pg_set_pl pg i pl = let (pr, _, delta, desc) = pg.(i) in pg.(i) <- (pr, pl, delta, desc);;
 
 let pg_get_tr pg i = let (_, _, tr, _) = pg.(i) in tr;;
-let pg_get_succs = pg_get_tr ;;
 
 let pg_set_tr pg i tr = let (pr, pl, _, desc) = pg.(i) in pg.(i) <- (pr, pl, tr, desc);;
 
@@ -79,6 +78,18 @@ let pg_find_desc pg desc = ArrayUtils.find (fun (_,_,_,desc') -> desc = desc') p
 
 let pg_get_tr_index_of pg i j = ArrayUtils.find (fun k -> k = j) (pg_get_tr pg i)
 
+let pg_get_priority     = pg_get_pr 
+let pg_get_owner        = pg_get_pl
+let pg_get_successors   = pg_get_tr
+			    
+(* naive and inefficent implementation; needs to be changed with data structure! *)
+let pg_get_predecessors game v =
+  let ps = ref [] in
+  for u = 0 to (pg_size game)-1 do
+    if Array.fold_left (fun b -> fun w -> b || v=w) false (pg_get_successors game u) then
+      ps := u::!ps
+  done;
+  Array.of_list !ps
 
 
 (**************************************************************

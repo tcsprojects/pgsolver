@@ -1,3 +1,9 @@
+(* The Big-Step Algorithm
+ *
+ * from:
+ * Sven Schewe. Solving Parity Games in Big Steps. FSTTCS 2007: 449-460
+ *)
+
 open Basics ;;
 open Paritygame ;;
 open Univsolve;;

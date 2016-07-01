@@ -183,7 +183,7 @@ let solve' game =
                                      show_nodeSet win_mod_prio ^ "\n"); 
               NodeSet.iter (fun v -> if pg_get_pl game v = 0 then
                                        begin
-                                         let w = find_witness (Array.to_list (pg_get_succs game v)) in
+                                         let w = find_witness (Array.to_list (pg_get_successors game v)) in
                                          record_decision 0 v w 
                                        end)
                            win_mod_prio; 
@@ -197,7 +197,7 @@ let solve' game =
 
               NodeSet.iter (fun v -> if pg_get_pl game v = 1 then
                                        begin
-                                         let w = find_cntexmpl (Array.to_list (pg_get_succs game v)) in
+                                         let w = find_cntexmpl (Array.to_list (pg_get_successors game v)) in
                                          record_decision 1 v w 
                                        end)
                            now_out;
@@ -218,7 +218,7 @@ let solve' game =
                                      show_nodeSet win_mod_prio ^ "\n");
               NodeSet.iter (fun v -> if pg_get_pl game v = 1 then
                                        begin
-                                         let w = find_cntexmpl (Array.to_list (pg_get_succs game v)) in
+                                         let w = find_cntexmpl (Array.to_list (pg_get_successors game v)) in
                                          record_decision 1 v w
                                        end)
                            (NodeSet.diff (get pr !curr_prio) win_mod_prio); 
@@ -232,7 +232,7 @@ let solve' game =
 
               NodeSet.iter (fun v -> if pg_get_pl game v = 0 then
                                        begin
-                                         let w = find_witness (Array.to_list (pg_get_succs game v)) in
+                                         let w = find_witness (Array.to_list (pg_get_successors game v)) in
                                          record_decision 0 v w
                                        end)
                            now_in;
