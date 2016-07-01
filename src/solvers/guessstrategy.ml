@@ -1,3 +1,15 @@
+(* The strategy guessing heuristic
+ * 
+ * Why waste time computing winning strategies when all you have to do is pick them up from the floor?
+ * Here is the simplest heuristc of them all: just guess a strategy and see what happens.
+ *
+ * from:
+ * ... well, you guessed right (it's as if you just guessed a winning strategy, ha-ha-ha!). This has not
+ * been published anywhere. We are still considering submitting it to LICS. Or POPL. Or STOC, FOCS, SODA, 
+ * any of them will do.
+ *)
+
+
 open Basics ;;
 open Paritygame ;;
 open Univsolve;;
@@ -10,17 +22,17 @@ let solve game =
         let msg_plain = message in
 
         let generate_strat game pl =
-            let n = Array.length game in
+            let n = pg_size game in
             let s = Array.make n (-1) in
             for i = 0 to n - 1 do
-                let (_, pl', d, _) = game.(i) in
+                let (_, pl', d, _) = pg_get_node game i in
                     if (pl = pl') then s.(i) <- d.(Random.int (Array.length d))
             done;
             s
         in
 
 	let heuristic_solve game =
-		let n = Array.length game in
+		let n = pg_size game in
 		let s0 = generate_strat game 0 in
 		let s1 = generate_strat game 1 in
 		let (sol0, _) = universal_solve_trivial verbosity_level_default (subgame_by_strat game s0) in

@@ -1,3 +1,11 @@
+(* The genetic heuristic
+ *
+ * from:
+ * ... uh well ... actually no-one wants to be responsible for this kind of nonsense. Unthinkable that it
+ * would have been published anywhere, maybe GandALF ... or ICTAC. Or TSGAPG, the Transsylvanian Symposium 
+ * on Genetic Algorithms for Parity Games. 
+ *)
+
 open Paritygame ;;
 open Univsolve ;;
 open Solvers ;;
