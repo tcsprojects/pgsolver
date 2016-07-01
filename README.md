@@ -1,7 +1,7 @@
 PGSolver
 ========
 
-Version 3.4, Copyright (c) 2008-2015
+Version 3.4, Copyright (c) 2008-2016
 
 It is developed and maintained by:
 - (c) Oliver Friedmann, University of Munich (http://oliverfriedmann.com)
@@ -19,6 +19,17 @@ It is developed and maintained by:
 ## Documentation
 
 Please consult ```./doc/pgsolver.pdf``` for a guide to installation, usage and development of this tool.
+
+
+## Unit Tests
+
+- Requires ocamlfind
+- Requires ounit
+- Install via OPAM (https://opam.ocaml.org)
+
+``
+	make TESTS
+``
 
 
 ## Config

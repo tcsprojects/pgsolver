@@ -137,6 +137,9 @@ exec:
 libexec:
 	$(OCAMLCOMP) -a -o $(LIBRARYNAME) $(CPPCOMPILER) $(MODULES_WITHOUT_SOLVERS_AND_LIB) $(PGSOLVERS) $(OBJDIR)/libpgsolver.$(COMPILEEXT)
 
+$(OBJDIR)/%.$(COMPILEEXT): ./tests/%.ml
+	ocamlfind ocamlopt -c -o $@ -package oUnit -linkpkg -I $(TCSLIBOBJ) -I obj $<
+
 $(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/pgsolver/%.ml
 	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
 
@@ -402,6 +405,12 @@ DEPENDENCY_INCLUDES=-I $(SRCDIR)/pgsolver \
                     -I $(SRCDIR)/paritygame \
                     -I $(SRCDIR)/solvers \
                     -I $(SRCDIR)
+
+
+TESTS: library obj/solverstest.cmx Makefile
+	ocamlfind ocamlopt -o bin/ounit -package oUnit -linkpkg -I $(TCSLIBOBJ) -I obj nums.cmxa $(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) obj/libpgsolver.cmxa $(PGSOLVERS) obj/solverstest.cmx
+	bin/ounit
+
 
 depend:
 	$(OCAMLDEP) $(DEPENDENCY_INCLUDES) $(SRCDIR)/*/*ml $(SRCDIR)/*/*.mli | sed "s#$(SRCDIR)/[^/]*#$(OBJDIR)#g" > .depend
