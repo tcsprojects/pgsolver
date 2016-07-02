@@ -92,12 +92,12 @@ MODULES_WITHOUT_SOLVERS_AND_LIB=$(OBJDIR)/basics.$(COMPILEEXT) \
 	$(OBJDIR)/whoiswho.$(COMPILEEXT) \
 	$(OBJDIR)/paritygame.$(COMPILEEXT) \
 	$(OBJDIR)/mdp.$(COMPILEEXT) \
-	$(OBJDIR)/transformations.$(COMPILEEXT) \
-	$(OBJDIR)/specialsolve.$(COMPILEEXT) \
-	$(OBJDIR)/univsolve.$(COMPILEEXT) \
-	$(OBJDIR)/verification.$(COMPILEEXT) \
 	$(OBJDIR)/solvers.$(COMPILEEXT) \
-	$(OBJDIR)/generators.$(COMPILEEXT)
+	$(OBJDIR)/generators.$(COMPILEEXT) \
+	$(OBJDIR)/specialsolve.$(COMPILEEXT) \
+	$(OBJDIR)/transformations.$(COMPILEEXT) \
+	$(OBJDIR)/univsolve.$(COMPILEEXT) \
+	$(OBJDIR)/verification.$(COMPILEEXT)
 
 MODULES_WITHOUT_SOLVERS = $(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
 	$(MODULES_WITHOUT_SOLVERS_AND_LIB)

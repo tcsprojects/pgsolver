@@ -10,23 +10,28 @@ type generalized_mdp_node = Controller of int array * string option
 type generalized_mdp = generalized_mdp_node array
 
 let parity_game_to_generalized_mdp pg min_even_prio is_epsilon =
-	let n = Array.length pg in
+	let n = pg_size pg in
 	let real_n = ref 0 in
 	let s = ref (-1) in
 	let p = ref 0 in
 	let mp = ref 0 in
-	Array.iteri (fun i (pr,_,tr,_) ->
+	for i = 0 to n - 1 do
+		let pr = pg_get_pr pg i in
+		let tr = pg_get_tr pg i in
 		mp := max !mp pr;
 		if pr >= min_even_prio then incr real_n;
 		if pr = 1 then s := i
 		else if Array.length tr > 1 && pr >= min_even_prio
 		then p := !p + Array.length tr;
-	) pg;
+	done;
 	let epsilon = BigFloat.of_big_ints BigInt.one (BigInt.int_power_int !real_n (!mp-min_even_prio+2+1)) in
 	let mdp = Array.make (n + !p) Sink in
 	let q = ref n in
 	for i = 0 to n - 1 do
-		let (pr,pl,tr,desc) = pg.(i) in
+		let pr = pg_get_pr pg i in
+		let pl = pg_get_pl pg i in
+		let tr = pg_get_tr pg i in
+		let desc = pg_get_desc pg i in
 		if pr = 1 then (
 			mdp.(i) <- Sink;
 		)

@@ -22,6 +22,7 @@ let game_profiles = Array.init 500 (fun i ->
 );;
 
 open Univsolve
+open Verification
 
 
 let solvers = [|
@@ -53,6 +54,12 @@ let solvers = [|
 |]
 
 
+let verifiers = [|
+  ("universal verifier", verify_solution_strategy_univ);
+	("alternative verifier", verify_solution_strategy_direct);
+	("generic verifier", verify_solution_strategy_generic)
+|]
+
 
 let test_fixture = "Solvers Test" >::: Array.to_list (Array.map (fun (solver_str, solver_opts, upto) ->
 	"Test: " ^ solver_str ^ " " ^ Tcsarray.ArrayUtils.format (fun s -> s) solver_opts >:: (fun () ->
@@ -75,8 +82,10 @@ let test_fixture = "Solvers Test" >::: Array.to_list (Array.map (fun (solver_str
 					let game = random_game profile in
 					let (solver, _, _) = Solvers.find_solver solver_str in
 					let (solution, strategy) = (solver solver_opts) game in
-					let verified = Verification.verify_solution_strategy_univ game solution strategy in
-					assert_equal ~msg:(solver_str ^ " : game " ^ string_of_int i) None verified
+					Array.iter (function (verifier_str, verifier) ->
+						let verified = verifier game solution strategy in
+						assert_equal ~msg:(solver_str ^ " : game " ^ string_of_int i ^ " verified with " ^ verifier_str) None verified
+					) verifiers
 				)
 			) game_profiles
 	)

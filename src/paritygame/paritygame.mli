@@ -6,6 +6,9 @@ open Tcsset
  * Parity Game Definitions                                    *
  **************************************************************)
 
+(* These definitions are DEPRECATED and will be removed from the interface in the future.*)
+(* Please use the access functions below instead. *)
+
 type paritygame = (int * int * int array * string option) array
 type solution = int array
 type strategy = int array
@@ -41,6 +44,7 @@ val pg_get_predecessors : paritygame -> int -> int array
 
 val pg_get_node   : paritygame -> int -> (int * int * int array * string option)
 val pg_set_node   : paritygame -> int -> int -> int -> int array -> string option -> unit
+val pg_set_node2   : paritygame -> int -> (int * int * int array * string option) -> unit
 
 
 val pg_find_desc  : paritygame -> string option -> int

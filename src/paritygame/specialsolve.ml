@@ -22,7 +22,9 @@ let find_useful_self_cycles game =
     let n = pg_size game in
     let ret = ref [] in
     for i = 0 to n - 1 do
-        let (pr, pl, delta, _) = game.(i) in
+			  let pr = pg_get_pr game i in
+				let pl = pg_get_pl game i in
+				let delta = pg_get_tr game i in
             if pr mod 2 = pl then (
                 for j = 0 to Array.length delta - 1 do
                     if delta.(j) = i then ret := (i, pl, i)::!ret
@@ -309,7 +311,7 @@ let solve_single_player_scc game player =
 		let p_pl = ref (-1) in
 		let p_op = ref (-1) in
 		for i = 0 to n - 1 do
-			let (pr, _, _, _) = sccgame.(i) in
+			let pr = pg_get_pr sccgame i in
 			let arg = if pr mod 2 = player then p_pl else p_op in
 			arg := max !arg pr
 		done;
@@ -339,7 +341,7 @@ let solve_single_player_scc game player =
         ) attr;
         let backuped = ref [] in
         TreeSet.iter (fun i ->
-            backuped := (i, game.(i), tgraph.(i))::!backuped
+            backuped := (i, pg_get_node game i, tgraph.(i))::!backuped
         ) !backup;
         pg_with_graph_remove_nodes sccgame tgraph attr;
         let (newsccs,_,_,_) = strongly_connected_components' sccgame tgraph in
@@ -350,7 +352,7 @@ let solve_single_player_scc game player =
         while (!todo < scccount) && (!success = None) do
             let current = newsccs.(!todo) in
             let (curgame, curgraph) = subgame_and_subgraph_by_list sccgame tgraph current in
-            if (Array.length curgame > 1) || (Array.length (pg_get_tr curgame 0) > 0) then (
+            if (pg_size curgame > 1) || (Array.length (pg_get_tr curgame 0) > 0) then (
             	let nodelist = Array.of_list current in
             	match process_scc curgame nodelist curgraph with
             		PlayerWin (s, t) -> success := Some (s, t)
@@ -367,7 +369,7 @@ let solve_single_player_scc game player =
         	done
         );
         List.iter (fun (i, g, t) ->
-            sccgame.(i) <- g;
+            pg_set_node2 sccgame i g;
             tgraph.(i) <- t
         ) !backuped;
         match !success with
@@ -395,8 +397,7 @@ let solve_single_player_scc game player =
 		)
 	|	None ->
 			let strat = Array.init n (fun j ->
-				let (_, pl, tr, _) = game.(j) in
-				if pl = player then -1 else tr.(0)
+				if pg_get_pl game j = player then -1 else (pg_get_tr game j).(0)
 			)
 			in
 			(Array.make n (1 - player), strat);;
@@ -407,9 +408,8 @@ let solve_single_parity_scc game player =
 	let solution = Array.make n player in
 	let strategy = Array.make n (-1) in
 	for i = 0 to n - 1 do
-		let (pr, pl, delta, _) = game.(i) in
-		if (pr >= 0) && (pl = player)
-		then strategy.(i) <- delta.(0)
+		if (pg_get_pr game i >= 0) && (pg_get_pl game i = player)
+		then strategy.(i) <- (pg_get_tr game i).(0)
 	done;
 	(solution, strategy);;
 
@@ -698,7 +698,7 @@ let compute_winning_nodes_for game pl compute_strat =
 
 (* Takes a game in which only player pl can make decisions (the algorithm doesn't distinguish positions for player pl and player 1 - pl.
    Computes winning sets for both players and strategy for player pl *)
-let compute_winning_nodes_for_direct game pl =
+let compute_winning_nodes_for_direct (game: paritygame) pl =
 	let compute_strat = true in
 
     let subnodes_by_list game li =
@@ -706,28 +706,28 @@ let compute_winning_nodes_for_direct game pl =
         let g = Array.make n (-1, -1, ref TreeSet.empty_def) in
         let i = ref 0 in
         List.iter (fun arri ->
-            let (pr, pl, delta, desc) = game.(arri) in
-            game.(arri) <- (-2, !i, delta, desc);
+            let (pr, pl, delta, desc) = pg_get_node game arri in
+            pg_set_node2 game arri (-2, !i, delta, desc);
             g.(!i) <- (pr, pl, ref TreeSet.empty_def);
             i := !i + 1
         ) li;
         let i = ref 0 in
         List.iter (fun arri ->
             let (pr, pl, _) = g.(!i) in
-            let (_, _, delta, _) = game.(arri) in
+						let delta = pg_get_tr game arri in
             let l = ref TreeSet.empty_def in
                 for j = 0 to (Array.length delta) - 1 do
-                    let (h, k, _, _) = game.(delta.(j)) in
-                        if h = -2 then l := TreeSet.add k !l
+                        if pg_get_pr  game delta.(j) = -2 then l := TreeSet.add (pg_get_pl game delta.(j)) !l
                 done;
             g.(!i) <- (pr, pl, l);
             i := !i + 1
         ) li;
         let i = ref 0 in
         List.iter (fun arri ->
-            let (_, _, delta, desc) = game.(arri) in
+					let delta = pg_get_tr game arri in
+					let desc = pg_get_desc game arri in
             let (pr, pl, _) = g.(!i) in
-            game.(arri) <- (pr, pl, delta, desc);
+						pg_set_node game arri pr pl delta desc;
             i := !i + 1
         ) li;
         g
@@ -806,14 +806,14 @@ let compute_winning_nodes_for_direct game pl =
         (!winner, strat)
     in
 
-    let n = Array.length game in
+    let n = pg_size game in
     let transp = if compute_strat then game_to_transposed_graph game else Array.make 0 [] in
     let strategy = Array.make (if compute_strat then n else 0) (-1) in
 
     let max_prio_queue comp pr =
     	let q = Queue.create () in
-    	List.iter (fun x -> let (pr', _, _, _) = game.(x) in
-    		if pr' = pr then Queue.add x q
+    	List.iter (fun x -> 
+    		if pg_get_pr game x = pr then Queue.add x q
     	) comp;
     	q
     in
@@ -823,13 +823,13 @@ let compute_winning_nodes_for_direct game pl =
 
 	let max_prio_for l pl =
 		List.fold_left (fun p el ->
-			let (pr, _, _, _) = game.(el) in
+			let pr = pg_get_pr game el in
 				if pr mod 2 = pl then max p pr else p
 		) (-1) l
 	in
 
 	let rec process_root r =
-		let getpl x = let (_, pl', _, _) = game.(x) in pl' in
+		let getpl x = pg_get_pl game x in
 		if marked.(r) < 0 then (
             List.iter process_root topology.(r);
             let c = List.fold_left (fun c c' -> if c != -1 && marked.(c) = pl then c else c') (-1) topology.(r) in
@@ -842,7 +842,9 @@ let compute_winning_nodes_for_direct game pl =
             else let comp = sccs.(r) in
                  if List.length comp = 1
                  then let x = List.hd comp in
-                      let (pr, pl', delta, _) = game.(x) in
+								      let pr = pg_get_pr game x in
+											let pl' = pg_get_pl game x in
+											let delta = pg_get_tr game x in
                       if Array.length delta = 0
                       then marked.(r) <- 1 - pl'
                       else if (List.exists (fun y -> x = y) (Array.to_list delta)) && (pr mod 2 = pl)
@@ -860,7 +862,8 @@ let compute_winning_nodes_for_direct game pl =
                       	then (
                       		list_attractor transp getpl strategy (ref (TreeSet.of_list_def sccs.(r))) (max_prio_queue comp pl_max);
                       		List.iter (fun q ->
-                      			let (_, pl', d, _) = game.(q) in
+														let pl' = pg_get_pl game q in
+														let d = pg_get_tr game q in
                       			if (pl' = pl) then
                       				let i = ref 0 in
                       				while (strategy.(q) < 0) do
