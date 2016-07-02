@@ -1,3 +1,15 @@
+Jul 1 2016		Oliver Friedmann
+ - Added unit tests
+
+Jun 27 2016		Oliver Friedmann
+ - Added support for generating MDP-like valuations
+
+May 8 2014		Oliver Friedmann
+ - Added tool for analyzing winning strategies
+
+Sep 11 2013		Martin Lange
+ - Added Fixpoint Iteration Algorithm
+
 Aug 07 2013     Oliver Friedmann
  - Fixed a bug in the verification algorithm (thanks to Maks Verver for finding it!)
 
