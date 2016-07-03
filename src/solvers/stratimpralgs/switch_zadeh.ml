@@ -280,7 +280,7 @@ let test_assumptions game strategy valu =
 *)
 
 			
-      let bpo = if i = info.len-1 then 0 else info.b.(i+1) in
+(*      let bpo = if i = info.len-1 then 0 else info.b.(i+1) in*)
 		  let sxb = if i = info.len-1 then 0 else 1-info.b.(i+1) in
 			let mui = if info.mu <= i + 1 then 1 else 0 in
 			let lei = if info.least_one > i + 1 then 1 else 0 in

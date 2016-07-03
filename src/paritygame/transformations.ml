@@ -16,8 +16,8 @@ let remove_useless_self_cycles_inplace game =
 	let n = pg_size game in
 	let l = ref [] in
 	for i = 0 to n - 1 do
-		let (pr, pl, delta, desc) = game.(i) in
-		if pr mod 2 != pl then (
+		if pg_get_pr game i mod 2 != pg_get_pl game i then (
+						let delta = pg_get_tr game i  in
             let j = ref 0 in
             for k = 0 to Array.length delta - 1 do
                 if not (delta.(k) = i) then j := !j + 1
@@ -32,7 +32,7 @@ let remove_useless_self_cycles_inplace game =
                         j := !j + 1
                     )
                 done;
-                game.(i) <- (pr, pl, a, desc)
+                pg_set_tr game i a
             )
         )
 	done;
@@ -47,9 +47,9 @@ let remove_useless_self_cycles_inplace game =
 
 (* Compacts the priorities inplace;
    returns a map newprio -> oldprio *)
-let compact_prio_inplace pg real_alternation =
-	let n = Array.length pg in
-	let getpr i = let (pr, _, _, _) = pg.(i) in pr in
+let compact_prio_inplace (pg: paritygame) real_alternation =
+	let n = pg_size pg in
+	let getpr i = pg_get_pr pg i in
 	let prios = Array.make n (-1) in
 	for i = 0 to n - 1 do
 		prios.(i) <- i
@@ -76,8 +76,7 @@ let compact_prio_inplace pg real_alternation =
             then buildmap newprio (i + 1) last
             else if (pr = last)
             then (
-                let (_, pl, delta, s) = pg.(j) in
-                pg.(j) <- (newprio, pl, delta, s);
+								pg_set_pr pg j newprio;
                 buildmap newprio (i + 1) last
             )
             else let pr' = if last < 0
@@ -86,9 +85,8 @@ let compact_prio_inplace pg real_alternation =
                            then newprio
                            else newprio + 1 + (1 + pr - last) mod 2 in
             (
-                let (_, pl, delta, s) = pg.(j) in
                 compact.(pr') <- pr;
-                pg.(j) <- (pr', pl, delta, s);
+								pg_set_pr pg j pr';
                 buildmap pr' (i + 1) pr
             )
         )
@@ -113,10 +111,14 @@ let priority_propagation_inplace pg =
 		then interval.(entry) <- (lo, pr)
 	in
 	let qu = SingleOccQueue.create () in
-	Array.iteri (fun i (pr, _, _, _) -> if pr >= 0 then SingleOccQueue.add i qu) pg;
+	for i = 0 to n - 1 do
+		let pr = pg_get_pr pg i in
+		if pr >= 0 then SingleOccQueue.add i qu;
+	done;
 	while (not (SingleOccQueue.is_empty qu)) do
 		let i = SingleOccQueue.take qu in
-		let (pr, _, succs, _) = pg.(i) in
+		let pr = pg_get_pr pg i in
+		let succs = pg_get_tr pg i in
 		let preds = gr.(i) in
 		let minpredpr = if preds = [] then -1
 		                else pg_get_pr pg (ListUtils.min_elt cmp preds) in
@@ -187,8 +189,8 @@ let single_scc_transformation pg =
 		let pg' = pg_create (n + (if has0 && has1 then 4 else 2)) in
 		let maxpr = ref 0 in
 		for i = 0 to n - 1 do
-			let (pr, pl, tr, de) = pg.(i) in
-			pg'.(i) <- (pr, pl, tr, de);
+			let pr = pg_get_pr pg i in
+			pg_set_node2 pg' i (pg_get_node pg i);
 			if pr > !maxpr then maxpr := pr
 		done;
 		let prio0 = !maxpr + 2 - !maxpr mod 2 in
@@ -197,17 +199,18 @@ let single_scc_transformation pg =
 		let ptr1 = ref (if has0 then n + 2 else n) in
 		let roots = List.filter (fun v -> pg_get_pr pg v >= 0) (List.map (fun i -> List.hd sccs.(i)) roots) in
 		if has0 then (
-			pg'.(!ptr0) <- (0, 1, Array.of_list ((!ptr0 + 1)::roots), None);
-			pg'.(!ptr0 + 1) <- (prio1, 0, [|!ptr0|], None)
+			pg_set_node pg' !ptr0 0 1 (Array.of_list ((!ptr0 + 1)::roots)) None;
+			pg_set_node pg' (!ptr0 + 1) prio1 0 [|!ptr0|] None
 		);
 		if has1 then (
-			pg'.(!ptr1) <- (0, 0, Array.of_list ((!ptr1 + 1)::roots), None);
-			pg'.(!ptr1 + 1) <- (prio0, 1, [|!ptr1|], None)
+			pg_set_node pg' !ptr1 0 0 (Array.of_list ((!ptr1 + 1)::roots)) None;
+			pg_set_node pg' (!ptr1 + 1) prio0 1 [|!ptr1|] None
 		);
 		List.iter (fun i ->
 			let v = List.hd sccs.(i) in
-			let (pr, pl, tr, de) = pg'.(v) in
-			pg'.(v) <- (pr, pl, Array.append [|if pl = 0 then !ptr0 else !ptr1|] tr, de)
+			let tr = pg_get_tr pg' v in
+			let pl = pg_get_pl pg' v in
+			pg_set_tr pg' v (Array.append [|if pl = 0 then !ptr0 else !ptr1|] tr)
 		) leafs;
 		pg'
 	)
@@ -229,10 +232,10 @@ let anti_priority_compactation_transformation pg =
 	done;
 	if !unused = 0 then pg else (
         let m = n + !unused in
-        let pg' = Array.make m (-1, -1, [||], None) in
+        let pg' = pg_create m in
         for i = 0 to n - 1 do
-        	let (pr, pl, tr, de) = pg.(i) in
-        	pg'.(i) <- (pr, pl, (if i = v then [|n|] else tr), de)
+					pg_set_node2 pg' i (pg_get_node pg i);
+					pg_set_tr pg' i (if i = v then [|n|] else pg_get_tr pg i)
         done;
         let pl = ref (1 - pg_get_pl pg v) in
         let i = ref 0 in
@@ -240,8 +243,8 @@ let anti_priority_compactation_transformation pg =
         while !j < m do
         	if not a.(!i) then (
         		if !j = m - 1
-        		then pg'.(!j) <- (!i, pg_get_pl pg v, pg_get_tr pg v, None)
-        		else pg'.(!j) <- (!i, !pl, [|!j + 1|], None);
+        		then pg_set_node pg' !j !i (pg_get_pl pg v) (pg_get_tr pg v) None
+        		else pg_set_node pg' !j !i !pl [|!j + 1|] None;
         		incr j;
         		pl := 1 - !pl
         	);
@@ -276,40 +279,38 @@ let cheap_escape_cycles_transformation pg keep_scc =
 	let n = pg_size pg in
 	let pg' = pg_create (n + (if keep_scc then 5 else 4)) in
 	for i = 0 to n - 1 do
-		let (pr, pl, tr, de) = pg.(i) in
-		if pr >= 0 then pg'.(i) <- (pr + 2, pl, Array.of_list ((Array.to_list tr) @ [if pl = 0 then n else n + 1]), de)
+		let pl = pg_get_pl pg i in
+		let pr = pg_get_pr pg i in
+		if pr >= 0
+		then let tr = Array.of_list ((Array.to_list (pg_get_tr pg i)) @ [if pl = 0 then n else n + 1]) in
+			   pg_set_node pg' i (pr + 2) pl tr (pg_get_desc pg i)
 	done;
 	let r = pg_max_prio pg in
 	let pl = pg_get_pl pg 0 in
 	let m = if pl mod 2 = r mod 2 then r + 1 else r + 2 in
-	pg'.(n)     <- (1, 1, (if keep_scc then [|(if pl = 1 then n + 4 else n + 1); n + 2|]
-	                                   else [|n + 2|]),                                        None);
-	pg'.(n + 1) <- (0, 0, (if keep_scc then [|(if pl = 0 then n + 4 else n    ); n + 3|]
-	                        	       else [|n + 3|]),                                        None);
-	pg'.(n + 2) <- (0, 0,                   [|n    |],                                         None);
-	pg'.(n + 3) <- (0, 1,                   [|n + 1|],                                         None);
-	if keep_scc then pg'.(n + 4) <- (m, 1 - pl, [|0|],  None);
+	pg_set_node pg' n 1 1 (if keep_scc then [|(if pl = 1 then n + 4 else n + 1); n + 2|] else [|n + 2|]) None;
+	pg_set_node pg' (n + 1) 0 0 (if keep_scc then [|(if pl = 0 then n + 4 else n    ); n + 3|] else [|n + 3|]) None;
+	pg_set_node pg' (n + 2) 0 0 [|n|] None;
+	pg_set_node pg' (n + 3) 0 1 [|n + 1|] None;
+	if keep_scc then pg_set_node pg' (n + 4) m (1 - pl) [|0|] None;
 	pg'
 
 
 (* Builds total closure of a parity game inplace *)
 let total_transformation_inplace (pg: paritygame) =
-    for i = 0 to (Array.length pg) - 1 do
-        let (pr, pl, delta, desc) = pg.(i) in
-            if (Array.length delta = 0) && (pr >= 0)
-            then pg.(i) <- (1 - pl, pl, Array.make 1 i, desc)
-            else ()
+    for i = 0 to (pg_size pg) - 1 do			
+			if Array.length (pg_get_tr pg i) = 0 && pg_get_pr pg i >= 0
+			then let pl = pg_get_pl pg i in
+			     pg_set_node pg i (1 - pl) pl [|i|] (pg_get_desc pg i)
     done
 
 
 (* Restricts the strategy of the total closure to the original game *)
 let total_revertive_restriction_inplace (oldpg: paritygame)
 								  	    (strat: strategy) =
-	for i = 0 to (Array.length oldpg) - 1 do
-		let (_, _, delta, _) = oldpg.(i) in
-			if Array.length delta = 0
-			then strat.(i) <- -1
-			else ()
+	for i = 0 to (pg_size oldpg) - 1 do
+		if Array.length (pg_get_tr oldpg i) = 0
+		then strat.(i) <- -1
 	done
 
 
