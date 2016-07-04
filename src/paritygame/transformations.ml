@@ -316,13 +316,14 @@ let total_revertive_restriction_inplace (oldpg: paritygame)
 
 (* Transforms a parity game into an equivalent (modulo dummy nodes) alternating parity game *)
 let alternating_transformation (pg: paritygame) (total: bool) =
-	let n = Array.length pg in
+	let n = pg_size pg in
 	let counter = ref n in
 	let ptr = ref (-1) in
 	let altmap = Array.make n (-1, -1) in
 
     for i = 0 to n - 1 do
-        let (_, pl, delta, _) = pg.(i) in
+  			let pl = pg_get_pl pg i in
+				let delta = pg_get_tr pg i in
         	if (Array.length delta = 0) && total
         	then (altmap.(i) <- (!counter, !ptr);
         	      counter := !counter + 1;
@@ -330,7 +331,7 @@ let alternating_transformation (pg: paritygame) (total: bool) =
         	else
                 Array.iter
                     (fun j ->
-                        let (_, pl', _, _) = pg.(j) in
+                        let pl' = pg_get_pl pg j in
                             if (pl = pl') && (altmap.(j) = (-1, -1))
                             then (altmap.(j) <- (!counter, !ptr);
                                   counter := !counter + 1;
@@ -339,27 +340,27 @@ let alternating_transformation (pg: paritygame) (total: bool) =
                     delta
     done;
 
-	let newpg = Array.make (!counter) (-1, -1, [||], None) in
+	let newpg = pg_create !counter in
 
 	for i = 0 to n - 1 do
-		let (pr, pl, delta, desc) = pg.(i) in
+		let (pr, pl, delta, desc) = pg_get_node pg i in
 		if (Array.length delta = 0) && total
-		then newpg.(i) <- (1 - pl, pl, Array.make 1 (fst altmap.(i)), desc)
+		then pg_set_node newpg i (1 - pl) pl (Array.make 1 (fst altmap.(i))) desc
 		else
             let delta' = Array.map
                             (fun j ->
-                                let (_, pl', _, _) = pg.(j) in
+                                let pl' = pg_get_pl pg j in
                                     if pl = pl' then fst altmap.(j) else j)
                             delta in
-            newpg.(i) <- (pr, pl, delta', desc)
+            pg_set_node newpg i pr pl delta' desc
 	done;
 
 	let descmap = function None -> None | Some s -> Some (s ^ "'") in
 
 	while (!ptr != -1) do
 		let (ind, prev) = altmap.(!ptr) in
-			let (_, pl, _, _) = pg.(!ptr) in
-				newpg.(ind) <- (0, 1 - pl, Array.make 1 (!ptr), descmap (pg_get_desc pg !ptr));
+			let pl = pg_get_pl pg !ptr in
+				pg_set_node newpg ind 0 (1 - pl) (Array.make 1 (!ptr)) (descmap (pg_get_desc pg !ptr));
 				ptr := prev
 	done;
 
@@ -371,7 +372,7 @@ let alternating_revertive_restriction (oldpg: paritygame)
 									  (altpg: paritygame)
 									  (sol: solution)
 									  (strat: strategy) =
-	let n = Array.length oldpg in
+	let n = pg_size oldpg in
 	let sol' = Array.make n (-1) in
 	let strat' = Array.make n (-1) in
 
@@ -379,7 +380,7 @@ let alternating_revertive_restriction (oldpg: paritygame)
 			sol'.(i) <- sol.(i);
 			if strat.(i) < n
 			then strat'.(i) <- strat.(i)
-			else let (_, _, delta, _) = altpg.(strat.(i)) in
+			else let delta = pg_get_tr altpg strat.(i) in
 				strat'.(i) <- delta.(0)
 		done;
 
@@ -417,18 +418,18 @@ let partialpg_alternating_revertive_restriction sol =
 
 let increase_priority_occurrence game =
 	let v = pg_max_prio_node game in
-	let (pr, pl, tr, de) = game.(v) in
+	let (pr, pl, tr, de) = pg_get_node game v in
 	let pl' = ref (1 - pl) in
 	let pr' = if pr mod 2 = pl then pr + 1 else pr in
 	let n = pg_size game in
 	let game' = pg_create (n + pr' + 1) in
 	for i = 0 to n - 1 do
 		if i = v
-		then game'.(i) <- (pr, pl, Array.append tr [|n|], de)
-		else game'.(i) <- game.(i)
+		then pg_set_node game' i pr pl (Array.append tr [|n|]) de
+		else pg_set_node2 game' i (pg_get_node game i)
 	done;
 	for i = 0 to pr' do
-		game'.(n + i) <- (i, !pl', [|if i = pr' then v else n + i + 1|], None);
+		pg_set_node game' (n + i) i !pl' [|if i = pr' then v else n + i + 1|] None;
 		pl' := 1 - !pl'
 	done;
 	game'
@@ -436,67 +437,48 @@ let increase_priority_occurrence game =
 
 
 (* prio[i] mod 2 == player[i] *)
-let prio_alignment_transformation game =
-	let n = Array.length game in
+let prio_alignment_transformation (game: paritygame) =
+	let n = pg_size game in
 	let mp = Array.init n (fun i -> i) in
 	let m = ref 0 in
 	let l = ref [] in
 	for i = 0 to n - 1 do
-		let (pr, pl, _ ,_) = game.(i) in
+		let pr = pg_get_pr game i in
+		let pl = pg_get_pl game i in
 		if (pr >= 0) && (not (pr mod 2 = pl)) then (
 			mp.(i) <- n + !m;
 			incr m;
 			l := i::!l
 		)
 	done;
-	let game' = Array.make (n + !m) (-1, -1, [||], None) in
+	let game' = pg_create (n + !m) in
 	for i = 0 to n - 1 do
-		let (pr, pl, tr, desc) = game.(i) in
+		let (pr, pl, tr, desc) = pg_get_node game i in
 		if mp.(i) = i
-		then game'.(i) <- (pr, pl, tr, desc)
-		else game'.(i) <- (pr, 1 - pl, [|mp.(i)|], desc)
+		then pg_set_node2 game' i (pr, pl, tr, desc)
+		else pg_set_node2 game' i (pr, 1 - pl, [|mp.(i)|], desc)
 	done;
 	let i = ref (!m + n - 1) in
 	while (!l != []) do
 		let j = List.hd !l in
 		l := List.tl !l;
-		let (_, pl, tr, _) = game.(j) in
-		game'.(!i) <- (0, pl, tr, None);
+		pg_set_node game' !i 0 (pg_get_pl game j) (pg_get_tr game j) None;
 		decr i
 	done;
 	game'
 
 
-(* Every node is accessed through one additional dummy node *)
-let dummy_transformation game =
-	let n = pg_size game in
-	Array.init (2 * n) (fun i ->
-		let (pr, pl, tr, desc) = game.(i mod n) in
-		if i < n
-		then (pr, pl, Array.map (fun j -> j + n) tr, desc)
-		else (0, 1 - pl, [|i - n|], None)
-	)
 
 
 let shift_game game k =
 	let n = pg_size game in
 	let game' = pg_create (n + k) in
 	for i = 0 to n - 1 do
-		let (pr, pl, tr, de) = game.(i) in
-		game'.(k + i) <- (pr, pl, Array.map (fun j -> k + j) tr, de)
+		let (pr, pl, tr, de) = pg_get_node game i in
+		pg_set_node game' (k + i) pr pl (Array.map (fun j -> k + j) tr) de
 	done;
 	game'
 
-let combine_games l =
-	let size = List.fold_left (fun s g -> s + pg_size g) 0 l in
-	let game = pg_create size in
-	let _ = List.fold_left (fun k g ->
-		Array.iteri (fun i (pr, pl, tr, de) ->
-			game.(k + i) <- (pr, pl, Array.map (fun j -> k + j) tr, de)
-		) g;
-		k + (pg_size g)
-	) 0 l in
-	game
 
 
 let bouncing_node_transformation game =
@@ -513,13 +495,13 @@ let bouncing_node_transformation game =
 	done;
 	let g = pg_create (n + !m) in
 	for i = 0 to n - 1 do
-		let (pr, pl, tr, de) = game.(i) in
-		g.(i) <- (pr, pl, Array.copy tr, de)
+		let (pr, pl, tr, de) = pg_get_node game i in
+		pg_set_node2 g i (pr, pl, Array.copy tr, de)
 	done;
 	List.iter (fun (i, j, k) ->
-		let (pr, pl, tr, _) = g.(i) in
+		let (pr, pl, tr, _) = pg_get_node g i in
 		tr.(j) <- k;
-		g.(k) <- (pr, 1 - pl, [|i|], None)
+		pg_set_node2 g k (pr, 1 - pl, [|i|], None)
 	) !l;
 	g
 
@@ -538,7 +520,7 @@ let compress_nodes game =
 		while (pg_get_pr game !j < 0) do
 			incr j
 		done;
-		game'.(i) <- game.(!j);
+		pg_set_node2 game' i (pg_get_node game !j);
 		newToOld.(i) <- !j;
 		oldToNew.(!j) <- i;
 		incr j
@@ -629,7 +611,7 @@ let normal_form_revertive_translation old_game sol strat =
 
 let uniquize_sorted_prios_inplace game =
 	let pr = ref 0 in
-	let n = Array.length game in
+	let n = pg_size game in
 	for i = 0 to n - 1 do
 		let pr' = pg_get_pr game i in
 		pr := !pr + if !pr mod 2 = pr' mod 2 then 2 else 1;
@@ -648,3 +630,24 @@ let min_max_swap_transformation g =
   let m = pg_max_prio g in
   let m = m + (m mod 2) in
   Array.map (fun (p,o,ss,n) -> (m-p,o,ss,n)) g 
+
+(* Every node is accessed through one additional dummy node *)
+let dummy_transformation game =
+	let n = pg_size game in
+	Array.init (2 * n) (fun i ->
+		let (pr, pl, tr, desc) = game.(i mod n) in
+		if i < n
+		then (pr, pl, Array.map (fun j -> j + n) tr, desc)
+		else (0, 1 - pl, [|i - n|], None)
+	)
+
+let combine_games l =
+	let size = List.fold_left (fun s g -> s + pg_size g) 0 l in
+	let game = pg_create size in
+	let _ = List.fold_left (fun k g ->
+		Array.iteri (fun i (pr, pl, tr, de) ->
+			game.(k + i) <- (pr, pl, Array.map (fun j -> k + j) tr, de)
+		) g;
+		k + (pg_size g)
+	) 0 l in
+	game
