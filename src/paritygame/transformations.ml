@@ -533,7 +533,7 @@ let compress_nodes game =
 
 let sort_game_inplace pg cmp =
 
-	let n = Array.length pg in
+	let n = pg_size pg in
 
 	let encode pl i =
 		if pl = 0 then i else pl * (n + i)
@@ -545,27 +545,25 @@ let sort_game_inplace pg cmp =
 	in
 
     for i = 0 to n - 1 do
-        let (pr, pl, delta, desc) = pg.(i) in
-            pg.(i) <- (pr, encode pl i, delta, desc)
+			pg_set_pl pg i (encode (pg_get_pl pg i) i)
     done;
 
 	let b (pr, pl, d, s) = (pr, fst (decode pl), d, s) in
 
-    Array.sort (fun x y -> cmp (b x) (b y)) pg;
+    pg_sort (fun x y -> cmp (b x) (b y)) pg;
 
     let perm = Array.make n (-1) in
     let perm' = Array.make n (-1) in
 
     for i = 0 to n - 1 do
-    	let (pr, pl, delta, desc) = pg.(i) in
-    		let (pl', j) = decode pl in
+    		let (pl', j) = decode (pg_get_pl pg i) in
     		perm.(i) <- j;
     		perm'.(j) <- i;
-    		pg.(i) <- (pr, pl', delta, desc)
+    		pg_set_pl pg i pl'
     done;
 
     for i = 0 to n - 1 do (
-    	let (pr, pl, delta, desc) = pg.(i) in
+			let delta = pg_get_tr pg i in 
     		Array.iteri (fun j el -> delta.(j) <- perm'.(el)) delta)
     done;
 
@@ -576,14 +574,14 @@ let sort_game_by_prio_inplace pg =
 	sort_game_inplace pg (fun (pr1, _, _, _) (pr2, _, _, _) -> pr1 - pr2)
 
 let normal_form_translation pg =
-	let n = Array.length pg in
+	let n = pg_size pg in
 	let a = ref 0 in
 	for i = 0 to n - 1 do
 		let l = Array.length (pg_get_tr pg i) in
 		if l > 2 then a := !a + l - 2
 	done;
-	let game = Array.init (n + !a) (fun i ->
-		if i >= n then (0, 0, [||], None) else pg.(i)
+	let game = pg_init (n + !a) (fun i ->
+		if i >= n then (0, 0, [||], None) else pg_get_node pg i
 	) in
 	let j = ref n in
 	for i = 0 to n - 1 do
@@ -627,10 +625,14 @@ let uniquize_prios_inplace game =
 
 (* turns a min-parity into a max-parity game and vice versa *)
 let min_max_swap_transformation g =
+	let n = pg_size g in
   let m = pg_max_prio g in
   let m = m + (m mod 2) in
-  Array.map (fun (p,o,ss,n) -> (m-p,o,ss,n)) g 
+	pg_init n (fun i ->
+		(m - pg_get_pr g i, pg_get_pl g i, pg_get_tr g i, pg_get_desc g i)
+	)
 
+	
 (* Every node is accessed through one additional dummy node *)
 let dummy_transformation game =
 	let n = pg_size game in

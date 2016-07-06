@@ -21,6 +21,8 @@ type global_solver = (paritygame -> solution * strategy)
  **************************************************************)
 
 val pg_create     : int -> paritygame
+val pg_init     : int -> (int -> (int * int * int array * string option)) -> paritygame
+val pg_sort     : ((int * int * int array * string option) -> (int * int * int array * string option) -> int) -> paritygame -> unit
 val pg_size	  : paritygame -> int
 val pg_node_count : paritygame -> int
 val pg_edge_count : paritygame -> int
