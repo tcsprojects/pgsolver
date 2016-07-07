@@ -602,7 +602,7 @@ let normal_form_translation pg =
 	game
 
 let normal_form_revertive_translation old_game sol strat =
-	let n = Array.length old_game in
+	let n = pg_size old_game in
 	let rec lookup v = if v < n then v else lookup strat.(v) in
 	(Array.init n (fun i -> sol.(i)),
 	 Array.init n (fun i -> lookup strat.(i)))
@@ -636,8 +636,8 @@ let min_max_swap_transformation g =
 (* Every node is accessed through one additional dummy node *)
 let dummy_transformation game =
 	let n = pg_size game in
-	Array.init (2 * n) (fun i ->
-		let (pr, pl, tr, desc) = game.(i mod n) in
+	pg_init (2 * n) (fun i ->
+		let (pr, pl, tr, desc) = pg_get_node game (i mod n) in
 		if i < n
 		then (pr, pl, Array.map (fun j -> j + n) tr, desc)
 		else (0, 1 - pl, [|i - n|], None)
@@ -647,9 +647,11 @@ let combine_games l =
 	let size = List.fold_left (fun s g -> s + pg_size g) 0 l in
 	let game = pg_create size in
 	let _ = List.fold_left (fun k g ->
-		Array.iteri (fun i (pr, pl, tr, de) ->
-			game.(k + i) <- (pr, pl, Array.map (fun j -> k + j) tr, de)
-		) g;
-		k + (pg_size g)
+		let n = pg_size g in
+		for i = 0 to n - 1 do
+			let (pr, pl, tr, de) = pg_get_node g i in
+			pg_set_node game (k + i) pr pl (Array.map (fun j -> k + j) tr) de
+		done;
+		k + n
 	) 0 l in
 	game
