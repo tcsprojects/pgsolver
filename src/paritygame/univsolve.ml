@@ -500,12 +500,11 @@ let universal_solve_run options stats backend game' =
 				let n = pg_size game in
                 let (w0, w1) = (ref TreeSet.empty_def, ref TreeSet.empty_def) in
                 let counter = ref 0 in
-                for i = 0 to (Array.length game) - 1 do
+                for i = 0 to n - 1 do
                     if (sol.(i) = 0) then w0 := TreeSet.add i !w0;
                     if (sol.(i) = 1) then w1 := TreeSet.add i !w1;
                     if sol.(i) >= 0 then incr counter;
-                    let (pr, pl, _, _) = game.(i) in
-                    if (pr < 0) || (pl != sol.(i))
+                    if (pg_get_pr game i < 0) || (pg_get_pl game i != sol.(i))
                     then strat.(i) <- -1;
                 done;
 				msg_plain BACKEND 0 (fun _ -> string_of_int !counter ^ " out of " ^ string_of_int n ^ "\n");
@@ -562,15 +561,14 @@ let universal_solve_run options stats backend game' =
         		let to_remove = ref [] in
         		List.iter (fun w ->
         			if sol.(w) < 0 then (
-        				let (pr, pl, delta, ann) = game.(w) in
-        				if (pl = winner) then (
+        				if (pg_get_pl game w = winner) then (
         					sol.(w) <- winner;
         					touchedscc.(sccindex.(w)) <- true;
         					strat.(w) <- v;
         					SingleOccQueue.add w q;
         					attr := w::!attr
         				)
-        				else if Array.length delta = 1 then (
+        				else if Array.length (pg_get_tr game w) = 1 then (
         					sol.(w) <- winner;
         					touchedscc.(sccindex.(w)) <- true;
         					SingleOccQueue.add w q;
@@ -622,11 +620,11 @@ let universal_solve_run options stats backend game' =
 										stat_addint [stats.universal_solved_nodes;
 													 stats.overall_solved_nodes] (fun _ -> 1);
                                         let h = List.hd sccs.(r) in
-                                        let (pr, pl, d, _) = game.(h) in
-                                        if (Array.length d = 0)
+																				let pl = pg_get_pl game h in
+                                        if (Array.length (pg_get_tr game h) = 0)
                                         then sol.(h) <- 1 - pl
                                         else (
-                                            sol.(h) <- pr mod 2;
+                                            sol.(h) <- (pg_get_pr game h) mod 2;
                                             if (sol.(h) = pl)
                                             then strat.(h) <- h
 					                    );
@@ -670,7 +668,7 @@ let universal_solve_run options stats backend game' =
 
 	timer_start stats.logistics_timing;
 
-	let n = Array.length game' in
+	let n = pg_size game' in
 	let m = pg_node_count game' in
 	let solution = Array.make n (-1) in
 	let strategy = Array.make n (-1) in
@@ -861,7 +859,7 @@ let universal_solve_fallback options backend fallback =
 let universal_solve_by_player_solver options solver game =
 	let (sol, strat) = universal_solve options (fun g -> solver g 0) game in
 	let solved = ref [] in
-	let n = Array.length game in
+	let n = pg_size game in
 	for i = 0 to n - 1 do
 		if sol.(i) = 0 then solved := i::!solved
 	done;
