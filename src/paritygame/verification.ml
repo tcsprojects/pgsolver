@@ -7,7 +7,7 @@ open Specialsolve;;
 
 let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: strategy) compute_winning_n =
 	let build_cycle game strategy node =
-		let marker = Array.make (Array.length game) false in
+		let marker = Array.make (pg_size game) false in
 		let rec helper node =
 			if marker.(node) then [node] else (
 			     marker.(node) <- true;
@@ -28,11 +28,12 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 				(l, getprio (List.hd lr) (List.tl lr) 0)
 	in
 
-	let n = Array.length game in
+	let n = pg_size game in
 
 	let rec sanity_check i =
 		if i >= n then None else (
-			let (_, pl, delta, _) = game.(i) in
+			let pl = pg_get_pl game i in
+			let delta = pg_get_tr game i in
 			if sol.(i) < -1 || sol.(i) > 1
 			then Some ([i], "Solution for node " ^ string_of_int i ^ " is corrupt (" ^ string_of_int sol.(i) ^ ")")
 			else if strat.(i) < -1 || (strat.(i) != -1 && not (ArrayUtils.exists delta (fun _ j -> j = strat.(i))))
@@ -71,8 +72,7 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 		let strat' = Array.make n (-1) in
 		let badnodes = ref [] in
 		for i = 0 to n - 1 do
-			let (_, pl', _, _) = game.(i) in
-			if pl' = pl	then strat'.(i) <- strat.(i);
+			if pg_get_pl game i = pl	then strat'.(i) <- strat.(i);
 			if sol.(i) != pl then badnodes := i::!badnodes
 		done;
 		let game' = subgame_by_strat game strat' in
@@ -124,7 +124,7 @@ let verify_solution_strategy_direct gm sol strat = verify_solution_strategy_cust
 
 let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: strategy) =
 	let message _ _ = () in
-	let n = Array.length game in
+	let n = pg_size game in
 	(* 0 = no information, 1 = currently tracking, 2 = marked during cycle check, 3 = verified *)
 	let table = Array.make n 0 in
 
@@ -138,8 +138,7 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 	let wins_cycle i trace pl =
 		let rec helper i pr l =
 			let h = List.hd l in
-			let (pr', _, _, _) = game.(h) in
-			let maxpr = max pr pr' in
+			let maxpr = max pr (pg_get_pr game h) in
 				if h = i
 				then maxpr mod 2 = pl
 				else (
@@ -153,11 +152,10 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 	let rec expand pl i =
 		message 3 (fun _ -> "   Expanding node " ^ string_of_int i ^ "\n");
 		if table.(i) != 3 then (
-			let (_, pl', delta, _) = game.(i) in
 			table.(i) <- 3;
-			if pl = pl'
+			if pl = pg_get_pl game i
 			then expand pl (strat.(i))
-			else Array.iter (expand pl) delta
+			else Array.iter (expand pl) (pg_get_tr game i)
 		)
 	in
 
@@ -174,12 +172,12 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 			then None
 			else Some (i::trace, "Cycle winner failure - " ^ (string_of_int (1 - pl)) ^ " wins but " ^ (string_of_int pl) ^ " should...")
 		)
-		else let (pr, pl', delta, _) = game.(i) in
-		     if (pr < 0) || (sol.(i) < 0)
+		else let delta = pg_get_tr game i in
+		     if (pg_get_pr game i < 0) || (sol.(i) < 0)
 		     then Some (i::trace, "Reached undefined position starting in a defined position")
 		     else if sol.(i) != pl
 		     then Some (i::trace, "Reached winning set of " ^ (string_of_int sol.(i)) ^ " starting in winning set of " ^ (string_of_int pl) ^ " following the strategy of " ^ (string_of_int pl))
-		     else if pl' = pl
+		     else if pg_get_pl game i = pl
 		     then (
 					if not (has delta strat.(i))
 					then Some (i::trace, "Strategy failure at the end of the trace w.r.t. player " ^ (string_of_int pl))
@@ -221,8 +219,8 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 		then None
 		else if table.(i) = 3
 		then testnext (i + 1)
-		else let (pr, pl, _, _) = game.(i) in
-				if (pr < 0) || (sol.(i) < 0)
+		else
+				if (pg_get_pr game i < 0) || (sol.(i) < 0)
 				then testnext (i + 1)
 				else match (test sol.(i) i []) with
                    None -> (expand sol.(i) i;
