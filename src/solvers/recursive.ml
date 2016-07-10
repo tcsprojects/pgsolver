@@ -61,7 +61,7 @@ let solver rec_solve game =
           msg_tagged 3 (fun _ -> "The attractor of P for player " ^ string_of_int pl ^ " is: {" ^
                      String.concat "," (List.map string_of_int attr) ^ "}\n");
 
-          let game' = Array.copy game in
+          let game' = pg_copy game in
           pg_remove_nodes game' attr;
           msg_tagged 3 (fun _ -> "First recursive descent to subgame ...\n");
 
@@ -105,7 +105,7 @@ let solver rec_solve game =
                 List.iter (fun v -> solution.(v) <- opp;
                                     if pg_get_pr game' v > -1 && pg_get_pl game' v = opp then strategy.(v) <- str.(v)) !opponent_win;
 
-                let game' = Array.copy game in
+                let game' = pg_copy game in
                 pg_remove_nodes game' attr;
 
                 msg_tagged 3 (fun _ -> "Second recursive descent to subgame ....\n");

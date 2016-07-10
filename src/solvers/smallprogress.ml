@@ -10,7 +10,7 @@ let arr_maxarg arr f less = Array.fold_left (fun m i -> if less (f m) (f i) then
 
 let solve_scc_reach game player spmidx updspm =
 
-    let n = Array.length game in
+    let n = pg_size game in
     let transp = game_to_transposed_graph game in
     let maxprio = pg_max_prio_for game (1 - player) in
 
@@ -80,7 +80,7 @@ let solve_scc_reach game player spmidx updspm =
 
     let update queue i =
         if not (isTop spmidx.(i)) then (
-            let (pr, pl, delta, _) = game.(i) in
+            let (pr, pl, delta, _) = pg_get_node game i in
             let j = (if pl = player then arr_minarg else arr_maxarg)
                      delta (fun q -> prog pr spmidx.(i) spmidx.(q)) (less 0) in
             let y = prog pr spmidx.(i) spmidx.(j) in
@@ -119,9 +119,8 @@ let solve_scc_reach game player spmidx updspm =
     for i = 0 to n - 1 do
         message 3 (fun _ -> "Checking " ^ string_of_int i ^ "\n");
         sol.(i) <- if isTop spmidx.(i) then 1 - player else player;
-        let (_, pl, delta, _) = game.(i) in
-        if (pl = player) && (player = sol.(i))
-        then strat.(i) <- arr_minarg delta (fun q -> spmidx.(q)) (less 0)
+        if (pg_get_pl game i = player) && (player = sol.(i))
+        then strat.(i) <- arr_minarg (pg_get_tr game i) (fun q -> spmidx.(q)) (less 0)
     done;
 
     (sol, strat);;
@@ -156,7 +155,7 @@ let solve' game =
 	let msg_tagged v = message_autotagged v (fun _ -> "SMALLPROGRESS") in
 	(* let msg_plain = message in *)
 
-	let n = Array.length game in
+	let n = pg_size game in
     let transp = game_to_transposed_graph game in
     let maxprio = pg_max_prio game in
 	
@@ -252,7 +251,7 @@ let solve' game =
 	
 	(* Calculates the progress measure update for both players at node vi *)
 	let calc_prog_for i =
-		let (pr, pl, tr, _) = game.(i) in
+		let (pr, pl, tr, _) = pg_get_node game i in
 		
 		let tr_calc = Array.map (fun j ->
 			let prog0 = prog 0 pr spmidx.(i) spmidx.(j) in
@@ -286,7 +285,7 @@ let solve' game =
 			if temp.(i) then (
 				if is_top spmidx.(i) player then temp.(i) <- false
 				else (
-					let (pr, pl, tr, _) = game.(i) in
+					let (pr, pl, tr, _) = pg_get_node game i in
 					if pl = player then (
 						let tr = Array.of_list (List.filter (fun j -> temp.(j)) (Array.to_list tr)) in
 						let tr_calc = Array.map (fun j -> prog player pr spmidx.(i) spmidx.(j)) tr in
@@ -352,7 +351,7 @@ let solve' game =
 				   else failwith "impossible: no top value";
     done;
     for i = 0 to n - 1 do
-        let (_, pl, delta, _) = game.(i) in
+        let (_, pl, delta, _) = pg_get_node game i in
         if (pl = sol.(i))
         then strat.(i) <- arr_minarg delta (fun q -> spmidx.(q)) (less pl 0)
     done;

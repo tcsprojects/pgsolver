@@ -22,17 +22,17 @@ let solve' game =
 	msg_tagged 2 (fun _ -> "Using backend sat solver: " ^ (Satsolvers.get_default ())#identifier ^ "\n");
 	msg_tagged 2 (fun _ -> "Building constraints...\n");
 
-	let n = Array.length game in
+	let n = pg_size game in
 	let prio_arr = Array.init n (fun i -> i) in
 	Array.sort (fun i j -> compare (pg_get_pr game i) (pg_get_pr game j)) prio_arr;
 
 	for i = 0 to n - 1 do
-		let (_, pl, delta, _) = game.(i) in
+		let (_, pl, delta, _) = pg_get_node game i in
 		solver#add_helper_exactlyone 0 (Array.length delta - 1) [||] (fun j -> Po (Strategy (i, delta.(j))));
 	done;
 
 	for i = 0 to n - 1 do
-		let (_, pl, delta, _) = game.(i) in
+		let (_, pl, delta, _) = pg_get_node game i in
 		Array.iter (fun j ->
 			solver#add_clause_array [|Ne (SubEdge (0, i, j)); Ne (Winning i)|];
 			solver#add_clause_array [|Ne (SubEdge (1, i, j)); Po (Winning i)|];

@@ -190,17 +190,20 @@ let solve' game =
 
   let prio_table = SingleTable.create 100 in
   let present_prios  = ref [] in
-
-  Array.iter (function (p,_,_,_) ->
-                        let n = try
+	
+	let m = pg_size game in
+	
+	for i = 0 to m - 1 do
+		let p = pg_get_pr game i in
+		let n = try
                                   SingleTable.find prio_table p
                                 with _ -> 0
                         in
                         SingleTable.remove prio_table p;
                         SingleTable.add prio_table p (n+1);
 
-                        present_prios := insert p !present_prios)
-              game;
+                        present_prios := insert p !present_prios
+	done;
 
 
 	let binlog n = int_of_float (ceil ((log (float_of_int n)) /. (log 2.))) in
@@ -224,15 +227,12 @@ let solve' game =
                                                       prio_table [])
                       ^ "\n");
 
-  let m = Array.length game in
   msg_tagged 2 (fun _ -> "Using backend sat solver: " ^ (Satsolvers.get_default ())#identifier ^ "\n");
   msg_tagged 2 (fun _ -> "Number of nodes in the game    : " ^ string_of_int m ^ "\n");
-  let max_prio = Array.fold_left (fun a (p,_,_,_) -> max a p) 0 game in
-  msg_tagged 2 (fun _ -> "Maximal priority found         : " ^ string_of_int max_prio ^ "\n");
 
   message 3 (fun _ -> "Creating and scheduling clauses for addition ...\n");
   for v=0 to m-1 do
-    let (_,pl,ws,_) = game.(v) in
+    let (_,pl,ws,_) = pg_get_node game v in
     (match pl with
       0 -> (message 3 (fun _ -> "  `" ^ show_var 0 (S v) ^ " -> " ^
                        String.concat " + " (List.map (fun w -> show_var 0 (TE (v,w))) (Array.to_list ws)) ^ "': ");
@@ -255,7 +255,7 @@ let solve' game =
   let remember var = to_expand := var::!to_expand in
 
   for v=0 to m-1 do
-    let (p,_,ws,_) = game.(v) in
+    let (p,_,ws,_) = pg_get_node game v in
 (*    let scc_v = sccindex.(v) in *)
 
     Array.iter (fun w ->
@@ -344,7 +344,7 @@ let solve' game =
           let winner = 1-x in
           message 3 (fun _ -> string_of_int x ^ ", successor: ");
 
-          let (_,_,succs,_) = game.(v) in
+          let succs = pg_get_tr game v in
           let get_fun = if winner = 0 then getTEVar else getTAVar in
           let y = try
                     ArrayUtils.find (fun w -> let j = get_fun (v,w) in solver#get_assignment j) succs

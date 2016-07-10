@@ -24,11 +24,11 @@ let solve' game sink0 sink1 =
 	msg_tagged 2 (fun _ -> "Using backend sat solver: " ^ (Satsolvers.get_default ())#identifier ^ "\n");
 	msg_tagged 2 (fun _ -> "Building constraints...\n");
 
-	let n = Array.length game in
+	let n = pg_size game in
 	let par a = (pg_get_pr game a) mod 2 in
 
 	for i = 0 to n - 1 do
-		let (pr, pl, tr, _) = game.(i) in
+		let (pr, pl, tr, _) = pg_get_node game i in
 		(* Strategy *)
 		solver#add_helper_exactlyone 0 (Array.length tr - 1) [||] (fun j -> Po (Strategy (i, tr.(j))));
 		(* Path Sets *)
@@ -130,9 +130,8 @@ let solve''' game =
 	let game' = alternating_transformation game true in
 	let (sol, strat) = solve'' game' in
 	let (sol', strat') = alternating_revertive_restriction game game' sol strat in
-	for i = 0 to Array.length game - 1 do
-		let (_, pl, _, _) = game.(i) in
-		if sol'.(i) != pl then strat'.(i) <- -1
+	for i = 0 to pg_size game - 1 do
+		if sol'.(i) != pg_get_pl game i then strat'.(i) <- -1
 	done;
 	(sol', strat');;
 
