@@ -94,8 +94,8 @@ let initial_strategy_by_random_edge game =
 	)
 
 let initial_strategy_by_best_reward game =
-	Array.init (Array.length game) (fun i ->
-		let (pr, pl, tr, _) = game.(i) in
+	Array.init (pg_size game) (fun i ->
+		let (pr, pl, tr, _) = pg_get_node game i in
 		if (pr < 0) || (pl = 1) || (Array.length tr = 0) then -1
 		else array_max tr (fun i j -> reward_total_ordering game node_total_ordering_by_position i j <= 0)
 	)
@@ -127,7 +127,7 @@ let node_valuation_total_ordering game node_total_ordering valu x y =
 
 let best_decision_by_ordering game ordering v =
 	let ordering x y = ordering x y >= 0 in
-    let (_, pl, tr, _) = game.(v) in
+    let (_, pl, tr, _) = pg_get_node game v in
     array_max tr (fun x y -> if pl = 1 then ordering x y else ordering y x)
 
 let best_decision_by_valuation_ordering game node_total_ordering valu v =
@@ -158,7 +158,7 @@ let winning_strategies game node_total_ordering strat valu =
     )
 
 let evaluate_strategy game node_total_ordering strat =
-	let n = Array.length game in
+	let n = pg_size game in
 	let graph = paritygame_to_dynamic_paritygame_by_strategy game strat in
 	let asc_rew = DynamicGraph.add_cmp (reward_total_ordering game node_total_ordering) graph in
 	let rel_ord = relevance_total_ordering game node_total_ordering in
@@ -269,7 +269,7 @@ let format_game_state game valu =
             |   Some t -> s=t
         in
         let i = ref 0 in
-        let n = Array.length game in
+        let n = pg_size game in
         while (!i < n) && (not (check !i)) do
             incr i
         done;
@@ -489,7 +489,7 @@ let strategy_improvement (game: paritygame)
         if !verbosity > 2 then (
 
             let g = subgame_by_edge_pred game (fun u v -> (!strat).(u) = -1 || (!strat).(u) = v) in
-            for i = 0 to Array.length game - 1 do
+            for i = 0 to pg_size game - 1 do
                 pg_set_desc g i (Some (string_of_int i ^ " : " ^ format_node_valuation (!valu).(i)))
             done;
 (*            msg_tagged_nl 3 (fun _ -> "\nMade valuation:\n" ^ game_to_string g ^ "\n"); *)
@@ -621,12 +621,11 @@ let strategy_improvement' (game: paritygame)
 	let game' = alternating_transformation game true in
 	let game'' = cheap_escape_cycles_transformation game' false in
 	let (sol'', strat'') = strategy_improvement game'' init_strat node_compare impr_policy impr_policy_init check_policy ident in
-	let sol = Array.init (Array.length game') (fun i -> sol''.(i)) in
-	let strat = Array.init (Array.length game') (fun i -> strat''.(i)) in
+	let sol = Array.init (pg_size game') (fun i -> sol''.(i)) in
+	let strat = Array.init (pg_size game') (fun i -> strat''.(i)) in
 	let (sol', strat') = alternating_revertive_restriction game game' sol strat in
-	for i = 0 to Array.length game - 1 do
-		let (_, pl, _, _) = game.(i) in
-		if sol'.(i) != pl then strat'.(i) <- -1
+	for i = 0 to pg_size game - 1 do
+		if sol'.(i) != pg_get_pl game i then strat'.(i) <- -1
 	done;
 	(sol', strat');;
 
@@ -639,8 +638,8 @@ let strategy_improvement'' (game: paritygame)
 						  (ident: string) =
 	let game' = cheap_escape_cycles_transformation game false in
 	let (sol', strat') = strategy_improvement game' init_strat node_compare impr_policy (impr_policy_init game') check_policy ident in
-	let sol = Array.init (Array.length game) (fun i -> sol'.(i)) in
-	let strat = Array.init (Array.length game) (fun i -> strat'.(i)) in
+	let sol = Array.init (pg_size game) (fun i -> sol'.(i)) in
+	let strat = Array.init (pg_size game) (fun i -> strat'.(i)) in
 	(sol, strat);;
 
 let improvement_policy_no_user_data imprpolicy = fun g o u s v -> (imprpolicy g o s v, u);;

@@ -44,11 +44,11 @@ let initial_estimation game d =
 	let n = pg_size game in
 	let rew = reward 0 in
 	Array.init n (fun i ->
-		let (pr, pl, delta, _) = game.(i) in
+		let (pr, pl, delta, _) = pg_get_node game i in
 		let e = Array.make d 0 in
 		if pl = 1 then (
 			let pr = Array.fold_left (fun pr j ->
-						let (pr', pl', _, _) = game.(j) in
+						let (pr', pl', _, _) = pg_get_node game j in
 						if rew pr' > rew pr	then pr	else pr'
 					 ) (2 * d) delta in
 			if pr > 0 then e.(pr - 1) <- 1
@@ -59,14 +59,14 @@ let initial_estimation game d =
 let format_estentry = function PosInfty -> "+oo" | Escape esc ->
 	ListUtils.format (fun (i, v) -> string_of_int i ^ ":" ^ string_of_int v) (List.filter (fun (_, v) -> v != 0) (Array.to_list (Array.mapi (fun i v -> (i + 1, v)) esc)))
 
-let improvement_arena game estimation =
+let improvement_arena (game: paritygame) estimation =
 	subgame_by_edge_pred game (fun u v ->
 		compare estimation.(u) (add_est estimation.(v) (pg_get_pr game v)) <= 0
 	);;
 
 let zero_arena arena estimation =
 	let pred u v = compare estimation.(u) (add_est estimation.(v) (pg_get_pr arena v)) = 0 in
-	subgame_by_edge_pred arena (fun u v -> let (_, pl, delta, _) = arena.(u) in
+	subgame_by_edge_pred arena (fun u v -> let (_, pl, delta, _) = pg_get_node arena u in
 		(pred u v) && ((pl = 1) || (ArrayUtils.forall delta (fun _ v -> pred u v)))
 	);;
 
@@ -76,7 +76,7 @@ let is_zero = function Escape esc -> ArrayUtils.forall esc (fun _ e -> e = 0) | 
 
 let counter_strategy zero_arena estimation =
 	let seed = collect_nodes zero_arena (fun i (_, pl, delta, _) -> pl = 0 && Array.length delta = 0 && (not (is_infty estimation.(i)))) in
-	let strat = Array.make (Array.length zero_arena) (-1) in
+	let strat = Array.make (pg_size zero_arena) (-1) in
 	let _ = attr_closure_inplace zero_arena strat 1 seed in
 	strat;;
 
@@ -109,7 +109,7 @@ let format_estimation arr =
 let basic_update_step arena d estimation =
     msg_tagged 3 (fun _ -> "\nEstimation:\n" ^ format_estimation estimation ^ "\n");
     msg_tagged 3 (fun _ -> "Arena:\n" ^ game_to_string arena ^ "\n");
-	let n = Array.length arena in
+	let n = pg_size arena in
 	let tr = game_to_transposed_graph arena in
 	let upd = Array.make n PosInfty in
 	(* 0 = not evaluated, 1 = evaluated, 2 = all_eval, 3 = red_one0_eval *)
@@ -127,7 +127,7 @@ let basic_update_step arena d estimation =
 	in
 
 	for i = 0 to n - 1 do
-		let (pr, pl, delta, _) = arena.(i) in
+		let (pr, pl, delta, _) = pg_get_node arena i in
 		if Array.length delta = 0 then (
 			if pl = 0
 			then green_all_evaluated := i::!green_all_evaluated
@@ -141,7 +141,7 @@ let basic_update_step arena d estimation =
 		eval_state.(i) <- 1;
 		decr todo;
 		List.iter (fun j ->
-			let (_, pl, delta, _) = arena.(j) in
+			let (_, pl, delta, _) = pg_get_node arena j in
 			if (eval_state.(j) = 0) || (eval_state.(j) = 3) then (
                 if ArrayUtils.forall delta (fun _ k -> eval_state.(k) = 1) then (
                 	if pl = 0
@@ -218,7 +218,7 @@ let basic_update_step arena d estimation =
 
 let update_strategy0 arena est_after strat =
 	Array.iteri (fun i est ->
-		let (_, pl, delta, _) = arena.(i) in
+		let (_, pl, delta, _) = pg_get_node arena i in
 		if (pl = 0) && (strat.(i) = -1) && (is_infty est)
 		then strat.(i) <- array_max delta (fun x y -> compare est_after.(x) est_after.(y) < 0)
 	) est_after;;
@@ -227,8 +227,8 @@ let update_strategy0 arena est_after strat =
 let get_intermediate_strategy0 arena est_after strat' =
 	let strat = Array.copy strat' in
 	Array.iteri (fun i est ->
-		let (_, pl, delta, _) = arena.(i) in
-		if (pl = 0) && (strat.(i) = -1) && (Array.length delta > 0)
+		let delta =pg_get_tr arena i in
+		if (pg_get_pl arena i = 0) && (strat.(i) = -1) && (Array.length delta > 0)
 		then strat.(i) <- array_max delta (fun x y -> compare (add_est est_after.(x) (pg_get_pr arena x))
 		                                                      (add_est est_after.(y) (pg_get_pr arena y)) < 0)
 	) est_after;
@@ -244,7 +244,7 @@ let solve_scc game' =
 	let est = ref (initial_estimation game d) in
 	let eq = ref false in
 	let strat = Array.make n (-1) in
-	let arena = ref [||] in
+	let arena = ref (pg_create 0) in
 	let counter = ref 0 in
 	while not (!eq) do
         incr counter;

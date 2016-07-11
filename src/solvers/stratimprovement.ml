@@ -12,15 +12,15 @@ open Transformations;;
 let solve' (game: paritygame) =
 	let array_max a less = ArrayUtils.max_elt (fun x y -> if less x y then -1 else 1) a in
 
-	let n = Array.length game in
+	let n = pg_size game in
 
     let msg_tagged v = message_autotagged v (fun _ -> "STRATIMPROV") in
     let msg_plain = message in
 
 
-    let prio i = let (pr, _, _, _) = game.(i) in pr in
-    let pl i = let (_, pl, _, _) = game.(i) in pl in
-    let tra i = let (_, _, delta, _) = game.(i) in delta in
+    let prio i = pg_get_pr game i in
+    let pl i = pg_get_pl game i in
+    let tra i = pg_get_tr game i in
     let isEven i = (prio i) mod 2 = 0 in
     let isOdd i = (prio i) mod 2 = 1 in
     let isP0 i = (pl i) = 0 in
