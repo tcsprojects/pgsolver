@@ -24,7 +24,9 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 		strategy_set := TreeSet.add strat !strategy_set
 	in
 	add_to_strategy_set old_strategy;
-	Array.iteri (fun i (_, pl, tr, _) ->
+	let n = pg_size game in
+	for i = 0 to n - 1 do
+		let (_, pl, tr, _) = pg_get_node game i in
 		if pl = 0 then (
 			Array.iter (fun j ->
 				if node_valuation_ordering game node_total_ordering valu.(j) valu.(old_strategy.(i)) > 0 then (
@@ -34,7 +36,7 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 				)
 			) tr;
 		)
-	) game;
+	done;
 	(* Step 2: Build improvement set *)
 	let improvement_set = ref (TreeSet.empty (fun x y -> compare (Array.to_list x) (Array.to_list y))) in
 	let add_to_improvement_set strat =
@@ -53,17 +55,18 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 			helper TreeSet.empty_def node
 	in
 	TreeSet.iter (fun strategy ->
-		Array.iteri (fun node _ ->
-			let current = ref (morph old_strategy strategy node) in
+		let n = pg_size game in
+		for i = 0 to n - 1 do
+			let current = ref (morph old_strategy strategy i) in
 			while !current != None do
 				match !current with
 					Some cur -> (
 						add_to_improvement_set cur;
-						current := morph cur strategy node
+						current := morph cur strategy i
 					)
 				|	None -> ()
 			done;
-		) game;
+		done;
 	) !strategy_set;
 	(* Step3: Build combination strategy *)
 	let improvement_set_array = Array.make (TreeSet.cardinal !improvement_set) ([||], valu) in
@@ -74,10 +77,11 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 	) !improvement_set;
 	let best_strategies = Array.make (pg_size game) 0 in
 	Array.iteri (fun i (st, va) ->
-		Array.iteri (fun v _ ->
+		let m = pg_size game in
+		for v = 0 to m - 1 do
 			if node_valuation_ordering game node_total_ordering va.(v) (snd improvement_set_array.(best_strategies.(v))).(v) > 0
 			then best_strategies.(v) <- i;
-		) game;
+		done;
 	) improvement_set_array;
 	let strategy = Array.init (pg_size game) (fun v ->
 		if pg_get_pl game v = 1 then -1
@@ -155,10 +159,12 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 					(pl = 0) || (counter_strategy.(v) = w && !next_counter.(v) = w)
 				) in 
 				
-				Array.iteri (fun i (pr, pl, tr, _) ->
+				let m = pg_size game in
+				for i = 0 to m - 1 do
+					let (pr, pl, tr, _) = pg_get_node game i in
 					if (pl = 1) && ArrayUtils.exists tr (fun _ j -> counter_strategy.(i) != j && (TreeSet.mem j !non_final_nodes || TreeSet.mem (i,j) !used_escape_edges))
 					then pg_set_tr graph i [||]
-				) game;
+				done;
 				
 
 				let cycle = ref None in

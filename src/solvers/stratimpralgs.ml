@@ -75,21 +75,21 @@ let reward_total_ordering game node_total_ordering i j =
 	else node_total_ordering game (if ri mod 2 = 0 then i else j) (if ri mod 2 = 0 then j else i)
 
 let initial_strategy_by_first_edge game =
-	Array.init (Array.length game) (fun i ->
-		let (pr, pl, tr, _) = game.(i) in
+	Array.init (pg_size game) (fun i ->
+		let (pr, pl, tr, _) = pg_get_node game i in
 		if (pr < 0) || (pl = 1) || (Array.length tr = 0) then -1 else tr.(0)
 	)
 
 let initial_strategy_by_last_edge game =
-	Array.init (Array.length game) (fun i ->
-		let (pr, pl, tr, _) = game.(i) in
+	Array.init (pg_size game) (fun i ->
+		let (pr, pl, tr, _) = pg_get_node game i in
 		if (pr < 0) || (pl = 1) || (Array.length tr = 0) then -1 else tr.(Array.length tr - 1)
 	)
 
 let initial_strategy_by_random_edge game =
 	Random.self_init ();
-	Array.init (Array.length game) (fun i ->
-		let (pr, pl, tr, _) = game.(i) in
+	Array.init (pg_size game) (fun i ->
+		let (pr, pl, tr, _) = pg_get_node game i in
 		if (pr < 0) || (pl = 1) || (Array.length tr = 0) then -1 else tr.(Random.int (Array.length tr))
 	)
 
@@ -647,7 +647,7 @@ let improvement_policy_no_user_data imprpolicy = fun g o u s v -> (imprpolicy g 
 
 
 
-let strategy_improvement_by_policy game impr_policy impr_policy_init check_policy ident =
+let strategy_improvement_by_policy (game: paritygame) impr_policy impr_policy_init check_policy ident =
 	strategy_improvement' game initial_strategy_by_last_edge node_total_ordering_by_position impr_policy impr_policy_init check_policy ident
 
 
@@ -830,9 +830,10 @@ let mdplike_valuation game minprio strategy =
 	done;
 	if (!failed) then (
 		let g = subgame_by_strat game strategy in
-		Array.iteri (fun i (_, _, _, de) ->
-			pg_set_desc g i (Some ((OptionUtils.get_some de) ^ " - " ^ (if finished.(i) then "GOOD" else "BAD")))
-		) g;
+		let m = pg_size g in
+		for i = 0 to m - 1 do
+			pg_set_desc g i (Some ((OptionUtils.get_some (pg_get_desc g i)) ^ " - " ^ (if finished.(i) then "GOOD" else "BAD")))
+		done;
 		print_game (g);
 		failwith "failed";
 	);
