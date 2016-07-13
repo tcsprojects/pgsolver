@@ -13,7 +13,7 @@ let improvement_policy_optimize_fair_default_tie_break game node_total_ordering 
 
 let improvement_policy_optimize_least_basic_iterations tie_break game node_total_ordering occ old_strategy valu =
 	Array.iteri (fun i j ->
-		let (_, pl, tr, _) = game.(i) in
+		let (_, pl, tr, _) = pg_get_node game i in
 		if pl = 0 then Array.iteri (fun k l ->
 			if l = j then occ.(i).(k) <- occ.(i).(k) + 1
 		) tr
@@ -21,7 +21,7 @@ let improvement_policy_optimize_least_basic_iterations tie_break game node_total
     let strategy = Array.copy old_strategy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
-	Array.iteri (fun i (_, pl, tr, _) ->
+	pg_iterate (fun i (_, pl, tr, _) ->
 		if pl = 0 then
 			Array.iteri (fun j k ->		
 				if node_valuation_ordering game node_total_ordering valu.(strategy.(i)) valu.(k) < 0 then (
@@ -50,7 +50,7 @@ let improvement_policy_optimize_least_recently_basic tie_break game node_total_o
     let strategy = Array.copy old_strategy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
-	Array.iteri (fun i (_, pl, tr, _) ->
+	pg_iterate (fun i (_, pl, tr, _) ->
 		if pl = 0 then
 			Array.iteri (fun j k ->		
 				if node_valuation_ordering game node_total_ordering valu.(strategy.(i)) valu.(k) < 0 then (
@@ -75,7 +75,7 @@ let improvement_policy_optimize_least_recently_entered tie_break game node_total
 	let l = ref [] in
 	let minvalue = ref (-1) in
 	let maxvalue = ref (-1) in
-	Array.iteri (fun i (_, pl, tr, _) ->
+	pg_iterate (fun i (_, pl, tr, _) ->
 		if pl = 0 then
 			Array.iteri (fun j k ->		
 				if node_valuation_ordering game node_total_ordering valu.(strategy.(i)) valu.(k) < 0 then (
@@ -100,7 +100,7 @@ let improvement_policy_optimize_least_recently_entered tie_break game node_total
 let strategy_improvement_optimize_least_basic_iterations_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position
 	                     (improvement_policy_optimize_least_basic_iterations improvement_policy_optimize_fair_default_tie_break) (
-		Array.map (fun (_, pl, tr, _) ->
+		pg_map2 (fun _ (_, pl, tr, _) ->
 			if pl = 1 then [||]
 			else Array.make (Array.length tr) 0
 		) game
@@ -109,7 +109,7 @@ let strategy_improvement_optimize_least_basic_iterations_policy game =
 let strategy_improvement_optimize_least_recently_basic_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position
 	                     (improvement_policy_optimize_least_recently_basic improvement_policy_optimize_fair_default_tie_break) (
-		Array.map (fun (_, pl, tr, _) ->
+		pg_map2 (fun _ (_, pl, tr, _) ->
 			if pl = 1 then [||]
 			else Array.make (Array.length tr) 0
 		) game
@@ -118,7 +118,7 @@ let strategy_improvement_optimize_least_recently_basic_policy game =
 let strategy_improvement_optimize_least_recently_entered_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position
 	                     (improvement_policy_optimize_least_recently_entered improvement_policy_optimize_fair_default_tie_break) (
-		Array.map (fun (_, pl, tr, _) ->
+		pg_map2 (fun _ (_, pl, tr, _) ->
 			if pl = 1 then [||]
 			else Array.make (Array.length tr) 0
 		) game

@@ -1,3 +1,5 @@
+include Paritygame;;
+
 let random_game_func arguments =
 
 	let show_help _ =
@@ -20,7 +22,7 @@ let random_game_func arguments =
 
     Random.self_init ();
   
-    Array.init size (fun i ->
+    pg_init size (fun i ->
 	  (Random.int max_prio,
   	   Random.int 2,
 	   Array.map (fun j -> if j < i || self_cycles then j else j + 1)

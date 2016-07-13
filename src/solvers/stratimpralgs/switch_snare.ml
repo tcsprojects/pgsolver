@@ -33,7 +33,7 @@ let rec improvement_policy_snare_based sub_policy snare_sel game node_total_orde
 	|	None -> (
 			(* Update set of snares *)
 			let snares = ref snares in
-			Array.iteri (fun i (_, pl, tr, _) ->
+			pg_iterate (fun i (_, pl, tr, _) ->
 				if pl = 0 then (
 					Array.iter (fun j ->
 						if (cmp j old_strategy.(i) > 0) && (TreeSet.mem i (valx j)) then (
@@ -44,7 +44,7 @@ let rec improvement_policy_snare_based sub_policy snare_sel game node_total_orde
 								todo := TreeSet.remove k !todo;
 								if (not (TreeSet.mem k !sna)) && (TreeSet.mem i (valx k)) then (
 									sna := TreeSet.add k !sna;
-									let (_, pl, tr, _) = game.(k) in
+									let (_, pl, tr, _) = pg_get_node game k in 
 									if pl = 0 then todo := TreeSet.add old_strategy.(k) !todo
 									else Array.iter (fun j -> todo := TreeSet.add j !todo) tr
 								)
@@ -52,7 +52,7 @@ let rec improvement_policy_snare_based sub_policy snare_sel game node_total_orde
 							let esc = ref TreeSet.empty_def in
 							let str = ref TreeSet.empty_def in
 							TreeSet.iter (fun k ->
-								let (_, pl, tr, _) = game.(k) in
+								let (_, pl, tr, _) = pg_get_node game k in
 								if i = k then str := TreeSet.add (i, j) !str
 								else if pl = 0 then str := TreeSet.add (k,old_strategy.(k)) !str
 								else Array.iter (fun j -> if not (TreeSet.mem j !sna) then esc := TreeSet.add (k,j) !esc) tr

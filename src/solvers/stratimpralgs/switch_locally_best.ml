@@ -12,11 +12,11 @@ let list_max a less = ListUtils.max_elt (fun x y -> if less x y then -1 else 1) 
 
 
 let evaluate_player1_strategy game node_compare strategy =
-	let game' = Array.map (fun (pr, pl, tr, de) -> (1 + pr, 1 - pl, tr, de)) game in
+	let game' = pg_map (fun _ (pr, pl, tr, de) -> (1 + pr, 1 - pl, tr, de)) game in
 	evaluate_strategy game' node_compare strategy
 
 let improvement_policy_by_counterstrategy game node_compare old_strategy valu =
-	let n = Array.length game in
+	let n = pg_size game in
 	let tau = winning_strategies game node_compare (Array.make n (-1)) valu in
 	let valutau = evaluate_player1_strategy game node_compare tau in
 	let find i =

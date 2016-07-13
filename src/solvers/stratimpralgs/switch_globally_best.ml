@@ -12,9 +12,9 @@ let list_max a less = ListUtils.max_elt (fun x y -> if less x y then -1 else 1) 
 
 let improvement_policy_optimize_all_globally game' node_total_ordering old_strategy valu =
 	let game = pg_copy game' in
-	let n = Array.length game in
+	let n = pg_size game in
 	let valu_ord = node_valuation_ordering game' node_total_ordering in
-	Array.iteri (fun i (pr, pl, tr, _) ->
+	pg_iterate (fun i (pr, pl, tr, _) ->
 		if pl = 0
 		then pg_set_tr game i (Array.of_list (List.filter (fun j -> valu_ord valu.(j) valu.(old_strategy.(i)) >= 0) (Array.to_list tr)))
 	) game;

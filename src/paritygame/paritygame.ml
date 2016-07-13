@@ -87,6 +87,10 @@ let pg_get_tr_index_of pg i j = ArrayUtils.find (fun k -> k = j) (pg_get_tr pg i
 let pg_get_priority     = pg_get_pr 
 let pg_get_owner        = pg_get_pl
 let pg_get_successors   = pg_get_tr
+
+let pg_iterate = Array.iteri
+let pg_map = Array.mapi
+let pg_map2 = Array.mapi
 			    
 (* naive and inefficent implementation; needs to be changed with data structure! *)
 let pg_get_predecessors game v =

@@ -544,7 +544,7 @@ if (info.mu = 0 && info.b.(0) = 0) then (
 let test_improving_switches game strategy valu n =
 	let info = strategy_info game strategy in
 	let strat a i b j = if StrategyHelper.is game strategy (a ^ string_of_int i) (b ^ string_of_int j) then 1 else 0 in
-	let impr = Array.init (Array.length game) (fun i ->
+	let impr = Array.init (pg_size game) (fun i ->
     (pg_get_pl game i = 0) && (strategy.(i) != best_decision_by_valuation_ordering game node_total_ordering_by_position valu i)
   ) in
 	let check_impr desc s i assrt =
@@ -1182,7 +1182,7 @@ let improvement_policy_optimize_fair tie_break
     let strategy = Array.copy old_strategy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
-	Array.iteri (fun i (_, pl, tr, _) ->
+	pg_iterate (fun i (_, pl, tr, _) ->
 		if pl = 0 then
 			Array.iteri (fun j k ->		
 				if cmp strategy.(i) k < 0 then (
@@ -1336,7 +1336,7 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 let strategy_improvement_optimize_fair_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position
 	                     (improvement_policy_optimize_fair improvement_policy_optimize_fair_default_tie_break) (
-		Array.map (fun (_, pl, tr, _) ->
+		pg_map2 (fun _ (_, pl, tr, _) ->
 			if pl = 1 then [||]
 			else Array.make (Array.length tr) 0
 		) game
@@ -1346,7 +1346,7 @@ let strategy_improvement_optimize_fair_policy game =
 let strategy_improvement_optimize_fair_sub_exp_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position 
                          (improvement_policy_optimize_fair improvement_policy_optimize_fair_sub_exp_tie_break) (
-		Array.map (fun (_, pl, tr, _) ->
+		pg_map2 (fun _ (_, pl, tr, _) ->
 			if pl = 1 then [||]
 			else Array.make (Array.length tr) 0
 		) game
@@ -1370,8 +1370,7 @@ let initial_strategy_for_exp_game game =
 		(String.get s 0, int_of_string (StringUtils.rest_string s 1))
 	in		
 	let strategy = initial_strategy_by_best_reward game in
-	for i = 0 to Array.length game - 1 do
-		let (pr, pl, tr, de) = game.(i) in
+	pg_iterate (fun i (pr, pl, tr, de) ->
 		if (pr >= 0) && (pl = 0) && (Array.length tr >= 2) then (
 			let (c, j) = parse de in
 			match c with
@@ -1389,13 +1388,13 @@ let initial_strategy_for_exp_game game =
 			| 'm' -> strategy.(i) <- find (if j < n -1 then ("m" ^ string_of_int (j+1)) else "Y")
 			| _ -> ()
 		)
-  done;
+  ) game;
 	strategy;;
 
 let strategy_improvement_optimize_fair_exp_policy game =
 	strategy_improvement game initial_strategy_for_exp_game node_total_ordering_by_position 
                          (improvement_policy_optimize_fair improvement_policy_optimize_fair_sub_exp_tie_break) (
-		Array.map (fun (_, pl, tr, _) ->
+		pg_map2 (fun _ (_, pl, tr, _) ->
 			if pl = 1 then [||]
 			else Array.make (Array.length tr) 0
 		) game

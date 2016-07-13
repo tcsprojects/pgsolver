@@ -14,12 +14,11 @@ let multiple_edge_transformation game =
 	let mult = Array.make n [||] in
 	let game' = pg_copy game in
 	for i = 0 to n - 1 do
-		let (pr, _, tr, _) = game.(i) in
-		if (pr = 0) && (Array.length tr = 1)
-		then game'.(i) <- (-1, -1, [||], None)
+		if (pg_get_pr game i = 0) && (Array.length (pg_get_tr game i) = 1)
+		then pg_set_node game' i (-1) (-1) [||] None;
 	done;
 	for i = 0 to n - 1 do
-		let (pr, _, tr, _) = game'.(i) in
+		let (pr, _, tr, _) = pg_get_node game' i in
 		if (pr >= 0) then (
 			let s = ref TreeMap.empty_def in
 			Array.iter (fun r ->
@@ -45,19 +44,21 @@ let multiple_edge_transformation game =
 	(game', mult)
 
 let multiple_edge_backtransformation game solution strategy =
-	Array.iteri (fun i (pr, pl, tr, _) ->
+	let n = pg_size game in
+	for i = 0 to n - 1 do
+	  let (pr, pl, tr, _) = pg_get_node game i in
 		if (pr >= 0) && (solution.(i) < 0) then (
 			solution.(i) <- solution.(tr.(0));
 			if solution.(i) = pl
 			then strategy.(i) <- tr.(0)
 		)
-	) game
+	done
 
 let multiple_edge_solve game solver =
 	let (game', mult) = multiple_edge_transformation game in
 	let (game'', new2old, old2new) = compress_nodes game' in
-	let n = Array.length game' in
-	let n' = Array.length game'' in
+	let n = pg_size game' in
+	let n' = pg_size game'' in
 	let mult' = Array.make n' [||] in
 	for i = 0 to n' - 1 do
 		mult'.(i) <- mult.(new2old.(i))
@@ -78,7 +79,7 @@ let multiple_edge_solve game solver =
 
 let improvement_policy_vorobyov2_init_edges game =
 	let ed = ref (TreeSet.empty compare) in
-	Array.iteri (fun i (pr, pl, tr, _) ->
+	pg_iterate (fun i (pr, pl, tr, _) ->
 		if (pr >= 0) && (pl = 0) then Array.iter (fun j ->
 			ed := TreeSet.add (i,j) !ed
 		) tr		
@@ -93,11 +94,12 @@ let improvement_policy_vorobyov2 game node_compare
 	|	(ga, ed, av, nu)::stack -> (
 		if strategy_improvable ga node_compare strategy valu then (
 			let strate = ref (TreeSet.empty compare) in
-			let ga' = Array.mapi (fun i (pr, pl, tr, de) ->
+			let ga' = pg_copy ga in
+			pg_iterate (fun i (pr, pl, tr, de) ->
 				if (pr >= 0) && (pl = 0) then strate := TreeSet.add (i,strategy.(i)) !strate;
 				let tr' = if (pr >= 0) && (pl = 0) then [|strategy.(i)|] else tr in
-				(pr, pl, tr', de)
-			) ga in
+				pg_set_tr ga' i tr'
+			) ga';
 			let entry = (ga', !strate, ed, max (TreeSet.cardinal !strate) (TreeSet.cardinal ed / 2)) in
 			iterate (entry::(ga, ed, av, nu)::stack)
 		)
@@ -173,7 +175,7 @@ let improvement_policy_vorobyovordered_init_edges game init_strat =
 	Random.self_init ();
 	let counter = ref 0 in
 	let ord = ref [] in
-	let edgearr = Array.mapi (fun i (pr, pl, tr, _) ->
+	let edgearr = pg_map2 (fun i (pr, pl, tr, _) ->
 		if pl = 0 && pr >= 0 then (
 			Array.iter (fun j -> ord := (i,j)::!ord) tr;
             let j = ArrayUtils.index_of tr init_strat.(i) in
@@ -202,7 +204,7 @@ let improvement_policy_randomizedbland game node_total_ordering ordering old_str
 let improvement_policy_randomizedbland_init_edges game init_strat =
 	Random.self_init ();
 	let ord = ref [] in
-	Array.iteri (fun i (pr, pl, tr, _) ->
+	pg_iterate (fun i (pr, pl, tr, _) ->
 		if pl = 0 && pr >= 0
 		then Array.iter (fun j -> ord := (i,j)::!ord) tr;
 	) game;
@@ -262,7 +264,7 @@ let improvement_policy_vorobyov game node_total_ordering
 let improvement_policy_vorobyov_init_edges game init_strat =
 	Random.self_init ();
 	let counter = ref 0 in
-	let edgearr = Array.mapi (fun i (pr, pl, tr, _) ->
+	let edgearr = pg_map2 (fun i (pr, pl, tr, _) ->
 		if pl = 0 && pr >= 0 then (
             let j = ArrayUtils.index_of tr init_strat.(i) in
             let tr' = Array.copy tr in
@@ -293,7 +295,7 @@ let policy_vorobyov_multiple_edges_init_edges game init_strat multiplicities =
 	let comb a b = Array.mapi (fun i x -> (x, b.(i))) a in
 	Random.self_init ();
 	let counter = ref 0 in
-	let edgearr = Array.mapi (fun i (pr, pl, tr, _) ->
+	let edgearr = pg_map2 (fun i (pr, pl, tr, _) ->
 		if pl = 0 && pr >= 0 then (
 			let tr = vorobyov_map_multiplicity (comb tr multiplicities.(i)) in
             let j = ArrayUtils.index_of tr init_strat.(i) in

@@ -193,7 +193,7 @@ let _ =
 			LocalSolver _ ->
 				let (init, g) = Tcsgameparser.parse_explicit_initpg in_channel in
 				initnode := init;
-				Array.map (fun (a,b,c,d) -> (a,b,c,(if d = "" then None else Some d))) g
+				pg_init (Array.length g) (fun i -> let (a,b,c,d) = g.(i) in  (a,b,c,(if d = "" then None else Some d)))
 		|	_ -> parse_parity_game in_channel
 	  )in
 	  SimpleTiming.stop timobj;
@@ -259,7 +259,7 @@ let _ =
 	  let l = Array.length solution in
 	  for i=1 to l do
 		let j = l-i in
-		let (_,pl,_,_) = game.(j) in
+		let pl = pg_get_pl game j in
 		if solution.(j) = 0
 		then (win0 := j :: !win0;
 			  let k = strategy.(j) in

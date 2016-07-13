@@ -49,7 +49,7 @@ let improvement_policy_optimize_roundrobin_ordering_first game (ordering, backtr
 
 let improvement_policy_optimize_roundrobin_ordering_build game cmp =
 	let l = ref [] in
-	Array.iteri (fun v (_, pl, tr, _) ->
+	pg_iterate (fun v (_, pl, tr, _) ->
 		if (pl = 0) then
 			Array.iter (fun w ->
 				l := (v,w)::!l
@@ -165,7 +165,7 @@ let strategy_improvement_optimize_roundrobin_policy_lower_bound game =
             |   Some t -> s=t
         in
         let i = ref 0 in
-        let n = Array.length game in
+        let n = pg_size game in
         while (!i < n) && (not (check !i)) do
             incr i
         done;

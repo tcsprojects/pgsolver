@@ -44,6 +44,10 @@ val pg_get_owner        : paritygame -> int -> int
 val pg_get_successors   : paritygame -> int -> int array
 val pg_get_predecessors : paritygame -> int -> int array
 
+val pg_iterate : (int -> (int * int * int array * string option) -> unit) -> paritygame -> unit 
+val pg_map : (int -> (int * int * int array * string option) -> (int * int * int array * string option)) -> paritygame -> paritygame 
+val pg_map2 : (int -> (int * int * int array * string option) -> 'a) -> paritygame -> 'a array 
+
 val pg_get_node   : paritygame -> int -> (int * int * int array * string option)
 val pg_set_node   : paritygame -> int -> int -> int -> int array -> string option -> unit
 val pg_set_node2   : paritygame -> int -> (int * int * int array * string option) -> unit
