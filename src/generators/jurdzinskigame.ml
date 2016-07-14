@@ -1,3 +1,5 @@
+open Paritygame;;
+
 let generator_game_func arguments = 
 
 	let show_help _ =
@@ -15,10 +17,10 @@ let generator_game_func arguments =
 
   let name i j = 2*w*i + j in
   
-  let pg = Paritygame.pg_create (1 + name (2*d) (2*w-1)) in
+  let game = pg_create (1 + name (2*d) (2*w-1)) in
   
   let print_node name prio player edges ann =
-	pg.(name) <- (prio, player, Array.of_list edges, ann)
+	pg_set_node game name prio player (Array.of_list edges) ann
   in
 
   let m = (2*d+2) in
@@ -57,7 +59,7 @@ let generator_game_func arguments =
   print_node (name (2*d) (2*w-1)) 1 1 ((name (2*d) (2*w-2))::(name (2*d) (2*w-1))::
                                              (List.map (fun i -> name (2*i+1) (2*w-1)) (range 0 (d-1)))) None;
   (* letzte Zeile separat *)
-   pg;;
+   game;;
 
 
 Generators.register_generator generator_game_func "jurdzinskigame" "Jurdzinski Game";;

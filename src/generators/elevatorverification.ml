@@ -57,9 +57,9 @@ type formulaType = FP of int * int             (* fixpoint formula with priority
                  | PROP of (elevator -> bool)  (* proposition with function that evaluates it in a state *)
 
 
-(* CTL*-Formel:   AG(EGF isPressed(i) -> EGF isAt(i))
-   im mu-Kalkül:  nu X.[]X & ((mu Y.nu Z. (-isPressed(i) | []Y) & []Z) | 
-                              (nu V.mu W. isAt(i) & <> V | <>W)) 
+(* CTL* formula:    AG(EGF isPressed(i) -> EGF isAt(i))
+   in mu-calculus:  nu X.[]X & ((mu Y.nu Z. (-isPressed(i) | []Y) & []Z) | 
+                                (nu V.mu W. isAt(i) & <> V | <>W)) 
 
 0   X
 1   []X & (Y | V)
@@ -104,8 +104,8 @@ let formula i = [| FP(0,1);
 *)
 
 
-(* CTL*-Formel:   A(GF isPressed(i) -> GF isAt(i)) == -E(GF isPressed(i) /\ FG -isAT(i))
-   im mu-Kalkül:  nu X.mu Y.nu Z.[]X /\ (isAt(i) \/ ([]Z /\ (-isPressed(i) \/ []Y)))  
+(* CTL* formula:    A(GF isPressed(i) -> GF isAt(i)) == -E(GF isPressed(i) /\ FG -isAT(i))
+   in mu-calculus:  nu X.mu Y.nu Z.[]X /\ (isAt(i) \/ ([]Z /\ (-isPressed(i) \/ []Y)))  
 
 0   X
 1   []X /\ (isAt(i) \/ ([]Z /\ (-isPressed(i) \/ []Y)))
@@ -228,7 +228,7 @@ let elevator_verification_func arguments =
   done;
   
   let game = pg_create !index in
-  List.iter (fun (i, (p,pl,succs,name)) -> game.(i) <- (p,pl,succs,Some name)) !finished;
+  List.iter (fun (i, (p,pl,succs,name)) -> pg_set_node game i p pl succs (Some name)) !finished;
   game
   
 

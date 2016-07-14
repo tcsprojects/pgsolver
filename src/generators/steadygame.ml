@@ -1,5 +1,6 @@
 open Tcsarray;;
-
+open Paritygame;;
+  
 let generator_game_func arguments = 
 
 	let show_help _ =
@@ -51,11 +52,10 @@ let generator_game_func arguments =
   	else if lenj = indegmax then DynArray.delete inavail jj;
   done;
 
-  Array.init size (fun i ->
-    (i,
-	 Random.int 2,
-	 Array.of_list pg.(i),
-	 Some (string_of_int i))
-  );;
+  pg_init size (fun i -> (i,
+			  Random.int 2,
+			  Array.of_list pg.(i),
+			  Some (string_of_int i))
+	       );;
 
 Generators.register_generator generator_game_func "steadygame" "Steady Game";;

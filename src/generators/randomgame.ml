@@ -1,4 +1,4 @@
-include Paritygame;;
+open Paritygame;;
 
 let random_game_func arguments =
 

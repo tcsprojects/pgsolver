@@ -6,7 +6,7 @@ type gamenode = V of int | U of int
 let symb_to_str = function 
 |	V i -> "v" ^ string_of_int i
 |	U i -> "u" ^ string_of_int i
-
+				   
 let generator_game_func arguments =
 	
     if (Array.length arguments != 1) then (failwith "specify index of game");

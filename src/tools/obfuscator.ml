@@ -1,6 +1,7 @@
 open Arg;;
 open Tcsargs;;
-
+open Paritygame;;
+  
 module CommandLine =
 struct
   let input_file = ref ""
@@ -32,7 +33,7 @@ let _ =
 
   let game = Paritygame.parse_parity_game in_channel in
 
-  let m = Array.length game in
+  let m = pg_size game in
   let swap = Array.make m 0 in
 
   for i=0 to m-1 do
@@ -58,10 +59,10 @@ let _ =
   print_string "Swapping table:\n";
   Array.iteri (fun i -> fun j -> print_string ("  " ^ string_of_int i ^ " -> " ^ string_of_int j ^ "\n")) swap;
 *)
-  let game' = Array.make m (0,0,[||],None) in
+  let game' = pg_init m (fun _ -> (0,0,[||],None)) in
 
   for i=0 to m-1 do
-    let (p,pl,succs,name) = game.(i) in
+    let (p,pl,succs,name) = pg_get_node game i in
 
     let n = Array.length succs in
     let succs' = Array.copy succs in
@@ -79,7 +80,7 @@ let _ =
                     Array.init n (fun i -> succs'.(n-i-1))
                  else succs' 
     in
-    game'.(swap.(i)) <- (p, pl, Array.map (fun v -> swap.(v)) succs', name)
+    pg_set_node game' (swap.(i)) p pl (Array.map (fun v -> swap.(v)) succs') name
   done;
 
 (*  print_string "Obfuscated game:\n"; *)

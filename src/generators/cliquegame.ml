@@ -1,3 +1,5 @@
+open Paritygame;;
+
 let generator_game_func arguments = 
 
 	let show_help _ =
@@ -26,11 +28,10 @@ let generator_game_func arguments =
     with _ -> (show_help (); exit 1)
   in
 
-  Array.init size (fun i ->
-    (i,
-	 i mod 2,
-	 Array.of_list (successors (size-1) i with_self_cycles),
-	 Some (string_of_int i))
-  );;
+  let game = pg_create size in
+  for i=0 to size-1 do
+    pg_set_node game i i (i mod 2) (Array.of_list (successors (size-1) i with_self_cycles)) (Some (string_of_int i))
+  done;
+  game;;
 
 Generators.register_generator generator_game_func "cliquegame" "Clique Game";;

@@ -101,7 +101,27 @@ let pg_get_predecessors game v =
   done;
   Array.of_list !ps
 
+let pg_set_priority     = pg_set_pr
+let pg_set_owner        = pg_set_pl
+let pg_set_successors   = pg_set_tr
 
+let pg_add_edge gm v u =
+  let succs = pg_get_successors gm v in
+  if not (Array.fold_left (fun b -> fun w -> b || w=u) false succs) then
+    pg_set_successors gm v (Array.of_list (u::(Array.to_list succs)))
+    (* insert code for adding v as predecessor of u when data structure is updated *)
+  else
+    ()
+	    
+let pg_del_edge gm v u =
+  let succs = pg_get_successors gm v in
+  pg_set_successors gm v (Array.of_list (List.filter (fun w -> w<>u) (Array.to_list succs)))
+  (* insert code for deleting v as predecessor of u when data structure is updated *)
+
+let pg_set_predecessors gm v ws =
+  Array.iter (fun u -> pg_add_edge gm v u) ws
+
+							      
 (**************************************************************
  * Formatting Functions                                       *
  **************************************************************)

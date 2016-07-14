@@ -19,7 +19,7 @@ struct
   let innertitle = ref ""
   let timeout = ref (-1.0)
 
-    let satsolv = Satsolvers.get_list ()
+  let satsolv = Satsolvers.get_list ()
 
   let univsolve_global_optimization = ref true
   let univsolve_decompose_sccs = ref true

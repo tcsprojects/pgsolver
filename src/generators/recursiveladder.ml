@@ -1,3 +1,5 @@
+open Paritygame;;
+
 let generator_game_func arguments =
 
 	let show_help _ =
@@ -12,7 +14,7 @@ let generator_game_func arguments =
 
   let w = 5 in
 
-  let pg = Paritygame.pg_create (5 * height - 5) in
+  let game = Paritygame.pg_create (5 * height - 5) in
 
   for i = 0 to height-1 do
   	let start_idx = i * w - 2 in
@@ -24,7 +26,7 @@ let generator_game_func arguments =
   	let mn = i = 0 in
 
   	let prnt j pr pl succs =
-		pg.(start_idx + j) <- (pr, (start_pl + pl) mod 2, Array.of_list (List.map (fun k -> k + start_idx) succs), Some (string_of_int (start_idx + j)))
+		pg_set_node game (start_idx + j) pr ((start_pl + pl) mod 2) (Array.of_list (List.map (fun k -> k + start_idx) succs)) (Some (string_of_int (start_idx + j)))
 	in
 
 	if not mn then (
@@ -37,6 +39,6 @@ let generator_game_func arguments =
         prnt 4 (p - 2) 1 (if mx then [3] else [3;w+1])
     )
   done;
-  pg;;
+  game;;
 
 Generators.register_generator generator_game_func "recursiveladder" "Recursive Ladder Game";;

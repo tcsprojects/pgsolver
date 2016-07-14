@@ -1,6 +1,6 @@
 open Arg ;;
 open Tcsargs;;
-
+open Paritygame;;
 
 module CommandLine =
 struct

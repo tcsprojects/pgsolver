@@ -1,6 +1,7 @@
 open Tcsmaths.RandomUtils;;
 open Tcsset;;
-
+open Paritygame;;
+  
 let generator_game_func arguments = 
 
 	let show_help _ =
@@ -19,11 +20,11 @@ let generator_game_func arguments =
 
   if (Array.length arguments != 9) then (show_help (); exit 1);
 
-  let size = int_of_string arguments.(0) in
-  let max_prio = 1+(int_of_string arguments.(1)) in
+  let size      = int_of_string arguments.(0) in
+  let max_prio  = 1+(int_of_string arguments.(1)) in
   let outdegmin = int_of_string arguments.(2) in
   let outdegmax = int_of_string arguments.(3) in
-  let recdepth = int_of_string arguments.(4) in
+  let recdepth  = int_of_string arguments.(4) in
   let recintmin = int_of_string arguments.(5) in
   let recintmax = int_of_string arguments.(6) in
   let recconmin = int_of_string arguments.(7) in
@@ -60,7 +61,7 @@ let generator_game_func arguments =
 
   generate recdepth 0 (size - 1);
   
-  Array.init size (fun i ->
+  pg_init size (fun i ->
 	(Random.int max_prio,
 	 Random.int 2,
 	 Array.of_list (TreeSet.remove_list_dups pg.(i)),

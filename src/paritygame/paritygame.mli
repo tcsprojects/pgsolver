@@ -21,8 +21,8 @@ type global_solver = (paritygame -> solution * strategy)
  **************************************************************)
 
 val pg_create     : int -> paritygame
-val pg_init     : int -> (int -> (int * int * int array * string option)) -> paritygame
-val pg_sort     : ((int * int * int array * string option) -> (int * int * int array * string option) -> int) -> paritygame -> unit
+val pg_init       : int -> (int -> (int * int * int array * string option)) -> paritygame
+val pg_sort       : ((int * int * int array * string option) -> (int * int * int array * string option) -> int) -> paritygame -> unit
 val pg_size	  : paritygame -> int
 val pg_node_count : paritygame -> int
 val pg_edge_count : paritygame -> int
@@ -43,6 +43,13 @@ val pg_get_priority     : paritygame -> int -> int
 val pg_get_owner        : paritygame -> int -> int
 val pg_get_successors   : paritygame -> int -> int array
 val pg_get_predecessors : paritygame -> int -> int array
+
+val pg_set_priority     : paritygame -> int -> int -> unit
+val pg_set_owner        : paritygame -> int -> int -> unit
+(* val pg_set_successors   : paritygame -> int -> int array -> unit *)
+val pg_add_edge         : paritygame -> int -> int -> unit
+val pg_del_edge         : paritygame -> int -> int -> unit
+(* val pg_set_predecessors : paritygame -> int -> int array -> unit *)
 
 val pg_iterate : (int -> (int * int * int array * string option) -> unit) -> paritygame -> unit 
 val pg_map : (int -> (int * int * int array * string option) -> (int * int * int array * string option)) -> paritygame -> paritygame 

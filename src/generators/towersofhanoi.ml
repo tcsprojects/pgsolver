@@ -36,10 +36,10 @@ let finished ts = (ts.(0) = []) && (ts.(2) = [])
 type formulaType = FP of int * int             (* fixpoint formula with priority and next subformula *)
                  | BOOL of int * int * int     (* con-/disjunction with player and left and right subformula *)
                  | MOD of int * int            (* modality with player and next subformula *)
-                 | PROP of (towers -> bool)  (* proposition with function that evaluates it in a state *)
+                 | PROP of (towers -> bool)    (* proposition with function that evaluates it in a state *)
 
 (* CTL-formula: EF finished,
-   im mu-Kalkül: mu X. finished \/ <>X *)
+   in mu-calculus: mu X. finished \/ <>X *)
 
 let formula = [| FP(1,1);          
                  BOOL(0,2,3);      
@@ -127,7 +127,7 @@ let towers_of_hanoi_func arguments =
   done;
   
   let game = pg_create !index in
-  List.iter (fun (i, (p,pl,succs,name)) -> game.(i) <- (p,pl,succs,Some name)) !finished;
+  List.iter (fun (i, (p,pl,succs,name)) -> pg_set_node game i p pl succs (Some name)) !finished;
   game
   
 

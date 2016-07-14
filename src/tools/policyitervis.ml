@@ -116,26 +116,26 @@ let _ =
 
 		if counter >= !start_iteration && (match !end_iteration with None -> true | Some end_idx -> counter <= end_idx) then (
 			before_iteration counter;
-    		Array.iteri (fun i (_, pl, tr, _) ->
+    		pg_iterate (fun i -> fun (_, pl, tr, _) ->
 				let from_node = get_ident i in
-                Array.iter (fun j ->
-					let to_node = get_ident j in
-					let kind =
-						if pl = 0 then
-							if strat.(i) = j
-                            then Even_player_strategy
-                            else if less j strat.(i)
-                            then Even_player_disabled
-                            else Even_player_improving
-                        else
-                        	if counter_strat.(i) = j
-                        	then Odd_player_strategy
-							else Odd_player_disabled
-                    in
-                        set_edge_iteration from_node to_node kind
-                ) tr
-    		) game;			
-			after_iteration counter;
+				Array.iter (fun j ->
+					    let to_node = get_ident j in
+					    let kind =
+					      if pl = 0 then
+						if strat.(i) = j
+						then Even_player_strategy
+						else if less j strat.(i)
+						then Even_player_disabled
+						else Even_player_improving
+					      else
+                        			if counter_strat.(i) = j
+                        			then Odd_player_strategy
+						else Odd_player_disabled
+					    in
+					    set_edge_iteration from_node to_node kind
+					   ) tr
+    			   ) game;			
+		after_iteration counter;
 		);
 	);
 	
@@ -143,5 +143,4 @@ let _ =
 		None -> ()
 	|	Some solve -> let _ = solve game in ()
 	
-
 	

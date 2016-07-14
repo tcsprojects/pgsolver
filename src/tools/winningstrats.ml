@@ -1,6 +1,7 @@
 open Arg;;
 open Tcsargs;;
-
+open Paritygame;;
+  
 module CommandLine =
 struct
   let input_file = ref ""
@@ -35,11 +36,11 @@ let _ =
 	let number = ref 0 in
 	
   let rec work i =
-		if (i >= Array.length game) then (
+		if (i >= pg_size game) then (
 			let game2 = Paritygame.subgame_by_strat game strat in
 			let (sol2, _) = solve game2 in
 			let good = ref true in
-			for j = 0 to Array.length game - 1 do
+			for j = 0 to pg_size game - 1 do
 				if (sol.(j) != sol2.(j)) then
 					good := false;
 			done;

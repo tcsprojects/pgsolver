@@ -26,15 +26,17 @@ let _ =
     
     (* Remove trivial player 0 nodes *)
     for i = 0 to n-1 do
-      let (_, pl, tr, _) = game.(i) in
+      let pl = pg_get_owner game i in
+      let tr = pg_get_successors game i in
       if (pl = 0) && (Array.length tr = 1)
-      then pg_set_pl game i 1
+      then pg_set_owner game i 1
     done;
   
     (* Multiplier Table *)
     let m = Array.make n 1 in
     for i = n-1 downto 1 do
-        let (_, pl, tr, _) = game.(i) in
+        let pl = pg_get_owner game i in
+        let tr = pg_get_successors game i in
         if (pl = 0)
         then m.(i-1) <- Array.length tr * m.(i)
         else m.(i-1) <- m.(i)
@@ -44,7 +46,8 @@ let _ =
     let strategy_to_int strategy =
       let x = ref 0 in
       for i = n-1 downto 0 do
-        let (_, pl, tr, _) = game.(i) in
+	let pl = pg_get_owner game in in
+        let tr = pg_get_successors game i in
         if (pl = 0) then (
           let j = ArrayUtils.index_of tr strategy.(i) in
           x := !x + m.(i) * j;
@@ -72,11 +75,12 @@ let _ =
    let format_strategy strategy =
      let s = ref "" in
      for i = 0 to n-1 do
-        let (_, pl, tr, _) = game.(i) in
-        if (pl = 0) then (
-          let j = ArrayUtils.index_of tr strategy.(i) in
-          s := !s ^ string_of_int j
-        )
+       let pl = pg_get_owner game i in
+       let tr = pg_get_successors game i in
+       if (pl = 0) then (
+         let j = ArrayUtils.index_of tr strategy.(i) in
+         s := !s ^ string_of_int j
+       )
      done;
      !s
    in
@@ -85,7 +89,8 @@ let _ =
      if index >= n
      then callback strategy
      else
-       let (_, pl, tr, _) = game.(index) in
+       let pl = pg_get_owner game index in
+       let tr = pg_get_successors game index in
        if pl = 1
        then iterate strategy (index + 1) callback
        else
@@ -97,7 +102,9 @@ let _ =
       
    out "* ";
    for i = 0 to n - 1 do
-     let (_, pl, tr, desc) = game.(i) in
+     let pl = pg_get_owner game i in
+     let tr = pg_get_successors game i in
+     let desc = pg_get_desc game i in
      if (pl = 0) then
        match desc with
          None -> print_string " _" |

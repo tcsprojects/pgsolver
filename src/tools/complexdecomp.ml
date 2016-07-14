@@ -32,7 +32,7 @@ let _ =
 	let number_of_player0_edges = ref 0 in
 	let number_of_player1_edges = ref 0 in
 	
-	Array.iter (fun (pr, pl, tr, _) ->
+	pg_iter (fun (pr, pl, tr, _) ->
 		let trn = Array.length tr in
 		incr number_of_nodes;
 		number_of_edges := !number_of_edges + trn;
