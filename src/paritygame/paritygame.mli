@@ -9,7 +9,7 @@ open Tcsset
 (* These definitions are DEPRECATED and will be removed from the interface in the future.*)
 (* Please use the access functions below instead. *)
 
-type paritygame = (int * int * int array * string option) array
+type paritygame (*= (int * int * int array * string option) array*)
 type solution = int array
 type strategy = int array
 

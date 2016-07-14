@@ -7,13 +7,19 @@ type solution = int array
 type strategy = int array
 type global_solver_factory = string array -> (paritygame -> solution * strategy)
 
+let encode fact args =
+		let f = fact args in
+		fun pg -> f (Paritygame.pg_init (Array.length pg) (fun i -> pg.(i)))
+
 let mem_solver = Solvers.mem_solver
 
-let find_solver = Solvers.find_solver
+let find_solver s =
+	let (fact, x, y) = Solvers.find_solver s in
+	(encode fact, x, y)
 
-let enum_solvers = Solvers.enum_solvers
+let enum_solvers f = Solvers.enum_solvers (fun fact -> f (encode fact))
 
-let fold_solvers = Solvers.fold_solvers
+let fold_solvers f = Solvers.fold_solvers (fun fact -> f (encode fact))
 
 
 let __dummy_partial = [Localmodelchecker.partially_solve, Stratimprlocal.partially_solve, Stratimprlocal2.partially_solve]
