@@ -2,7 +2,7 @@ open OUnit
 
 let random_game (size, max_prio, outdegmin, outdegmax, self_cycles, seed) =
 		Random.init seed;
-    Array.init size (fun i -> (
+    Paritygame.pg_init size (fun i -> (
 			Random.int max_prio,
   	  Random.int 2,
 	    Array.map (fun j ->
