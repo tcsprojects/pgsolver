@@ -9,7 +9,7 @@ open Tcsset
 (* These definitions are DEPRECATED and will be removed from the interface in the future.*)
 (* Please use the access functions below instead. *)
 
-type paritygame = (int * int * int array * string option) array
+type paritygame
 type solution = int array
 type strategy = int array
 
@@ -46,10 +46,8 @@ val pg_get_predecessors : paritygame -> int -> int array
 
 val pg_set_priority     : paritygame -> int -> int -> unit
 val pg_set_owner        : paritygame -> int -> int -> unit
-(* val pg_set_successors   : paritygame -> int -> int array -> unit *)
 val pg_add_edge         : paritygame -> int -> int -> unit
 val pg_del_edge         : paritygame -> int -> int -> unit
-(* val pg_set_predecessors : paritygame -> int -> int array -> unit *)
 
 val pg_iterate : (int -> (int * int * int array * string option) -> unit) -> paritygame -> unit 
 val pg_map : (int -> (int * int * int array * string option) -> (int * int * int array * string option)) -> paritygame -> paritygame 

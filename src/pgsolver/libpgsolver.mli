@@ -1,8 +1,6 @@
-open Tcsbasedata
-
-type paritygame = (int * int * int array * string option) array
-type solution = int array
-type strategy = int array
+open Tcsbasedata;;
+open Paritygame;;
+  
 type global_solver_factory = string array -> (paritygame -> solution * strategy)
 
 val mem_solver: string -> bool

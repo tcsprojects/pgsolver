@@ -1,4 +1,4 @@
-open Paritygame
+open Paritygame;;
 
 val register_generator: (string array -> paritygame) -> string -> string -> unit
 

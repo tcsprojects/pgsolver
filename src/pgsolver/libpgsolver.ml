@@ -1,10 +1,8 @@
 open Tcsbasedata;;
-
+open Paritygame;;
+  
 let __dummy_global = [Recursive.solve, Stratimprovement.solve, Optstratimprov.solve, Localmodelchecker.solve, Dominiondecomp.solve, Guessstrategy.solve, Smallprogress.solve, Bigstep.solve]
 
-type paritygame = (int * int * int array * string option) array
-type solution = int array
-type strategy = int array
 type global_solver_factory = string array -> (paritygame -> solution * strategy)
 
 let mem_solver = Solvers.mem_solver
