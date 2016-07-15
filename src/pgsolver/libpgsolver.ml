@@ -7,7 +7,8 @@ type global_solver_factory = string array -> (paritygame -> solution * strategy)
 
 let encode fact args =
 		let f = fact args in
-		fun pg -> f (Paritygame.pg_init (Array.length pg) (fun i -> pg.(i)))
+		(* fun pg -> f (Paritygame.pg_init (Array.length pg) (fun i -> pg.(i))) *)
+		fun game -> f (Paritygame.pg_init (pg_size game) (fun i -> pg_get_node game i))
 
 let mem_solver = Solvers.mem_solver
 
