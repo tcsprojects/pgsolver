@@ -212,31 +212,27 @@ let pg_set_tr = pg_set_successors ;;
  **************************************************************)
 
 let game_to_string game =
-	let n = Array.length game in
-	let s = ref ("parity " ^ string_of_int (n-1) ^ ";\n") in
-	for i = 0 to n - 1 do
-	  let (pr, pl, delta, desc) = game.(i) in
-	  if pr >= 0 && pl >= 0 && pl <= 1 then (
-	  		s := !s ^ string_of_int i ^ " " ^ string_of_int pr ^ " " ^ string_of_int pl ^ " ";
-            for j = 0 to (Array.length delta) - 2 do
-              s := !s ^ string_of_int delta.(j) ^ ","
-            done;
-            if (Array.length delta) > 0 then s := !s ^ string_of_int delta.(Array.length delta - 1);
-            (
-             match desc with
-               None -> ()
-             |   Some a -> if a <> "" then s := !s ^ " \"" ^ a ^ "\""
-            );
-            s := !s ^ ";\n"
-           )
-    done;
-    !s;;
+	let n = pg_size game in
+	let s = ref "" in
+	for i = n-1 downto 0 do
+	  let (pr, pl, succs, _ , desc) = pg_get_node game i in
+	  if pr >= 0 && pl >= 0 && pl <= 1 then
+	    begin
+	      s := string_of_int i ^ " " ^ string_of_int pr ^ " " ^ string_of_int pl ^ " " ^
+	           (String.concat "," (List.map string_of_int succs) ^ 
+		     (match desc with
+			None   -> ()
+		      | Some a -> if a <> "" then " \"" ^ a ^ "\"" else "")
+		   ) ^ ";\n" ^!s
+           end
+	done;
+	"parity " ^ string_of_int (n-1) ^ ";\n" ^ !s;;
 
 let print_game game =
-	let n = Array.length game in
+	let n = pg_size game in
 	print_string ("parity " ^ string_of_int (n-1) ^ ";\n");
 	for i = 0 to n - 1 do
-	  let (pr, pl, delta, desc) = game.(i) in
+	  let (pr, pl, succs, _, desc) = pg_get_node game i in
 	  if pr >= 0 && pl >= 0 && pl <= 1 then (
             print_int i;
             print_char ' ';
@@ -244,14 +240,11 @@ let print_game game =
             print_char ' ';
             print_int pl;
             print_char ' ';
-            for j = 0 to (Array.length delta) - 2 do
-              print_string ((string_of_int delta.(j)) ^ ",")
-            done;
-            if (Array.length delta) > 0 then print_int delta.((Array.length delta) - 1) else ();
+            print_string (String.concat "," (List.map string_of_int succs));
             (
              match desc with
                None -> () (* print_string (" \"" ^ string_of_int i ^ "\"") *)
-             |   Some s -> if s <> "" then print_string (" \"" ^ s ^ "\"")
+             | Some s -> if s <> "" then print_string (" \"" ^ s ^ "\"")
             );
             print_char ';';
             print_newline ()
@@ -280,11 +273,11 @@ let to_dotty game solution strategy h =
 
   output_string h "digraph G {\n";
 
-  for i = 0 to (Array.length game)-1 do
-    let (p,pl,succs,ann) = game.(i) in
+  for i = 0 to (pg_size game)-1 do
+    let (p,pl,succs,_,ann) = pg_get_node game i in
 
     if p >= 0 && pl >= 0 && pl <= 1
-   then (let name = encode i in
+    then (let name = encode i in
           let label = (match ann with None -> ""
                                     | Some s -> s ^ ": ") ^ string_of_int p
           in
@@ -298,13 +291,11 @@ let to_dotty game solution strategy h =
           in
           output_string h (name ^ " [ shape=\"" ^ shape ^ "\", label=\"" ^ label ^ "\", color=\"" ^ color ^ "\" ];\n");
 
-          for j=0 to (Array.length succs)-1 do
-            let color2 = try
-                           if pl = 1 - solution.(i) || succs.(j) = strategy.(i) then color else "black"
-                         with _ -> "black"
-            in
-            output_string h (name ^ " -> " ^ encode succs.(j) ^ " [ color=\"" ^ color2 ^ "\" ];\n" )
-          done)
+	  List.iter (fun w -> let color2 = try
+				             if pl = 1 - solution.(i) || w = strategy.(i) then color else "black"
+				           with _ -> "black"
+			      in
+			      output_string h (name ^ " -> " ^ encode w ^ " [ color=\"" ^ color2 ^ "\" ];\n" )) succs
   done;
   output_string h "}\n";;
 
@@ -326,11 +317,10 @@ let format_game gm =
   "[" ^
   String.concat ";"
                 (List.filter (fun s -> s <> "")
-                             (Array.to_list (Array.mapi (fun i -> fun (p,pl,ws,_) ->
+                             (Array.to_list (pg_iterate (fun i -> fun (p,pl,ws,_,_) ->
                                               if p <> -1 then string_of_int i ^ ":" ^ string_of_int p ^ "," ^
                                                               string_of_int pl ^ ",{" ^
-                                                              String.concat "," (List.map string_of_int
-                                                                                          (Array.to_list ws))
+                                                              String.concat "," (List.map string_of_int ws)
                                                               ^ "}"
                                                          else "") gm)))
   ^ "]"
