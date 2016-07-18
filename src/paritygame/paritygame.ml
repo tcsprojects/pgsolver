@@ -4,24 +4,67 @@ open Tcsarray;;
 open Tcsset;;
 open Tcsgraph;;
 
+(**************************************************************
+ * basic types for components in a parity game                *
+ **************************************************************)
 
+type node = int
+type priority = int
+type player = int
+type nodeset = node list
 
+		    
+(**************************************************************
+ * access functions for nodes in set-like data structures for *
+ * successors and predecessors in a game                      *
+ *                                                            *
+ * here: sorted lists                                         *
+ **************************************************************)
+  
+let ns_elem = List.mem 
+let ns_add v vs =
+  let rec add = function []    -> [v]
+		       | w::ws -> (match compare v w with
+				     -1 -> v::w::ws
+				   | 0  -> w::ws
+				   | 1  -> w::(add ws)
+				   | _  -> failwith "Paritygame.ns_add: unexpected return value of function `compare´")
+  in
+  add vs
+
+let ns_del v vs =
+  let rec del = function []    -> []
+		       | w::ws -> (match compare v w with
+				     -1 -> w::ws
+				   | 0  -> ws
+				   | 1  -> w::(del ws)
+				   | _  -> failwith "Paritygame.ns_del: unexpected return value of function `compare´")
+  in
+  del vs
+
+let ns_make = List.sort compare
+
+			
 (**************************************************************
  * Parity Game Definitions                                    *
  **************************************************************)
 
-type paritygame = (int * int * int array * string option) array
-type solution = int array
-type strategy = int array
+type paritygame = (priority * player * nodeset * nodeset * string option) array
+		    
+type solution = player array
+type strategy = node array
 
 type global_solver = (paritygame -> solution * strategy)
 
 
 (**************************************************************
  * Access Functions                                           *
+ *                                                            *
+ * these depend on the type paritygame                        *
+ * independent functions should be listed below               *
  **************************************************************)
 
-let pg_create n = Array.make n (-1, -1, [||], None);;
+let pg_create n = Array.make n (-1, -1, [], [], None);;
 
 let pg_init n f = Array.init n f;;
 
@@ -29,12 +72,82 @@ let pg_sort = Array.sort;;
 
 let pg_size = Array.length;;
 
+let pg_isDefined game v = let (p,_,_,_,_) = game.(v) in
+			  v >= 0;;
+  
+let pg_get_node pg i = pg.(i);;
+let pg_set_node' pg i node = pg.(i) <- node;;
+
+let pg_iterate = Array.iteri
+let pg_map = Array.mapi
+let pg_map2 = Array.mapi
+			    
+let pg_find_desc pg desc = ArrayUtils.find (fun (_,_,_,desc') -> desc = desc') pg
+
+let pg_add_edge gm v u =
+  let (pr,pl,succs,preds,desc) = pg_get_node gm v in
+  pg_set_node' gm v (pr, pl, ns_add u succs, preds, desc);
+  let (pr,pl,succs,preds,desc) = pg_get_node gm u in
+  pg_set_node' gm u (pr, pl, succs, ns_add v preds, desc)
+	      	    
+let pg_del_edge gm v u =
+  let (pr,pl,succs,preds,desc) = pg_get_node gm v in
+  pg_set_node' gm v (pr, pl, ns_del u succs, preds, desc);
+  let (pr,pl,succs,preds,desc) = pg_get_node gm u in
+  pg_set_node' gm u (pr, pl, succs, ns_del v preds, desc)
+
+
+
+(**********************************************************
+ * handy access functions for parity games                *
+ *                                                        *
+ * these are independent of the type pf paritygame        *
+ **********************************************************)
+
+let pg_set_node pg i pr pl succs preds desc = pg_set_node' pg i (pr, pl, succs, preds, desc);;
+  
+let pg_get_pr pg i = let (pr, _, _, _, _) = pg_get_node pg i in
+		     pr;;
+
+let pg_set_pr pg i pr = let (_, pl, succs, preds, desc) = pg_get_node pg i in
+			pg_set_node pg i pr pl succs preds desc;;
+
+let pg_get_pl pg i = let (_, pl, _, _, _) = pg_get_node pg i in
+		     pl;;
+
+
+let pg_set_pl pg i pl = let (pr, _, succs, preds, desc) = pg_get_node pg i in
+			pg_set_node pg i pr pl succs preds desc;;
+
+let pg_get_desc pg i = let (_, _, _, _, desc) = pg_get_node pg i in
+		       desc;;
+
+let pg_set_desc pg i desc = let (pr, pl, succs, preds, _) = pg_get_node pg i in
+			    pg_set_node pg i pr pl succs preds desc;;
+
+let pg_get_desc' pg i = match pg_get_desc pg i with None -> "" | Some s -> s;;
+
+let pg_set_desc' pg i desc = pg_set_desc pg i (if desc = "" then None else Some desc);;
+
+
+let pg_get_successors pg i = let (_,_,succs,_,_) = pg_get_node pg i in
+			     succs;;
+let pg_get_predecessors pg i = let (_,_,_,preds,_) = pg_get_node pg i in
+			       preds;;
+
+  
+
+let pg_get_priority   = pg_get_pr 
+let pg_set_priority   = pg_set_pr
+let pg_get_owner      = pg_get_pl
+let pg_set_owner      = pg_set_pl
+
+
 let pg_node_count game =
 	let count = ref 0 in
 	let n = pg_size game in
 	for i = 0 to n - 1 do
-		let (pr, _, _, _) = game.(i) in
-		if pr >= 0 then incr count
+		if pg_isDefined game i then incr count
 	done;
 	!count;;
 
@@ -42,84 +155,56 @@ let pg_edge_count game =
 	let count = ref 0 in
 	let n = pg_size game in
 	for i = 0 to n - 1 do
-		let (pr, _, tr, _) = game.(i) in
-		if pr >= 0 then count := !count + Array.length tr
+		if pg_isDefined game i then count := !count + (pg_get_successors game i)
 	done;
 	!count;;
 
 let pg_copy pg =
 	let pg' = pg_create (pg_size pg) in
-	Array.iteri (fun i -> fun (pr, pl, delta, desc) ->
-		pg'.(i) <- (pr, pl, Array.copy delta, desc)
-	) pg;
+	pg_iterate (fun i -> fun (pr, pl, succs, preds, desc) -> pg_set_node pg' i pr pl succs preds desc) pg;
 	pg';;
 
-let pg_get_pr pg i = let (pr, _, _, _) = pg.(i) in pr;;
+let pg_get_tr_index_of pg v w =
+  let succs = pg_get_successors pg v in
+  let (b,k) = List.fold_left (fun (b,k) -> fun u -> if b || (w=u) then (b,k)
+						    else (false,k+1))
+			     (false,0)
+			     succs
+  in
+  if b then k else raise Not_found
 
-let pg_set_pr pg i pr = let (_, pl, delta, desc) = pg.(i) in pg.(i) <- (pr, pl, delta, desc);;
+let pg_remove_nodes game nodes =
+  List.iter (fun v -> let succs = pg_get_successors game v in
+		      List.iter (fun u -> pg_del_edge game v u) succs;
+		      let preds = pg_get_predecessors game v in
+		      List.iter (fun u -> pg_del_edge game u v) preds;
+		      pg_set_priority game v (-1);
+		      pg_set_owner game v (-1);
+		      pg_set_desc game v None
+	    ) nodes
 
-let pg_get_pl pg i = let (_, pl, _, _) = pg.(i) in pl;;
+let pg_remove_edges game edges =
+    List.iter (fun (v, w) -> pg_del_edge game v w) edges;;
 
-let pg_set_pl pg i pl = let (pr, _, delta, desc) = pg.(i) in pg.(i) <- (pr, pl, delta, desc);;
 
-let pg_get_tr pg i = let (_, _, tr, _) = pg.(i) in tr;;
 
-let pg_set_tr pg i tr = let (pr, pl, _, desc) = pg.(i) in pg.(i) <- (pr, pl, tr, desc);;
+(***************************************************************
+ *  possibly to be deprecated                                  *
+ ***************************************************************)
+		    
+let pg_get_tr pg i = Array.of_list (pg_get_successors pg i);;
 
-let pg_get_desc pg i = let (_, _, _, desc) = pg.(i) in desc;;
-
-let pg_set_desc pg i desc = let (pr, pl, delta, _) = pg.(i) in pg.(i) <- (pr, pl, delta, desc);;
-
-let pg_get_desc' pg i = match pg_get_desc pg i with None -> "" | Some s -> s;;
-
-let pg_set_desc' pg i desc = pg_set_desc pg i (if desc = "" then None else Some desc);;
-
-let pg_get_node pg i = pg.(i);;
-
-let pg_set_node pg i pr pl delta desc = pg.(i) <- (pr, pl, delta, desc);;
-
-let pg_set_node2 pg i node = pg.(i) <- node;;
-
-let pg_find_desc pg desc = ArrayUtils.find (fun (_,_,_,desc') -> desc = desc') pg
-
-let pg_get_tr_index_of pg i j = ArrayUtils.find (fun k -> k = j) (pg_get_tr pg i)
-
-let pg_get_priority     = pg_get_pr 
-let pg_get_owner        = pg_get_pl
-let pg_get_successors   = pg_get_tr
-
-let pg_iterate = Array.iteri
-let pg_map = Array.mapi
-let pg_map2 = Array.mapi
-			    
-(* naive and inefficent implementation; needs to be changed with data structure! *)
-let pg_get_predecessors game v =
-  let ps = ref [] in
-  for u = 0 to (pg_size game)-1 do
-    if Array.fold_left (fun b -> fun w -> b || v=w) false (pg_get_successors game u) then
-      ps := u::!ps
-  done;
-  Array.of_list !ps
-
-let pg_set_priority     = pg_set_pr
-let pg_set_owner        = pg_set_pl
-let pg_set_successors   = pg_set_tr
-
-let pg_add_edge gm v u =
+let pg_set_successors gm v ws =
   let succs = pg_get_successors gm v in
-  if not (Array.fold_left (fun b -> fun w -> b || w=u) false succs) then
-    pg_set_successors gm v (Array.of_list (u::(Array.to_list succs)))
-    (* insert code for adding v as predecessor of u when data structure is updated *)
-  else
-    ()
-	    
-let pg_del_edge gm v u =
-  let succs = pg_get_successors gm v in
-  pg_set_successors gm v (Array.of_list (List.filter (fun w -> w<>u) (Array.to_list succs)))
-  (* insert code for deleting v as predecessor of u when data structure is updated *)
-
+  List.iter (fun u -> pg_del_edge gm v u) succs;
+  Array.iter (fun u -> pg_add_edge gm u v) ws
+	     
 let pg_set_predecessors gm v ws =
+  let preds = pg_get_predecessors gm v in
+  List.iter (fun u -> pg_del_edge gm u v) preds;
   Array.iter (fun u -> pg_add_edge gm v u) ws
+
+let pg_set_tr = pg_set_successors ;;
 
 							      
 (**************************************************************
@@ -257,7 +342,14 @@ let format_game gm =
  **************************************************************)
  
 let parse_parity_game ch =
-	Array.map (fun (a,b,c,d) -> (a,b,c,(if d = "" then None else Some d))) (Tcsgameparser.parse_explicit_pg ch)
+  let rawgame = Tcsgameparser.parse_explicit_pg ch in
+  let game = pg_create (Array.length rawgame) in
+  Array.iteri (fun v -> fun (pr,pl,succs,desc) -> pg_set_priority game v pr;
+						  pg_set_owner game v pl;
+						  pg_set_desc game v (if desc = "" then None else Some desc);
+						  Array.iter (fun w -> pg_add_edge game v w) succs
+	      )
+	      rawgame
 
  
  
@@ -266,7 +358,8 @@ let parse_parity_game ch =
  * Node Orderings                                             *
  **************************************************************)
 
-type pg_ordering      = int * int * int * int array -> int * int * int * int array -> int
+(* type pg_ordering      = int * int * int * int array -> int * int * int * int array -> int *)
+type pg_ordering      = node * priority * player * nodeset -> node * priority * player * nodeset -> int
 
 let reward player prio =
 	if (not (prio mod 2 = player)) && (prio >= 0) then -prio else prio;;
@@ -285,11 +378,13 @@ let ord_total_by ordering (i, pri, pli, tri) (j, prj, plj, trj) =
 let pg_max pg o =
 	let m = ref 0 in
 	let n = pg_size pg in
+	let (prm,plm,succm,_,_) = pg_get_node pg !m in
+	let vm = ref (!m,prm,plm,succm) in
 	for i = 1 to n - 1 do
-		let (prm, plm, trm, _) = pg.(!m) in
-		let (pri, pli, tri, _) = pg.(i) in
-		if o (!m, prm, plm, trm) (i, pri, pli, tri) < 0
-		then m := i
+	  let (pri,pli,succi,_,_) = pg_get_node pg i in
+	  let vi = (i,pri,pli,succi) in
+	  if o !vm vi < 0
+	  then (m := i; vm := vi)
 	done;
 	!m;;
 
@@ -299,9 +394,9 @@ let pg_max_prio_node pg = pg_max pg ord_prio;;
 
 let pg_max_rew_node_for pg pl = pg_max pg (ord_rew_for pl);;
 
-let pg_max_prio pg = pg_get_pr pg (pg_max_prio_node pg);;
+let pg_max_prio pg = pg_get_priority pg (pg_max_prio_node pg);;
 
-let pg_min_prio pg = pg_get_pr pg (pg_min pg ord_prio);;
+let pg_min_prio pg = pg_get_priority pg (pg_min pg ord_prio);;
 
 let pg_max_prio_for pg player =
 	let pr = pg_get_pr pg (pg_max_rew_node_for pg player) in
@@ -310,47 +405,11 @@ let pg_max_prio_for pg player =
 let pg_get_index pg = pg_max_prio pg - pg_min_prio pg + 1;;
 
 let pg_prio_nodes pg p =
-	let l = ref [] in
-	Array.iteri (fun i (pr, _, _, _) ->
-		if pr = p then l := i::!l
-	) pg;
-	!l
-
-
-(**************************************************************
- * Inplace Modifications                                      *
- **************************************************************)
-
-let pg_add_successor game v w =
-      let (p,pl,succs,ann) = game.(v) in
-      game.(v) <- (p,pl,Array.append [|w|] succs,ann);;
-
-let pg_add_successors game v l =
-       let (p,pl,succs,ann) = game.(v) in
-       game.(v) <- (p,pl,Array.append l succs,ann);;
-
-let pg_remove_nodes game nodes =
-  List.iter (fun v -> game.(v) <- (-1,-1,[||],None)) nodes;
-  for v=0 to (Array.length game)-1 do
-    let (p,pl,ws,ann) = game.(v) in
-    game.(v) <- (p,pl,Array.of_list (List.filter (fun w -> let (p,_,_,_) = game.(w) in
-                                                           p <> -1)
-                                                 (Array.to_list ws)),ann);
-  done
-
-let pg_remove_edges game edges =
-    List.iter (fun (v, w) ->
-        let tr = pg_get_tr game v in
-        let n = Array.length tr in
-        try
-        	let i = ArrayUtils.index_of tr w in
-            let tr' = Array.sub tr 0 (n - 1) in
-            if i < n - 1
-            then tr'.(i) <- tr.(n - 1);
-            pg_set_tr game v tr'
-        with
-        	Not_found -> ()
-    ) edges;;
+  let l = ref [] in
+  for i = (pg_size pg)-1 downto 0 do
+    if pg_get_priority pg i = p then l := i::!l
+  done;
+  !l
 
 
 
@@ -360,14 +419,13 @@ let pg_remove_edges game edges =
 
 let collect_nodes game pred =
     let l = ref [] in
-    for i = 0 to Array.length game - 1 do
-    	let (pr, _, _, _) = game.(i) in
-    	if (pr >= 0) && (pred i game.(i)) then l := i::!l
+    for i = (pg_size game) - 1 downto 0 do
+    	if pg_isDefined game i && (pred i (pg_get_node game i)) then l := i::!l
     done;
     !l;;
 
 let collect_nodes_by_prio game pred =
-	collect_nodes game (fun _ (pr, _, _, _) -> pred pr);;
+	collect_nodes game (fun _ (pr, _, _, _, _) -> pred pr);;
 
 let collect_max_prio_nodes game =
 	let m = pg_max_prio game in

@@ -190,7 +190,7 @@ let single_scc_transformation pg =
 		let maxpr = ref 0 in
 		for i = 0 to n - 1 do
 			let pr = pg_get_pr pg i in
-			pg_set_node2 pg' i (pg_get_node pg i);
+			pg_set_node' pg' i (pg_get_node pg i);
 			if pr > !maxpr then maxpr := pr
 		done;
 		let prio0 = !maxpr + 2 - !maxpr mod 2 in
@@ -234,7 +234,7 @@ let anti_priority_compactation_transformation pg =
         let m = n + !unused in
         let pg' = pg_create m in
         for i = 0 to n - 1 do
-					pg_set_node2 pg' i (pg_get_node pg i);
+					pg_set_node' pg' i (pg_get_node pg i);
 					pg_set_tr pg' i (if i = v then [|n|] else pg_get_tr pg i)
         done;
         let pl = ref (1 - pg_get_pl pg v) in
@@ -426,7 +426,7 @@ let increase_priority_occurrence game =
 	for i = 0 to n - 1 do
 		if i = v
 		then pg_set_node game' i pr pl (Array.append tr [|n|]) de
-		else pg_set_node2 game' i (pg_get_node game i)
+		else pg_set_node' game' i (pg_get_node game i)
 	done;
 	for i = 0 to pr' do
 		pg_set_node game' (n + i) i !pl' [|if i = pr' then v else n + i + 1|] None;
@@ -455,8 +455,8 @@ let prio_alignment_transformation (game: paritygame) =
 	for i = 0 to n - 1 do
 		let (pr, pl, tr, desc) = pg_get_node game i in
 		if mp.(i) = i
-		then pg_set_node2 game' i (pr, pl, tr, desc)
-		else pg_set_node2 game' i (pr, 1 - pl, [|mp.(i)|], desc)
+		then pg_set_node' game' i (pr, pl, tr, desc)
+		else pg_set_node' game' i (pr, 1 - pl, [|mp.(i)|], desc)
 	done;
 	let i = ref (!m + n - 1) in
 	while (!l != []) do
@@ -496,12 +496,12 @@ let bouncing_node_transformation game =
 	let g = pg_create (n + !m) in
 	for i = 0 to n - 1 do
 		let (pr, pl, tr, de) = pg_get_node game i in
-		pg_set_node2 g i (pr, pl, Array.copy tr, de)
+		pg_set_node' g i (pr, pl, Array.copy tr, de)
 	done;
 	List.iter (fun (i, j, k) ->
 		let (pr, pl, tr, _) = pg_get_node g i in
 		tr.(j) <- k;
-		pg_set_node2 g k (pr, 1 - pl, [|i|], None)
+		pg_set_node' g k (pr, 1 - pl, [|i|], None)
 	) !l;
 	g
 
@@ -520,7 +520,7 @@ let compress_nodes game =
 		while (pg_get_pr game !j < 0) do
 			incr j
 		done;
-		pg_set_node2 game' i (pg_get_node game !j);
+		pg_set_node' game' i (pg_get_node game !j);
 		newToOld.(i) <- !j;
 		oldToNew.(!j) <- i;
 		incr j

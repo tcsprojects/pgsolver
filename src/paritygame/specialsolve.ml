@@ -369,7 +369,7 @@ let solve_single_player_scc game player =
         	done
         );
         List.iter (fun (i, g, t) ->
-            pg_set_node2 sccgame i g;
+            pg_set_node' sccgame i g;
             tgraph.(i) <- t
         ) !backuped;
         match !success with
@@ -707,7 +707,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
         let i = ref 0 in
         List.iter (fun arri ->
             let (pr, pl, delta, desc) = pg_get_node game arri in
-            pg_set_node2 game arri (-2, !i, delta, desc);
+            pg_set_node' game arri (-2, !i, delta, desc);
             g.(!i) <- (pr, pl, ref TreeSet.empty_def);
             i := !i + 1
         ) li;
