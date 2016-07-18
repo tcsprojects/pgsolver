@@ -221,9 +221,9 @@ let game_to_string game =
 	      s := string_of_int i ^ " " ^ string_of_int pr ^ " " ^ string_of_int pl ^ " " ^
 	           (String.concat "," (List.map string_of_int succs) ^ 
 		     (match desc with
-			None   -> ()
+			None   -> ""
 		      | Some a -> if a <> "" then " \"" ^ a ^ "\"" else "")
-		   ) ^ ";\n" ^!s
+		   ) ^ ";\n" ^ !s
            end
 	done;
 	"parity " ^ string_of_int (n-1) ^ ";\n" ^ !s;;
@@ -296,6 +296,7 @@ let to_dotty game solution strategy h =
 				           with _ -> "black"
 			      in
 			      output_string h (name ^ " -> " ^ encode w ^ " [ color=\"" ^ color2 ^ "\" ];\n" )) succs
+	 )
   done;
   output_string h "}\n";;
 
@@ -317,7 +318,7 @@ let format_game gm =
   "[" ^
   String.concat ";"
                 (List.filter (fun s -> s <> "")
-                             (Array.to_list (pg_iterate (fun i -> fun (p,pl,ws,_,_) ->
+                             (Array.to_list (pg_map (fun i -> fun (p,pl,ws,_,_) ->
                                               if p <> -1 then string_of_int i ^ ":" ^ string_of_int p ^ "," ^
                                                               string_of_int pl ^ ",{" ^
                                                               String.concat "," (List.map string_of_int ws)
