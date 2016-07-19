@@ -434,40 +434,45 @@ let collect_max_parity_nodes game =
  * Sub Game Creation                                          *
  **************************************************************)
 
-let subgame_by_edge_pred game pred =
-	let n = Array.length game in
-	let g = Array.make n (-1, -1, [||], None) in
+let subgame_by_edge_pred (game: paritygame) pred =
+	let n = pg_size game in
+	let g = pg_create n in
 	for i = 0 to n - 1 do
-		let (pr, pl, dl, desc) = game.(i) in
-		g.(i) <- (pr, pl, Array.of_list (List.filter (pred i) (Array.to_list dl)), desc)
+		pg_set_pr g i (pg_get_pr game i);
+		pg_set_pl g i (pg_get_pl game i);
+		pg_set_desc g i (pg_get_desc game i);
+		List.iter (fun j ->
+			if pred i j then pg_add_edge g i j
+		) (pg_get_successors game i)
 	done;
 	g;;
 
 let subgame_by_node_pred game pred =
-	let n = Array.length game in
-	let g = Array.make n (-1, -1, [||], None) in
+	let n = pg_size game in
+	let g = pg_create n in
 	for i = 0 to n - 1 do
-		let (pr, pl, dl, desc) = game.(i) in
-		if (pred i)
-		then g.(i) <- (pr, pl, Array.of_list (List.filter pred (Array.to_list dl)), desc)
+		if (pred i) then (
+			pg_set_pr g i (pg_get_pr game i);
+			pg_set_pl g i (pg_get_pl game i);
+			pg_set_desc g i (pg_get_desc game i);
+			List.iter (fun j ->
+				pg_add_edge g i j
+			) (pg_get_successors game i)
+		)
 	done;
 	g;;
 
 let subgame_by_strat game strat = subgame_by_edge_pred game (fun x y -> strat.(x) < 0 || strat.(x) = y);;
 
 let subgame_by_strat_pl game strat pl =
-	let n = Array.length game in
-	let g = Array.make n (-1, -1, [||], None) in
-	for i = 0 to n - 1 do
-		let (pr, pl', dl, desc) = game.(i) in
-		if pl = pl' then g.(i) <- (pr, pl', [|strat.(i)|], desc)
-		else g.(i) <- game.(i)
-	done;
-	g;;
+	subgame_by_edge_pred game (fun i j ->
+		let pl' = pg_get_pl game i in
+		pl != pl' || strat.(i) = j
+	);;
 
 let subgame_by_list game li =
     let n = List.length li in
-    let g = Array.make n (-1, -1, [||], None) in
+    let g = pg_create n in
     let i = ref 0 in
     List.iter (fun arri ->
         let (pr, pl, delta, desc) = game.(arri) in
@@ -498,7 +503,7 @@ let subgame_by_list game li =
 
 let subgame_and_subgraph_by_list game tgraph li =
     let n = List.length li in
-    let g = Array.make n (-1, -1, [||], None) in
+    let g = pg_create n in
 	let t = Array.make n [] in
     let i = ref 0 in
     List.iter (fun arri ->
@@ -596,7 +601,7 @@ let strongly_connected_components game (*tgraph*) =
 
   let todo = ref [] in
   for i=l-1 downto 0 do
-    if pg_isDefined i then todo := i :: !todo
+    if pg_isDefined game i then todo := i :: !todo
   done;
 
   let n = ref 0 in
@@ -680,10 +685,6 @@ let strongly_connected_components game (*tgraph*) =
    DynArray.to_array (DynArray.map [] (fun s -> TreeSet.fold (fun x -> fun l -> x::l) s []) topology),
    TreeSet.fold (fun x -> fun l -> x::l) !roots []);;
 
-(*
-let strongly_connected_components game =
-	strongly_connected_components' game (game_to_transposed_graph game)
- *)
   
 let sccs_compute_leafs roots topology =
 	let leafs = ref TreeSet.empty_def in
@@ -817,7 +818,7 @@ let attractor_closure_inplace_sol_strat game transp deltafilter sol strat pl0 pl
 
 let pg_set_closed pg nodeset pl =
     TreeSet.for_all (fun q ->
-			  let pl = pg_get_pl pg q in
+			  let pl' = pg_get_pl pg q in
 				let delta = pg_get_tr pg q in                              
         if pl = pl'
         then Array.fold_left (fun r i -> r || TreeSet.mem i nodeset) false delta
