@@ -589,32 +589,18 @@ let merge_solutions_inplace sol1 sol2 =
  * Decomposition Functions                                    *
  **************************************************************)
 
-let strongly_connected_components' game tgraph =
-  let l = Array.length game in
+let strongly_connected_components game (*tgraph*) =
+  let l = pg_size game in
   let dfsnum = Array.make l (-1) in
   let index = Array.make l (-1) in
 
   let todo = ref [] in
-  for i=1 to l do
-    let (p,_,_,_) = game.(l-i) in
-    if p > (-1) then todo := (l-i) :: !todo
+  for i=l-1 downto 0 do
+    if pg_isDefined i then todo := i :: !todo
   done;
 
   let n = ref 0 in
   let visited = Array.make l false in
-
-  (* Reason for stack overflow in large sccs...*)
-  (*
-  let rec dfs v =
-    if not visited.(v)
-    then (visited.(v) <- true;
-          let (_,_,ws,_) = game.(v) in
-          Array.iter (fun w -> dfs w) ws;
-          dfsnum.(v) <- !n;
-          index.(!n) <- v;
-          incr n)
-  in
-  *)
 
   let dfs v =
   	let st = Stack.create () in
@@ -624,7 +610,7 @@ let strongly_connected_components' game tgraph =
   		let pushed = ref false in
   		if not visited.(u) then (
   			visited.(u) <- true;
-  			Array.iter (fun w ->
+  			List.iter (fun w ->
   				if not visited.(w) then (
   					if not !pushed then (
   						Stack.push u st;
@@ -632,7 +618,7 @@ let strongly_connected_components' game tgraph =
   					);
   					Stack.push w st
   				)
-  			) (pg_get_tr game u)
+  			) (pg_get_successors game u)
   		);
   		if (not !pushed) && (dfsnum.(u) < 0) then (
   			dfsnum.(u) <- !n;
@@ -642,10 +628,8 @@ let strongly_connected_components' game tgraph =
   	done
   in
 
-
   for i=0 to l-1 do
-    let (p,_,_,_) = game.(i) in
-    if not visited.(i) && p >= 0 then dfs i;
+    if not visited.(i) && pg_isDefined game i then dfs i
   done;
 
   decr n;
@@ -674,7 +658,7 @@ let strongly_connected_components' game tgraph =
       if not visited.(v) && dfsnum.(v) >= 0
       then (visited.(v) <- true;
             scc := v :: !scc;
-            let succs = List.sort (fun x -> fun y -> (-1) * (compare dfsnum.(x) dfsnum.(y))) tgraph.(v) in
+            let succs = List.sort (fun x -> fun y -> compare dfsnum.(y) dfsnum.(x)) (pg_get_predecessors game v) in
             todo := succs @ !todo;
             List.iter (fun w -> let c = scc_index.(w) in
                                 if c > -1
@@ -696,9 +680,11 @@ let strongly_connected_components' game tgraph =
    DynArray.to_array (DynArray.map [] (fun s -> TreeSet.fold (fun x -> fun l -> x::l) s []) topology),
    TreeSet.fold (fun x -> fun l -> x::l) !roots []);;
 
+(*
 let strongly_connected_components game =
 	strongly_connected_components' game (game_to_transposed_graph game)
-
+ *)
+  
 let sccs_compute_leafs roots topology =
 	let leafs = ref TreeSet.empty_def in
 	let rec process r =

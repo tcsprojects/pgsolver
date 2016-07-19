@@ -305,6 +305,10 @@ type process_result = PlayerWin of strategy * (int array)
                     | PlayerLoss
                     | Undecided of int
 
+(* TODO: remove dependency on argument tgraph
+   reason: function Paritygame.strongly_connected_components now only takes a game as an argument, no transposed graph anymore
+   solution: use pg_get_predecessors to get a list of the predecessors of a node in a game *)  
+          				     
 let solve_single_player_scc game player =
 	let process_scc sccgame sccnodes tgraph =
 		let n = pg_size sccgame in
