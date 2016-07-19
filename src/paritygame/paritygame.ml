@@ -586,63 +586,6 @@ let merge_solutions_inplace sol1 sol2 =
 
 
 (**************************************************************
- * Graph Transformations                                      *
- **************************************************************)
-
-let game_to_transposed_graph game =
-  let l = Array.length game in
-  let g = Array.make l [] in
-  Array.iteri (fun i -> fun (_,_,ws,_) -> Array.iter (fun w -> g.(w) <- i::g.(w)) ws) game;
-  g
-
-
-let transposed_graph_remove_nodes game graph nodes =
-	let affected = ref TreeSet.empty_def in
-	List.iter (fun v ->
-		graph.(v) <- [-1];
-		Array.iter (fun w -> affected := TreeSet.add w !affected) (pg_get_tr game v)
-	) nodes;
-	TreeSet.iter (fun v ->
-		if not (graph.(v) = [-1]) then
-		graph.(v) <- List.filter (fun w -> not (graph.(w) = [-1])) graph.(v)
-	) !affected;
-	List.iter (fun v -> graph.(v) <- []) nodes;;
-
-	
-let pg_with_graph_remove_nodes game graph nodes =
-	let check_succ = ref TreeSet.empty_def in
-	let check_pred = ref TreeSet.empty_def in
-	List.iter (fun v ->
-		let (_, _, tr, _) = game.(v) in
-		Array.iter (fun w -> check_pred := TreeSet.add w !check_pred) tr;
-		game.(v) <- (-1, -1, [||], None);
-		List.iter (fun w -> check_succ := TreeSet.add w !check_succ) graph.(v);
-		graph.(v) <- [];
-	) nodes;
-	TreeSet.iter (fun v ->
-		if pg_get_pr game v >= 0
-		then graph.(v) <- List.filter (fun w -> pg_get_pr game w >= 0) graph.(v)
-	) !check_pred;
-	TreeSet.iter (fun v ->
-		if pg_get_pr game v >= 0
-		then pg_set_tr game v (ArrayUtils.filter (fun w -> pg_get_pr game w >= 0) (pg_get_tr game v))
-	) !check_succ;;
-	
-
-let game_to_graph game =
-  let l = Array.length game in
-  let g = Array.make l [] in
-  Array.iteri (fun i -> fun (_,_,ws,_) -> Array.iter (fun w -> g.(i) <- w::g.(i)) ws) game;
-  g
-
-let transposed_graph_remove_edges graph edges =
-    List.iter (fun (v, w) ->
-        graph.(w) <- List.filter (fun u -> not (u = v)) graph.(w)
-    ) edges;;
-
-
-
-(**************************************************************
  * Decomposition Functions                                    *
  **************************************************************)
 
@@ -887,7 +830,9 @@ let attractor_closure_inplace_sol_strat game transp deltafilter sol strat pl0 pl
  **************************************************************)
 
 let pg_set_closed pg nodeset pl =
-    TreeSet.for_all (fun q -> let (_, pl', delta, _) = pg.(q) in
+    TreeSet.for_all (fun q ->
+			  let pl = pg_get_pl pg q in
+				let delta = pg_get_tr pg q in                              
         if pl = pl'
         then Array.fold_left (fun r i -> r || TreeSet.mem i nodeset) false delta
         else Array.fold_left (fun r i -> r && TreeSet.mem i nodeset) true delta
@@ -925,47 +870,40 @@ type partial_solver = partial_paritygame -> partial_solution
 
 (* Canonically maps a paritygame to its associated paritygame2 *)
 let induce_partialparitygame (pg: paritygame) start =
-	let delta i = let (_, _, delta, _) = pg.(i) in
-		Enumerators.of_array delta
-	in
-	let data i = let (pr, pl, _, _) = pg.(i) in (pr, pl)
-	in
-	let desc i = let (_, _, _, desc) = pg.(i) in desc
-	in
-		((start, delta, data, desc): partial_paritygame);;
+	let delta i = Enumerators.of_array (pg_get_tr pg i) in
+	let data i = (pg_get_pr pg i, pg_get_pl pg i) in
+	let desc i = pg_get_desc pg i in
+	((start, delta, data, desc): partial_paritygame);;
 
 let induce_counting_partialparitygame (pg: paritygame) start =
 	let counter = ref 0 in
-	let access = Array.make (Array.length pg) false in
+	let access = Array.make (pg_size pg) false in
 	let delta i =
 		if not access.(i) then (
 			access.(i) <- true;
 			incr counter
 		);
-		let (_, _, delta, _) = pg.(i) in
-		Enumerators.of_array delta
+		Enumerators.of_array (pg_get_tr pg i)
 	in
 	let data i =
 		if not access.(i) then (
 			access.(i) <- true;
 			incr counter
 		);
-		let (pr, pl, _, _) = pg.(i) in
-		(pr, pl)
+		(pg_get_pr pg i, pg_get_pl pg i)
 	in
 	let desc i =
 		if not access.(i) then (
 			access.(i) <- true;
 			incr counter
 		);
-		let (_, _, _, desc) = pg.(i) in
-		desc
+		pg_get_desc pg i
 	in
 		(counter, ((start, delta, data, desc): partial_paritygame));;
 
 		
 let partially_solve_dominion (pg: paritygame) (start: int) (partially_solve: partial_solver) =
-	let n = Array.length pg in
+	let n = pg_size pg in
 	let (_, delta, data, desc) = induce_partialparitygame pg start in
 	let solution = Array.make n (-1) in
 	let strategy = Array.make n (-1) in
@@ -973,18 +911,13 @@ let partially_solve_dominion (pg: paritygame) (start: int) (partially_solve: par
 	let rec expand i f =
 		if solution.(i) > -1 then ()
 		else let (winner, strat) = f i in
-			 let (pl, _, delta, desc) = pg.(i) in
 			 	solution.(i) <- winner;
 			 	match strat with
 			 		Some j -> (
 			 			strategy.(i) <- j;
 			 			expand j f
 			 		)
-			 	|   None -> (
-			 			for k = 0 to Array.length delta - 1 do
-							expand delta.(k) f
-			     		done
-			     	)
+			 	|   None -> Array.iter (fun x -> expand x f) (pg_get_tr pg i)
 	in
 
     expand start (partially_solve (start, delta, data, desc));
@@ -1001,7 +934,7 @@ let partially_solve_dominion (pg: paritygame) (start: int) (partially_solve: par
 	returning solution x strategy on the whole game
 *)
 let partially_solve_game (pg: paritygame) partially_solve =
-	let n = Array.length pg in
+	let n = pg_size pg in
 	let (_, delta, data, desc) = induce_partialparitygame pg 0 in
 	let solution = Array.make n (-1) in
 	let strategy = Array.make n (-1) in
@@ -1019,24 +952,18 @@ let partially_solve_game (pg: paritygame) partially_solve =
 	let rec expand i f =
 		if solution.(i) > -1 then ()
 		else let (winner, strat) = f i in
-			 let (pl, _, delta, desc) = pg.(i) in
 			 	solution.(i) <- winner;
 			 	match strat with
 			 		Some j -> (
 			 			strategy.(i) <- j;
 			 			expand j f
 			 		)
-			 	|   None -> (
-			 			for k = 0 to Array.length delta - 1 do
-							expand delta.(k) f
-			     		done
-			     	)
+			 	|   None -> Array.iter (fun x -> expand x f) (pg_get_tr pg i)
 	in
 
     for i = 0 to n - 1 do
-        let (_, pl, _, _) = pg.(i) in
-            if (solution.(i) > -1) || (pl < 0) then ()
-            else expand i (partially_solve (i, delta', data', desc))
+        if (solution.(i) > -1) || (pg_get_pl pg i < 0) then ()
+        else expand i (partially_solve (i, delta', data', desc))
     done;
 
 	(solution, strategy);;

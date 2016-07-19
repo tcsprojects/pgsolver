@@ -188,23 +188,6 @@ val merge_strategies_inplace : strategy -> strategy -> unit
 val merge_solutions_inplace : solution -> solution -> unit
 
 
-(**************************************************************
- * Graph Transformations                                      *
- **************************************************************)
-
-(* Calling game_to_transposed_graph game returns the transposed graph associated with the game. *)
-val game_to_transposed_graph : paritygame -> int list array
-
-val transposed_graph_remove_nodes : paritygame -> int list array -> int list -> unit
-
-val pg_with_graph_remove_nodes: paritygame -> int list array -> int list -> unit
-
-(* Calling game_to_graph game returns the graph associated with the game. *)
-val game_to_graph : paritygame -> int list array
-
-val transposed_graph_remove_edges : int list array -> (int * int) list -> unit
-
-
 
 (**************************************************************
  * Decomposition Functions                                    *
