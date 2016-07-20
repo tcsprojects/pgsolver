@@ -25,6 +25,7 @@ let ns_elem = List.mem
 let ns_fold = List.fold_left
 let ns_iter = List.iter
 let ns_size = List.length
+let ns_exists = List.exists
 let ns_some = List.hd
 let ns_add v vs =
   let rec add = function []    -> [v]

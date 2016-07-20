@@ -16,6 +16,7 @@ val ns_elem : node -> nodeset -> bool
 val ns_fold : ('a -> node -> 'a) -> 'a -> nodeset -> 'a
 val ns_iter : (node -> unit) -> nodeset -> unit
 val ns_size : nodeset -> int
+val ns_exists : (node -> bool) -> nodeset -> bool
 val ns_some : nodeset -> node
 val ns_add  : node -> nodeset -> nodeset
 val ns_del  : node -> nodeset -> nodeset
