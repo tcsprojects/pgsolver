@@ -85,7 +85,7 @@ val pg_map     : (node -> (priority * player * nodeset * nodeset * string option
 val pg_map2    : (node -> (priority * player * nodeset * nodeset * string option) -> 'a) -> paritygame -> 'a array 
 
 val pg_get_node   : paritygame -> node -> (priority * player * nodeset * nodeset * string option)
-val pg_set_node   : paritygame -> node -> priotity -> player -> nodeset -> nodeset -> string option -> unit (* DEPRECATED *)
+val pg_set_node   : paritygame -> node -> priority -> player -> nodeset -> nodeset -> string option -> unit (* DEPRECATED *)
 val pg_set_node2  : paritygame -> int -> (priority * player * nodeset * nodeset * string option) -> unit (* DEPRECATED *)
 
 val pg_find_desc  : paritygame -> string option -> node
@@ -387,8 +387,6 @@ end
  *  transposed graph                                    *
  ********************************************************)
 
-val diamond_with_transposed_graph: NodeSet.t -> paritygame -> int list array -> NodeSet.t (* DEPRECATED *)
-val box_with_transposed_graph    : NodeSet.t -> paritygame -> int list array -> NodeSet.t (* DEPRECATED *)
 val diamond : paritygame -> NodeSet.t -> NodeSet.t
 val box     : paritygame -> NodeSet.t -> NodeSet.t
 
