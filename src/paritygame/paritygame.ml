@@ -21,7 +21,9 @@ type nodeset = node list
  * here: sorted lists                                         *
  **************************************************************)
   
-let ns_elem = List.mem 
+let ns_elem = List.mem
+let ns_fold = List.fold_left
+let ns_some = List.hd
 let ns_add v vs =
   let rec add = function []    -> [v]
 		       | w::ws -> (match compare v w with
@@ -501,6 +503,7 @@ let subgame_by_list game li =
     ) li;
     g;;
 
+(* TODO: the argument tgraph should be removed (and then maybe the function should be named accodingly *)
 let subgame_and_subgraph_by_list game tgraph li =
     let n = List.length li in
     let g = pg_create n in
@@ -686,7 +689,7 @@ let strongly_connected_components game (*tgraph*) =
    TreeSet.fold (fun x -> fun l -> x::l) !roots []);;
 
   
-let sccs_compute_leafs roots topology =
+let sccs_compute_leaves roots topology =
 	let leafs = ref TreeSet.empty_def in
 	let rec process r =
 		if topology.(r) = []
@@ -753,31 +756,32 @@ let show_sccs sccs topology roots =
  * Attractor Closure                                          *
  **************************************************************)
 
-let attr_closure_inplace' game strategy player region include_region tgraph deltafilter overwrite_strat =
+let attr_closure_inplace' game strategy player region include_region includeNode overwrite_strat =
   let message _ _ = () in
-  let l = Array.length game in
+  let l = pg_size game in
   let attr = Array.make l false in
   let todo = Queue.create () in
 
-  let schedule_predecessors v = List.iter (fun w -> if deltafilter w then (
+  let schedule_predecessors v = List.iter (fun w -> if includeNode w then (
                                                     message 3 (fun _ -> "    Scheduling node " ^ string_of_int w ^
                                                                         " for attractor check\n");
                                                     Queue.add w todo)
                                                     )
-                                          tgraph.(v)
+                                          (pg_get_predecessors game v)
   in
 
   let inattr v = attr.(v) || ((not include_region) && TreeSet.mem v region) in
 
   TreeSet.iter (fun v -> if include_region then attr.(v) <- true;
-                      schedule_predecessors v) region;
+			 schedule_predecessors v) region;
 
   while not (Queue.is_empty todo) do
     let v = Queue.take todo in
     if not (attr.(v))
-    then let (_,pl',ws,_) = game.(v) in
+    then let pl' = pg_get_owner game v in
+	 let ws = pg_get_successors game v in
          if pl'=player
-         then let w = Array.fold_left (fun b -> fun w -> if (not (deltafilter w)) || (b > -1 || not (inattr w)) then b else w) (-1) ws in
+         then let w = ns_fold (fun b -> fun w -> if (not (includeNode w)) || (b > -1 || not (inattr w)) then b else w) (-1) ws in
               if w > -1 then (message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is in the attractor because of " ^
                                          string_of_int v ^ "->" ^ string_of_int w ^ "\n");
                               attr.(v) <- true;
@@ -785,27 +789,26 @@ let attr_closure_inplace' game strategy player region include_region tgraph delt
                               then strategy.(v) <- w;
                               schedule_predecessors v)
               else message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is not (yet) found to be in the attractor\n")
-         else if Array.fold_left (fun b -> fun w -> b && (inattr w)) true ws
+         else if ns_fold (fun b -> fun w -> b && (inattr w)) true ws
               then (message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is in the attractor because all successors are so");
                     attr.(v) <- true;
                     schedule_predecessors v)
               else message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is not (yet) found to be in the attractor\n")
   done;
-  let w = ref [] in
+  let a = ref [] in
   for i=1 to l do
-    if attr.(l-i) then w := (l-i) :: !w
+    if attr.(l-i) then a := (l-i) :: !a
   done;
-  !w;;
+  !a;;
 
 
 let attr_closure_inplace game strategy player region =
-	attr_closure_inplace' game strategy player (TreeSet.of_list_def region) true
-	                     (game_to_transposed_graph game) (fun _ -> true) true;;
+	attr_closure_inplace' game strategy player (TreeSet.of_list_def region) true (fun _ -> true) true;;
 
 
-let attractor_closure_inplace_sol_strat game transp deltafilter sol strat pl0 pl1 =
-	let sol0 = attr_closure_inplace' game strat 0 pl0 true transp (fun v -> not (TreeSet.mem v pl1)) true in
-	let sol1 = attr_closure_inplace' game strat 1 pl1 true transp (fun v -> not (TreeSet.mem v pl0)) true in
+let attractor_closure_inplace_sol_strat game deltafilter sol strat pl0 pl1 =
+	let sol0 = attr_closure_inplace' game strat 0 pl0 true (fun v -> not (TreeSet.mem v pl1)) true in
+	let sol1 = attr_closure_inplace' game strat 1 pl1 true (fun v -> not (TreeSet.mem v pl0)) true in
 	List.iter (fun q -> sol.(q) <- 0) sol0;
 	List.iter (fun q -> sol.(q) <- 1) sol1;
 	(sol0, sol1);;
@@ -1197,6 +1200,7 @@ end);;
 
 (* return the set of all nodes which have a successors in t *)
 
+(* DEPRECATED
 let diamond_with_transposed_graph t game tg =
   NodeSet.fold (fun v -> fun s -> 
                  List.fold_left (fun s' -> fun u -> 
@@ -1206,10 +1210,21 @@ let diamond_with_transposed_graph t game tg =
                                    else s')  
                                  s tg.(v)) 
                t NodeSet.empty 
-
-
+ *)
+  
+let diamond game t =
+  NodeSet.fold (fun v -> fun s -> 
+                 List.fold_left (fun s' -> fun u -> 
+                                   if pg_isDefined game u then 
+                                     NodeSet.add u s'
+                                   else s')  
+                                 s (pg_get_predecessors game v)) 
+               t NodeSet.empty 
+  
+  
 (* return the set of all nodes for which all successors are in t *)
 
+(* DEPRECATED
 let box_with_transposed_graph t game tg =
   let c = diamond_with_transposed_graph t game tg in      
   NodeSet.filter (fun v -> let (pr, _, successors, _) = game.(v) in
@@ -1218,7 +1233,16 @@ let box_with_transposed_graph t game tg =
                           else
                             false
                  ) c 
+ *)
 
+let box game t =
+  let c = diamond game t in      
+  NodeSet.filter (fun v -> if isDefined game v then
+                             ns_fold (fun b -> fun w -> b && NodeSet.mem w t) true (pg_get_successors game v)
+                           else
+                             false
+                 ) c 
+  
 
 
 (********************************************************
@@ -1275,7 +1299,10 @@ module Build = functor (T: GameNode) ->
       let game = pg_create (List.length nodes) in
       let rec transform = 
         function []                  -> ()
-	       | ((v,o,p,ws,nm)::ns) -> pg_set_node game v p o (Array.of_list ws) nm;
+	       | ((v,o,p,ws,nm)::ns) -> pg_set_priority game v p;
+					pg_set_owner game v o;
+					pg_set_desc game v nm;
+					List.iter (fun w -> pg_add_edge game v w) ws nm;
                                         transform ns
       in
       transform nodes;

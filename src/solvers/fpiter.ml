@@ -111,9 +111,9 @@ let solve' game =
   in
 
   let rec update_modal_terms p =
-    set diams  p (NodeSet.inter v0 (diamond_with_transposed_graph (get x p) game tg));
+    set diams  p (NodeSet.inter v0 (diamond game (get x p)));
     set unions p (NodeSet.union (get diams p) (get unions (p+1)));
-    set boxes  p (NodeSet.inter v1 (box_with_transposed_graph (NodeSet.union (get pr_complement p) (get x p)) game tg));
+    set boxes  p (NodeSet.inter v1 (box game (NodeSet.union (get pr_complement p) (get x p))));
     set isects p (NodeSet.inter (get boxes p) (get isects (p+1)));
     msg_tagged 4 (fun _ -> "  Current value: X(" ^ string_of_int p ^ ") = " ^ show_nodeSet (get x p) ^ "\n");
     msg_tagged 4 (fun _ -> "  Current value: D(" ^ string_of_int p ^ ") = " ^ show_nodeSet (get diams p) ^ "\n");

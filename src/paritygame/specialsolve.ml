@@ -305,12 +305,8 @@ type process_result = PlayerWin of strategy * (int array)
                     | PlayerLoss
                     | Undecided of int
 
-(* TODO: remove dependency on argument tgraph
-   reason: function Paritygame.strongly_connected_components now only takes a game as an argument, no transposed graph anymore
-   solution: use pg_get_predecessors to get a list of the predecessors of a node in a game *)  
-          				     
 let solve_single_player_scc game player =
-	let process_scc sccgame sccnodes tgraph =
+	let process_scc sccgame sccnodes =
 		let n = pg_size sccgame in
 		let p_pl = ref (-1) in
 		let p_op = ref (-1) in
@@ -326,94 +322,91 @@ let solve_single_player_scc game player =
 			List.iter (fun i ->
 				if pg_get_pl sccgame i = player then strategy.(i) <- (pg_get_tr sccgame i).(0)
 			) vs;
-			let _ = attr_closure_inplace' sccgame strategy player vsset true tgraph (fun _ -> true) true in
+			let _ = attr_closure_inplace' sccgame strategy player vsset true (fun _ -> true) true in
 			PlayerWin (strategy, sccnodes)
 		)
 		else if !p_pl < 0 then PlayerLoss
 		else Undecided (!p_pl + 1)
 	in
-	let rec process_undecided sccgame sccnodes tgraph p =
+	let rec process_undecided sccgame sccnodes p =
 		let n = pg_size sccgame in
-        let strategy = Array.make n (-1) in
-        let vs = collect_nodes sccgame (fun _ (pr, _, _, _) -> pr >= p) in
-        let vsset = TreeSet.of_list_def vs in
-        let attr = attr_closure_inplace' sccgame strategy (1-player) vsset true tgraph (fun _ -> true) true in
-        let backup = ref (TreeSet.of_list_def attr) in
-        List.iter (fun i ->
-            Array.iter (fun j -> backup := TreeSet.add j !backup) (pg_get_tr sccgame i);
-            List.iter (fun j -> backup := TreeSet.add j !backup) (tgraph.(i));
-        ) attr;
-        let backuped = ref [] in
-        TreeSet.iter (fun i ->
-            backuped := (i, pg_get_node game i, tgraph.(i))::!backuped
-        ) !backup;
-        pg_with_graph_remove_nodes sccgame tgraph attr;
-        let (newsccs,_,_,_) = strongly_connected_components' sccgame tgraph in
-        let scccount = Array.length newsccs in
-        let todo = ref 0 in
-        let undecided_stack = ref [] in
-        let success = ref None in
-        while (!todo < scccount) && (!success = None) do
-            let current = newsccs.(!todo) in
-            let (curgame, curgraph) = subgame_and_subgraph_by_list sccgame tgraph current in
-            if (pg_size curgame > 1) || (Array.length (pg_get_tr curgame 0) > 0) then (
-            	let nodelist = Array.of_list current in
-            	match process_scc curgame nodelist curgraph with
-            		PlayerWin (s, t) -> success := Some (s, t)
-            	|	Undecided p -> undecided_stack := (curgame, nodelist, curgraph, p)::!undecided_stack
-            	|	PlayerLoss -> ()
-            );
-            incr todo
-        done;
-        if !success = None then (
-        	while (!undecided_stack != []) && (!success = None) do
-        		let (curgame, nodelist, curgraph, p) = List.hd !undecided_stack in
-        		undecided_stack := List.tl !undecided_stack;
-        		success := process_undecided curgame nodelist curgraph p
-        	done
-        );
-        List.iter (fun (i, g, t) ->
-            pg_set_node' sccgame i g;
-            tgraph.(i) <- t
-        ) !backuped;
-        match !success with
-            None -> None
-        |   Some (strat, nodes) -> 
-                Some (strat, Array.map (fun j -> sccnodes.(j)) nodes)
+		let strategy = Array.make n (-1) in
+		let vs = collect_nodes_by_prio sccgame (fun pr -> pr >= p) in
+		let vsset = TreeSet.of_list_def vs in
+		let attr = attr_closure_inplace' sccgame strategy (1-player) vsset true (fun _ -> true) true in
+		let backup = ref (TreeSet.of_list_def attr) in
+		List.iter (fun i ->
+			   ns_iter (fun j -> backup := TreeSet.add j !backup) (pg_get_successors sccgame i);
+			   ns_iter (fun j -> backup := TreeSet.add j !backup) (pg_get_predecessors sccgame i);
+			                 (* it looked like it was "pg_get_predecessors game i" instead but I think "... sccgame ..." is correct - ML *)
+			  ) attr;
+		let backuped = ref [] in
+		TreeSet.iter (fun i ->
+			      backuped := (i, pg_get_node game i (*, tgraph.(i) *))::!backuped
+			     ) !backup;
+		pg_remove_nodes sccgame attr;
+		let (newsccs,_,_,_) = strongly_connected_components' sccgame in
+		let scccount = Array.length newsccs in
+		let todo = ref 0 in
+		let undecided_stack = ref [] in
+		let success = ref None in
+		while (!todo < scccount) && (!success = None) do
+		  let current = newsccs.(!todo) in
+		  let curgame = subgame_and_subgraph_by_list sccgame current in
+		  if (pg_size curgame > 1) || (Array.length (pg_get_tr curgame 0) > 0) then (
+            	    let nodelist = Array.of_list current in
+            	    match process_scc curgame nodelist with
+            	      PlayerWin (s, t) -> success := Some (s, t)
+            	     |	Undecided p -> undecided_stack := (curgame, nodelist, p)::!undecided_stack
+            	     |	PlayerLoss -> ()
+		  );
+		  incr todo
+		done;
+		if !success = None then (
+        	  while (!undecided_stack != []) && (!success = None) do
+        	    let (curgame, nodelist, p) = List.hd !undecided_stack in
+        	    undecided_stack := List.tl !undecided_stack;
+        	    success := process_undecided curgame nodelist p
+        	  done
+		);
+		List.iter (fun (i, g (*, t*)) -> pg_set_node' sccgame i g
+			                         (* tgraph.(i) <- t *)
+ 			  ) !backuped;
+		match !success with
+		  None -> None
+		|   Some (strat, nodes) -> 
+                     Some (strat, Array.map (fun j -> sccnodes.(j)) nodes)
 	in
-	let rec solve_single_player_scc' sccgame sccnodes tgraph =
-		match process_scc sccgame sccnodes tgraph with
-			Undecided p -> process_undecided sccgame sccnodes tgraph p
-		|	PlayerWin (s, t) -> Some (s, t)
-		|	PlayerLoss -> None
+	let rec solve_single_player_scc' sccgame sccnodes =
+	  match process_scc sccgame sccnodes with
+	    Undecided p -> process_undecided sccgame sccnodes p
+	   |	PlayerWin (s, t) -> Some (s, t)
+	   |	PlayerLoss -> None
 	in
 	let n = pg_size game in
-	let tgraph = game_to_transposed_graph game in
-	match solve_single_player_scc' game	(Array.init n (fun i -> i)) tgraph with
-		Some (strat, sccnodes) -> (
-			let strategy = Array.make n (-1) in
-			Array.iteri (fun i j ->
-				strategy.(sccnodes.(i)) <- if j >= 0 then sccnodes.(j) else -1
-			) strat;
-			let vsset = TreeSet.of_array_def sccnodes in
-			let _ = attr_closure_inplace' game strategy player vsset true tgraph (fun _ -> true) true in
-			(Array.make n player, strategy)
-		)
-	|	None ->
-			let strat = Array.init n (fun j ->
-				if pg_get_pl game j = player then -1 else (pg_get_tr game j).(0)
-			)
+	match solve_single_player_scc' game (Array.init n (fun i -> i)) with
+	  Some (strat, sccnodes) -> (let strategy = Array.make n (-1) in
+				     Array.iteri (fun i j ->
+						  strategy.(sccnodes.(i)) <- if j >= 0 then sccnodes.(j) else -1
+						 ) strat;
+				     let vsset = TreeSet.of_array_def sccnodes in
+				     let _ = attr_closure_inplace' game strategy player vsset true (fun _ -> true) true in
+				     (Array.make n player, strategy)
+				    )
+	 |	None -> let strat = Array.init n (fun j ->
+						  if pg_get_pl game j = player then -1 else (pg_get_tr game j).(0)
+						 )
 			in
 			(Array.make n (1 - player), strat);;
-
-
+  
+  
 let solve_single_parity_scc game player =
     let n = pg_size game in
 	let solution = Array.make n player in
 	let strategy = Array.make n (-1) in
 	for i = 0 to n - 1 do
 		if (pg_get_pr game i >= 0) && (pg_get_pl game i = player)
-		then strategy.(i) <- (pg_get_tr game i).(0)
+		then strategy.(i) <- ns_first (pg_get_tr game i) 
 	done;
 	(solution, strategy);;
 
