@@ -12,8 +12,10 @@ open Tcsset
 type node = int
 type nodeset
 
-val ns_elem : nodeset -> node -> bool
-val ns_fold : ('a -> node -> 'a) -> nodeset -> 'a -> 'a
+val ns_elem : node -> nodeset -> bool
+val ns_fold : ('a -> node -> 'a) -> 'a -> nodeset -> 'a
+val ns_iter : (node -> unit) -> nodeset -> unit
+val ns_size : nodeset -> int
 val ns_some : nodeset -> node
 val ns_add  : node -> nodeset -> nodeset
 val ns_del  : node -> nodeset -> nodeset
@@ -86,7 +88,7 @@ val pg_map2    : (node -> (priority * player * nodeset * nodeset * string option
 
 val pg_get_node   : paritygame -> node -> (priority * player * nodeset * nodeset * string option)
 val pg_set_node   : paritygame -> node -> priority -> player -> nodeset -> nodeset -> string option -> unit (* DEPRECATED *)
-val pg_set_node2  : paritygame -> int -> (priority * player * nodeset * nodeset * string option) -> unit (* DEPRECATED *)
+val pg_set_node'  : paritygame -> int -> (priority * player * nodeset * nodeset * string option) -> unit (* DEPRECATED *)
 
 val pg_find_desc  : paritygame -> string option -> node
 
@@ -124,7 +126,7 @@ val format_game : paritygame -> string
  * Parsing Functions                                          *
  **************************************************************)
  
- val parse_parity_game: in_channel -> paritygame
+val parse_parity_game: in_channel -> paritygame
  
 
  
@@ -203,8 +205,9 @@ val subgame_by_strat_pl: paritygame -> strategy -> int -> paritygame
 (* Calling subgame_by_list game nodes returns a compressed sub game induced and ordered by the nodes-list *)
 val subgame_by_list: paritygame -> int list -> paritygame
 
-val subgame_and_subgraph_by_list: paritygame -> int list array -> int list -> paritygame * int list array
-
+(*
+val subgame_and_subgraph_by_list: paritygame -> int list array -> int list -> paritygame * int list array (* DEPRECATED *)
+*)
 
 (**************************************************************
  * Solution / Strategy Update Functions                       *
@@ -228,8 +231,10 @@ val merge_solutions_inplace : solution -> solution -> unit
  **************************************************************)
 
 type scc = int
-val strongly_connected_components' : paritygame -> (node list array) -> node list array * scc array * scc list array * scc list
-
+(*
+val strongly_connected_components' : paritygame -> (node list array) -> node list array * scc array * scc list array * scc list (* DEPRECATED *)
+ *)
+	     
 (* `strongly_connected_components <game>' decomposes the game into its SCCs. 
    It returns a tuple (<sccs>, <sccindex>, <topology>, <roots>) where 
     - <sccs> is an array mapping each SCC to its list of nodes, 
@@ -256,12 +261,13 @@ val show_sccs : node list array -> scc list array -> scc list -> string
  **************************************************************)
 
 (* game strategy player region include_region tgraph deltafilter overwrite_strat *)
-val attr_closure_inplace': paritygame -> strategy -> int -> int TreeSet.t -> bool -> int list array -> (int -> bool) -> bool -> int list
+val attr_closure_inplace': paritygame -> strategy -> player -> node TreeSet.t -> bool -> (node -> bool) -> bool -> node list
 
-(* Calling attr_closure_inplace game strategy player region returns the attractor for the given player and region. Additionally all necessary strategy decisions for player leading into the region are added to strategy. *)
-val attr_closure_inplace : paritygame -> strategy -> int -> int list -> int list
+(* `attr_closure_inplace <game> <strategy> <player> <region>' returns the attractor for the given player and region. 
+   Additionally all necessary strategy decisions for player leading into the region are added to <strategy>. *)
+val attr_closure_inplace : paritygame -> strategy -> player -> node list -> node list
 
-val attractor_closure_inplace_sol_strat: paritygame -> int list array -> (int -> bool) -> solution -> strategy -> int TreeSet.t -> int TreeSet.t -> (int list * int list)
+val attractor_closure_inplace_sol_strat: paritygame -> (node -> bool) -> solution -> strategy -> node TreeSet.t -> node TreeSet.t -> (node list * node list)
 
 
 
@@ -271,7 +277,7 @@ val attractor_closure_inplace_sol_strat: paritygame -> int list array -> (int ->
 
 val pg_set_closed: paritygame -> int TreeSet.t -> int -> bool
 
-val pg_set_dominion: (paritygame -> solution * strategy) -> paritygame -> int TreeSet.t -> int -> strategy option
+val pg_set_dominion: (paritygame -> solution * strategy) -> paritygame -> node TreeSet.t -> player -> strategy option
 
 
 
