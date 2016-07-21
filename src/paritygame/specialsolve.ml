@@ -192,8 +192,6 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
         ) li;
         let i = ref 0 in
         List.iter (fun arri ->
-					let delta = pg_get_tr game arri in
-					let desc = pg_get_desc game arri in
             let (pr, pl, _) = g.(!i) in
 						pg_set_pr game arri pr;
 						pg_set_pl game arri pl;

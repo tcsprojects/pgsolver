@@ -20,6 +20,7 @@ val ns_iter    : (node -> unit) -> nodeset -> unit
 val ns_map     : (node -> node) -> nodeset -> nodeset
 val ns_size    : nodeset -> int
 val ns_exists  : (node -> bool) -> nodeset -> bool
+val ns_find    : (node -> bool) -> nodeset -> node
 val ns_some    : nodeset -> node
 val ns_add     : node -> nodeset -> nodeset
 val ns_del     : node -> nodeset -> nodeset

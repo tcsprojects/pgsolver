@@ -52,6 +52,10 @@ let ns_del v vs =
 
 let ns_make = List.sort compare
 let ns_nodes ws = ws
+
+let ns_find = List.find
+
+
 			
 (**************************************************************
  * Parity Game Definitions                                    *

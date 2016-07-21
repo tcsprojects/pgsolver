@@ -323,7 +323,7 @@ let universal_solve_run options stats backend game' =
 	 * DECOMPOSITION                                            *
 	 ************************************************************)
 
-	let rec universal_solve_decompose game transp recdepth =
+	let rec universal_solve_decompose game recdepth =
         let n = pg_size game in
 
 		msg_incrdepth ();
@@ -517,11 +517,10 @@ let universal_solve_run options stats backend game' =
                 then failwith "universal_solve fatal error: backend solved nothing at all!";
                 if !counter < n then (
                 	timer_start stats.logistics_timing;
-                	let transp = game_to_transposed_graph game in
                 	timer_stop stats.logistics_timing;
                 	timer_start stats.attractor_timing;
                 	msg_tagged ATTRACTOR 0 (fun _ -> "Building attractor... ");
-                	let (sol0, sol1) = attractor_closure_inplace_sol_strat game transp (fun _ -> true) sol strat !w0 !w1 in
+                	let (sol0, sol1) = attractor_closure_inplace_sol_strat game (fun _ -> true) sol strat !w0 !w1 in
 
                 	msg_plain ATTRACTOR 0 (fun _ -> "investigated " ^ (string_of_int (List.length sol0 + List.length sol1)) ^ ", adding "  ^ (string_of_int (TreeSet.cardinal (TreeSet.union (TreeSet.of_list_def sol0) (TreeSet.of_list_def sol1)) - !counter)) ^ "!\n");
                     stat_addint [stats.attractor_investigated_nodes] (fun _ -> List.length sol0 + List.length sol1);
@@ -536,10 +535,10 @@ let universal_solve_run options stats backend game' =
    						msg_tagged BACKEND 0 (fun _ -> "SCC was not completely solved.\n");
 
                 		timer_start stats.logistics_timing;
-						pg_with_graph_remove_nodes game transp sol0;
-						pg_with_graph_remove_nodes game transp sol1;
+						pg_remove_nodes game sol0;
+						pg_remove_nodes game sol1;
                         timer_stop stats.logistics_timing;
-                		let (sol', strat') = universal_solve_decompose game transp (recdepth + 1) in
+                		let (sol', strat') = universal_solve_decompose game (recdepth + 1) in
                 		timer_start stats.logistics_timing;
                         merge_strategies_inplace strat strat';
                         merge_solutions_inplace sol sol';
@@ -559,7 +558,7 @@ let universal_solve_run options stats backend game' =
         		let v = SingleOccQueue.take q in
         		let winner = sol.(v) in
         		let to_remove = ref [] in
-        		List.iter (fun w ->
+        		ns_iter (fun w ->
         			if sol.(w) < 0 then (
         				if (pg_get_pl game w = winner) then (
         					sol.(w) <- winner;
@@ -568,7 +567,7 @@ let universal_solve_run options stats backend game' =
         					SingleOccQueue.add w q;
         					attr := w::!attr
         				)
-        				else if Array.length (pg_get_tr game w) = 1 then (
+        				else if ns_size (pg_get_tr game w) = 1 then (
         					sol.(w) <- winner;
         					touchedscc.(sccindex.(w)) <- true;
         					SingleOccQueue.add w q;
@@ -576,9 +575,8 @@ let universal_solve_run options stats backend game' =
         				)
         				else to_remove := (w, v)::!to_remove
         			)
-        		) transp.(v);
-				pg_remove_edges game !to_remove;
-				transposed_graph_remove_edges transp !to_remove
+        		) (pg_get_predecessors game v);
+					  pg_remove_edges game !to_remove;
         	done;
         	!attr
         in
@@ -603,9 +601,8 @@ let universal_solve_run options stats backend game' =
                             Some l ->
                                 let f g =
                                     timer_start stats.logistics_timing;
-                                    let tr = game_to_transposed_graph g in
                                     timer_stop stats.logistics_timing;
-                                    universal_solve_decompose g tr (recdepth + 1)
+                                    universal_solve_decompose g (recdepth + 1)
                                 in (
                                 	msg_tagged DECOMP 0 (fun _ -> "Entering SCC #" ^ string_of_int r ^ " of size " ^ string_of_int (List.length sccs.(r)) ^ " with " ^ string_of_int (List.length sccs.(r) - List.length l) ^ " solved and " ^ string_of_int (List.length l) ^ " unsolved nodes\n");
 		                             let res = subgame_solve l f in
@@ -621,7 +618,7 @@ let universal_solve_run options stats backend game' =
 													 stats.overall_solved_nodes] (fun _ -> 1);
                                         let h = List.hd sccs.(r) in
 																				let pl = pg_get_pl game h in
-                                        if (Array.length (pg_get_tr game h) = 0)
+                                        if (ns_size (pg_get_tr game h) = 0)
                                         then sol.(h) <- 1 - pl
                                         else (
                                             sol.(h) <- (pg_get_pr game h) mod 2;
@@ -685,7 +682,6 @@ let universal_solve_run options stats backend game' =
         timer_start stats.logistics_timing;
 		msg_tagged MAIN 0 (fun _ -> "Building transposed graph...");
         let game = pg_copy game' in
-        let transp = game_to_transposed_graph game in
 		msg_plain MAIN 0 (fun _ -> "finished\n");
 
         timer_stop stats.logistics_timing;
@@ -707,12 +703,11 @@ let universal_solve_run options stats backend game' =
 
                 msg_tagged GLOBAL 0 (fun _ -> "Removing useless self cycles... ");
                 let removed = remove_useless_self_cycles_inplace game in
-                transposed_graph_remove_edges transp (List.map (fun i -> (i,i)) removed);
                 let removedl = List.length removed in
                 stat_addint [stats.globalopt_remove_useless_self_cycles_nodes] (fun _ -> removedl);
                 msg_plain GLOBAL 0 (fun _ -> string_of_int removedl ^ " transition(s) removed!\n");
                 
-                let sinks = List.filter (fun i -> Array.length (pg_get_tr game i) = 0) removed in
+                let sinks = List.filter (fun i -> ns_size (pg_get_tr game i) = 0) removed in
                 let sinksl = List.length sinks in
                 
                 msg_tagged GLOBAL 0 (fun _ -> "Created sinks: " ^ string_of_int sinksl ^ "!\n");
@@ -732,7 +727,7 @@ let universal_solve_run options stats backend game' =
                     timer_start stats.attractor_timing;
                     
                 	msg_tagged ATTRACTOR 0 (fun _ -> "Building attractor... ");
-                    let (sol0, sol1) = attractor_closure_inplace_sol_strat game transp (fun _ -> true)
+                    let (sol0, sol1) = attractor_closure_inplace_sol_strat game (fun _ -> true)
                                                                            solution strategy !w0 !w1 in
                                                                            
                     let solcount = List.length sol0 + List.length sol1 in
@@ -750,8 +745,8 @@ let universal_solve_run options stats backend game' =
                     timer_start stats.global_timing_without_attractor;
 
                     timer_start stats.logistics_timing;
-					pg_with_graph_remove_nodes game transp sol0;
-					pg_with_graph_remove_nodes game transp sol1;
+					pg_remove_nodes game sol0;
+					pg_remove_nodes game sol1;
                     timer_stop stats.logistics_timing;
                 );
 
@@ -789,7 +784,7 @@ let universal_solve_run options stats backend game' =
                     timer_stop stats.global_timing_without_attractor;
                     timer_start stats.attractor_timing;
                 	msg_tagged ATTRACTOR 0 (fun _ -> "Building attractor... ");
-                    let (sol0, sol1) = attractor_closure_inplace_sol_strat game transp (fun _ -> true)
+                    let (sol0, sol1) = attractor_closure_inplace_sol_strat game (fun _ -> true)
                                                                            solution strategy !w0 !w1 in
                		msg_plain ATTRACTOR 0 (fun _ -> "investigated " ^ (string_of_int (List.length sol0 + List.length sol1)) ^ ", removing "  ^ (string_of_int (TreeSet.cardinal (TreeSet.union (TreeSet.of_list_def sol0) (TreeSet.of_list_def sol1)))) ^ "!\n");
 
@@ -805,8 +800,8 @@ let universal_solve_run options stats backend game' =
                     timer_start stats.global_timing_without_attractor;
 
                     timer_start stats.logistics_timing;
-					pg_with_graph_remove_nodes game transp sol0;
-					pg_with_graph_remove_nodes game transp sol1;
+					pg_remove_nodes game sol0;
+					pg_remove_nodes game sol1;
                     timer_stop stats.logistics_timing;
 
                 );
@@ -822,7 +817,7 @@ let universal_solve_run options stats backend game' =
          * DECOMPOSITION CALL                                       *
          ************************************************************)
          
-        let (sol, strat) = universal_solve_decompose game transp 0 in
+        let (sol, strat) = universal_solve_decompose game 0 in
 
         timer_start stats.logistics_timing;
         merge_strategies_inplace strategy strat;

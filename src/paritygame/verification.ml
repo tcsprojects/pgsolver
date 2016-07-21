@@ -13,7 +13,7 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 			     marker.(node) <- true;
 				 if strategy.(node) >= 0
 				 then node::(helper strategy.(node))
-				 else node::(helper (pg_get_tr game node).(0))
+				 else node::(helper (ns_some (pg_get_tr game node)))
 			)
 		in
 		let rec getprio node l pr =
@@ -36,7 +36,7 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 			let delta = pg_get_tr game i in
 			if sol.(i) < -1 || sol.(i) > 1
 			then Some ([i], "Solution for node " ^ string_of_int i ^ " is corrupt (" ^ string_of_int sol.(i) ^ ")")
-			else if strat.(i) < -1 || (strat.(i) != -1 && not (ArrayUtils.exists delta (fun _ j -> j = strat.(i))))
+			else if strat.(i) < -1 || (strat.(i) != -1 && not (ns_exists (fun j -> j = strat.(i)) delta))
 			then Some ([i], "Strategy for node " ^ string_of_int i ^ " is corrupt (" ^ string_of_int strat.(i) ^ ")")
 			else if sol.(i) < 0
 			then if strat.(i) >= 0
@@ -46,7 +46,7 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 			then if strat.(i) >= 0
 				 then Some (i::[strat.(i)], "Strategy for node " ^ string_of_int i ^ " is defined (" ^ string_of_int strat.(i) ^ ") but node is not in the winning set of player " ^ string_of_int pl)
 				 else try
-                        let j = ArrayUtils.find (fun j -> sol.(j) != sol.(i)) delta in
+                        let j = ns_find (fun j -> sol.(j) != sol.(i)) delta in
                         Some ([i;j], "Node " ^ string_of_int i ^ " can escape to " ^ string_of_int j ^ " from the winning set of player " ^ string_of_int pl)
           			  with Not_found -> 
                       	sanity_check (i + 1)
@@ -155,7 +155,7 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 			table.(i) <- 3;
 			if pl = pg_get_pl game i
 			then expand pl (strat.(i))
-			else Array.iter (expand pl) (pg_get_tr game i)
+			else ns_iter (expand pl) (pg_get_tr game i)
 		)
 	in
 
@@ -179,7 +179,7 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 		     then Some (i::trace, "Reached winning set of " ^ (string_of_int sol.(i)) ^ " starting in winning set of " ^ (string_of_int pl) ^ " following the strategy of " ^ (string_of_int pl))
 		     else if pg_get_pl game i = pl
 		     then (
-					if not (has delta strat.(i))
+					if not (has (Array.of_list (ns_nodes delta ))strat.(i))
 					then Some (i::trace, "Strategy failure at the end of the trace w.r.t. player " ^ (string_of_int pl))
 					else (
                         table.(i) <- 1;
@@ -195,7 +195,7 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 		     )
 		     else (
 		     	table.(i) <- 1;
-		     	match (test_list pl delta 0 (i::trace)) with
+		     	match (test_list pl (Array.of_list (ns_nodes delta)) 0 (i::trace)) with
                           Some err -> Some err
                         | None -> (
                         	if table.(i) != 2

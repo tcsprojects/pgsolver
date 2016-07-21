@@ -51,7 +51,7 @@ let parity_game_to_generalized_mdp pg min_even_prio is_epsilon =
 			let mapi f =
 				let i = ref 0 in
 				let a = ref [] in
-				ns_iter (fun j -> a := (f !i j)::!a; incr i);
+				ns_iter (fun j -> a := (f !i j)::!a; incr i) tr;
 				Array.of_list (List.rev !a)
 			in
 			if pl = 0 then (
