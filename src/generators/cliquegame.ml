@@ -30,7 +30,10 @@ let generator_game_func arguments =
 
   let game = pg_create size in
   for i=0 to size-1 do
-    pg_set_node game i i (i mod 2) (Array.of_list (successors (size-1) i with_self_cycles)) (Some (string_of_int i))
+    pg_set_priority game i i;
+    pg_set_owner game i (i mod 2);
+    pg_set_desc game i (Some (string_of_int i));
+    List.iter (fun w -> pg_add_edge game i w) (successors (size-1) i with_self_cycles)) 
   done;
   game;;
 

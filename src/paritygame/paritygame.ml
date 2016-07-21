@@ -78,6 +78,7 @@ type global_solver = (paritygame -> solution * strategy)
 
 let pg_create n = Array.make n (-1, -1, [], [], None);;
 
+(* TODO: needs to be reimplemented! See changed type. Needs to be made smart to store predecessor information properly via pg_add_edge for example *)
 let pg_init n f = Array.init n f;;
 
 let pg_sort = Array.sort;;

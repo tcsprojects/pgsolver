@@ -316,7 +316,9 @@ let solve' game =
     while !todo <> [] do
       let (v, bound) = List.hd !todo in
       todo := List.tl !todo;
-      let (prio,owner,ws,_) = pg_get_node game v in
+      let prio = pg_get_priority game v in
+      let owner = pg_get_owner game v in
+      let ws = pg_get_successors game v in 
       let winner = solution.(v) in
       msg_tagged 3 (fun _ -> "  Processing node " ^ string_of_int v ^ " at time " ^ show_timestamp bound ^ "\n");
       if last_visit.(v) = None || 

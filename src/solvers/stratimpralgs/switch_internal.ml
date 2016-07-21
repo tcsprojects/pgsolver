@@ -26,7 +26,8 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 	add_to_strategy_set old_strategy;
 	let n = pg_size game in
 	for i = 0 to n - 1 do
-		let (_, pl, tr, _) = pg_get_node game i in
+	  let pl = pg_get_owner game i in
+	  let tr = pg_get_successors game i in
 		if pl = 0 then (
 			Array.iter (fun j ->
 				if node_valuation_ordering game node_total_ordering valu.(j) valu.(old_strategy.(i)) > 0 then (
@@ -161,9 +162,11 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 				
 				let m = pg_size game in
 				for i = 0 to m - 1 do
-					let (pr, pl, tr, _) = pg_get_node game i in
-					if (pl = 1) && ArrayUtils.exists tr (fun _ j -> counter_strategy.(i) != j && (TreeSet.mem j !non_final_nodes || TreeSet.mem (i,j) !used_escape_edges))
-					then pg_set_tr graph i [||]
+				  let pr = pg_get_priority game i in
+				  let pl = pg_get_owner game i in
+				  let tr = pg_get_successors game i in
+				  if (pl = 1) && ArrayUtils.exists tr (fun _ j -> counter_strategy.(i) != j && (TreeSet.mem j !non_final_nodes || TreeSet.mem (i,j) !used_escape_edges))
+				  then pg_set_tr graph i [||]
 				done;
 				
 

@@ -76,26 +76,36 @@ let reward_total_ordering game node_total_ordering i j =
 
 let initial_strategy_by_first_edge game =
 	Array.init (pg_size game) (fun i ->
-		let (pr, pl, tr, _) = pg_get_node game i in
-		if (pr < 0) || (pl = 1) || (Array.length tr = 0) then -1 else tr.(0)
+				   let pr = pg_get_priority game i in
+				   let pl = pg_get_owner game i in
+				   let tr = pg_get_successors game i in
+		if (pr < 0) || (pl = 1) || (ns_size tr = 0) then -1 else tr.(0)
 	)
 
 let initial_strategy_by_last_edge game =
 	Array.init (pg_size game) (fun i ->
-		let (pr, pl, tr, _) = pg_get_node game i in
-		if (pr < 0) || (pl = 1) || (Array.length tr = 0) then -1 else tr.(Array.length tr - 1)
+				   let pr = pg_get_priority game i in
+				   let pl = pg_get_owner game i in
+				   let tr = pg_get_successors game i in
+		if (pr < 0) || (pl = 1) || (ns_size tr = 0) then -1 else tr.(Array.length tr - 1)
 	)
 
 let initial_strategy_by_random_edge game =
 	Random.self_init ();
 	Array.init (pg_size game) (fun i ->
-		let (pr, pl, tr, _) = pg_get_node game i in
+				   let pr = pg_get_priority game i in
+				   let pl = pg_get_owner game i in
+				   let tr = pg_get_successors game i in
+
 		if (pr < 0) || (pl = 1) || (Array.length tr = 0) then -1 else tr.(Random.int (Array.length tr))
 	)
 
 let initial_strategy_by_best_reward game =
-	Array.init (pg_size game) (fun i ->
-		let (pr, pl, tr, _) = pg_get_node game i in
+  Array.init (pg_size game) (fun i ->
+			     let pr = pg_get_priority game i in
+			     let pl = pg_get_owner game i in
+			     let tr = pg_get_successors game i in
+			     
 		if (pr < 0) || (pl = 1) || (Array.length tr = 0) then -1
 		else array_max tr (fun i j -> reward_total_ordering game node_total_ordering_by_position i j <= 0)
 	)
@@ -127,8 +137,9 @@ let node_valuation_total_ordering game node_total_ordering valu x y =
 
 let best_decision_by_ordering game ordering v =
 	let ordering x y = ordering x y >= 0 in
-    let (_, pl, tr, _) = pg_get_node game v in
-    array_max tr (fun x y -> if pl = 1 then ordering x y else ordering y x)
+	let pl = pg_get_owner game v in
+	let tr = pg_get_successors game v in
+	array_max tr (fun x y -> if pl = 1 then ordering x y else ordering y x)
 
 let best_decision_by_valuation_ordering game node_total_ordering valu v =
 	best_decision_by_ordering game (node_valuation_total_ordering game node_total_ordering valu) v
@@ -838,5 +849,5 @@ let mdplike_valuation game minprio strategy =
 		failwith "failed";
 	);
 	valu;;
-	
+
 	

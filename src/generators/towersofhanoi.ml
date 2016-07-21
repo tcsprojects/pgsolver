@@ -127,7 +127,11 @@ let towers_of_hanoi_func arguments =
   done;
   
   let game = pg_create !index in
-  List.iter (fun (i, (p,pl,succs,name)) -> pg_set_node game i p pl succs (Some name)) !finished;
+  List.iter (fun (i, (p,pl,succs,name)) -> pg_set_priority game i p;
+					   pg_set_owner game i pl;
+					   pg_set_desc game i (Some name);
+					   List.iter (fun j -> pg_add_edge game i j) succs)
+	    !finished;
   game
   
 

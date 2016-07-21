@@ -80,7 +80,9 @@ let solve_scc_reach game player spmidx updspm =
 
     let update queue i =
         if not (isTop spmidx.(i)) then (
-            let (pr, pl, delta, _) = pg_get_node game i in
+          let pr = pg_get_priority game i in
+	  let pl = pg_get_owner game i in
+	  let delta = pg_get_successors game i in
             let j = (if pl = player then arr_minarg else arr_maxarg)
                      delta (fun q -> prog pr spmidx.(i) spmidx.(q)) (less 0) in
             let y = prog pr spmidx.(i) spmidx.(j) in
@@ -251,7 +253,9 @@ let solve' game =
 	
 	(* Calculates the progress measure update for both players at node vi *)
 	let calc_prog_for i =
-		let (pr, pl, tr, _) = pg_get_node game i in
+          let pr = pg_get_priority game i in
+	  let pl = pg_get_owner game i in
+	  let tr = pg_get_successors game i in
 		
 		let tr_calc = Array.map (fun j ->
 			let prog0 = prog 0 pr spmidx.(i) spmidx.(j) in
@@ -284,8 +288,9 @@ let solve' game =
 			let i = SingleOccQueue.take temp_queue in
 			if temp.(i) then (
 				if is_top spmidx.(i) player then temp.(i) <- false
-				else (
-					let (pr, pl, tr, _) = pg_get_node game i in
+				else (let pr = pg_get_priority game i in
+				      let pl = pg_get_owner game i in
+				      let tr = pg_get_successors game i in
 					if pl = player then (
 						let tr = Array.of_list (List.filter (fun j -> temp.(j)) (Array.to_list tr)) in
 						let tr_calc = Array.map (fun j -> prog player pr spmidx.(i) spmidx.(j)) tr in
@@ -351,9 +356,11 @@ let solve' game =
 				   else failwith "impossible: no top value";
     done;
     for i = 0 to n - 1 do
-        let (_, pl, delta, _) = pg_get_node game i in
-        if (pl = sol.(i))
-        then strat.(i) <- arr_minarg delta (fun q -> spmidx.(q)) (less pl 0)
+      let pl = pg_get_owner game i in
+      let delta = pg_get_successors game i in
+
+      if (pl = sol.(i))
+      then strat.(i) <- arr_minarg delta (fun q -> spmidx.(q)) (less pl 0)
     done;
 
     (sol, strat);;

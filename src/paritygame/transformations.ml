@@ -422,7 +422,10 @@ let alternating_transformation (pg: paritygame) (total: bool) =
 	let newpg = pg_create !counter in
 
 	for i = 0 to n - 1 do
-	  let (pr, pl, delta, _, desc) = pg_get_node pg i in
+	  let pr = pg_get_priority pg i in
+	  let pl = pg_get_owner pg i in
+	  let delta = pg_get_successors pg i in
+	  let desc = pg_get_desc pg i in
 	  if ns_isEmpty delta && total
 	  then
 	    begin
@@ -510,7 +513,10 @@ let partialpg_alternating_revertive_restriction sol =
 
 let increase_priority_occurrence game =
 	let v = pg_max_prio_node game in
-	let (pr, pl, tr, _, de) = pg_get_node game v in
+	let pr = pg_get_priority game v in
+	let pl = pg_get_owner game v in
+	let tr = pg_get_successors game v in
+	let de = pg_get_desc game v in
 	let pl' = ref (1 - pl) in
 	let pr' = if pr mod 2 = pl then pr + 1 else pr in
 	let n = pg_size game in
@@ -562,22 +568,25 @@ let prio_alignment_transformation (game: paritygame) =
 	done;
 	let game' = pg_create (n + !m) in
 	for i = 0 to n - 1 do
-		let (pr, pl, tr, _, desc) = pg_get_node game i in
-		if mp.(i) = i
-		then
-		  begin
-		    pg_set_priority game' i pr;
-		    pg_set_owner game' i pl;
-		    pg_set_desc game' i desc;
-		    ns_iter (fun w -> pg_add_edge game' i w) tr
-		  end
-		else
-		  begin
-		    pg_set_priority game' i pr;
-		    pg_set_owner game' i (1-pl);
-		    pg_set_desc game' i desc;
-		    pg_add_edge game' i mp.(i)
-		  end
+	  let pr = pg_get_priority game i in
+	  let pl = pg_get_owner game i in
+	  let tr = pg_get_successors game i in
+	  let desc = pg_get_desc game i in
+	  if mp.(i) = i
+	  then
+	    begin
+	      pg_set_priority game' i pr;
+	      pg_set_owner game' i pl;
+	      pg_set_desc game' i desc;
+	      ns_iter (fun w -> pg_add_edge game' i w) tr
+	    end
+	  else
+	    begin
+	      pg_set_priority game' i pr;
+	      pg_set_owner game' i (1-pl);
+	      pg_set_desc game' i desc;
+	      pg_add_edge game' i mp.(i)
+	    end
 	done;
 	let i = ref (!m + n - 1) in
 	while (!l != []) do
@@ -598,7 +607,10 @@ let shift_game game k =
 	let n = pg_size game in
 	let game' = pg_create (n + k) in
 	for i = 0 to n - 1 do
-	  let (pr, pl, tr, _, de) = pg_get_node game i in
+	  let pr = pg_get_priority game i in
+	  let pl = pg_get_owner game i in
+	  let tr = pg_get_successor game i in
+	  let de = pg_get_desc game i in
 	  let ki = k+i in 
 	  pg_set_priority game' ki pr;
 	  pg_set_owner game' ki pl;
@@ -622,19 +634,25 @@ let bouncing_node_transformation game =
 	done;
 	let g = pg_create (n + !m) in
 	for i = 0 to n - 1 do
-		let (pr, pl, tr, _, de) = pg_get_node game i in
-		pg_set_priority g i pr;
-		pg_set_owner g i pl;
-		pg_set_desc g i de;
-		ns_iter (fun w -> pg_add_edge g i w) tr
+	  let pr = pg_get_priority game i in
+	  let pl = pg_get_owner game i in
+	  let tr = pg_get_successor game i in
+	  let de = pg_get_desc game i in
+	  pg_set_priority g i pr;
+	  pg_set_owner g i pl;
+	  pg_set_desc g i de;
+	  ns_iter (fun w -> pg_add_edge g i w) tr
 	done;
 	List.iter (fun (i, k) ->
-		let (pr, pl, tr, _, _) = pg_get_node g i in
-		pg_set_priority g k pr;
-		pg_set_owner g k (1-pl);
-		pg_set_desc g k None;
-		pg_del_edge g k k;
-		pg_add_edge g k i;
+		   let pr = pg_get_priority g i in
+		   let pl = pg_get_owner g i in
+		   let tr = pg_get_successor g i in
+		   let de = pg_get_desc g i in
+		   pg_set_priority g k pr;
+		   pg_set_owner g k (1-pl);
+		   pg_set_desc g k None;
+		   pg_del_edge g k k;
+		   pg_add_edge g k i;
 	) !l;
 	g
 
@@ -718,7 +736,7 @@ let normal_form_translation pg =
     if l > 2 then a := !a + l - 2
   done;
   let game = pg_init (n + !a) (fun i ->
-			       if i >= n then (0, 0, ns_empty, ns_empty, None) else pg_get_node pg i
+			       if i >= n then (0, 0, ns_empty, None) else (pg_get_priority pg i, pg_get_owner pg i, pg_get_successors pg i, pg_get_desc pg i)
 			      ) in
   let j = ref n in
   for i = 0 to n - 1 do
@@ -783,7 +801,10 @@ let dummy_transformation game =
   let m = 2*n in
   let g = pg_create m in
   for i=0 to n-1 do
-    let (pr, pl, tr, _, desc) = pg_get_node game i in
+    let pr = pg_get_priority game i in
+    let pl = pg_get_owner game i in
+    let tr = pg_get_successors game i in
+    let desc = pg_get_desc game i in
     pg_set_priority g i pr;
     pg_set_owner g i pl;
     pg_set_desc g i desc;
@@ -803,7 +824,10 @@ let combine_games l =
   let _ = List.fold_left (fun k g ->
 			  let n = pg_size g in
 			  for i = 0 to n - 1 do
-			    let (pr, pl, tr, _, de) = pg_get_node g i in
+			    let pr = pg_get_priority g i in
+			    let pl = pg_get_owner g i in
+			    let tr = pg_get_successors g i in
+			    let de = pg_get_desc g i in
 			    let ki = k+i in 
 			    pg_set_priority game ki pr;
 			    pg_set_owner game ki pl;

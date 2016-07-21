@@ -17,8 +17,11 @@ let paritygame_to_payoffgame (game: paritygame) (fld: 'a field) =
 	let n = pg_size game in
 	let (_, _, _, neg, _, _, _, _, pow, _, int_to) = fld in
 	Array.init n (fun i ->
-    let (pr, pl, tr, de) = pg_get_node game i in
-		(pow (neg (int_to n 1)) pr, pl, tr, de)
+		      let pr = pg_get_priority game i in
+		      let pl = pg_get_owner game i in
+		      let tr = pg_get_successors game i in
+		      let de = pg_get_desc game i in
+		      (pow (neg (int_to n 1)) pr, pl, tr, de)
 	)
 	
 let get_paritygame_discount_factor (game: paritygame) (fld: 'a field) = 

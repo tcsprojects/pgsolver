@@ -47,7 +47,7 @@ type global_solver = (paritygame -> solution * strategy)
  **************************************************************)
 
 val pg_create     : int -> paritygame
-val pg_init       : int -> (int -> (priority * player * nodeset * nodeset * string option)) -> paritygame (* TODO: dangerous! Can be used to violate succ-/predecessor invariants. Can we get rid of it? *)
+val pg_init       : int -> (int -> (priority * player * node list * string option)) -> paritygame
 val pg_sort       : ((priority * player * nodeset * nodeset * string option) -> (priority * player * nodeset * nodeset * string option) -> int) -> paritygame -> unit
 val pg_size	  : paritygame -> int
 val pg_node_count : paritygame -> int
@@ -93,9 +93,9 @@ val pg_map     : (node -> (priority * player * nodeset * nodeset * string option
 val pg_map2    : (node -> (priority * player * nodeset * nodeset * string option) -> 'a) -> paritygame -> 'a array 
 
 val pg_get_node   : paritygame -> node -> (priority * player * nodeset * nodeset * string option)
-val pg_set_node   : paritygame -> node -> priority -> player -> nodeset -> nodeset -> string option -> unit (* DEPRECATED *)
-val pg_set_node'  : paritygame -> int -> (priority * player * nodeset * nodeset * string option) -> unit (* DEPRECATED *)
-
+(* val pg_set_node   : paritygame -> node -> priority -> player -> nodeset -> nodeset -> string option -> unit (* DEPRECATED *)
+val pg_set_node'  : paritygame -> int -> (priority * player * nodeset * nodeset * string option) -> unit (* DEPRECATED *) *)
+					    
 val pg_find_desc  : paritygame -> string option -> node
 
 val pg_get_tr_index_of: paritygame -> int -> int -> int (* DEPRECATED *)

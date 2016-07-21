@@ -62,7 +62,10 @@ let _ =
   let game' = pg_init m (fun _ -> (0,0,[||],None)) in
 
   for i=0 to m-1 do
-    let (p,pl,succs,name) = pg_get_node game i in
+    let p = pg_get_priority game i in
+    let pl = pg_get_owner game i in
+    let succs = pg_get_successors game i in
+    let name = pg_get_desc game i in
 
     let n = Array.length succs in
     let succs' = Array.copy succs in
@@ -80,7 +83,11 @@ let _ =
                     Array.init n (fun i -> succs'.(n-i-1))
                  else succs' 
     in
-    pg_set_node game' (swap.(i)) p pl (Array.map (fun v -> swap.(v)) succs') name
+    let i' = swap.(i) in
+    pg_set_priority game' i' p;
+    pg_set_owner game' i' pl;
+    pg_set_desc game' i' name;
+    Array.iter (fun w -> pg_add_edge game' i' swap.(w))
   done;
 
 (*  print_string "Obfuscated game:\n"; *)

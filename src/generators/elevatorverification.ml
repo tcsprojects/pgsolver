@@ -212,14 +212,14 @@ let elevator_verification_func arguments =
     begin
       match formula.(f) with
             FP(p,g) -> let v = encode el g in
-                       finished := (i, (p,0,[|v|],show_conf el f)) :: !finished;
+                       finished := (i, (p,0,[v],show_conf el f)) :: !finished;
                        todo := (el,g,v) :: !todo 
           | BOOL(pl,g,h) -> let v = encode el g in
                             let w = encode el h in
-                            finished := (i, (0,pl,[|v;w|],show_conf el f)) :: !finished;
+                            finished := (i, (0,pl,[v;w],show_conf el f)) :: !finished;
                             todo := (el,g,v) :: (el,h,w) :: !todo
           | MOD(pl,g) -> let nextnodes = List.map (fun el -> (el, g, encode el g)) (successors el) in
-                         let nextnodes_coded = Array.of_list (List.map (fun (_,_,v) -> v) nextnodes) in
+                         let nextnodes_coded = List.map (fun (_,_,v) -> v) nextnodes in
                          finished := (i, (0,pl,nextnodes_coded, show_conf el f)) :: !finished;
                          todo := nextnodes @ !todo
           | PROP(p) -> finished := (i, ((if p el then 0 else 1), 0, [|i|], show_conf el f)) :: !finished
@@ -228,7 +228,12 @@ let elevator_verification_func arguments =
   done;
   
   let game = pg_create !index in
-  List.iter (fun (i, (p,pl,succs,name)) -> pg_set_node game i p pl succs (Some name)) !finished;
+  List.iter (fun (i, (p,pl,succs,name)) -> pg_set_priority game i p;
+					   pg_set_owner game i pl;
+					   pg_set_desc game i (Some name);
+					   List.iter (fun w -> pg_add_edge game i w) succs
+	    )
+	    !finished;
   game
   
 

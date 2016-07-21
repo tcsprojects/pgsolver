@@ -14,17 +14,24 @@ let multiple_edge_transformation game =
 	let mult = Array.make n [||] in
 	let game' = pg_copy game in
 	for i = 0 to n - 1 do
-		if (pg_get_pr game i = 0) && (Array.length (pg_get_tr game i) = 1)
-		then pg_set_node game' i (-1) (-1) [||] None;
+		if (pg_get_priority game i = 0) && (ns_size (pg_get_successors game i) = 1)
+		then
+		  begin
+		    pg_set_priority game' i (-1);
+		    pg_set_owner game' i (-1);
+		    pg_set_desc game' i None;
+		    ns_iter (fun w -> pg_del_edge game' i w) (pg_get_successors game i)
+		  end
 	done;
 	for i = 0 to n - 1 do
-		let (pr, _, tr, _) = pg_get_node game' i in
+	  let pr = pg_get_priority game' i in
+	  let tr = pg_get_successors game' i in
 		if (pr >= 0) then (
 			let s = ref TreeMap.empty_def in
 			Array.iter (fun r ->
 				let r = ref r in
-				while (pg_get_pr game' !r < 0) do
-					r := (pg_get_tr game !r).(0)
+				while (pg_get_priority game' !r < 0) do
+					r := (pg_get_successors game !r).(0)
 				done;
 				try
 					let q = TreeMap.find !r !s in
@@ -46,8 +53,9 @@ let multiple_edge_transformation game =
 let multiple_edge_backtransformation game solution strategy =
 	let n = pg_size game in
 	for i = 0 to n - 1 do
-	  let (pr, pl, tr, _) = pg_get_node game i in
-		if (pr >= 0) && (solution.(i) < 0) then (
+	  let pl = pg_get_owner game i in
+	  let tr = pg_get_successors game i in
+		if (pg_isDefined game i) && (solution.(i) < 0) then (
 			solution.(i) <- solution.(tr.(0));
 			if solution.(i) = pl
 			then strategy.(i) <- tr.(0)

@@ -25,8 +25,9 @@ let solve game =
             let n = pg_size game in
             let s = Array.make n (-1) in
             for i = 0 to n - 1 do
-                let (_, pl', d, _) = pg_get_node game i in
-                    if (pl = pl') then s.(i) <- d.(Random.int (Array.length d))
+              let pl' = pg_get_owner game i in
+	      let d = pg_get_successors game i in
+              if (pl = pl') then s.(i) <- d.(Random.int (Array.length d))  (* TODO: use something clever from Tcs...RandomUtils to find a random successor here *)
             done;
             s
         in

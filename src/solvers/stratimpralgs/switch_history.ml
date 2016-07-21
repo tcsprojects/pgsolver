@@ -13,12 +13,13 @@ let improvement_policy_optimize_fair_default_tie_break game node_total_ordering 
 
 let improvement_policy_optimize_least_basic_iterations tie_break game node_total_ordering occ old_strategy valu =
 	Array.iteri (fun i j ->
-		let (_, pl, tr, _) = pg_get_node game i in
-		if pl = 0 then Array.iteri (fun k l ->
-			if l = j then occ.(i).(k) <- occ.(i).(k) + 1
-		) tr
-	) old_strategy;
-    let strategy = Array.copy old_strategy in
+		     let pl = pg_get_owner game i in
+		     let tr = pg_get_successors game i in
+		     if pl = 0 then Array.iteri (fun k l ->
+						 if l = j then occ.(i).(k) <- occ.(i).(k) + 1
+						) tr
+		    ) old_strategy;
+	let strategy = Array.copy old_strategy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
 	pg_iterate (fun i (_, pl, tr, _) ->

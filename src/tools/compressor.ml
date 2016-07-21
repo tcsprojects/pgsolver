@@ -15,11 +15,8 @@ let sccs_perform_inplace game performer =
 		performer subgame;
 		let i = ref 0 in
 		List.iter (fun j ->
-			   let delta = pg_get_successors game j in
-			   let desc = pg_get_desc game j in
-			   let pr = pg_get_priority subgame !i in
-			   let pl = pg_get_owner subgame !i in
-			   pg_set_node game j pr pl delta desc;
+			   pg_set_priority game j (pg_get_priority subgame !i);
+			   pg_set_owner game j (pg_get_owner subgame !i);
 			   incr i
 		) sccs.(r);
 	in

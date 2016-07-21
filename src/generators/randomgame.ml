@@ -21,13 +21,16 @@ let random_game_func arguments =
 	let self_cycles = Array.length arguments = 4 in
 
     Random.self_init ();
-  
-    pg_init size (fun i ->
-	  (Random.int max_prio,
-  	   Random.int 2,
-	   Array.map (fun j -> if j < i || self_cycles then j else j + 1)
-	   (Tcsmaths.RandomUtils.get_pairwise_different_from_range (outdegmin + Random.int (outdegmax - outdegmin + 1)) 0 (size-1 - (if self_cycles then 0 else 1))),
-	   Some (string_of_int i))
+
+    let game = pg_create size in
+    for i=0 to size-1 do
+      pg_set_priority game i (Random.int max_prio);
+      pg_set_owner game i (Random.int 2);
+      pg_set_desc game i (Some (string_of_int i));
+      Array.iter (fun j -> pg_add_edge game i (if j < i || self_cycles then j else j + 1))
+		 (Tcsmaths.RandomUtils.get_pairwise_different_from_range (outdegmin + Random.int (outdegmax - outdegmin + 1)) 0 (size-1 - (if self_cycles then 0 else 1)))
+    done;
+    game
     );;
 	
 Generators.register_generator random_game_func "randomgame" "Random Game";;

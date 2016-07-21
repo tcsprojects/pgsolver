@@ -87,7 +87,11 @@ let solve_single_player_scc game player =
 			  ) attr;
 		let backuped = ref [] in
 		TreeSet.iter (fun i ->
-			      backuped := (i, pg_get_node game i (*, tgraph.(i) *))::!backuped
+			      let pr = pg_get_priority game i in
+			      let pl = pg_get_owner game i in
+			      let succs = pg_get_successors game i in
+			      let desc = pg_get_desc game i in 
+			      backuped := (i, (pr,pl,succs,desc))::!backuped
 			     ) !backup;
 		pg_remove_nodes sccgame attr;
 		let (newsccs,_,_,_) = strongly_connected_components sccgame in
@@ -114,8 +118,10 @@ let solve_single_player_scc game player =
         	    success := process_undecided curgame nodelist p
         	  done
 		);
-		List.iter (fun (i, g (*, t*)) -> pg_set_node' sccgame i g
-			                         (* tgraph.(i) <- t *)
+		List.iter (fun (i, (pr,pl,succs,desc)) -> pg_set_priority sccgame i pr;
+							  pg_set_owner sccgame i pl;
+							  pg_set_desc sccgame i desc;
+							  ns_iter (fun w -> pg_add_edge sccgame i w) succs
  			  ) !backuped;
 		match !success with
 		  None -> None
@@ -174,8 +180,8 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
 					  let pr = pg_get_pr game arri in
 						let pl = pg_get_pl game arri in
 						(* This is serious black magic here. Abusing types. Oliver, why would you do something like this? *)
-						pg_set_pr game arri (-2);
-						pg_set_pl game arri !i;
+						pg_set_priority game arri (-2);
+						pg_set_owner game arri !i;
             g.(!i) <- (pr, pl, ref TreeSet.empty_def);
             i := !i + 1
         ) li;
@@ -193,8 +199,8 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
         let i = ref 0 in
         List.iter (fun arri ->
             let (pr, pl, _) = g.(!i) in
-						pg_set_pr game arri pr;
-						pg_set_pl game arri pl;
+						pg_set_priority game arri pr;
+						pg_set_owner game arri pl;
             i := !i + 1
         ) li;
         g

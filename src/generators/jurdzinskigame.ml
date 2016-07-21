@@ -20,7 +20,10 @@ let generator_game_func arguments =
   let game = pg_create (1 + name (2*d) (2*w-1)) in
   
   let print_node name prio player edges ann =
-	pg_set_node game name prio player (Array.of_list edges) ann
+    pg_set_priority game name prio;
+    pg_set_owner game name player;
+    pg_set_desc game name ann;
+    List.iter (fun w -> pg_add_edge game name w) edges
   in
 
   let m = (2*d+2) in

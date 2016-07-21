@@ -232,20 +232,21 @@ let solve' game =
 
   message 3 (fun _ -> "Creating and scheduling clauses for addition ...\n");
   for v=0 to m-1 do
-    let (_,pl,ws,_) = pg_get_node game v in
+    let pl = pg_get_owner game v in
+    let ws = pg_get_successors game v in
     (match pl with
       0 -> (message 3 (fun _ -> "  `" ^ show_var 0 (S v) ^ " -> " ^
                        String.concat " + " (List.map (fun w -> show_var 0 (TE (v,w))) (Array.to_list ws)) ^ "': ");
             schedule_clause (Array.append [|getNSVar v|] (Array.map (fun w -> getTEVar (v,w)) ws));
-            Array.iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 1 (S v) ^ " -> " ^ show_var 0 (TA (v,w)) ^ "': ");
+            ns_iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 1 (S v) ^ " -> " ^ show_var 0 (TA (v,w)) ^ "': ");
                                  schedule_clause [| getSVar v; getTAVar (v,w) |]) ws)
     | 1 -> (message 3 (fun _ -> "  `" ^ show_var 1 (S v) ^ " -> " ^
                        String.concat " + " (List.map (fun w -> show_var 0 (TA (v,w))) (Array.to_list ws)) ^ "': ");
             schedule_clause (Array.append [|getSVar v|] (Array.map (fun w -> getTAVar (v,w)) ws));
-            Array.iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 0 (S v) ^ " -> " ^ show_var 0 (TE (v,w)) ^ "': ");
+            ns_iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 0 (S v) ^ " -> " ^ show_var 0 (TE (v,w)) ^ "': ");
                                  schedule_clause [| getNSVar v; getTEVar (v,w) |]) ws)
     | _ -> ());
-    Array.iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 0 (TE (v,w)) ^ " -> " ^ show_var 0 (S w) ^ "': ");
+    ns_iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 0 (TE (v,w)) ^ " -> " ^ show_var 0 (S w) ^ "': ");
                          schedule_clause [| getNTEVar (v,w) ; getSVar w |];
                          message 3 (fun _ -> "  `" ^ show_var 0 (TA (v,w)) ^ " -> " ^ show_var 1 (S w) ^ "': ");
                          schedule_clause [| getNTAVar (v,w); getNSVar w |]) ws
@@ -255,10 +256,11 @@ let solve' game =
   let remember var = to_expand := var::!to_expand in
 
   for v=0 to m-1 do
-    let (p,_,ws,_) = pg_get_node game v in
+    let p = pg_get_priority game v in
+    let ws = pg_get_successors game v in 
 (*    let scc_v = sccindex.(v) in *)
 
-    Array.iter (fun w ->
+    ns_iter (fun w ->
       let bigger_prios = List.filter (fun r -> r > p) !present_prios in
       List.iter (fun p' -> let k = (v,w,p',hbit p') in
                            message 3 (fun _ -> "  `" ^ show_var 0 (TE (v,w)) ^ " -> " ^ show_var 0 (GE k) ^ "': ");

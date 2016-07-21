@@ -27,22 +27,24 @@ let solve' game =
 	Array.sort (fun i j -> compare (pg_get_pr game i) (pg_get_pr game j)) prio_arr;
 
 	for i = 0 to n - 1 do
-		let (_, pl, delta, _) = pg_get_node game i in
-		solver#add_helper_exactlyone 0 (Array.length delta - 1) [||] (fun j -> Po (Strategy (i, delta.(j))));
+	  let pl = pg_get_owner game i in
+	  let delta = pg_get_successors game i in
+	  solver#add_helper_exactlyone 0 (ns_size delta - 1) [||] (fun j -> Po (Strategy (i, delta.(j))));
 	done;
 
 	for i = 0 to n - 1 do
-		let (_, pl, delta, _) = pg_get_node game i in
-		Array.iter (fun j ->
-			solver#add_clause_array [|Ne (SubEdge (0, i, j)); Ne (Winning i)|];
-			solver#add_clause_array [|Ne (SubEdge (1, i, j)); Po (Winning i)|];
-			solver#add_clause_array [|Ne (SubEdge (0, i, j)); Ne (Winning j)|];
-			solver#add_clause_array [|Ne (SubEdge (1, i, j)); Po (Winning j)|];
-			solver#add_clause_array [|Ne (SubEdge (pl, i, j)); Po (Strategy (i, j))|];
-			solver#add_clause_array [|if pl = 1 then Po (Winning i) else Ne (Winning i); Po (SubEdge (1 - pl, i, j))|];
-			solver#add_clause_array [|if pl = 1 then Ne (Winning i) else Po (Winning i); Ne (Strategy (i, j)); Po (SubEdge (pl, i, j))|]
-        ) delta;
-    done;
+	  let pl = pg_get_owner game i in
+	  let delta = pg_get_successors game i in
+	  ns_iter (fun j ->
+		      solver#add_clause_array [|Ne (SubEdge (0, i, j)); Ne (Winning i)|];
+		      solver#add_clause_array [|Ne (SubEdge (1, i, j)); Po (Winning i)|];
+		      solver#add_clause_array [|Ne (SubEdge (0, i, j)); Ne (Winning j)|];
+		      solver#add_clause_array [|Ne (SubEdge (1, i, j)); Po (Winning j)|];
+		      solver#add_clause_array [|Ne (SubEdge (pl, i, j)); Po (Strategy (i, j))|];
+		      solver#add_clause_array [|if pl = 1 then Po (Winning i) else Ne (Winning i); Po (SubEdge (1 - pl, i, j))|];
+		      solver#add_clause_array [|if pl = 1 then Ne (Winning i) else Po (Winning i); Ne (Strategy (i, j)); Po (SubEdge (pl, i, j))|]
+		  ) delta;
+	done;
 
 	for p = 0 to 1 do
         for i = 0 to n - 1 do

@@ -35,7 +35,9 @@ let solver rec_solve game =
                      " priority " ^ string_of_int !max_prio ^ " present\n");
           let winner = !max_prio mod 2 in
           for v=0 to l-1 do
-            let (p',pl',ws,_) = pg_get_node game v in
+            let p' = pg_get_priority game v in
+	    let pl' = pg_get_owner game v in
+	    let ws = pg_get_successors game v in 
             if p' <> -1
             then (solution.(v) <- winner;
                   if pl'=winner then strategy.(v) <- ws.(0))
