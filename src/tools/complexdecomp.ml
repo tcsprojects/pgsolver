@@ -88,8 +88,12 @@ let _ =
 					let sub = pg_copy game in
 					let subnodes = TreeSet.of_list_def nodes in
 					List.iter (fun v ->
-						if (pg_get_pl game v = 1) && (not (TreeSet.mem tau.(v) subnodes))
-						then pg_set_tr sub v [|tau.(v)|];
+						if (pg_get_owner game v = 1) && (not (TreeSet.mem tau.(v) subnodes))
+						then
+						  begin
+						    ns_iter (fun w -> pg_del_edge sub v w) (pg_get_successors sub v);
+						    pg_add_edge sub v tau.(v)
+						  end
 					) nodes;
 					helper sub (indent ^ "  ") (fun scc -> TreeSet.mem (List.hd scc) subnodes);
 				)

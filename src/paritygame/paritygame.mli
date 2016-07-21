@@ -21,6 +21,7 @@ val ns_map     : (node -> node) -> nodeset -> nodeset
 val ns_size    : nodeset -> int
 val ns_exists  : (node -> bool) -> nodeset -> bool
 val ns_find    : (node -> bool) -> nodeset -> node
+val ns_max     : nodeset -> (node -> node -> bool) -> node
 val ns_some    : nodeset -> node
 val ns_add     : node -> nodeset -> nodeset
 val ns_del     : node -> nodeset -> nodeset
@@ -64,8 +65,10 @@ val pg_get_pl     : paritygame -> node -> player
 val pg_set_pl     : paritygame -> node -> player -> unit
 val pg_get_tr     : paritygame -> node -> nodeset
 
+(*
 val pg_set_tr     : paritygame -> int -> int array -> unit (* DEPRECATED *)
-
+*)
+					    
 (**************************************************************
  * node access and modification functions                     *
  *                                                            *
@@ -92,14 +95,18 @@ val pg_iterate : (node -> (priority * player * nodeset * nodeset * string option
 val pg_map     : (node -> (priority * player * nodeset * nodeset * string option) -> (priority * player * nodeset * nodeset * string option)) -> paritygame -> paritygame 
 val pg_map2    : (node -> (priority * player * nodeset * nodeset * string option) -> 'a) -> paritygame -> 'a array 
 
+(* all DEPRECATED
 val pg_get_node   : paritygame -> node -> (priority * player * nodeset * nodeset * string option)
-(* val pg_set_node   : paritygame -> node -> priority -> player -> nodeset -> nodeset -> string option -> unit (* DEPRECATED *)
-val pg_set_node'  : paritygame -> int -> (priority * player * nodeset * nodeset * string option) -> unit (* DEPRECATED *) *)
+val pg_set_node   : paritygame -> node -> priority -> player -> nodeset -> nodeset -> string option -> unit
+val pg_set_node'  : paritygame -> int -> (priority * player * nodeset * nodeset * string option) -> unit
+*)
 					    
 val pg_find_desc  : paritygame -> string option -> node
 
+(*
 val pg_get_tr_index_of: paritygame -> int -> int -> int (* DEPRECATED *)
-
+*)
+						     
 (* `pg_remove_nodes <game> <node_list>' removes all nodes from <game> that are specified in <node_list> *)
 val pg_remove_nodes   : paritygame -> node list -> unit
 

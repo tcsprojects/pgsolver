@@ -40,7 +40,7 @@ let solver rec_solve game =
 	    let ws = pg_get_successors game v in 
             if p' <> -1
             then (solution.(v) <- winner;
-                  if pl'=winner then strategy.(v) <- ws.(0))
+                  if pl'=winner then strategy.(v) <- ns_some ws)
           done;
           message 3 (fun _ -> "  Returned solution:\n    " ^
                      format_solution solution ^ "\n");
@@ -83,7 +83,7 @@ let solver rec_solve game =
 		    end
                 done;
                 List.iter (fun v -> solution.(v) <- pl) attr;
-                List.iter (fun v -> if pg_get_pl game v = pl then let ws = pg_get_successors game v in strategy.(v) <- ws.(0)) nodes_with_prio_p;
+                List.iter (fun v -> if pg_get_owner game v = pl then let ws = pg_get_successors game v in strategy.(v) <- ns_some ws) nodes_with_prio_p;
 
                 msg_tagged 3 (fun _ -> "Solution: " ^ format_solution solution ^ "\n");
                 msg_tagged 3 (fun _ -> "Strategy: " ^ format_strategy strategy ^ "\n");

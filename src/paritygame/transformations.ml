@@ -23,29 +23,6 @@ let remove_useless_self_cycles_inplace game =
 	     ) game;
   !l
 	     
-(*
-	let n = pg_size game in
-	let l = ref [] in
-	for i = 0 to n - 1 do
-		if pg_get_priority game i mod 2 != pg_get_owner game i then (
-		  let delta = pg_get_successors game i  in
-		  let j = ns_fold (fun k -> fun w -> if w=i then k+1 else k) 0 delta in
-		  if j < ns_size delta then (
-                    let a = Array.make !j (-1) in
-                    j := 0;
-                    l := i::!l;
-                    for k = 0 to Array.length delta - 1 do
-                      if delta.(k) != i then (
-                        a.(!j) <- delta.(k);
-                        j := !j + 1
-                      )
-                    done;
-                    pg_set_tr game i a
-		  )
-		)
-	done;
-	!l
- *)
 
 
 
@@ -609,7 +586,7 @@ let shift_game game k =
 	for i = 0 to n - 1 do
 	  let pr = pg_get_priority game i in
 	  let pl = pg_get_owner game i in
-	  let tr = pg_get_successor game i in
+	  let tr = pg_get_successors game i in
 	  let de = pg_get_desc game i in
 	  let ki = k+i in 
 	  pg_set_priority game' ki pr;
@@ -636,7 +613,7 @@ let bouncing_node_transformation game =
 	for i = 0 to n - 1 do
 	  let pr = pg_get_priority game i in
 	  let pl = pg_get_owner game i in
-	  let tr = pg_get_successor game i in
+	  let tr = pg_get_successors game i in
 	  let de = pg_get_desc game i in
 	  pg_set_priority g i pr;
 	  pg_set_owner g i pl;
@@ -646,8 +623,6 @@ let bouncing_node_transformation game =
 	List.iter (fun (i, k) ->
 		   let pr = pg_get_priority g i in
 		   let pl = pg_get_owner g i in
-		   let tr = pg_get_successor g i in
-		   let de = pg_get_desc g i in
 		   pg_set_priority g k pr;
 		   pg_set_owner g k (1-pl);
 		   pg_set_desc g k None;
@@ -736,7 +711,7 @@ let normal_form_translation pg =
     if l > 2 then a := !a + l - 2
   done;
   let game = pg_init (n + !a) (fun i ->
-			       if i >= n then (0, 0, ns_empty, None) else (pg_get_priority pg i, pg_get_owner pg i, pg_get_successors pg i, pg_get_desc pg i)
+			       if i >= n then (0, 0, [], None) else (pg_get_priority pg i, pg_get_owner pg i, ns_nodes (pg_get_successors pg i), pg_get_desc pg i)
 			      ) in
   let j = ref n in
   for i = 0 to n - 1 do

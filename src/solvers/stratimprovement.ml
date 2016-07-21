@@ -18,9 +18,9 @@ let solve' (game: paritygame) =
     let msg_plain = message in
 
 
-    let prio i = pg_get_pr game i in
-    let pl i = pg_get_pl game i in
-    let tra i = pg_get_tr game i in
+    let prio i = pg_get_priority game i in
+    let pl i = pg_get_owner game i in
+    let tra i = pg_get_successors game i in
     let isEven i = (prio i) mod 2 = 0 in
     let isOdd i = (prio i) mod 2 = 1 in
     let isP0 i = (pl i) = 0 in
@@ -263,7 +263,7 @@ let solve' (game: paritygame) =
     for i = 0 to n - 1 do
     	if isP1 i
     	then ()
-    	else (strategy.(i) <- array_max (tra i) lessRew;
+    	else (strategy.(i) <- ns_max (tra i) lessRew;
     	      v0 := TreeSet.add i (!v0))
     done;
 
@@ -271,7 +271,7 @@ let solve' (game: paritygame) =
     for i = 0 to n - 1 do
     	Graph.addNode ggraph i;
     	let arr = tra i in
-    		for j = 0 to (Array.length arr) - 1 do
+    		for j = 0 to (ns_size arr) - 1 do
     			Graph.addEdge ggraph i arr.(j)
     		done;
     done;

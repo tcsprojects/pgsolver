@@ -55,7 +55,7 @@ let ns_nodes ws = ws
 
 let ns_find = List.find
 
-
+let ns_max ns lessf = ns_fold (fun v -> fun w -> if lessf v w then w else v) (ns_some ns) ns
 			
 (**************************************************************
  * Parity Game Definitions                                    *
@@ -76,10 +76,7 @@ type global_solver = (paritygame -> solution * strategy)
  * independent functions should be listed below               *
  **************************************************************)
 
-let pg_create n = Array.make n (-1, -1, [], [], None);;
-
-(* TODO: needs to be reimplemented! See changed type. Needs to be made smart to store predecessor information properly via pg_add_edge for example *)
-let pg_init n f = Array.init n f;;
+let pg_create n = Array.make n (-1, -1, ns_empty, ns_empty, None);;
 
 let pg_sort = Array.sort;;
 
@@ -175,6 +172,18 @@ let pg_copy pg =
 	pg_iterate (fun i -> fun (pr, pl, succs, preds, desc) -> pg_set_node pg' i pr pl succs preds desc) pg;
 	pg';;
 
+let pg_init n f =
+  let game = pg_create n in
+  for i=0 to n-1 do
+    let (pr,pl,succs,name) = f i in
+    pg_set_priority game i pr;
+    pg_set_owner game i pl;
+    pg_set_desc game i name;
+    List.iter (fun w -> pg_add_edge game i w) succs
+  done;
+  game;;
+
+
 let pg_get_tr_index_of pg v w =
   let succs = pg_get_successors pg v in
   let (b,k) = List.fold_left (fun (b,k) -> fun u -> if b || (w=u) then (b,k)
@@ -211,9 +220,9 @@ let pg_set_predecessors gm v ws =
 
 let pg_get_tr = pg_get_successors;;  (* deprecated? *)
 
-
+(*
 let pg_set_tr = pg_set_successors ;; (* DEPRECATED *)
-
+*)
 							      
 (**************************************************************
  * Formatting Functions                                       *
