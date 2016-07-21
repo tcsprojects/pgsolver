@@ -21,9 +21,12 @@ type nodeset = node list
  * here: sorted lists                                         *
  **************************************************************)
   
+let ns_isEmpty ws = ws = []
+let ns_empty = []
 let ns_elem = List.mem
 let ns_fold = List.fold_left
 let ns_iter = List.iter
+let ns_map = List.map
 let ns_size = List.length
 let ns_exists = List.exists
 let ns_some = List.hd
@@ -48,7 +51,7 @@ let ns_del v vs =
   del vs
 
 let ns_make = List.sort compare
-
+let ns_nodes ws = ws
 			
 (**************************************************************
  * Parity Game Definitions                                    *

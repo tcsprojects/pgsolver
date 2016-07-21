@@ -12,16 +12,19 @@ open Tcsset
 type node = int
 type nodeset
 
-val ns_elem : node -> nodeset -> bool
-val ns_fold : ('a -> node -> 'a) -> 'a -> nodeset -> 'a
-val ns_iter : (node -> unit) -> nodeset -> unit
-val ns_size : nodeset -> int
-val ns_exists : (node -> bool) -> nodeset -> bool
-val ns_some : nodeset -> node
-val ns_add  : node -> nodeset -> nodeset
-val ns_del  : node -> nodeset -> nodeset
-val ns_make : node list -> nodeset
-
+val ns_isEmpty : nodeset -> bool
+val ns_empty   : nodeset
+val ns_elem    : node -> nodeset -> bool
+val ns_fold    : ('a -> node -> 'a) -> 'a -> nodeset -> 'a
+val ns_iter    : (node -> unit) -> nodeset -> unit
+val ns_map     : (node -> node) -> nodeset -> nodeset
+val ns_size    : nodeset -> int
+val ns_exists  : (node -> bool) -> nodeset -> bool
+val ns_some    : nodeset -> node
+val ns_add     : node -> nodeset -> nodeset
+val ns_del     : node -> nodeset -> nodeset
+val ns_make    : node list -> nodeset
+val ns_nodes   : nodeset -> node list
 			
 (**************************************************************
  * Parity Game Definitions                                    *
@@ -43,7 +46,7 @@ type global_solver = (paritygame -> solution * strategy)
  **************************************************************)
 
 val pg_create     : int -> paritygame
-val pg_init       : int -> (int -> (priority * player * nodeset * nodeset * string option)) -> paritygame
+val pg_init       : int -> (int -> (priority * player * nodeset * nodeset * string option)) -> paritygame (* TODO: dangerous! Can be used to violate succ-/predecessor invariants. Can we get rid of it? *)
 val pg_sort       : ((priority * player * nodeset * nodeset * string option) -> (priority * player * nodeset * nodeset * string option) -> int) -> paritygame -> unit
 val pg_size	  : paritygame -> int
 val pg_node_count : paritygame -> int
@@ -82,7 +85,8 @@ val pg_set_desc   : paritygame -> node -> string option -> unit
 val pg_get_desc'  : paritygame -> node -> string
 val pg_set_desc'  : paritygame -> node -> string -> unit
 
-
+val pg_isDefined : paritygame -> node -> bool
+					   
 val pg_iterate : (node -> (priority * player * nodeset * nodeset * string option) -> unit) -> paritygame -> unit 
 val pg_map     : (node -> (priority * player * nodeset * nodeset * string option) -> (priority * player * nodeset * nodeset * string option)) -> paritygame -> paritygame 
 val pg_map2    : (node -> (priority * player * nodeset * nodeset * string option) -> 'a) -> paritygame -> 'a array 
