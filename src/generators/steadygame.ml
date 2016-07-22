@@ -54,7 +54,7 @@ let generator_game_func arguments =
 
   pg_init size (fun i -> (i,
 			  Random.int 2,
-			  Array.of_list pg.(i),
+			  pg.(i),
 			  Some (string_of_int i))
 	       );;
 

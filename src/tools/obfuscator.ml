@@ -14,10 +14,10 @@ struct
 
   let speclist =  [(["--disablenodeobfuscation"; "-dn"], Unit(fun _ -> obfuscate_nodes := false),
                       "\n     keep ordering of nodes") ;
-                   (["--disableedgeobfuscation"; "-de"], Unit(fun _ -> obfuscate_edges := false),
-                      "\n     keep ordering of edges");
+                   (["--disableedgeobfuscation"; "-de"], Unit(fun _ -> obfuscate_edges := false), 
+                    "\n     keep ordering of edges"); (* TODO: does not make sense anymore. There is no explicit ordering visible to the outside. Option should probably be removed. *)
                    (["--justreverseedges"; "-rv"], Unit(fun _ -> obfuscate_edges := false; reverse_edges := true),
-                      "\n     reverse edges (disables a previous `-de')")]
+                    "\n     reverse edges (disables a previous `-de')")] (* TODO: same as above. `reverse' is also misleading. *)
                    
   let header = Info.get_title "Obfuscator Tool"
 end ;;
@@ -59,7 +59,7 @@ let _ =
   print_string "Swapping table:\n";
   Array.iteri (fun i -> fun j -> print_string ("  " ^ string_of_int i ^ " -> " ^ string_of_int j ^ "\n")) swap;
 *)
-  let game' = pg_init m (fun _ -> (0,0,[||],None)) in
+  let game' = pg_init m (fun _ -> (0,0,[],None)) in
 
   for i=0 to m-1 do
     let p = pg_get_priority game i in
@@ -67,7 +67,8 @@ let _ =
     let succs = pg_get_successors game i in
     let name = pg_get_desc game i in
 
-    let n = Array.length succs in
+(*
+    let n = ns_size succs in
     let succs' = Array.copy succs in
     if !obfuscate_edges then (
         for k=1 to 10*(n-1) do
@@ -83,11 +84,12 @@ let _ =
                     Array.init n (fun i -> succs'.(n-i-1))
                  else succs' 
     in
+ *)
     let i' = swap.(i) in
     pg_set_priority game' i' p;
     pg_set_owner game' i' pl;
     pg_set_desc game' i' name;
-    Array.iter (fun w -> pg_add_edge game' i' swap.(w))
+    ns_iter (fun w -> pg_add_edge game' i' swap.(w)) succs
   done;
 
 (*  print_string "Obfuscated game:\n"; *)

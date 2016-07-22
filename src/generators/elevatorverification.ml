@@ -222,7 +222,7 @@ let elevator_verification_func arguments =
                          let nextnodes_coded = List.map (fun (_,_,v) -> v) nextnodes in
                          finished := (i, (0,pl,nextnodes_coded, show_conf el f)) :: !finished;
                          todo := nextnodes @ !todo
-          | PROP(p) -> finished := (i, ((if p el then 0 else 1), 0, [|i|], show_conf el f)) :: !finished
+          | PROP(p) -> finished := (i, ((if p el then 0 else 1), 0, [i], show_conf el f)) :: !finished
     end;
     visited.(i) <- true
   done;

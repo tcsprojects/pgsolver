@@ -86,7 +86,6 @@ let generator_game_func arguments =
 
 	SymbolicParityGame.to_paritygame pg;;
 
-
 register_strat_impr_gen {
 	ident = "switchbestsubexp";
 	description = "Binary-Case Subexponential Lower Bound for (Schewe's) switch-best rule";

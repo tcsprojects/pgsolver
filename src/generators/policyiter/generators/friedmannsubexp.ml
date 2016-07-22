@@ -81,7 +81,6 @@ let generator_game_func arguments =
 
 	SymbolicParityGame.to_paritygame pg;;
 
-
 register_strat_impr_gen {
 	ident = "friedmannsubexp";
 	description = "Friedmann's Subexponential Lower Bound for snare-based rules";
