@@ -25,7 +25,7 @@ let solve' game sink0 sink1 =
 	msg_tagged 2 (fun _ -> "Building constraints...\n");
 
 	let n = pg_size game in
-	let par a = (pg_get_pr game a) mod 2 in
+	let par a = (pg_get_priority game a) mod 2 in
 
 	for i = 0 to n - 1 do
 	  let pr = pg_get_priority game i in
@@ -110,8 +110,8 @@ let solve' game sink0 sink1 =
 	if not satis then failwith "impossible: unsatisfiable";
 	
 	let sol = Array.init n (fun i -> solver#get_variable (Winning i)) in
-	let strat = Array.init n (fun i -> if sol.(i) = pg_get_pl game i
-	                                   then let delta = pg_get_tr game i in
+	let strat = Array.init n (fun i -> if sol.(i) = pg_get_owner game i
+	                                   then let delta = pg_get_successors game i in
 	                                        delta.(solver#get_variable_first (Array.map (fun j -> Strategy (i, j)) delta)) else -1) in
 	
 	solver#dispose;
@@ -133,7 +133,7 @@ let solve''' game =
   let (sol, strat) = solve'' game' in
   let (sol', strat') = alternating_revertive_restriction game game' sol strat in
   for i = 0 to pg_size game - 1 do
-    if sol'.(i) != pg_get_pl game i then strat'.(i) <- -1
+    if sol'.(i) != pg_get_owner game i then strat'.(i) <- -1
   done;
   (sol', strat');;
   

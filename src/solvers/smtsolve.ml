@@ -48,14 +48,14 @@ let solve' game =
 	let max_prio = pg_max_prio game in
 	
 	let var_win = Array.init n (fun i -> new_bool_symbol ctx bool_sort "win" [i]) in
-	let var_desc_edge = Array.init n (fun i -> Array.map (fun j -> new_bool_symbol ctx bool_sort "des" [i;j]) (pg_get_tr game i)) in
+	let var_desc_edge = Array.init n (fun i -> Array.map (fun j -> new_bool_symbol ctx bool_sort "des" [i;j]) (pg_get_successors game i)) in
 	let var_pm = Array.init n (fun i -> Array.init (max_prio + 1) (fun p -> new_int_symbol ctx int_sort "pro" [i;p])) in
 	
 	for v = 0 to n - 1 do
-		let plwin w = if pg_get_pl game v = 0 then var_win.(w) else Z3.mk_not ctx var_win.(w) in
-		let plwin' w = if pg_get_pl game v = 1 then var_win.(w) else Z3.mk_not ctx var_win.(w) in
+		let plwin w = if pg_get_owner game v = 0 then var_win.(w) else Z3.mk_not ctx var_win.(w) in
+		let plwin' w = if pg_get_owner game v = 1 then var_win.(w) else Z3.mk_not ctx var_win.(w) in
 
-		let tr = pg_get_tr game v in
+		let tr = pg_get_successors game v in
 
 		let pre = plwin v in
 		let post = Z3.mk_or ctx (Array.mapi (fun i w -> Z3.mk_and ctx [|plwin w; var_desc_edge.(v).(i)|]) tr) in
@@ -104,8 +104,8 @@ let solve' game =
 	|	_ -> ());
 
 	let sol = Array.init n (fun i -> if get_bool_assignm_failundef ctx model var_win.(i) then 0 else 1) in
-	let strat = Array.init n (fun i -> if sol.(i) = pg_get_pl game i
-	                                   then let delta = pg_get_tr game i in
+	let strat = Array.init n (fun i -> if sol.(i) = pg_get_owner game i
+	                                   then let delta = pg_get_successors game i in
 	                                   	    let j = ref 0 in
 	                                   	    let fnd = ref false in
 	                                   	    while (not !fnd) && (!j < Array.length delta) do

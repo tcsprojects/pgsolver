@@ -345,7 +345,7 @@ let universal_solve_run options stats backend game' =
 		let l = ref [] in
 		let a = Array.make n (-1) in
 		for i = n - 1 downto 0 do
-			if pg_get_pr game i >= 0 then (
+			if pg_isDefined game i then (
 				l := i::!l;
 				a.(i) <- 0;
 			)
@@ -504,7 +504,7 @@ let universal_solve_run options stats backend game' =
                     if (sol.(i) = 0) then w0 := TreeSet.add i !w0;
                     if (sol.(i) = 1) then w1 := TreeSet.add i !w1;
                     if sol.(i) >= 0 then incr counter;
-                    if (pg_get_pr game i < 0) || (pg_get_pl game i != sol.(i))
+                    if not (pg_isDefined game i) || (pg_get_owner game i != sol.(i))
                     then strat.(i) <- -1;
                 done;
 				msg_plain BACKEND 0 (fun _ -> string_of_int !counter ^ " out of " ^ string_of_int n ^ "\n");
@@ -560,14 +560,14 @@ let universal_solve_run options stats backend game' =
         		let to_remove = ref [] in
         		ns_iter (fun w ->
         			if sol.(w) < 0 then (
-        				if (pg_get_pl game w = winner) then (
+        				if (pg_get_owner game w = winner) then (
         					sol.(w) <- winner;
         					touchedscc.(sccindex.(w)) <- true;
         					strat.(w) <- v;
         					SingleOccQueue.add w q;
         					attr := w::!attr
         				)
-        				else if ns_size (pg_get_tr game w) = 1 then (
+        				else if ns_size (pg_get_successors game w) = 1 then (
         					sol.(w) <- winner;
         					touchedscc.(sccindex.(w)) <- true;
         					SingleOccQueue.add w q;
@@ -599,29 +599,29 @@ let universal_solve_run options stats backend game' =
                     let attrsrc =
                         match untouched with
                             Some l ->
-                                let f g =
-                                    timer_start stats.logistics_timing;
-                                    timer_stop stats.logistics_timing;
-                                    universal_solve_decompose g (recdepth + 1)
-                                in (
-                                	msg_tagged DECOMP 0 (fun _ -> "Entering SCC #" ^ string_of_int r ^ " of size " ^ string_of_int (List.length sccs.(r)) ^ " with " ^ string_of_int (List.length sccs.(r) - List.length l) ^ " solved and " ^ string_of_int (List.length l) ^ " unsolved nodes\n");
-		                             let res = subgame_solve l f in
-		                             res
-		                        )
+                            let f g =
+                              timer_start stats.logistics_timing;
+                              timer_stop stats.logistics_timing;
+                              universal_solve_decompose g (recdepth + 1)
+                            in (
+                              msg_tagged DECOMP 0 (fun _ -> "Entering SCC #" ^ string_of_int r ^ " of size " ^ string_of_int (List.length sccs.(r)) ^ " with " ^ string_of_int (List.length sccs.(r) - List.length l) ^ " solved and " ^ string_of_int (List.length l) ^ " unsolved nodes\n");
+		              let res = subgame_solve l f in
+		              res
+		            )
                         |   None -> if (List.length sccs.(r) > 1)
-                        			then (
-                        				msg_tagged DECOMP 0 (fun _ -> "Entering SCC #" ^ string_of_int r ^ " of size " ^ string_of_int (List.length sccs.(r)) ^ "\n");
-                        				subgame_solve sccs.(r) (fun g -> solve_scc g recdepth)
-                        			)
-                        			else (
-										stat_addint [stats.universal_solved_nodes;
-													 stats.overall_solved_nodes] (fun _ -> 1);
-                                        let h = List.hd sccs.(r) in
-																				let pl = pg_get_pl game h in
-                                        if (ns_size (pg_get_tr game h) = 0)
+                        	    then (
+                        	      msg_tagged DECOMP 0 (fun _ -> "Entering SCC #" ^ string_of_int r ^ " of size " ^ string_of_int (List.length sccs.(r)) ^ "\n");
+                        	      subgame_solve sccs.(r) (fun g -> solve_scc g recdepth)
+                        	    )
+                        	    else (
+				      stat_addint [stats.universal_solved_nodes;
+						   stats.overall_solved_nodes] (fun _ -> 1);
+                                      let h = List.hd sccs.(r) in
+				      let pl = pg_get_owner game h in
+                                        if (ns_size (pg_get_successors game h) = 0)
                                         then sol.(h) <- 1 - pl
                                         else (
-                                            sol.(h) <- (pg_get_pr game h) mod 2;
+                                            sol.(h) <- (pg_get_priority game h) mod 2;
                                             if (sol.(h) = pl)
                                             then strat.(h) <- h
 					                    );
@@ -707,7 +707,7 @@ let universal_solve_run options stats backend game' =
                 stat_addint [stats.globalopt_remove_useless_self_cycles_nodes] (fun _ -> removedl);
                 msg_plain GLOBAL 0 (fun _ -> string_of_int removedl ^ " transition(s) removed!\n");
                 
-                let sinks = List.filter (fun i -> ns_size (pg_get_tr game i) = 0) removed in
+                let sinks = List.filter (fun i -> ns_size (pg_get_successors game i) = 0) removed in
                 let sinksl = List.length sinks in
                 
                 msg_tagged GLOBAL 0 (fun _ -> "Created sinks: " ^ string_of_int sinksl ^ "!\n");
@@ -717,7 +717,7 @@ let universal_solve_run options stats backend game' =
                 if sinksl > 0 then (
                     let (w0, w1) = (ref TreeSet.empty_def, ref TreeSet.empty_def) in
                     List.iter (fun i ->
-                    	let player = pg_get_pl game i in
+                    	let player = pg_get_owner game i in
                         let w = if player = 0 then w1 else w0 in
                         w := TreeSet.add i !w;
                         solution.(i) <- 1 - player;

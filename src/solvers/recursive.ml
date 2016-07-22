@@ -23,7 +23,7 @@ let solver rec_solve game =
     let max_prio = ref (-1) in
     let more_than_one = ref false in
     for v=0 to l-1 do
-      let p = pg_get_pr game v in
+      let p = pg_get_priority game v in
       if p <> -1
       then (if !max_prio > -1 && p <> !max_prio then more_than_one := true;
             if p > !max_prio then max_prio := p)
@@ -76,10 +76,10 @@ let solver rec_solve game =
                 msg_tagged 3 (fun _ -> "Merging and completing strategies and solutions:\n");
 
                 for v=0 to l-1 do
-                  if pg_get_pr game' v > -1 then
+                  if pg_isDefined game' v then
 		    begin
 		      solution.(v) <- pl;
-                      if pg_get_pl game' v = pl then strategy.(v) <- str.(v)
+                      if pg_get_owner game' v = pl then strategy.(v) <- str.(v)
 		    end
                 done;
                 List.iter (fun v -> solution.(v) <- pl) attr;
@@ -105,7 +105,7 @@ let solver rec_solve game =
 
                 List.iter (fun v -> solution.(v) <- opp) attr;
                 List.iter (fun v -> solution.(v) <- opp;
-                                    if pg_get_pr game' v > -1 && pg_get_pl game' v = opp then strategy.(v) <- str.(v)) !opponent_win;
+                                    if pg_isDefined game' v && pg_get_owner game' v = opp then strategy.(v) <- str.(v)) !opponent_win;
 
                 let game' = pg_copy game in
                 pg_remove_nodes game' attr;
@@ -117,10 +117,10 @@ let solver rec_solve game =
                 msg_tagged 3 (fun _ -> "Merging and completing strategies and solutions:\n");
 
                 for v=0 to l-1 do
-                  if pg_get_pr game' v > -1 then
+                  if pg_isDefined game' v then
 		    begin
 		      solution.(v) <- sol.(v);
-                      if pg_get_pl game' v = sol.(v) then strategy.(v) <- str.(v)
+                      if pg_get_owner game' v = sol.(v) then strategy.(v) <- str.(v)
 		    end
                 done;
 

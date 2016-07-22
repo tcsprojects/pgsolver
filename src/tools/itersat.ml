@@ -336,12 +336,12 @@ let set_player l n =
 let game_to_conjunction game =
  	let n = Array.length game in
 	let pr = Array.init n (fun i ->
-			if (pg_get_pr game i) mod 2 = 0
+			if (pg_get_priority game i) mod 2 = 0
 			then Ne (Parity i)
 			else Po (Parity i)
 		) in
 	let pl = Array.init n (fun i ->
-			if pg_get_pl game i = 0
+			if pg_get_owner game i = 0
 			then Ne (Player i)
 			else Po (Player i)
 		) in
@@ -351,9 +351,9 @@ let game_to_conjunction game =
 			)
 		) in
 	for i = 0 to n - 1 do
-		Array.iter (fun j ->
+		ns_iter (fun j ->
 			edges.(i).(j) <- Po (Edge (i, j))
-		) (pg_get_tr game i)
+		) (pg_get_successors game i)
 	done;
 	Array.init (2 * n + n * n) (fun i ->
 		if i < n then pr.(i)

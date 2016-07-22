@@ -24,7 +24,7 @@ let solve' game =
 
 	let n = pg_size game in
 	let prio_arr = Array.init n (fun i -> i) in
-	Array.sort (fun i j -> compare (pg_get_pr game i) (pg_get_pr game j)) prio_arr;
+	Array.sort (fun i j -> compare (pg_get_priority game i) (pg_get_priority game j)) prio_arr;
 
 	for i = 0 to n - 1 do
 	  let pl = pg_get_owner game i in
@@ -68,7 +68,7 @@ let solve' game =
     done;
 
     for i = 0 to n - 1 do
-    	solver#add_clause_array [|Ne (ReachLower (1 - pg_get_pr game i mod 2, i, i, i))|]
+    	solver#add_clause_array [|Ne (ReachLower (1 - pg_get_priority game i mod 2, i, i, i))|]
     done;
 
  	let v = solver#variable_count + solver#helper_variable_count in
@@ -89,8 +89,8 @@ let solve' game =
     if not satis then failwith "impossible: unsatisfiable";
 
 	let sol = Array.init n (fun i -> solver#get_variable (Winning i)) in
-	let strat = Array.init n (fun i -> if sol.(i) = pg_get_pl game i
-	                                   then let delta = pg_get_tr game i in
+	let strat = Array.init n (fun i -> if sol.(i) = pg_get_owner game i
+	                                   then let delta = pg_get_successors game i in
 	                                        delta.(solver#get_variable_first (Array.map (fun j -> Strategy (i, j)) delta)) else -1) in
 
 	solver#dispose;

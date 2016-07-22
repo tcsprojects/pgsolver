@@ -121,8 +121,8 @@ let solve_scc_reach game player spmidx updspm =
     for i = 0 to n - 1 do
         message 3 (fun _ -> "Checking " ^ string_of_int i ^ "\n");
         sol.(i) <- if isTop spmidx.(i) then 1 - player else player;
-        if (pg_get_pl game i = player) && (player = sol.(i))
-        then strat.(i) <- arr_minarg (pg_get_tr game i) (fun q -> spmidx.(q)) (less 0)
+        if (pg_get_owner game i = player) && (player = sol.(i))
+        then strat.(i) <- arr_minarg (pg_get_successors game i) (fun q -> spmidx.(q)) (less 0)
     done;
 
     (sol, strat);;

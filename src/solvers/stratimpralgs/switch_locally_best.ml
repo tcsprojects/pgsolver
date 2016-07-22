@@ -22,9 +22,9 @@ let improvement_policy_by_counterstrategy game node_compare old_strategy valu =
 	let find i =
 		let ordering_valu x y = node_valuation_total_ordering game node_compare valu x y >= 0 in
 		let ordering_valutau x y = node_valuation_total_ordering game node_compare valutau x y >= 0 in
-		let tr = pg_get_tr game i in
-		let a = ArrayUtils.filter (fun j -> ordering_valu j old_strategy.(i)) tr in
-		array_max a (fun x y -> ordering_valutau y x)
+		let tr = pg_get_successors game i in
+		let a = ns_filter (fun j -> ordering_valu j old_strategy.(i)) tr in
+		ns_max a (fun x y -> ordering_valutau y x)
 	in
 	let strategy = Array.mapi (fun i j ->
 		if j = -1 then -1

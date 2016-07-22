@@ -13,12 +13,12 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 			     marker.(node) <- true;
 				 if strategy.(node) >= 0
 				 then node::(helper strategy.(node))
-				 else node::(helper (ns_some (pg_get_tr game node)))
+				 else node::(helper (ns_some (pg_get_successors game node)))
 			)
 		in
 		let rec getprio node l pr =
 			let (h, t) = (List.hd l, List.tl l) in
-			let pr = max pr (pg_get_pr game h) in
+			let pr = max pr (pg_get_priority game h) in
 			if h = node
 			then pr
 			else getprio node t pr
@@ -32,8 +32,8 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 
 	let rec sanity_check i =
 		if i >= n then None else (
-			let pl = pg_get_pl game i in
-			let delta = pg_get_tr game i in
+			let pl = pg_get_owner game i in
+			let delta = pg_get_successors game i in
 			if sol.(i) < -1 || sol.(i) > 1
 			then Some ([i], "Solution for node " ^ string_of_int i ^ " is corrupt (" ^ string_of_int sol.(i) ^ ")")
 			else if strat.(i) < -1 || (strat.(i) != -1 && not (ns_exists (fun j -> j = strat.(i)) delta))
@@ -72,7 +72,7 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 		let strat' = Array.make n (-1) in
 		let badnodes = ref [] in
 		for i = 0 to n - 1 do
-			if pg_get_pl game i = pl	then strat'.(i) <- strat.(i);
+			if pg_get_owner game i = pl	then strat'.(i) <- strat.(i);
 			if sol.(i) != pl then badnodes := i::!badnodes
 		done;
 		let game' = subgame_by_strat game strat' in
@@ -138,7 +138,7 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 	let wins_cycle i trace pl =
 		let rec helper i pr l =
 			let h = List.hd l in
-			let maxpr = max pr (pg_get_pr game h) in
+			let maxpr = max pr (pg_get_priority game h) in
 				if h = i
 				then maxpr mod 2 = pl
 				else (
@@ -153,9 +153,9 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 		message 3 (fun _ -> "   Expanding node " ^ string_of_int i ^ "\n");
 		if table.(i) != 3 then (
 			table.(i) <- 3;
-			if pl = pg_get_pl game i
+			if pl = pg_get_owner game i
 			then expand pl (strat.(i))
-			else ns_iter (expand pl) (pg_get_tr game i)
+			else ns_iter (expand pl) (pg_get_successors game i)
 		)
 	in
 
@@ -172,12 +172,12 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 			then None
 			else Some (i::trace, "Cycle winner failure - " ^ (string_of_int (1 - pl)) ^ " wins but " ^ (string_of_int pl) ^ " should...")
 		)
-		else let delta = pg_get_tr game i in
-		     if (pg_get_pr game i < 0) || (sol.(i) < 0)
+		else let delta = pg_get_successors game i in
+		     if not (pg_isDefined game i) || (sol.(i) < 0)
 		     then Some (i::trace, "Reached undefined position starting in a defined position")
 		     else if sol.(i) != pl
 		     then Some (i::trace, "Reached winning set of " ^ (string_of_int sol.(i)) ^ " starting in winning set of " ^ (string_of_int pl) ^ " following the strategy of " ^ (string_of_int pl))
-		     else if pg_get_pl game i = pl
+		     else if pg_get_owner game i = pl
 		     then (
 					if not (has (Array.of_list (ns_nodes delta ))strat.(i))
 					then Some (i::trace, "Strategy failure at the end of the trace w.r.t. player " ^ (string_of_int pl))
@@ -220,7 +220,7 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 		else if table.(i) = 3
 		then testnext (i + 1)
 		else
-				if (pg_get_pr game i < 0) || (sol.(i) < 0)
+				if not (pg_isDefined game i) || (sol.(i) < 0)
 				then testnext (i + 1)
 				else match (test sol.(i) i []) with
                    None -> (expand sol.(i) i;

@@ -77,12 +77,14 @@ val pg_copy       : paritygame -> paritygame
  * possibly DEPRECATED functions                              *
  * use the ones with the more verbose names instead           *
  **************************************************************)
+(*
 val pg_get_pr     : paritygame -> node -> priority
 val pg_set_pr     : paritygame -> node -> priority -> unit
 val pg_get_pl     : paritygame -> node -> player
 val pg_set_pl     : paritygame -> node -> player -> unit
 val pg_get_tr     : paritygame -> node -> nodeset
-
+ *)
+				    
 (*
 val pg_set_tr     : paritygame -> int -> int array -> unit (* DEPRECATED *)
 *)

@@ -50,16 +50,14 @@ let _ =
 					if (sol.(j) != !player) then
 						strat2.(j) <- -1;
 				done;
-			  print_string ("\n" ^ Paritygame.format_strategy strat2 ^ "\n");
+			  print_string ("\n" ^ format_strategy strat2 ^ "\n");
 				number := !number + 1
 			);
 		) else (
 			if (sol.(i) == !player && strat.(i) != -1) then (
-				let edges = Paritygame.pg_get_tr game i in
-				for j = 0 to Array.length edges - 1 do
-					strat.(i) <- edges.(j);
-					work (i + 1);
-				done;
+			  ns_iter (fun w -> strat.(i) <- w;
+					    work (i + 1))
+				  (pg_get_successors game i)
 			) else (
 				work (i+1);
 			)

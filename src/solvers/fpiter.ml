@@ -126,14 +126,14 @@ let solve' game =
   (* returns a node in the list ws of some priority p which also belongs to x.(p) *)
 
   let rec find_witness = function []    -> failwith "Solvers.Fpiter.find_witness: no witness found!"
-                                | w::ws -> let pr = pg_get_pr game w in
+                                | w::ws -> let pr = pg_get_priority game w in
                                            if NodeSet.mem w (get x pr) then w else find_witness ws
   in
 
   (* returns a node in the list ws of some priority p which does not belong to x.(p) *)
 
   let rec find_cntexmpl = function []    -> failwith "Solvers.Fpiter.find_cntexmpl: no counterexample found!"
-                                 | w::ws -> let pr = pg_get_pr game w in
+                                 | w::ws -> let pr = pg_get_priority game w in
                                             if not (NodeSet.mem w (get x pr)) then w else find_cntexmpl ws
   in
 
@@ -181,7 +181,7 @@ let solve' game =
             begin 
               msg_tagged 3 (fun _ -> show_moment () ^ " Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
                                      show_nodeSet win_mod_prio ^ "\n"); 
-              NodeSet.iter (fun v -> if pg_get_pl game v = 0 then
+              NodeSet.iter (fun v -> if pg_get_owner game v = 0 then
                                        begin
                                          let w = find_witness (Array.to_list (pg_get_successors game v)) in
                                          record_decision 0 v w 
@@ -195,7 +195,7 @@ let solve' game =
               let old = get x !curr_prio in
               let now_out = NodeSet.diff old win_mod_prio in
 
-              NodeSet.iter (fun v -> if pg_get_pl game v = 1 then
+              NodeSet.iter (fun v -> if pg_get_owner game v = 1 then
                                        begin
                                          let w = find_cntexmpl (Array.to_list (pg_get_successors game v)) in
                                          record_decision 1 v w 
@@ -216,7 +216,7 @@ let solve' game =
             begin
               msg_tagged 3 (fun _ -> show_moment () ^ " Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
                                      show_nodeSet win_mod_prio ^ "\n");
-              NodeSet.iter (fun v -> if pg_get_pl game v = 1 then
+              NodeSet.iter (fun v -> if pg_get_owner game v = 1 then
                                        begin
                                          let w = find_cntexmpl (Array.to_list (pg_get_successors game v)) in
                                          record_decision 1 v w
@@ -230,7 +230,7 @@ let solve' game =
               let old = get x !curr_prio in
               let now_in = NodeSet.diff win_mod_prio old in
 
-              NodeSet.iter (fun v -> if pg_get_pl game v = 0 then
+              NodeSet.iter (fun v -> if pg_get_owner game v = 0 then
                                        begin
                                          let w = find_witness (Array.to_list (pg_get_successors game v)) in
                                          record_decision 0 v w
@@ -346,7 +346,7 @@ let solve' game =
         message 3 (fun _ -> " greater or equal!\n") *)
     done;
     msg_tagged 3 (fun _ -> "Searching for next node to visit after " ^ string_of_int !next_node ^ " ");
-    while !next_node < n && (strategy.(!next_node) > -1 || let o = pg_get_pl game !next_node in solution.(!next_node) <> o) do
+    while !next_node < n && (strategy.(!next_node) > -1 || let o = pg_get_owner game !next_node in solution.(!next_node) <> o) do
       incr next_node;
       message 3 (fun _ -> ".")
     done;

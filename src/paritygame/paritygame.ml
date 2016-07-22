@@ -122,19 +122,20 @@ let pg_del_edge gm v u =
  * access functions for parity games                      *
  **********************************************************)
 
+(* for internal use only! *)
 let pg_set_node pg i pr pl succs preds desc = pg_set_node' pg i (pr, pl, succs, preds, desc);;
-  
-let pg_get_pr pg i = let (pr, _, _, _, _) = pg_get_node pg i in
+
+let pg_get_priority pg i = let (pr, _, _, _, _) = pg_get_node pg i in
 		     pr;;
 
-let pg_set_pr pg i pr = let (_, pl, succs, preds, desc) = pg_get_node pg i in
+let pg_set_priority pg i pr = let (_, pl, succs, preds, desc) = pg_get_node pg i in
 			pg_set_node pg i pr pl succs preds desc;;
 
-let pg_get_pl pg i = let (_, pl, _, _, _) = pg_get_node pg i in
+let pg_get_owner pg i = let (_, pl, _, _, _) = pg_get_node pg i in
 		     pl;;
 
 
-let pg_set_pl pg i pl = let (pr, _, succs, preds, desc) = pg_get_node pg i in
+let pg_set_owner pg i pl = let (pr, _, succs, preds, desc) = pg_get_node pg i in
 			pg_set_node pg i pr pl succs preds desc;;
 
 let pg_get_desc pg i = let (_, _, _, _, desc) = pg_get_node pg i in
@@ -152,13 +153,6 @@ let pg_get_successors pg i = let (_,_,succs,_,_) = pg_get_node pg i in
 			     succs;;
 let pg_get_predecessors pg i = let (_,_,_,preds,_) = pg_get_node pg i in
 			       preds;;
-
-  
-
-let pg_get_priority   = pg_get_pr 
-let pg_set_priority   = pg_set_pr
-let pg_get_owner      = pg_get_pl
-let pg_set_owner      = pg_set_pl
 
 
 let pg_node_count game =
@@ -193,7 +187,7 @@ let pg_init n f =
   done;
   game;;
 
-
+(* DEPRECATED
 let pg_get_tr_index_of pg v w =
   let succs = pg_get_successors pg v in
   let (b,k) = List.fold_left (fun (b,k) -> fun u -> if b || (w=u) then (b,k)
@@ -202,7 +196,8 @@ let pg_get_tr_index_of pg v w =
 			     succs
   in
   if b then k else raise Not_found
-
+*)
+  
 let pg_remove_nodes game nodes =
   List.iter (fun v -> let succs = pg_get_successors game v in
 		      List.iter (fun u -> pg_del_edge game v u) succs;
@@ -216,7 +211,8 @@ let pg_remove_nodes game nodes =
 let pg_remove_edges game edges =
     List.iter (fun (v, w) -> pg_del_edge game v w) edges;;
 
-
+  
+(* should be DEPRECATED
 let pg_set_successors gm v ws =
   let succs = pg_get_successors gm v in
   List.iter (fun u -> pg_del_edge gm v u) succs;
@@ -226,13 +222,8 @@ let pg_set_predecessors gm v ws =
   let preds = pg_get_predecessors gm v in
   List.iter (fun u -> pg_del_edge gm u v) preds;
   Array.iter (fun u -> pg_add_edge gm v u) ws
-
-
-let pg_get_tr = pg_get_successors;;  (* deprecated? *)
-
-(*
-let pg_set_tr = pg_set_successors ;; (* DEPRECATED *)
-*)
+ *)
+	     
 							      
 (**************************************************************
  * Formatting Functions                                       *
@@ -466,8 +457,8 @@ let subgame_by_edge_pred (game: paritygame) pred =
 	let n = pg_size game in
 	let g = pg_create n in
 	for i = 0 to n - 1 do
-		pg_set_pr g i (pg_get_priority game i);
-		pg_set_pl g i (pg_get_owner game i);
+		pg_set_priority g i (pg_get_priority game i);
+		pg_set_owner g i (pg_get_owner game i);
 		pg_set_desc g i (pg_get_desc game i);
 		List.iter (fun j ->
 			if pred i j then pg_add_edge g i j
@@ -480,8 +471,8 @@ let subgame_by_node_pred game pred =
 	let g = pg_create n in
 	for i = 0 to n - 1 do
 		if (pred i) then (
-			pg_set_pr g i (pg_get_priority game i);
-			pg_set_pl g i (pg_get_owner game i);
+			pg_set_priority g i (pg_get_priority game i);
+			pg_set_owner g i (pg_get_owner game i);
 			pg_set_desc g i (pg_get_desc game i);
 			List.iter (fun j ->
 				pg_add_edge g i j
@@ -1077,50 +1068,6 @@ let compute_priority_reach_array game player =
     calc_iter game' maxvalues;
     maxvalues;;
 
-(*
-module Set = Intervaltree.IntSet ;;
-module Set = IntSet ;;
-
-let compute_priority_reach_array' game =
-  let m = Array.length game in
-  let reaches = Array.make m Set.empty in
-
-  let todo = Queue.create () in
-
-  for i=0 to m-1 do
-    reaches.(i) <- Set.singleton i;
-    Queue.add i todo
-  done;
-
-  let tgame = game_to_transposed_graph game in
-
-  while not (Queue.is_empty todo) do
-    let v = Queue.take todo in
-    let (pv,_,_,_) = game.(v) in
-
-    List.iter (fun w -> Set.reset_notice ();
-                        reaches.(w) <- Set.union
-                                       reaches.(w)
-                                       (Set.filter (fun u -> let (pu,_,_,_) = game.(u) in
-                                                             pu >= pv) reaches.(v));
-                        if !Set.insert_notice then (
-                           Queue.add w todo
-                        )
-              )
-              tgame.(v);
-  done;
-
-  let mp = pg_max_prio game in
-  let reach = Array.make_matrix m (1 + mp) 0 in
-  for v = 0 to m-1 do
-    Set.iter (fun w -> let p = pg_get_pr game w in
-                       reach.(v).(p) <- reach.(v).(p) + 1)
-             reaches.(v)
-  done;
-  reach
-
-
-*)
 
 
 
