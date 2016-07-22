@@ -26,10 +26,20 @@ let ns_empty = []
 let ns_elem = List.mem
 let ns_fold = List.fold_left
 let ns_iter = List.iter
-let ns_map = List.map
+let ns_filter = List.filter
+let ns_map = List.map (* TODO: needs to be remimplemented: if the mapping function is not injective then it violates the invariant of not storing duplicate elements *)
 let ns_size = List.length
 let ns_exists = List.exists
-let ns_some = List.hd
+let ns_forall = List.for_all
+let ns_first = List.hd
+let rec ns_last = function []    -> failwith "Paritygame.ns_last: cannot extract node from empty node set"
+			 | [u]   -> u
+			 | _::us -> ns_last us
+let ns_some ws =
+  let n = List.length ws in
+  let i = Random.int n in
+  List.nth ws i
+	   
 let ns_add v vs =
   let rec add = function []    -> [v]
 		       | w::ws -> (match compare v w with

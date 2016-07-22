@@ -6,28 +6,46 @@ open Tcsset
  * Functions for representing sets of nodes,                   *
  * particularly for successors and predecessors of given nodes *
  *                                                             *
- * Warning: these types may become abstract in the future      *
+ * Warning: the type `node' may become abstract in the future  *
  ***************************************************************)
 
 type node = int
 type nodeset
 
+(* check for emptiness and membership *)
 val ns_isEmpty : nodeset -> bool
-val ns_empty   : nodeset
 val ns_elem    : node -> nodeset -> bool
+
+(* constructor functions for node sets *)
+val ns_empty   : nodeset
+val ns_make    : node list -> nodeset
+
+(* returns the number of elements in a node set *)
+val ns_size    : nodeset -> int
+
+(* iterator functions over node sets *)
 val ns_fold    : ('a -> node -> 'a) -> 'a -> nodeset -> 'a
 val ns_iter    : (node -> unit) -> nodeset -> unit
 val ns_map     : (node -> node) -> nodeset -> nodeset
-val ns_size    : nodeset -> int
-val ns_exists  : (node -> bool) -> nodeset -> bool
+val ns_filter  : (node -> bool) -> nodeset -> nodeset
+						
+(* finding elements in a node set *)
+val ns_exists  : (node -> bool) -> nodeset -> bool			
+val ns_forall  : (node -> bool) -> nodeset -> bool			
 val ns_find    : (node -> bool) -> nodeset -> node
 val ns_max     : nodeset -> (node -> node -> bool) -> node
-val ns_some    : nodeset -> node
+val ns_some    : nodeset -> node (* returns a randomly chosen element from a node set *)
+val ns_first   : nodeset -> node (* return the smallest (by name) node in a node set *)
+val ns_last    : nodeset -> node (* return the greatest (by name) node in a node set *)
+
+(* add a node to, resp. delete a node from a nodeset *) 
 val ns_add     : node -> nodeset -> nodeset
 val ns_del     : node -> nodeset -> nodeset
-val ns_make    : node list -> nodeset
+
+(* extract a list of nodes from a node set *)
 val ns_nodes   : nodeset -> node list
-			
+
+				 
 (**************************************************************
  * Parity Game Definitions                                    *
  *                                                            *
