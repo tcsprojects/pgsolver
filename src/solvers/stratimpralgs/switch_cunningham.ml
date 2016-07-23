@@ -30,10 +30,10 @@ let improvement_policy_optimize_roundrobin_default_first_edge game v =
 	while (pg_get_owner game !i = 1) do
 		i := (!i + 1) mod n
 	done;
-	(!i, (pg_get_successors game !i).(0))
+	(!i, ns_some (pg_get_successors game !i))
 
 let improvement_policy_optimize_roundrobin_default_next game (v,w) =
-	let tr = pg_get_successors game v in
+	let tr = Array.of_list (ns_nodes (pg_get_successors game v)) in
 	let idx = ref 0 in
 	while (tr.(!idx) <> w) do
 		incr idx
@@ -49,9 +49,9 @@ let improvement_policy_optimize_roundrobin_ordering_first game (ordering, backtr
 
 let improvement_policy_optimize_roundrobin_ordering_build game cmp =
 	let l = ref [] in
-	pg_iterate (fun v (_, pl, tr, _) ->
+	pg_iterate (fun v (_, pl, tr, _, _) ->
 		if (pl = 0) then
-			Array.iter (fun w ->
+			ns_iter (fun w ->
 				l := (v,w)::!l
 			) tr
 	) game;

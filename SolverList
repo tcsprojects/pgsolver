@@ -27,12 +27,12 @@ PGSOLVERSLIST=$(PGSOLVERSOBJ)/recursive.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/optstratimprov.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/localmodelchecker.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/dominiondecomp.$(COMPILEEXT) \
-	$(PGSOLVERSOBJ)/guessstrategy.$(COMPILEEXT) \
-	$(PGSOLVERSOBJ)/smallprogress.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/bigstep.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/stratimprlocal.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/stratimprlocal2.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/stratimprdisc.$(COMPILEEXT) \
+	$(PGSOLVERSOBJ)/guessstrategy.$(COMPILEEXT) \
+	$(PGSOLVERSOBJ)/smallprogress.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/genetic.$(COMPILEEXT) \
 	$(PGSOLVERSOBJ)/fpiter.$(COMPILEEXT)
 

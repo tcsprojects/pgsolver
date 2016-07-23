@@ -12,7 +12,11 @@ let list_max a less = ListUtils.max_elt (fun x y -> if less x y then -1 else 1) 
 
 
 let evaluate_player1_strategy game node_compare strategy =
-	let game' = pg_map (fun _ (pr, pl, tr, de) -> (1 + pr, 1 - pl, tr, de)) game in
+	let game' = pg_copy game in
+	for i = 0 to pg_size game' - 1 do
+		pg_set_priority game' i (1 + pg_get_priority game' i);
+		pg_set_owner game' i (1 - pg_get_owner game' i)
+	done;
 	evaluate_strategy game' node_compare strategy
 
 let improvement_policy_by_counterstrategy game node_compare old_strategy valu =

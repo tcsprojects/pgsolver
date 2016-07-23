@@ -29,7 +29,7 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 	  let pl = pg_get_owner game i in
 	  let tr = pg_get_successors game i in
 		if pl = 0 then (
-			Array.iter (fun j ->
+			ns_iter (fun j ->
 				if node_valuation_ordering game node_total_ordering valu.(j) valu.(old_strategy.(i)) > 0 then (
 					let s = Array.copy old_strategy in
 					s.(i) <- j;
@@ -162,10 +162,9 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 				
 				let m = pg_size game in
 				for i = 0 to m - 1 do
-				  let pr = pg_get_priority game i in
 				  let pl = pg_get_owner game i in
 				  let tr = pg_get_successors game i in
-				  if (pl = 1) && ArrayUtils.exists tr (fun _ j -> counter_strategy.(i) != j && (TreeSet.mem j !non_final_nodes || TreeSet.mem (i,j) !used_escape_edges))
+				  if (pl = 1) && ns_exists (fun j -> counter_strategy.(i) != j && (TreeSet.mem j !non_final_nodes || TreeSet.mem (i,j) !used_escape_edges)) tr
 				  then ns_iter (fun w -> pg_del_edge graph i w) (pg_get_successors graph i)
 				done;
 				
@@ -182,7 +181,7 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 							) else if not (TreeSet.mem j !s) && (pg_get_priority game j <= pr) then (
 								s := TreeSet.add j !s;
 								let tr = pg_get_successors graph j in
-								Array.iter (fun k ->
+								ns_iter (fun k ->
 									if (!cycle = None)
 									then build k ((j,k)::cyc);
 								) tr;

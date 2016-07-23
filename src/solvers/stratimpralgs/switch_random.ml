@@ -28,10 +28,10 @@ let multiple_edge_transformation game =
 	  let tr = pg_get_successors game' i in
 		if (pr >= 0) then (
 			let s = ref TreeMap.empty_def in
-			Array.iter (fun r ->
+			ns_iter (fun r ->
 				let r = ref r in
 				while (pg_get_priority game' !r < 0) do
-					r := (pg_get_successors game !r).(0)
+					r := ns_some (pg_get_successors game !r)
 				done;
 				try
 					let q = TreeMap.find !r !s in
@@ -57,9 +57,9 @@ let multiple_edge_backtransformation game solution strategy =
 	  let pl = pg_get_owner game i in
 	  let tr = pg_get_successors game i in
 		if (pg_isDefined game i) && (solution.(i) < 0) then (
-			solution.(i) <- solution.(tr.(0));
+			solution.(i) <- solution.(ns_some tr);
 			if solution.(i) = pl
-			then strategy.(i) <- tr.(0)
+			then strategy.(i) <- ns_some tr
 		)
 	done
 
@@ -88,8 +88,8 @@ let multiple_edge_solve game solver =
 
 let improvement_policy_vorobyov2_init_edges game =
 	let ed = ref (TreeSet.empty compare) in
-	pg_iterate (fun i (pr, pl, tr, _) ->
-		if (pr >= 0) && (pl = 0) then Array.iter (fun j ->
+	pg_iterate (fun i (pr, pl, tr, _, _) ->
+		if (pr >= 0) && (pl = 0) then ns_iter (fun j ->
 			ed := TreeSet.add (i,j) !ed
 		) tr		
 	) game;
@@ -104,7 +104,7 @@ let improvement_policy_vorobyov2 game node_compare
 		if strategy_improvable ga node_compare strategy valu then (
 			let strate = ref (TreeSet.empty compare) in
 			let ga' = pg_copy ga in
-			pg_iterate (fun i (pr, pl, tr, de) ->
+			pg_iterate (fun i (pr, pl, tr, _, de) ->
 				    if (pr >= 0) && (pl = 0) then 
 				      begin
 					strate := TreeSet.add (i,strategy.(i)) !strate;
@@ -187,9 +187,10 @@ let improvement_policy_vorobyovordered_init_edges game init_strat =
 	Random.self_init ();
 	let counter = ref 0 in
 	let ord = ref [] in
-	let edgearr = pg_map2 (fun i (pr, pl, tr, _) ->
+	let edgearr = pg_map2 (fun i (pr, pl, tr, _, _) ->
 		if pl = 0 && pr >= 0 then (
-			Array.iter (fun j -> ord := (i,j)::!ord) tr;
+			ns_iter (fun j -> ord := (i,j)::!ord) tr;
+			let tr = Array.of_list (ns_nodes tr) in
             let j = ArrayUtils.index_of tr init_strat.(i) in
             let tr' = Array.copy tr in
             tr'.(0) <- tr.(j);
@@ -216,9 +217,9 @@ let improvement_policy_randomizedbland game node_total_ordering ordering old_str
 let improvement_policy_randomizedbland_init_edges game init_strat =
 	Random.self_init ();
 	let ord = ref [] in
-	pg_iterate (fun i (pr, pl, tr, _) ->
+	pg_iterate (fun i (pr, pl, tr, _, _) ->
 		if pl = 0 && pr >= 0
-		then Array.iter (fun j -> ord := (i,j)::!ord) tr;
+		then ns_iter (fun j -> ord := (i,j)::!ord) tr;
 	) game;
 	(ArrayUtils.shuffle (Array.of_list !ord))
 	
@@ -276,8 +277,9 @@ let improvement_policy_vorobyov game node_total_ordering
 let improvement_policy_vorobyov_init_edges game init_strat =
 	Random.self_init ();
 	let counter = ref 0 in
-	let edgearr = pg_map2 (fun i (pr, pl, tr, _) ->
+	let edgearr = pg_map2 (fun i (pr, pl, tr, _, _) ->
 		if pl = 0 && pr >= 0 then (
+			let tr = Array.of_list (ns_nodes tr) in
             let j = ArrayUtils.index_of tr init_strat.(i) in
             let tr' = Array.copy tr in
             tr'.(0) <- tr.(j);
@@ -307,8 +309,9 @@ let policy_vorobyov_multiple_edges_init_edges game init_strat multiplicities =
 	let comb a b = Array.mapi (fun i x -> (x, b.(i))) a in
 	Random.self_init ();
 	let counter = ref 0 in
-	let edgearr = pg_map2 (fun i (pr, pl, tr, _) ->
+	let edgearr = pg_map2 (fun i (pr, pl, tr, _, _) ->
 		if pl = 0 && pr >= 0 then (
+			let tr = Array.of_list (ns_nodes tr) in
 			let tr = vorobyov_map_multiplicity (comb tr multiplicities.(i)) in
             let j = ArrayUtils.index_of tr init_strat.(i) in
             let tr' = Array.copy tr in

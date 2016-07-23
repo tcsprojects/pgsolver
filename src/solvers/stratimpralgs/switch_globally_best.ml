@@ -14,7 +14,7 @@ let improvement_policy_optimize_all_globally game' node_total_ordering old_strat
 	let game = pg_copy game' in
 	let n = pg_size game in
 	let valu_ord = node_valuation_ordering game' node_total_ordering in
-	pg_iterate (fun i (pr, pl, tr, _) ->
+	pg_iterate (fun i (pr, pl, tr, _, _) ->
 		if pl = 0
 		then
 		  ns_iter (fun w -> pg_del_edge game i w) (ns_filter (fun j -> not (valu_ord valu.(j) valu.(old_strategy.(i)) >= 0)) tr) 
