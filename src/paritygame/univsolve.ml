@@ -449,7 +449,7 @@ let universal_solve_run options stats backend game' =
                                              stats.special_nodes;
                                              stats.universal_solved_nodes;
                                              stats.overall_solved_nodes] (fun _ -> pg_size game);
-			        			msg_plain SPECIAL 0 (fun _ -> "done!\n")
+			        msg_plain SPECIAL 0 (fun _ -> "done!\n")
                             )
                     );
         			timer_stop stats.solvespec_single_player_timing;

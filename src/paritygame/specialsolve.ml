@@ -61,14 +61,14 @@ let solve_single_player_scc game player =
 			arg := max !arg pr
 		done;
 		if !p_pl > !p_op then (
-            let strategy = Array.make n (-1) in
-			let vs = pg_prio_nodes sccgame !p_pl in
-			let vsset = TreeSet.of_list_def vs in
-			List.iter (fun i ->
-				if pg_get_owner sccgame i = player then strategy.(i) <- ns_some (pg_get_successors sccgame i)
-			) vs;
-			let _ = attr_closure_inplace' sccgame strategy player vsset true (fun _ -> true) true in
-			PlayerWin (strategy, sccnodes)
+		  let strategy = Array.make n (-1) in
+		  let vs = pg_prio_nodes sccgame !p_pl in
+		  let vsset = TreeSet.of_list_def vs in
+		  List.iter (fun i ->
+			     if pg_get_owner sccgame i = player then strategy.(i) <- ns_some (pg_get_successors sccgame i)
+			    ) vs;
+		  let _ = attr_closure_inplace' sccgame strategy player vsset true (fun _ -> true) true in
+		  PlayerWin (strategy, sccnodes)
 		)
 		else if !p_pl < 0 then PlayerLoss
 		else Undecided (!p_pl + 1)
@@ -83,7 +83,6 @@ let solve_single_player_scc game player =
 		List.iter (fun i ->
 			   ns_iter (fun j -> backup := TreeSet.add j !backup) (pg_get_successors sccgame i);
 			   ns_iter (fun j -> backup := TreeSet.add j !backup) (pg_get_predecessors sccgame i);
-			                 (* TODO: it looked like it was "pg_get_predecessors game i" instead but I think "... sccgame ..." is correct - ML *)
 			  ) attr;
 		let backuped = ref [] in
 		TreeSet.iter (fun i ->
@@ -105,7 +104,7 @@ let solve_single_player_scc game player =
 		  if (pg_size curgame > 1) || (ns_size (pg_get_successors curgame 0) > 0) then (
             	    let nodelist = Array.of_list current in
             	    match process_scc curgame nodelist with
-            	      PlayerWin (s, t) -> success := Some (s, t)
+            	        PlayerWin (s, t) -> success := Some (s, t)
             	     |	Undecided p -> undecided_stack := (curgame, nodelist, p)::!undecided_stack
             	     |	PlayerLoss -> ()
 		  );
@@ -118,10 +117,12 @@ let solve_single_player_scc game player =
         	    success := process_undecided curgame nodelist p
         	  done
 		);
-		List.iter (fun (i, (pr,pl,succs,desc)) -> pg_set_priority sccgame i pr;
-							  pg_set_owner sccgame i pl;
-							  pg_set_desc sccgame i desc;
-							  ns_iter (fun w -> pg_add_edge sccgame i w) succs
+		List.iter (fun (i, (pr,pl,succs,desc)) ->
+			   pg_set_priority sccgame i pr;
+			   pg_set_owner sccgame i pl;
+			   pg_set_desc sccgame i desc;
+			   ns_iter (fun w -> message 3 (fun _ -> "Adding edge " ^ string_of_int i ^ "->" ^ string_of_int w ^ " to the following game: " ^ game_to_string sccgame ^ "\n");
+					     pg_add_edge sccgame i w) succs;
  			  ) !backuped;
 		match !success with
 		  None -> None
