@@ -437,6 +437,20 @@ let collect_nodes game pred =
 let collect_nodes_by_prio game pred =
 	collect_nodes game (fun _ (pr, _, _, _, _) -> pred pr);;
 
+let collect_nodes_by_owner game pred =
+  let ltrue = ref [] in
+  let lfalse = ref [] in
+  for i = pg_size game - 1 downto 0 do
+    if pg_isDefined game i then
+      begin
+	if pred (pg_get_owner game i) then
+	  ltrue := i :: !ltrue
+	else
+	  lfalse := i :: !lfalse
+      end
+  done;
+  (!ltrue, !lfalse)
+
 let collect_max_prio_nodes game =
 	let m = pg_max_prio game in
 	collect_nodes_by_prio game (fun pr -> pr = m);;

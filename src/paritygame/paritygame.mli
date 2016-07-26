@@ -205,6 +205,9 @@ val pg_add_successors : paritygame -> int -> int array -> unit (* DEPRECATED *)
 val collect_nodes: paritygame -> (node -> priority * player * nodeset * nodeset * string option -> bool) -> node list
 val collect_nodes_by_prio: paritygame -> (priority -> bool) -> node list
 
+(* `collect_nodes_by_owner <game> <f>' returns two lists: the first one contains all nodes v for which f v is true, the other all those for which it is false *)
+val collect_nodes_by_owner: paritygame -> (player -> bool) -> node list * node list
+								  
 (* `collect_max_prio_nodes <game>' returns all nodes with greatest priority *)
 val collect_max_prio_nodes: paritygame -> node list
 

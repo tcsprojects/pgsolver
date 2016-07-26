@@ -33,8 +33,6 @@ let solve' game =
                                if odd (max_prio - min_prio) then (a,a) 
                                else if even min_prio then (a+1,a) else (a,a+1)
   in
-  let tg = game_to_transposed_graph game in
-
 
   let strategy = Array.make n (-1) in
   let evt_pos_strategy = Array.make n [] in
@@ -48,11 +46,11 @@ let solve' game =
   let boxes  = Array.make prios all_nodes in           (* B(i) = [](-Pr(i) or X(i)) *)
   let isects = Array.make (prios+1) all_nodes in       (* I(i) = B(i) and I(i+1) *)
 
-  let pr = Array.init prios (fun i -> list_to_set (collect_nodes game (fun _ -> fun (p,_,_,_) -> i+min_prio=p))) in
+  let pr = Array.init prios (fun i -> list_to_set (collect_nodes_by_prio game (fun p -> i+min_prio=p))) in
   let npr = Array.init prios (fun i -> NodeSet.cardinal pr.(i)) in
   let pr_complement = Array.init prios (fun i -> NodeSet.diff all_nodes pr.(i)) in
-  let v0 = list_to_set (collect_nodes game (fun _ -> fun (_,o,_,_) -> o=0)) in
-  let v1 = list_to_set (collect_nodes game (fun _ -> fun (_,o,_,_) -> o=1)) in 
+  let (v0',v1') = collect_nodes_by_owner game (fun o -> o=0) in
+  let (v0,v1) = (list_to_set v0', list_to_set v1') in 
 
   (* variable used to hold the current winning positions *)  
   let x = Array.make prios NodeSet.empty in
@@ -183,7 +181,7 @@ let solve' game =
                                      show_nodeSet win_mod_prio ^ "\n"); 
               NodeSet.iter (fun v -> if pg_get_owner game v = 0 then
                                        begin
-                                         let w = find_witness (Array.to_list (pg_get_successors game v)) in
+                                         let w = find_witness (ns_nodes (pg_get_successors game v)) in
                                          record_decision 0 v w 
                                        end)
                            win_mod_prio; 
@@ -197,7 +195,7 @@ let solve' game =
 
               NodeSet.iter (fun v -> if pg_get_owner game v = 1 then
                                        begin
-                                         let w = find_cntexmpl (Array.to_list (pg_get_successors game v)) in
+                                         let w = find_cntexmpl (ns_nodes (pg_get_successors game v)) in
                                          record_decision 1 v w 
                                        end)
                            now_out;
@@ -218,7 +216,7 @@ let solve' game =
                                      show_nodeSet win_mod_prio ^ "\n");
               NodeSet.iter (fun v -> if pg_get_owner game v = 1 then
                                        begin
-                                         let w = find_cntexmpl (Array.to_list (pg_get_successors game v)) in
+                                         let w = find_cntexmpl (ns_nodes (pg_get_successors game v)) in
                                          record_decision 1 v w
                                        end)
                            (NodeSet.diff (get pr !curr_prio) win_mod_prio); 
@@ -232,7 +230,7 @@ let solve' game =
 
               NodeSet.iter (fun v -> if pg_get_owner game v = 0 then
                                        begin
-                                         let w = find_witness (Array.to_list (pg_get_successors game v)) in
+                                         let w = find_witness (ns_nodes (pg_get_successors game v)) in
                                          record_decision 0 v w
                                        end)
                            now_in;
@@ -338,7 +336,7 @@ let solve' game =
           else
             begin
               let ns = next_smallest winner prio bound in
-              Array.iter (fun w -> todo := (w, ns) :: !todo) ws
+              ns_iter (fun w -> todo := (w, ns) :: !todo) ws
             end;
           last_visit.(v) <- Some bound
         end
