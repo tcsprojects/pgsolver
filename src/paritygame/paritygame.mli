@@ -153,6 +153,11 @@ val pg_remove_edges   : paritygame -> (node * node) list -> unit
 
 val game_to_string : paritygame -> string
 
+(* not implemented (yet)
+val solution_to_string : solution -> string
+val strategy_to_string : strategy -> string
+ *)
+
 (* Calling print_game game prints game on STDOUT s.t. it could be parsed again. *)
 val print_game : paritygame -> unit
 

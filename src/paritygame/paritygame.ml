@@ -220,9 +220,9 @@ let pg_get_tr_index_of pg v w =
   
 let pg_remove_nodes game nodes =
   List.iter (fun v -> let succs = pg_get_successors game v in
-		      List.iter (fun u -> pg_del_edge game v u) succs;
+		      ns_iter (fun u -> pg_del_edge game v u) succs;
 		      let preds = pg_get_predecessors game v in
-		      List.iter (fun u -> pg_del_edge game u v) preds;
+		      ns_iter (fun u -> pg_del_edge game u v) preds;
 		      pg_set_priority game v (-1);
 		      pg_set_owner game v (-1);
 		      pg_set_desc game v None
@@ -265,7 +265,7 @@ let game_to_string game =
            end
 	done;
 	"parity " ^ string_of_int (n-1) ^ ";\n" ^ !s;;
-
+ 
 let print_game game =
 	let n = pg_size game in
 	print_string ("parity " ^ string_of_int (n-1) ^ ";\n");
