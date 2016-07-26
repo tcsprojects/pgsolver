@@ -27,9 +27,8 @@ let solve' game =
 	Array.sort (fun i j -> compare (pg_get_priority game i) (pg_get_priority game j)) prio_arr;
 
 	for i = 0 to n - 1 do
-	  let pl = pg_get_owner game i in
-	  let delta = pg_get_successors game i in
-	  solver#add_helper_exactlyone 0 (ns_size delta - 1) [||] (fun j -> Po (Strategy (i, delta.(j))));
+	  let delta = Array.of_list (ns_nodes (pg_get_successors game i)) in
+	  solver#add_helper_exactlyone 0 (Array.length delta - 1) [||] (fun j -> Po (Strategy (i, delta.(j))));
 	done;
 
 	for i = 0 to n - 1 do
@@ -90,9 +89,9 @@ let solve' game =
 
 	let sol = Array.init n (fun i -> solver#get_variable (Winning i)) in
 	let strat = Array.init n (fun i -> if sol.(i) = pg_get_owner game i
-	                                   then let delta = pg_get_successors game i in
-	                                        delta.(solver#get_variable_first (Array.map (fun j -> Strategy (i, j)) delta)) else -1) in
-
+	                                   then let delta = Array.of_list (ns_nodes (pg_get_successors game i)) in
+	                                        delta.(solver#get_variable_first (Array.map (fun j -> Strategy (i, j)) delta)) else -1)
+	in
 	solver#dispose;
 	(sol, strat);;
 
