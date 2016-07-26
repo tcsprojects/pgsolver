@@ -26,7 +26,7 @@ let solve game =
             let s = Array.make n (-1) in
             for i = 0 to n - 1 do
               let pl' = pg_get_owner game i in
-	      let d = pg_get_successors game i in
+	      let d = Array.of_list (ns_nodes (pg_get_successors game i)) in
               if (pl = pl') then s.(i) <- d.(Random.int (Array.length d))  (* TODO: use something clever from Tcs...RandomUtils to find a random successor here *)
             done;
             s

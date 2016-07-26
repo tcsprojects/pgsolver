@@ -164,7 +164,7 @@ struct
     let l = pg_size game in
     let str = Array.make l (0,0) in
     for i=0 to l-1 do
-      let ws = pg_get_successors game i in
+      let ws = Array.of_list (ns_nodes (pg_get_successors game i)) in
       str.(i) <- (ws.(Random.int (Array.length ws)), 0)
     done;
     (str,0,0)
@@ -179,7 +179,7 @@ struct
     let l = Array.length str in
 
     let v = Random.int l in
-    let ws = pg_get_successors game v in
+    let ws = Array.of_list (ns_nodes (pg_get_successors game v)) in
     
     let (o,_) = str.(v) in
     let n = ws.(Random.int (Array.length ws)) in
