@@ -4,14 +4,6 @@ open Tcsarray;;
 open Tcsset;;
 open Tcsgraph;;
 
-(**************************************************************
- * basic types for components in a parity game                *
- **************************************************************)
-
-type node = int
-type priority = int
-type player = int
-type nodeset = node list
 
 		    
 (**************************************************************
@@ -20,6 +12,9 @@ type nodeset = node list
  *                                                            *
  * here: sorted lists                                         *
  **************************************************************)
+
+type node = int
+type nodeset = node list
   
 let ns_isEmpty ws = ws = []
 let ns_empty = []
@@ -56,7 +51,32 @@ let ns_nodes ws = ws
 let ns_find = List.find
 
 let ns_max ns lessf = ns_fold (fun v -> fun w -> if lessf v w then w else v) (ns_some ns) ns
-			
+
+
+
+(**************************************************************
+ * players                                                    *
+ **************************************************************)
+
+type player = int
+
+let plr_Even = 0
+let plr_Odd = 1
+let plr_Zero = plr_Even
+let plr_One = plr_Odd
+
+let plr_opponent pl = 1 - pl
+			    
+
+(**************************************************************
+ * priorities                                                 *
+ **************************************************************)
+
+type priority = int
+
+let prio_good_for_player pr pl = if pl = plr_Even then pr mod 2 = 0 else pr mod 2 = 1
+
+									   
 (**************************************************************
  * Parity Game Definitions                                    *
  **************************************************************)
@@ -184,6 +204,7 @@ let pg_init n f =
   game;;
 
 
+(* DEPRECATED? *)
 let pg_get_tr_index_of pg v w =
   let succs = pg_get_successors pg v in
   let (b,k) = List.fold_left (fun (b,k) -> fun u -> if b || (w=u) then (b,k)
@@ -192,7 +213,7 @@ let pg_get_tr_index_of pg v w =
 			     succs
   in
   if b then k else raise Not_found
-
+  
 let pg_remove_nodes game nodes =
   List.iter (fun v -> let succs = pg_get_successors game v in
 		      List.iter (fun u -> pg_del_edge game v u) succs;
@@ -420,7 +441,12 @@ let pg_prio_nodes pg p =
   done;
   !l
 
+let pg_get_selected_priorities game pred =
+  let prios = ref (TreeSet.empty compare) in
+  pg_iterate (fun v -> fun (pr,_,_,_,_) -> if pred pr then prios := TreeSet.add pr !prios) game;
+  TreeSet.elements !prios
 
+let pg_get_priorities game = pg_get_selected_priorities game (fun _ -> true)
 
 (**************************************************************
  * Node Collect Functions                                     *

@@ -46,6 +46,7 @@ let solve_cycle_scc game =
     (solution, strategy)
 
 
+      (*
 type process_result = PlayerWin of strategy * (int array)
                     | PlayerLoss
                     | Undecided of int
@@ -149,8 +150,81 @@ let solve_single_player_scc game player =
 						 )
 			in
 			(Array.make n (1 - player), strat);;
+       *)
+
+let solve_single_player_scc game player =
+  let n = pg_size game in
+  let strategy = Array.make n (-1) in
+  let temp_strat = Array.make n (-1) in
+  let solution = Array.make n (plr_opponent player) in
+  let clear_visited _ =
+    for i=0 to n-1 do
+      temp_strat.(i) <- -1
+    done
+  in
   
+  let can_reach_itself v pr =
+    let queue = SingleOccQueue.create () in
+    let rec can_reach _ = if SingleOccQueue.is_empty queue then
+			     false
+			   else
+			     begin
+			       let (w,u) = SingleOccQueue.take queue in
+			       if temp_strat.(w) != -1 || (let pr' = pg_get_priority game w in pr' > pr && not (prio_good_for_player pr' player)) then
+				 can_reach ()
+			       else
+				 begin
+				   temp_strat.(w) <- u;
+				   if w=v then
+				     begin
+				       for i=0 to n-1 do
+					 if temp_strat.(w) != (-1) then (
+					   strategy.(i) <- temp_strat.(i);
+					   solution.(i) <- player)
+				       done;
+				       true
+				     end
+				   else
+				     begin
+				       ns_iter (fun x -> SingleOccQueue.add (x,w) queue) (pg_get_predecessors game w);
+				       can_reach ()
+				     end
+				 end
+			     end
+    in
+    clear_visited ();
+    ns_iter (fun w -> SingleOccQueue.add (w,v) queue) (pg_get_predecessors game v);
+    can_reach ()
+  in
+
+  let complete_solution_and_strategy _ =
+    clear_visited ();
+    let queue = SingleOccQueue.create () in
+    for v=0 to n-1 do
+      if solution.(v) != -1 then
+	ns_iter (fun w -> if solution.(w) = -1 then SingleOccQueue.add (w,v) queue) (pg_get_predecessors game v) 
+    done;
+    while not (SingleOccQueue.is_empty queue) do
+      let (w,v) = SingleOccQueue.take queue in
+      solution.(w) <- player;
+      strategy.(w) <- v;
+      ns_iter (fun u -> if solution.(u) = -1 then SingleOccQueue.add (u,w) queue) (pg_get_predecessors game w)
+    done
+  in
   
+  let good_prios = ref (List.sort (fun p -> fun q -> (-1) * (compare p q)) (pg_get_selected_priorities game (fun pr -> prio_good_for_player pr player))) in
+  let found = ref false in
+  while not !found && !good_prios != [] do
+    let pr = List.hd !good_prios in
+    good_prios := List.tl !good_prios;
+
+    let vs = pg_prio_nodes game pr in
+    found := List.fold_left (fun b -> fun v -> b || can_reach_itself v pr) false vs;
+    if !found then complete_solution_and_strategy ()
+  done;
+  (solution, strategy)
+
+      
 let solve_single_parity_scc game player =
     let n = pg_size game in
 	let solution = Array.make n player in

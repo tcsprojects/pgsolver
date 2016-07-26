@@ -27,15 +27,33 @@ val ns_add     : node -> nodeset -> nodeset
 val ns_del     : node -> nodeset -> nodeset
 val ns_make    : node list -> nodeset
 val ns_nodes   : nodeset -> node list
-			
+
+
 (**************************************************************
- * Parity Game Definitions                                    *
+ * Players                                                    *
+ *                                                            *
+ * Warning: the type may become abstract in the future        *
+ **************************************************************)
+
+type player = int
+val plr_Even : player
+val plr_Odd : player
+val plr_opponent : player -> player
+		
+(**************************************************************
+ * Priorities                                                 *
  *                                                            *
  * Warning: the types may become abstract in the future       *
  **************************************************************)
 
 type priority = int
-type player = int
+val prio_good_for_player : priority -> player -> bool
+			
+						 
+(**************************************************************
+ * Parity Game Definitions                                    *
+ **************************************************************)
+
 type paritygame
 type solution = player array
 type strategy = node array
@@ -103,6 +121,17 @@ val pg_set_node'  : paritygame -> int -> (priority * player * nodeset * nodeset 
 					    
 val pg_find_desc  : paritygame -> string option -> node
 
+(* Calling pg_get_index game returns the index of the game *)
+val pg_get_index      : paritygame -> int
+
+(* `pg_prio_nodes <game> <prio>' returns a list of all nodes having priority <prio> *)
+val pg_prio_nodes: paritygame -> priority -> node list
+
+(* returns a list of all the priorities occurring in the game *)
+val pg_get_selected_priorities : paritygame -> (priority -> bool) -> priority list
+val pg_get_priorities : paritygame -> priority list
+
+					       
 (*
 val pg_get_tr_index_of: paritygame -> int -> int -> int (* DEPRECATED *)
 *)
@@ -172,12 +201,6 @@ val pg_min_prio       : paritygame -> priority
 
 (* Calling pg_max_prio_for game player returns the greatest reward for player occurring in the game *)
 val pg_max_prio_for   : paritygame -> player -> priority
-
-(* Calling pg_get_index game returns the index of the game *)
-val pg_get_index      : paritygame -> int
-
-(* `pg_prio_nodes <game> <prio>' returns a list of all nodes having priority <prio> *)
-val pg_prio_nodes: paritygame -> priority -> node list
 
 
 
