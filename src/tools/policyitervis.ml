@@ -108,7 +108,7 @@ let _ =
 		let less i j = node_valuation_ordering game node_compare valu.(i) valu.(j) < 0 in
 		let counter_strat =
 			Array.init (Array.length valu) (fun i ->
-				if pg_get_pl game i = 1
+				if pg_get_owner game i = 1
 				then best_decision_by_valuation_ordering game node_compare valu i
 				else -1
 			)

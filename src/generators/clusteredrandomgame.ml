@@ -64,7 +64,7 @@ let generator_game_func arguments =
   pg_init size (fun i ->
 	(Random.int max_prio,
 	 Random.int 2,
-	 Array.of_list (TreeSet.remove_list_dups pg.(i)),
+	 TreeSet.remove_list_dups pg.(i),
 	 Some (string_of_int i))
   );;
 

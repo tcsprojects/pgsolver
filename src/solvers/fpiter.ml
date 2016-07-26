@@ -33,8 +33,6 @@ let solve' game =
                                if odd (max_prio - min_prio) then (a,a) 
                                else if even min_prio then (a+1,a) else (a,a+1)
   in
-  let tg = game_to_transposed_graph game in
-
 
   let strategy = Array.make n (-1) in
   let evt_pos_strategy = Array.make n [] in
@@ -48,11 +46,11 @@ let solve' game =
   let boxes  = Array.make prios all_nodes in           (* B(i) = [](-Pr(i) or X(i)) *)
   let isects = Array.make (prios+1) all_nodes in       (* I(i) = B(i) and I(i+1) *)
 
-  let pr = Array.init prios (fun i -> list_to_set (collect_nodes game (fun _ -> fun (p,_,_,_) -> i+min_prio=p))) in
+  let pr = Array.init prios (fun i -> list_to_set (collect_nodes_by_prio game (fun p -> i+min_prio=p))) in
   let npr = Array.init prios (fun i -> NodeSet.cardinal pr.(i)) in
   let pr_complement = Array.init prios (fun i -> NodeSet.diff all_nodes pr.(i)) in
-  let v0 = list_to_set (collect_nodes game (fun _ -> fun (_,o,_,_) -> o=0)) in
-  let v1 = list_to_set (collect_nodes game (fun _ -> fun (_,o,_,_) -> o=1)) in 
+  let (v0',v1') = collect_nodes_by_owner game (fun o -> o=0) in
+  let (v0,v1) = (list_to_set v0', list_to_set v1') in 
 
   (* variable used to hold the current winning positions *)  
   let x = Array.make prios NodeSet.empty in
@@ -126,14 +124,14 @@ let solve' game =
   (* returns a node in the list ws of some priority p which also belongs to x.(p) *)
 
   let rec find_witness = function []    -> failwith "Solvers.Fpiter.find_witness: no witness found!"
-                                | w::ws -> let pr = pg_get_pr game w in
+                                | w::ws -> let pr = pg_get_priority game w in
                                            if NodeSet.mem w (get x pr) then w else find_witness ws
   in
 
   (* returns a node in the list ws of some priority p which does not belong to x.(p) *)
 
   let rec find_cntexmpl = function []    -> failwith "Solvers.Fpiter.find_cntexmpl: no counterexample found!"
-                                 | w::ws -> let pr = pg_get_pr game w in
+                                 | w::ws -> let pr = pg_get_priority game w in
                                             if not (NodeSet.mem w (get x pr)) then w else find_cntexmpl ws
   in
 
@@ -181,9 +179,9 @@ let solve' game =
             begin 
               msg_tagged 3 (fun _ -> show_moment () ^ " Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
                                      show_nodeSet win_mod_prio ^ "\n"); 
-              NodeSet.iter (fun v -> if pg_get_pl game v = 0 then
+              NodeSet.iter (fun v -> if pg_get_owner game v = 0 then
                                        begin
-                                         let w = find_witness (Array.to_list (pg_get_successors game v)) in
+                                         let w = find_witness (ns_nodes (pg_get_successors game v)) in
                                          record_decision 0 v w 
                                        end)
                            win_mod_prio; 
@@ -195,9 +193,9 @@ let solve' game =
               let old = get x !curr_prio in
               let now_out = NodeSet.diff old win_mod_prio in
 
-              NodeSet.iter (fun v -> if pg_get_pl game v = 1 then
+              NodeSet.iter (fun v -> if pg_get_owner game v = 1 then
                                        begin
-                                         let w = find_cntexmpl (Array.to_list (pg_get_successors game v)) in
+                                         let w = find_cntexmpl (ns_nodes (pg_get_successors game v)) in
                                          record_decision 1 v w 
                                        end)
                            now_out;
@@ -216,9 +214,9 @@ let solve' game =
             begin
               msg_tagged 3 (fun _ -> show_moment () ^ " Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
                                      show_nodeSet win_mod_prio ^ "\n");
-              NodeSet.iter (fun v -> if pg_get_pl game v = 1 then
+              NodeSet.iter (fun v -> if pg_get_owner game v = 1 then
                                        begin
-                                         let w = find_cntexmpl (Array.to_list (pg_get_successors game v)) in
+                                         let w = find_cntexmpl (ns_nodes (pg_get_successors game v)) in
                                          record_decision 1 v w
                                        end)
                            (NodeSet.diff (get pr !curr_prio) win_mod_prio); 
@@ -230,9 +228,9 @@ let solve' game =
               let old = get x !curr_prio in
               let now_in = NodeSet.diff win_mod_prio old in
 
-              NodeSet.iter (fun v -> if pg_get_pl game v = 0 then
+              NodeSet.iter (fun v -> if pg_get_owner game v = 0 then
                                        begin
-                                         let w = find_witness (Array.to_list (pg_get_successors game v)) in
+                                         let w = find_witness (ns_nodes (pg_get_successors game v)) in
                                          record_decision 0 v w
                                        end)
                            now_in;
@@ -338,7 +336,7 @@ let solve' game =
           else
             begin
               let ns = next_smallest winner prio bound in
-              Array.iter (fun w -> todo := (w, ns) :: !todo) ws
+              ns_iter (fun w -> todo := (w, ns) :: !todo) ws
             end;
           last_visit.(v) <- Some bound
         end
@@ -346,7 +344,7 @@ let solve' game =
         message 3 (fun _ -> " greater or equal!\n") *)
     done;
     msg_tagged 3 (fun _ -> "Searching for next node to visit after " ^ string_of_int !next_node ^ " ");
-    while !next_node < n && (strategy.(!next_node) > -1 || let o = pg_get_pl game !next_node in solution.(!next_node) <> o) do
+    while !next_node < n && (strategy.(!next_node) > -1 || let o = pg_get_owner game !next_node in solution.(!next_node) <> o) do
       incr next_node;
       message 3 (fun _ -> ".")
     done;

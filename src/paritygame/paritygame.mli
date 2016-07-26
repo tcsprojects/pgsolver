@@ -6,26 +6,43 @@ open Tcsset
  * Functions for representing sets of nodes,                   *
  * particularly for successors and predecessors of given nodes *
  *                                                             *
- * Warning: these types may become abstract in the future      *
+ * Warning: the type `node' may become abstract in the future  *
  ***************************************************************)
 
 type node = int
 type nodeset
 
+(* check for emptiness and membership *)
 val ns_isEmpty : nodeset -> bool
-val ns_empty   : nodeset
 val ns_elem    : node -> nodeset -> bool
+
+(* constructor functions for node sets *)
+val ns_empty   : nodeset
+val ns_make    : node list -> nodeset
+
+(* returns the number of elements in a node set *)
+val ns_size    : nodeset -> int
+
+(* iterator functions over node sets *)
 val ns_fold    : ('a -> node -> 'a) -> 'a -> nodeset -> 'a
 val ns_iter    : (node -> unit) -> nodeset -> unit
 val ns_map     : (node -> node) -> nodeset -> nodeset
-val ns_size    : nodeset -> int
-val ns_exists  : (node -> bool) -> nodeset -> bool
+val ns_filter  : (node -> bool) -> nodeset -> nodeset
+						
+(* finding elements in a node set *)
+val ns_exists  : (node -> bool) -> nodeset -> bool			
+val ns_forall  : (node -> bool) -> nodeset -> bool			
 val ns_find    : (node -> bool) -> nodeset -> node
 val ns_max     : nodeset -> (node -> node -> bool) -> node
-val ns_some    : nodeset -> node
+val ns_some    : nodeset -> node (* returns a randomly chosen element from a node set *)
+val ns_first   : nodeset -> node (* return the smallest (by name) node in a node set *)
+val ns_last    : nodeset -> node (* return the greatest (by name) node in a node set *)
+
+(* add a node to, resp. delete a node from a nodeset *) 
 val ns_add     : node -> nodeset -> nodeset
 val ns_del     : node -> nodeset -> nodeset
-val ns_make    : node list -> nodeset
+
+(* extract a list of nodes from a node set *)
 val ns_nodes   : nodeset -> node list
 
 
@@ -73,19 +90,6 @@ val pg_node_count : paritygame -> int
 val pg_edge_count : paritygame -> int
 val pg_copy       : paritygame -> paritygame
 
-(**************************************************************
- * possibly DEPRECATED functions                              *
- * use the ones with the more verbose names instead           *
- **************************************************************)
-val pg_get_pr     : paritygame -> node -> priority
-val pg_set_pr     : paritygame -> node -> priority -> unit
-val pg_get_pl     : paritygame -> node -> player
-val pg_set_pl     : paritygame -> node -> player -> unit
-val pg_get_tr     : paritygame -> node -> nodeset
-
-(*
-val pg_set_tr     : paritygame -> int -> int array -> unit (* DEPRECATED *)
-*)
 					    
 (**************************************************************
  * node access and modification functions                     *
@@ -223,6 +227,9 @@ val pg_add_successors : paritygame -> int -> int array -> unit (* DEPRECATED *)
 val collect_nodes: paritygame -> (node -> priority * player * nodeset * nodeset * string option -> bool) -> node list
 val collect_nodes_by_prio: paritygame -> (priority -> bool) -> node list
 
+(* `collect_nodes_by_owner <game> <f>' returns two lists: the first one contains all nodes v for which f v is true, the other all those for which it is false *)
+val collect_nodes_by_owner: paritygame -> (player -> bool) -> node list * node list
+								  
 (* `collect_max_prio_nodes <game>' returns all nodes with greatest priority *)
 val collect_max_prio_nodes: paritygame -> node list
 

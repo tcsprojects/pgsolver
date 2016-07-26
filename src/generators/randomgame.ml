@@ -30,7 +30,6 @@ let random_game_func arguments =
       Array.iter (fun j -> pg_add_edge game i (if j < i || self_cycles then j else j + 1))
 		 (Tcsmaths.RandomUtils.get_pairwise_different_from_range (outdegmin + Random.int (outdegmax - outdegmin + 1)) 0 (size-1 - (if self_cycles then 0 else 1)))
     done;
-    game
-    );;
+    game;;
 	
 Generators.register_generator random_game_func "randomgame" "Random Game";;

@@ -10,9 +10,9 @@ open Transformations;;
 
 
 let solve' (game: paritygame) =
-	let array_max a less = ArrayUtils.max_elt (fun x y -> if less x y then -1 else 1) a in
+    (* let array_max a less = ArrayUtils.max_elt (fun x y -> if less x y then -1 else 1) a in *)
 
-	let n = pg_size game in
+    let n = pg_size game in
 
     let msg_tagged v = message_autotagged v (fun _ -> "STRATIMPROV") in
     let msg_plain = message in
@@ -271,9 +271,7 @@ let solve' (game: paritygame) =
     for i = 0 to n - 1 do
     	Graph.addNode ggraph i;
     	let arr = tra i in
-    		for j = 0 to (ns_size arr) - 1 do
-    			Graph.addEdge ggraph i arr.(j)
-    		done;
+    	ns_iter (fun w -> Graph.addEdge ggraph i w) arr
     done;
 
     (* Strategy improvement *)
@@ -296,7 +294,7 @@ let solve' (game: paritygame) =
     			print_game g
     		);
     		let stratUpd x =
-    			let w = array_max (tra x) (lessValu valu) in
+    			let w = ns_max (tra x) (lessValu valu) in
     				if lessValu valu strategy.(x) w
     				then (strategy.(x) <- w;
     				      changed := true)
@@ -312,8 +310,8 @@ let solve' (game: paritygame) =
     let strategy = Array.make n (-1) in
     	for i = 0 to n - 1 do
     		strategy.(i) <-	if isP0 i
-    					    then array_max (tra i) (lessValu valu)
-    					    else array_max (tra i) (fun x y -> (lessValu valu) y x)
+    				then ns_max (tra i) (lessValu valu)
+    				else ns_max (tra i) (fun x y -> (lessValu valu) y x)
     	done;
     (solution, strategy);;
 

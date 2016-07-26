@@ -29,8 +29,8 @@ let _ =
 	let number_of_player0_edges = ref 0 in
 	let number_of_player1_edges = ref 0 in
 	
-	pg_iterate (fun _ -> fun (pr, pl, tr, _) ->
-		let trn = Array.length tr in
+	pg_iterate (fun _ -> fun (pr, pl, tr, _, _) ->
+		let trn = ns_size tr in
 		incr number_of_nodes;
 		number_of_edges := !number_of_edges + trn;
 		if pl = 0 then (

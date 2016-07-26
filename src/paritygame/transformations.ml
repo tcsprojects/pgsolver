@@ -687,7 +687,7 @@ let sort_game_inplace pg cmp =
     let (pl', j) = decode (pg_get_owner pg i) in
     perm.(i) <- j;
     perm'.(j) <- i;
-    pg_set_pl pg i pl'
+    pg_set_owner pg i pl'
   done;
   
   for i = 0 to n - 1 do

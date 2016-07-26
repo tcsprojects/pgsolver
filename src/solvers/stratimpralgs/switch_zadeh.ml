@@ -449,7 +449,7 @@ let test_valuation_assumptions game strategy valu n =
 		let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
 		let v = pg_find_desc game (Some (s ^ string_of_int i)) in
 		let (_, v_valu, _) = valu.(v) in
-		let va = TreeSet.filter (fun u -> pg_get_pr game u >= 11) v_valu in
+		let va = TreeSet.filter (fun u -> pg_get_priority game u >= 11) v_valu in
 		let ff = TreeSet.format (fun i -> OptionUtils.get_some (pg_get_desc game i)) in
 		let diff = TreeSet.sym_diff va assrt in
 		if not (TreeSet.is_empty diff)
@@ -459,7 +459,7 @@ let check_valu_range desc s i assrt_low assrt_high =
     let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
     let v = pg_find_desc game (Some (s ^ string_of_int i)) in
     let (_, v_valu, _) = valu.(v) in
-    let va = TreeSet.filter (fun u -> pg_get_pr game u >= 11) v_valu in
+    let va = TreeSet.filter (fun u -> pg_get_priority game u >= 11) v_valu in
     let diff_low = TreeSet.sym_diff va assrt_low in
 		let diff_high = TreeSet.sym_diff va assrt_high in
     if not (TreeSet.is_empty diff_low) && not (TreeSet.is_empty diff_high)
@@ -513,7 +513,7 @@ let test_mdpvaluation_assumptions game strategy valu mdpvalu n =
 		let v = pg_find_desc game (Some (s ^ string_of_int i)) in
 		let ff = TreeMap.format (fun (i, v) -> OptionUtils.get_some (pg_get_desc game i) ^ ":" ^ string_of_float v) in
 		let va = fst mdpvalu.(v) in
-		let va = TreeMap.filter (fun u v -> pg_get_pr game u >= 11) va in
+		let va = TreeMap.filter (fun u v -> pg_get_priority game u >= 11) va in
 		if not (TreeMap.equal (fun v1 v2 -> not (v1 > v2) && not (v1 < v2)) va assrt) 
 		then print_string ("\n\n" ^ desc ^ " " ^ " " ^ ArrayUtils.format string_of_int info.b ^ " " ^ " | " ^ ff va ^ " | " ^ ff assrt ^ "\n\n");
 	in
@@ -545,7 +545,7 @@ let test_improving_switches game strategy valu n =
 	let info = strategy_info game strategy in
 	let strat a i b j = if StrategyHelper.is game strategy (a ^ string_of_int i) (b ^ string_of_int j) then 1 else 0 in
 	let impr = Array.init (pg_size game) (fun i ->
-    (pg_get_pl game i = 0) && (strategy.(i) != best_decision_by_valuation_ordering game node_total_ordering_by_position valu i)
+    (pg_get_owner game i = 0) && (strategy.(i) != best_decision_by_valuation_ordering game node_total_ordering_by_position valu i)
   ) in
 	let check_impr desc s i assrt =
 		let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
@@ -1019,7 +1019,7 @@ let test_occrec_assumptions game strategy valu occrec n =
 
 let check_fair_exp_occ game strategy bits occ =
 		let find x i = pg_find_desc game (Some (x ^ string_of_int i)) in
-		let get x i y j = let (a,b) = (find x i,find y j) in occ.(a).(pg_get_tr_index_of game a b) in
+		let get x i y j = let (a,b) = (find x i,find y j) in occ.(a).(ArrayUtils.index_of (Array.of_list (ns_nodes (pg_get_successors game a))) b) in
 		let n = Array.length bits - 1 in
 		let valid = ref true in
 		let active = Bits.shr bits in
@@ -1171,7 +1171,7 @@ let improvement_policy_optimize_fair tie_break
     msg_tagged_nl 4 (fun _ ->
     	"Occ: " ^ 
     	ArrayUtils.formati (fun i a -> desc i ^ ":" ^
-    		let tr = pg_get_tr game i in
+    		let tr = Array.of_list (ns_nodes (pg_get_successors game i)) in
     		ArrayUtils.formati (fun j k ->
     			desc tr.(j) ^ ":" ^ string_of_int k
     		) a
@@ -1182,7 +1182,7 @@ let improvement_policy_optimize_fair tie_break
     let strategy = Array.copy old_strategy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
-	pg_iterate (fun i (_, pl, tr, _) ->
+	pg_iterate (fun i (_, pl, tr, _, _) ->
 		if pl = 0 then
 			Array.iteri (fun j k ->		
 				if cmp strategy.(i) k < 0 then (
@@ -1193,7 +1193,7 @@ let improvement_policy_optimize_fair tie_break
 						minvalue := occ.(i).(j)
 					)
 				)
-			) tr
+			) (Array.of_list (ns_nodes tr))
 	) game;
 	msg_tagged_nl 4 (fun _ -> "Occurrence-Arena: " ^ ListUtils.format (fun (i,_,k) -> desc i ^ "->" ^ desc k) (List.rev !l) ^ "\n");
 	if !l != [] then (
@@ -1336,9 +1336,9 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 let strategy_improvement_optimize_fair_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position
 	                     (improvement_policy_optimize_fair improvement_policy_optimize_fair_default_tie_break) (
-		pg_map2 (fun _ (_, pl, tr, _) ->
+		pg_map2 (fun _ (_, pl, tr, _, _) ->
 			if pl = 1 then [||]
-			else Array.make (Array.length tr) 0
+			else Array.make (ns_size tr) 0
 		) game
 	) false "STRIMPR_FAIR";;
 
@@ -1346,9 +1346,9 @@ let strategy_improvement_optimize_fair_policy game =
 let strategy_improvement_optimize_fair_sub_exp_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position 
                          (improvement_policy_optimize_fair improvement_policy_optimize_fair_sub_exp_tie_break) (
-		pg_map2 (fun _ (_, pl, tr, _) ->
+		pg_map2 (fun _ (_, pl, tr, _, _) ->
 			if pl = 1 then [||]
-			else Array.make (Array.length tr) 0
+			else Array.make (ns_size tr) 0
 		) game
 	) false "STRIMPR_FAIRSE";;
 
@@ -1370,8 +1370,8 @@ let initial_strategy_for_exp_game game =
 		(String.get s 0, int_of_string (StringUtils.rest_string s 1))
 	in		
 	let strategy = initial_strategy_by_best_reward game in
-	pg_iterate (fun i (pr, pl, tr, de) ->
-		if (pr >= 0) && (pl = 0) && (Array.length tr >= 2) then (
+	pg_iterate (fun i (pr, pl, tr, _, de) ->
+		if (pr >= 0) && (pl = 0) && (ns_size tr >= 2) then (
 			let (c, j) = parse de in
 			match c with
 			| 'a' -> strategy.(i) <- find ("o" ^ string_of_int j)
@@ -1394,9 +1394,9 @@ let initial_strategy_for_exp_game game =
 let strategy_improvement_optimize_fair_exp_policy game =
 	strategy_improvement game initial_strategy_for_exp_game node_total_ordering_by_position 
                          (improvement_policy_optimize_fair improvement_policy_optimize_fair_sub_exp_tie_break) (
-		pg_map2 (fun _ (_, pl, tr, _) ->
+		pg_map2 (fun _ (_, pl, tr, _, _) ->
 			if pl = 1 then [||]
-			else Array.make (Array.length tr) 0
+			else Array.make (ns_size tr) 0
 		) game
 	) false "STRIMPR_FAIRSE";;
 

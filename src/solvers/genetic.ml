@@ -164,7 +164,7 @@ struct
     let l = pg_size game in
     let str = Array.make l (0,0) in
     for i=0 to l-1 do
-      let ws = pg_get_tr game i in
+      let ws = Array.of_list (ns_nodes (pg_get_successors game i)) in
       str.(i) <- (ws.(Random.int (Array.length ws)), 0)
     done;
     (str,0,0)
@@ -179,7 +179,7 @@ struct
     let l = Array.length str in
 
     let v = Random.int l in
-    let ws = pg_get_tr game v in
+    let ws = Array.of_list (ns_nodes (pg_get_successors game v)) in
     
     let (o,_) = str.(v) in
     let n = ws.(Random.int (Array.length ws)) in
@@ -252,11 +252,11 @@ struct
         else if passed.(!node) = -1 then
           (* play has formed a loop, remember: !node is now the looping node in this play *)
           begin
-            max_prio := pg_get_pr game !node;
+            max_prio := pg_get_priority game !node;
             while not !found do
               let v = List.hd !history in
               history := List.tl !history;
-              max_prio := max !max_prio (pg_get_pr game v);
+              max_prio := max !max_prio (pg_get_priority game v);
               found := (v = !node)
             done;
             winner := !max_prio mod 2;
@@ -267,7 +267,7 @@ struct
           begin
             passed.(!node) <- -1;
             history := !node :: !history;
-            let p = pg_get_pl game !node in
+            let p = pg_get_owner game !node in
             choices.(p) <- !node :: choices.(p);
             let str = if p=0 then str0 else str1 in
             node := fst str.(!node)

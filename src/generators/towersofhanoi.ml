@@ -111,17 +111,17 @@ let towers_of_hanoi_func arguments =
     begin
       match formula.(f) with
             FP(p,g) -> let v = encode el g in
-                       finished := (i, (p,0,[|v|],show_conf el f)) :: !finished;
+                       finished := (i, (p,0,[v],show_conf el f)) :: !finished;
                        todo := (el,g,v) :: !todo 
           | BOOL(pl,g,h) -> let v = encode el g in
                             let w = encode el h in
-                            finished := (i, (0,pl,[|v;w|],show_conf el f)) :: !finished;
+                            finished := (i, (0,pl,[v;w],show_conf el f)) :: !finished;
                             todo := (el,g,v) :: (el,h,w) :: !todo
           | MOD(pl,g) -> let nextnodes = List.map (fun el -> (el, g, encode el g)) (successors el) in
-                         let nextnodes_coded = Array.of_list (List.map (fun (_,_,v) -> v) nextnodes) in
+                         let nextnodes_coded = List.map (fun (_,_,v) -> v) nextnodes in
                          finished := (i, (0,pl,nextnodes_coded, show_conf el f)) :: !finished;
                          todo := nextnodes @ !todo
-          | PROP(p) -> finished := (i, ((if p el then 0 else 1), 0, [|i|], show_conf el f)) :: !finished
+          | PROP(p) -> finished := (i, ((if p el then 0 else 1), 0, [i], show_conf el f)) :: !finished
     end;
     visited.(i) <- true
   done;

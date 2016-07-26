@@ -194,7 +194,7 @@ let solve' game =
 	let m = pg_size game in
 	
 	for i = 0 to m - 1 do
-		let p = pg_get_pr game i in
+		let p = pg_get_priority game i in
 		let n = try
                                   SingleTable.find prio_table p
                                 with _ -> 0
@@ -346,7 +346,7 @@ let solve' game =
           let winner = 1-x in
           message 3 (fun _ -> string_of_int x ^ ", successor: ");
 
-          let succs = pg_get_tr game v in
+          let succs = pg_get_successors game v in
           let get_fun = if winner = 0 then getTEVar else getTAVar in
           let y = try
                     ArrayUtils.find (fun w -> let j = get_fun (v,w) in solver#get_assignment j) succs

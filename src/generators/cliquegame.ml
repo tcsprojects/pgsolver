@@ -33,7 +33,7 @@ let generator_game_func arguments =
     pg_set_priority game i i;
     pg_set_owner game i (i mod 2);
     pg_set_desc game i (Some (string_of_int i));
-    List.iter (fun w -> pg_add_edge game i w) (successors (size-1) i with_self_cycles)) 
+    List.iter (fun w -> pg_add_edge game i w) (successors (size-1) i with_self_cycles) 
   done;
   game;;
 

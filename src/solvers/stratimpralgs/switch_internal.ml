@@ -29,7 +29,7 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 	  let pl = pg_get_owner game i in
 	  let tr = pg_get_successors game i in
 		if pl = 0 then (
-			Array.iter (fun j ->
+			ns_iter (fun j ->
 				if node_valuation_ordering game node_total_ordering valu.(j) valu.(old_strategy.(i)) > 0 then (
 					let s = Array.copy old_strategy in
 					s.(i) <- j;
@@ -47,7 +47,7 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 		let base_counter = compute_counter_strategy game base in
 		let rec helper set v =
 			if TreeSet.mem v set then None
-			else if pg_get_pl game v = 1 then helper (TreeSet.add v set) base_counter.(v)
+			else if pg_get_owner game v = 1 then helper (TreeSet.add v set) base_counter.(v)
 			else if base.(v) = target.(v) then helper (TreeSet.add v set) base.(v)
 			else let a = Array.copy base in
 			     a.(v) <- target.(v);
@@ -85,7 +85,7 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 		done;
 	) improvement_set_array;
 	let strategy = Array.init (pg_size game) (fun v ->
-		if pg_get_pl game v = 1 then -1
+		if pg_get_owner game v = 1 then -1
 		else (fst improvement_set_array.(best_strategies.(v))).(v)
 	) in
 	(strategy, !strategy_set)
@@ -96,7 +96,7 @@ let improvement_policy_learn_cycles sub_policy game node_total_ordering (cycles,
 	let (strategy, u') = sub_policy game node_total_ordering u old_strategy valu cycles in
 	let combined_strategy =
         Array.init (Array.length valu) (fun i ->
-        	if pg_get_pl game i = 0
+        	if pg_get_owner game i = 0
         	then strategy.(i)
         	else best_decision_by_valuation_ordering game node_total_ordering valu i
         )
@@ -105,12 +105,12 @@ let improvement_policy_learn_cycles sub_policy game node_total_ordering (cycles,
     let (sccs, sccindex, topology, roots) = strongly_connected_components game' in
     let cycles = ref cycles in
     let normalize l =
-    	list_upfront l (list_max l (fun x y -> pg_get_pr game x < pg_get_pr game y))
+    	list_upfront l (list_max l (fun x y -> pg_get_priority game x < pg_get_priority game y))
     in
     Array.iteri (fun i scc ->
     	if (List.length scc > 1) && (topology.(i) = []) then (
     		let c = normalize scc in
-    		if (pg_get_pr game (List.hd c) mod 2 = 0) && (not (TreeSet.mem c !cycles)) then (
+    		if (pg_get_priority game (List.hd c) mod 2 = 0) && (not (TreeSet.mem c !cycles)) then (
     			cycles := TreeSet.add c !cycles;
     			let fmt k =
 					match (pg_get_desc game k) with
@@ -156,33 +156,32 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 		let changed = ref false in
 		while !running do
 			  let graph = subgame_by_edge_pred game (fun v w ->
-					let pl = pg_get_pl game v in
+					let pl = pg_get_owner game v in
 					(pl = 0) || (counter_strategy.(v) = w && !next_counter.(v) = w)
 				) in 
 				
 				let m = pg_size game in
 				for i = 0 to m - 1 do
-				  let pr = pg_get_priority game i in
 				  let pl = pg_get_owner game i in
 				  let tr = pg_get_successors game i in
-				  if (pl = 1) && ArrayUtils.exists tr (fun _ j -> counter_strategy.(i) != j && (TreeSet.mem j !non_final_nodes || TreeSet.mem (i,j) !used_escape_edges))
-				  then pg_set_tr graph i [||]
+				  if (pl = 1) && ns_exists (fun j -> counter_strategy.(i) != j && (TreeSet.mem j !non_final_nodes || TreeSet.mem (i,j) !used_escape_edges)) tr
+				  then ns_iter (fun w -> pg_del_edge graph i w) (pg_get_successors graph i)
 				done;
 				
 
 				let cycle = ref None in
 				let i = ref 0 in
 				while (!cycle = None && !i < n) do
-					let pr = pg_get_pr game !i in
+					let pr = pg_get_priority game !i in
 					if (pr mod 2 == 0) then (
 						let s = ref TreeSet.empty_def in
 						let rec build j cyc =
 							if (j = !i && cyc != []) then (
 								cycle := Some cyc
-							) else if not (TreeSet.mem j !s) && (pg_get_pr game j <= pr) then (
+							) else if not (TreeSet.mem j !s) && (pg_get_priority game j <= pr) then (
 								s := TreeSet.add j !s;
-								let tr = pg_get_tr graph j in
-								Array.iter (fun k ->
+								let tr = pg_get_successors graph j in
+								ns_iter (fun k ->
 									if (!cycle = None)
 									then build k ((j,k)::cyc);
 								) tr;
@@ -198,7 +197,7 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 				| Some cycle -> (
 					changed := true;
 					List.iter (fun (i,j) ->
-						if (pg_get_pl game i = 0)
+						if (pg_get_owner game i = 0)
 						then new_strategy.(i) <- j
 					) cycle;
 					List.iter (fun (i,_) ->
@@ -206,7 +205,7 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 					) cycle;
 					next_counter := compute_counter_strategy game new_strategy;
 					List.iter (fun (i,j) ->
-						if (pg_get_pl game i = 1 && !next_counter.(i) != j)
+						if (pg_get_owner game i = 1 && !next_counter.(i) != j)
 						then used_escape_edges := TreeSet.add (i, !next_counter.(i)) !used_escape_edges
 					) cycle;
 					);
@@ -217,207 +216,10 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 	)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	
-(*
-let improvement_policy_smart game' node_total_ordering _ old_strategy valu cycles =
-    let msg_tagged v = message_autotagged v (fun _ -> "STRIMPR_SMART") in
-	let game = pg_copy game' in
-	let n = Array.length game in
-	let valu_ord = node_valuation_ordering game' node_total_ordering in
-	Array.iteri (fun i (pr, pl, tr, _) ->
-		if pl = 0
-		then pg_set_tr game i (Array.of_list (List.filter (fun j -> valu_ord valu.(j) valu.(old_strategy.(i)) >= 0) (Array.to_list tr)))
-	) game;
-
-	let strategy = Array.copy old_strategy in
-	let valu_ord = node_valuation_ordering game node_total_ordering in
-	let graph = paritygame_to_dynamic_paritygame game in
-
-	let valu2 = Array.copy valu in
-	let valued = Array.make n false in
-
-	for i = n - 4 to n - 1 do
-		valued.(i) <- true
-	done;
-
-	let todo = ref (TreeSet.empty compare) in
-	let rest = ref (TreeSet.empty compare) in
-
-	for v = 0 to n - 1 do
-		if valued.(v)
-		then todo := TreeSet.union !todo (DynamicGraph.get_node_pred v graph)
-		else rest := TreeSet.add v !rest
-	done;
-
-	let cycle_array = Array.make (TreeSet.cardinal cycles) [] in
-	let cycle_ptr = Array.make n (TreeSet.empty compare) in
-	let ctr = ref 0 in
-	TreeSet.iter (fun c ->
-		cycle_array.(!ctr) <- c;
-		List.iter (fun i -> cycle_ptr.(i) <- TreeSet.add !ctr cycle_ptr.(i)) c;
-		incr ctr;
-	) cycles;
-	let remove_cycle c =
-		List.iter (fun i -> cycle_ptr.(i) <- TreeSet.remove c cycle_ptr.(i)) cycle_array.(c);
-		cycle_array.(c) <- []
-	in
-	let propagate_edge v u =
-		TreeSet.iter (fun c ->
-			let cycle = cycle_array.(c) in
-			let cycle' = ref cycle in
-			while not ((List.hd !cycle' = v)) do
-				cycle' := List.tl !cycle'
-			done;
-			if ((!cycle' = []) && (not (List.hd cycle = u))) ||
-			   ((not (!cycle' = [])) && (not (List.hd !cycle' = u)))
-			then remove_cycle c
-		) cycle_ptr.(v);
-	in
-	let cycle_avail =
-		List.for_all (fun v -> (pg_get_pl game v = 0) || valued.(v))
-	in
-	let cycle_value cycle v =
-		let cycle = ref (list_upfront cycle v) in
-		let valus = ref [] in
-		let path = ref (TreeSet.empty compare) in
-		while not (!cycle = []) do
-			let u = List.hd !cycle in
-			cycle := List.tl !cycle;
-			if (pg_get_pl game u = 1) && (not valued.(u)) then (
-				let tr = pg_get_tr game' u in
-				let ordering x y = valu_ord valu2.(x) valu2.(y) in
-				let w = array_max tr (fun x y -> ordering x y >= 0) in
-				let (a, b, c) = valu2.(w) in
-				valus := (a, TreeSet.union !path b, c)::!valus
-			);
-			path := TreeSet.add u !path
-		done;
-		list_max !valus (fun x y -> valu_ord x y >= 0)
-	in
-
-
-	let compute_update' v u = let (a, b, c) = valu2.(u) in (a, TreeSet.add v b, c + 1) in
-	let compute_update v =
-		let p = TreeSet.filter (fun u -> valued.(u)) (DynamicGraph.get_node_succ v graph) in
-		let pl = pg_get_pl game v in
-		let cmp x y = if pl = 0 then valu_ord valu2.(x) valu2.(y) else valu_ord valu2.(y) valu2.(x) in
-		TreeSet.fold (fun u mx -> if cmp u mx > 0 then u else mx) p (TreeSet.min_elt p)
-	in
-
-	while (not (TreeSet.is_empty !rest)) do
-		while (not (TreeSet.is_empty !todo)) do
-			let v = TreeSet.min_elt !todo in
-			todo := TreeSet.remove v !todo;
-			if not valued.(v) then (
-				let succs = DynamicGraph.get_node_succ v graph in
-				if TreeSet.for_all (fun u -> valued.(u)) succs then (
-					if (pg_get_pl game v = 1) then (
-                        let u = compute_update v in
-                        let va = compute_update' v u in
-                        valued.(v) <- true;
-                        valu2.(v) <- va;
-					)
-					else (
-                        let u = compute_update v in
-                        let va = ref (compute_update' v u) in
-                        let c = ref (-1) in
-                        TreeSet.iter (fun d ->
-                        	if cycle_avail (cycle_array.(d)) then (
-                                let va2 = cycle_value (cycle_array.(d)) v in
-                                if valu_ord va2 !va > 0 then (
-                                    c := d;
-                                    va := va2
-                                )
-                            )
-                        ) cycle_ptr.(v);
-                        if !c = -1 then (
-                            valued.(v) <- true;
-                            valu2.(v) <- !va;
-                            strategy.(v) <- u
-                        )
-                        else (
-                            let cycle = cycle_array.(!c) in
-                            msg_tagged 3 (fun _ -> "Applying cycle: " ^ intListUtils.format cycle ^ "\n");
-                            let x = ref (List.hd cycle) in
-                            let y = ref (List.tl cycle @ [!x]) in
-                            while not (!y = []) do
-                                let z = List.hd !y in
-                                y := List.tl !y;
-                                if pg_get_pl game' !x = 0 then (
-                                    Array.iter (fun j ->
-                                        DynamicGraph.del_edge !x j graph
-                                    ) (pg_get_tr game' !x);
-                                    DynamicGraph.add_edge !x z graph;
-                                    pg_set_tr game !x [|z|]
-                                );
-                                todo := TreeSet.add !x !todo;
-                                x := z
-                            done;
-                            remove_cycle !c
-                        )
-                    )
-				)
-				else if pg_get_pl game v = 1 then (
-					let u = compute_update v in
-					if valu_ord (compute_update' v u) valu2.(v) = 0 then (
-						valued.(v) <- true;
-						propagate_edge v u
-					)
-				);
-				if valued.(v) then (
-					todo := TreeSet.union !todo (DynamicGraph.get_node_pred v graph);
-					rest := TreeSet.remove v !rest
-				)
-			)
-		done;
-		if not (TreeSet.is_empty !rest) then (
-            let temp = TreeSet.filter (fun v -> (pg_get_pl game v = 1) && (TreeSet.exists (fun u -> valued.(u)) (DynamicGraph.get_node_succ v graph))) !rest in
-            if TreeSet.is_empty temp
-            then failwith "crap"
-            else let l = TreeSet.fold (fun v l -> let u = compute_update v in (v, u, compute_update' v u)::l) temp [] in
-                 let (v, u, va) = list_max l (fun (v, _, a) (w, _, b) -> valu_ord a b > 0) in (
-                    todo := TreeSet.union !todo (DynamicGraph.get_node_pred v graph);
-                    rest := TreeSet.remove v !rest;
-                    valu2.(v) <- va;
-                    valued.(v) <- true;
-                    propagate_edge v u
-                 )
-        )
-	done;
-
-	(strategy, ())
-*)
-
 let improvement_policy_smart game node_total_ordering todo old_strategy valu cycles =
     let combined_strategy =
         Array.init (Array.length valu) (fun i ->
-            if pg_get_pl game i = 0
+            if pg_get_owner game i = 0
             then old_strategy.(i)
             else best_decision_by_valuation_ordering game node_total_ordering valu i
         )
@@ -433,7 +235,7 @@ let improvement_policy_smart game node_total_ordering todo old_strategy valu cyc
         while !applies1 && (not (!cycle' = [])) do
             let z = List.hd !cycle' in
             cycle' := List.tl !cycle';
-            if pg_get_pl game !x = 1
+            if pg_get_owner game !x = 1
             then applies1 := combined_strategy.(!x) = z
             else applies0 := !applies0 && ((combined_strategy.(!x) = z) || (not (improv_edge !x z)));
             x := z
@@ -461,7 +263,7 @@ let improvement_policy_smart game node_total_ordering todo old_strategy valu cyc
             while (not (!cycle' = [])) do
                 let z = List.hd !cycle' in
                 cycle' := List.tl !cycle';
-                if (pg_get_pl game !x = 0) && (improv_edge !x z) then strategy.(!x) <- z;
+                if (pg_get_owner game !x = 0) && (improv_edge !x z) then strategy.(!x) <- z;
                 x := z
             done
 		) todo;
@@ -473,7 +275,7 @@ let improvement_policy_cycle_avoid game node_total_ordering old_strategy valu =
 	let new_strategy = Array.copy old_strategy in
 	let counter_strategy = 
         Array.init (Array.length valu) (fun i ->
-        	if pg_get_pl game i = 0
+        	if pg_get_owner game i = 0
         	then -1
         	else best_decision_by_valuation_ordering game node_total_ordering valu i
         )
@@ -484,7 +286,7 @@ let improvement_policy_cycle_avoid game node_total_ordering old_strategy valu =
 		let finished = ref false in
 		while not !finished do
 			s := TreeSet.add !current !s;
-			if pg_get_pl game !current = 0
+			if pg_get_owner game !current = 0
 			then current := new_strategy.(!current)
 			else current := counter_strategy.(!current);
 			finished := TreeSet.mem !current !s;
@@ -501,7 +303,7 @@ let improvement_policy_cycle_avoid game node_total_ordering old_strategy valu =
 	let changed = ref false in
 	let n = Array.length old_strategy in
 	for i = 0 to n - 1 do
-		if (pg_get_pl game i = 0) then (
+		if (pg_get_owner game i = 0) then (
 			let w = best_decision_by_ordering game (ordering i) i in
 			if (w != new_strategy.(i)) && (deford new_strategy.(i) w < 0) then (
 				new_strategy.(i) <- w;
@@ -535,7 +337,7 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 		let cycles = ref (TreeSet.empty cycle_enforce_cycles_compare) in
 		let combined_strategy =
 			Array.init (Array.length valu) (fun i ->
-				if pg_get_pl game i = 0
+				if pg_get_owner game i = 0
 				then strategy.(i)
 				else best_decision_by_valuation_ordering game node_total_ordering valu i
 			)
@@ -549,7 +351,7 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 				let edge0 = ref TreeMap.empty_def in
 				let edge1 = ref TreeMap.empty_def in
 				List.iter (fun v ->
-					if pg_get_pl game v = 0 then (
+					if pg_get_owner game v = 0 then (
 						node0 := TreeSet.add v !node0;
 						edge0 := TreeMap.add v combined_strategy.(v) !edge0;
 					)
@@ -570,12 +372,12 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 		let m = ref (TreeSet.cardinal node1) in
 		let nodecur = ref v in
 		while !m > 0 do
-			while (pg_get_pl game !nodecur = 0) do
+			while (pg_get_owner game !nodecur = 0) do
 				valcur := TreeSet.add !nodecur !valcur;
 				nodecur := TreeMap.find !nodecur edge0
 			done;
 
-			Array.iter (fun w ->
+			ns_iter (fun w ->
 				if not (TreeMap.find !nodecur edge1 = w) then (
 					let (e, pth, f) = valu.(w) in
 					let valw = (e, TreeSet.union pth !valcur, f) in
@@ -584,7 +386,7 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 					|	Some valw' -> if node_valuation_ordering game node_total_ordering valw valw' < 0
 					                  then valworst := Some valw;
 				);
-			) (pg_get_tr game !nodecur);
+			) (pg_get_successors game !nodecur);
 			
 			valcur := TreeSet.add !nodecur !valcur;
 			nodecur := TreeMap.find !nodecur edge1;
@@ -598,14 +400,14 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 	let finished = ref false in
 	let new_strategy = Array.copy old_strategy in
 	while (not !finished) && (!c <= n) do
-		if (pg_get_pl game !i = 0) then (
+		if (pg_get_owner game !i = 0) then (
 			let pots = ref [] in
-			Array.iter (fun w ->
+			ns_iter (fun w ->
 				new_strategy.(!i) <- w;
 				if TreeSet.subset (get_cycles new_strategy) cycles
 				then pots := (A w, valu.(w))::!pots;
 				new_strategy.(!i) <- old_strategy.(!i);
-			) (pg_get_tr game !i);
+			) (pg_get_successors game !i);
 			TreeSet.iter (fun ((node0, node1, edge0, edge1) as cyc) ->
 				if (TreeSet.mem !i node0) then (
 					TreeMap.iter (fun v w ->

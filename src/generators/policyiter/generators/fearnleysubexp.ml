@@ -77,7 +77,6 @@ let generator_game_func arguments =
 
 	SymbolicParityGame.to_paritygame pg;;
 
-
 register_strat_impr_gen {
 	ident = "fearnleysubexp";
 	description = "Subexponential Lower Bound for Fearnley's rule";

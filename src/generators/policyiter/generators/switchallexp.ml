@@ -65,7 +65,7 @@ let generator_game_func arguments =
 
 	SymbolicParityGame.to_paritygame pg;;
 
-	
+
 register_strat_impr_gen {
 	ident = "switchallexp";
 	description = "Exponential Lower Bound for (Voege's) switch-all rule";
