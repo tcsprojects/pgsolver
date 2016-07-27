@@ -4,11 +4,11 @@ open Tcsqueue;;
 open Paritygame;;
 
 
-type compact_sol_strat = (int * int * int) list;;
+type compact_sol_strat = (int * player * int) list;;
 
 let compact_sol_strat_to_sol_strat game comp =
 	let n = pg_size game in
-	let sol = Array.make n (-1) in
+	let sol = Array.make n plr_undef in
 	let strat = Array.make n (-1) in
 	List.iter (fun (i, pl, j) ->
 		sol.(i) <- pl;
@@ -255,7 +255,30 @@ let solve_single_parity_scc game player =
    Computes winning sets for both players and strategy for player pl *)
 let compute_winning_nodes_for_direct (game: paritygame) pl =
 	let compute_strat = true in
-
+	
+	let subnodes_by_list game li =
+		let small_to_big = Array.of_list li in
+		let big_to_small = ref TreeMap.empty_def in
+		Array.iteri (fun small big ->
+			big_to_small := TreeMap.add big small !big_to_small
+		) small_to_big;
+		let big_to_small = !big_to_small in
+		Array.init (Array.length small_to_big) (fun small ->
+			  let big = small_to_big.(small) in
+				let pr = pg_get_priority game big in
+				let pl = pg_get_owner game big in
+				let delta_big = pg_get_successors game big in
+				let delta_small = ref TreeSet.empty_def in
+				ns_iter (fun succ_big ->
+					try
+						delta_small := TreeSet.add (TreeMap.find succ_big big_to_small) !delta_small;
+					with
+					| Not_found -> ()
+				) delta_big;
+				(pr, pl, delta_small)
+		) 
+	in
+	(*
     let subnodes_by_list game li =
         let n = List.length li in
         let g = Array.make n (-1, -1, ref TreeSet.empty_def) in
@@ -289,7 +312,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
         ) li;
         g
     in
-
+*)
     let list_attractor transp getpl strat source_set_ref todo =
     	while not (Queue.is_empty todo) do
     		let x = Queue.take todo in
@@ -352,7 +375,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
              )
         else let (pr_u, _, delta_u) = game'.(u) in
              let (pr_v, _, delta_v) = game'.(v) in
-             if (pr_u mod 2 = pl) && (pr_u >= pr_v)
+             if (prio_good_for_player pr_u pl) && (pr_u >= pr_v)
              then TreeSet.iter (fun w ->
         		 	if not (TreeSet.mem w !delta_u) then (
 				  Queue.add (u, w) new_edges;
@@ -375,18 +398,18 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
     in
     
     let (sccs, sccindex, topology, roots) = strongly_connected_components game in
-    let marked = Array.make (Array.length sccs) (-1) in
+    let marked = Array.make (Array.length sccs) plr_undef in
     
     let max_prio_for l pl =
       List.fold_left (fun p el ->
 		      let pr = pg_get_priority game el in
-		      if pr mod 2 = pl then max p pr else p
+		      if prio_good_for_player pr pl then max p pr else p
 		     ) (-1) l
     in
     
     let rec process_root r =
       let getpl x = pg_get_owner game x in
-      if marked.(r) < 0 then (
+      if marked.(r) = plr_undef then (
         List.iter process_root topology.(r);
         let c = List.fold_left (fun c c' -> if c != -1 && marked.(c) = pl then c else c') (-1) topology.(r) in
         if c != -1 && marked.(c) = pl
@@ -402,15 +425,15 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
 		  let pl' = pg_get_owner game x in
 		  let delta = pg_get_successors game x in
                   if ns_size delta = 0
-                  then marked.(r) <- 1 - pl'
-                  else if (ns_exists (fun y -> x = y) delta) && (pr mod 2 = pl)
+                  then marked.(r) <- plr_opponent pl'
+                  else if (ns_exists (fun y -> x = y) delta) && (prio_good_for_player pr pl)
                   then (
                     marked.(r) <- pl;
                     if (compute_strat && getpl x = pl) then strategy.(x) <- x
                   )
-                  else marked.(r) <- 1 - pl
+                  else marked.(r) <- plr_opponent pl
              else let pl_max = max_prio_for comp pl in
-                  let plo_max = max_prio_for comp (1 - pl) in
+                  let plo_max = max_prio_for comp (plr_opponent pl) in
                   if pl_max > plo_max
                   then (
                     marked.(r) <- pl;
@@ -430,7 +453,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
                     )
                   )
                   else marked.(r) <- if pl_max < 0
-                                     then 1 - pl
+                                     then plr_opponent pl
                                      else let (winner, strat) = solve_scc comp pl in (
                                             if compute_strat && (winner = pl) then (
                                               let arr = Array.of_list comp in
@@ -444,7 +467,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
     in
     
     List.iter (fun r -> let _ = process_root r in ()) roots;
-    let solution = Array.make n (-1) in
+    let solution = Array.make n plr_undef in
     for i = 0 to (Array.length sccs) - 1 do
       List.iter (fun u -> solution.(u) <- marked.(i)) sccs.(i)
     done;
@@ -452,7 +475,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
   
   
 let compute_winning_nodes_direct game strat pl =
-  let sol = fst (compute_winning_nodes_for_direct (subgame_by_strat game strat) (1 - pl)) in
+  let sol = fst (compute_winning_nodes_for_direct (subgame_by_strat game strat) (plr_opponent pl)) in
   let l = ref [] in
   for i = 0 to (Array.length sol) - 1 do
     if sol.(i) = pl then l := i::!l
