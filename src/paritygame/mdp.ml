@@ -54,7 +54,7 @@ let parity_game_to_generalized_mdp pg min_even_prio is_epsilon =
 				ns_iter (fun j -> a := (f !i j)::!a; incr i) tr;
 				Array.of_list (List.rev !a)
 			in
-			if pl = 0 then (
+			if pl = plr_Even then (
 				mdp.(i) <- Controller (mapi (fun l j -> (if b=0 then j else l + b)), desc)
 			)
 			else (

@@ -47,23 +47,22 @@ val ns_nodes   : nodeset -> node list
 
 
 (**************************************************************
- * Players                                                    *
- *                                                            *
- * Warning: the type may become abstract in the future        *
- **************************************************************)
-
-type player = int
-val plr_Even : player
-val plr_Odd : player
-val plr_opponent : player -> player
-		
-(**************************************************************
- * Priorities                                                 *
+ * Players and priorities                                     *
  *                                                            *
  * Warning: the types may become abstract in the future       *
  **************************************************************)
 
+type player = int
 type priority = int
+
+val plr_Even  : player
+val plr_Odd   : player
+val plr_undef : player
+
+val plr_opponent : player -> player
+val plr_benefits : priority -> player
+val plr_show : player -> string
+				 
 val prio_good_for_player : priority -> player -> bool
 			
 						 
@@ -72,12 +71,8 @@ val prio_good_for_player : priority -> player -> bool
  **************************************************************)
 
 type paritygame
-type solution = player array
-type strategy = node array
 
-type global_solver = (paritygame -> solution * strategy)
-
-
+		       
 (**************************************************************
  * Access Functions                                           *
  **************************************************************)
@@ -147,6 +142,23 @@ val pg_remove_nodes   : paritygame -> node list -> unit
 val pg_remove_edges   : paritygame -> (node * node) list -> unit
 
 
+(**************************************************************
+ * Solutions, strategies and solvers                          *
+ *                                                            *
+ * Warning: the types of solution and strategy may become     *
+ * abstract in the future                                     *
+ **************************************************************)
+
+type solution = player array
+type strategy = node array
+type global_solver = (paritygame -> solution * strategy)
+
+(* Creates a solution space for a parity game. Initially, every node is won by player plr_undef *)
+val sol_create : paritygame -> solution
+
+
+
+		       
 (**************************************************************
  * Formatting Functions                                       *
  **************************************************************)

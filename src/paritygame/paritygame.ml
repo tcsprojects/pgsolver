@@ -74,10 +74,13 @@ let plr_Even = 0
 let plr_Odd = 1
 let plr_Zero = plr_Even
 let plr_One = plr_Odd
-
+let plr_undef = -1
+		  
 let plr_opponent pl = 1 - pl
-			    
-
+let plr_benefits pr = pr mod 2
+			       
+let plr_show = string_of_int
+		 
 (**************************************************************
  * priorities                                                 *
  **************************************************************)
@@ -97,7 +100,6 @@ type solution = player array
 type strategy = node array
 
 type global_solver = (paritygame -> solution * strategy)
-
 
 (**************************************************************
  * Access Functions                                           *
@@ -243,7 +245,14 @@ let pg_set_predecessors gm v ws =
   List.iter (fun u -> pg_del_edge gm u v) preds;
   Array.iter (fun u -> pg_add_edge gm v u) ws
  *)
-	     
+
+(**************************************************************
+ * Solutions                                                  *
+ **************************************************************)
+
+let sol_create game = Array.make (pg_size game) plr_undef
+		       
+
 							      
 (**************************************************************
  * Formatting Functions                                       *

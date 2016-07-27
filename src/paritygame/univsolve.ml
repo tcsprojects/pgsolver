@@ -442,8 +442,8 @@ let universal_solve_run options stats backend game' =
 			        			msg_plain SPECIAL 0 (fun _ -> "done!\n")
                             )
                         |   (pl0, _) -> (
-                                let pl = if pl0 then 0 else 1 in
-                            	msg_tagged SPECIAL 0 (fun _ -> "Solving single player (" ^ string_of_int pl ^ ") SCC...");
+                                let pl = if pl0 then plr_Even else plr_Odd in
+                            	msg_tagged SPECIAL 0 (fun _ -> "Solving single player (" ^ plr_show pl ^ ") SCC...");
                                 result := Some (solve_single_player_scc game pl);
                                 stat_addint [stats.solvespec_single_player_nodes;
                                              stats.special_nodes;
@@ -718,9 +718,9 @@ let universal_solve_run options stats backend game' =
                     let (w0, w1) = (ref TreeSet.empty_def, ref TreeSet.empty_def) in
                     List.iter (fun i ->
                     	let player = pg_get_owner game i in
-                        let w = if player = 0 then w1 else w0 in
+                        let w = if player = plr_Even then w1 else w0 in
                         w := TreeSet.add i !w;
-                        solution.(i) <- 1 - player;
+                        solution.(i) <- plr_opponent player;
                     ) sinks;
 
                     timer_stop stats.global_timing_without_attractor;
@@ -776,7 +776,7 @@ let universal_solve_run options stats backend game' =
                         nodes := node::!nodes;
                         solution.(node) <- player;
                         strategy.(node) <- move;
-                        let w = if player = 0 then w0 else w1 in
+                        let w = if player = plr_Even then w0 else w1 in
                         w := TreeSet.add node !w
                     ) selfcycles;
                     timer_stop stats.logistics_timing;
