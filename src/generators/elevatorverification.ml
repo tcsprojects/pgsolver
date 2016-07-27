@@ -52,8 +52,8 @@ let isAt i el = (i = el.position)
 
 
 type formulaType = FP of int * int             (* fixpoint formula with priority and next subformula *)
-                 | BOOL of int * int * int     (* con-/disjunction with player and left and right subformula *)
-                 | MOD of int * int            (* modality with player and next subformula *)
+                 | BOOL of player * int * int     (* con-/disjunction with player and left and right subformula *)
+                 | MOD of player * int            (* modality with player and next subformula *)
                  | PROP of (elevator -> bool)  (* proposition with function that evaluates it in a state *)
 
 
@@ -122,16 +122,16 @@ let formula i = [| FP(0,1);
 *)
 
 let formula i = [| FP(2,1);
-                   BOOL(1,2,3);
-                   MOD(1,0);
-                   BOOL(0,4,5);
+                   BOOL(plr_Odd,2,3);
+                   MOD(plr_Odd,0);
+                   BOOL(plr_Even,4,5);
                    PROP(isAt i);
-                   BOOL(1,6,8);
-                   MOD(1,7);
+                   BOOL(plr_Odd,6,8);
+                   MOD(plr_Odd,7);
                    FP(0,1);
-                   BOOL(0,9,10);
+                   BOOL(plr_Even,9,10);
                    PROP(fun el -> not (isPressed i el));
-                   MOD(1,11);
+                   MOD(plr_Odd,11);
                    FP(1,1) |]
 
 
@@ -212,7 +212,7 @@ let elevator_verification_func arguments =
     begin
       match formula.(f) with
             FP(p,g) -> let v = encode el g in
-                       finished := (i, (p,0,[v],show_conf el f)) :: !finished;
+                       finished := (i, (p,plr_Even,[v],show_conf el f)) :: !finished;
                        todo := (el,g,v) :: !todo 
           | BOOL(pl,g,h) -> let v = encode el g in
                             let w = encode el h in
@@ -222,7 +222,7 @@ let elevator_verification_func arguments =
                          let nextnodes_coded = List.map (fun (_,_,v) -> v) nextnodes in
                          finished := (i, (0,pl,nextnodes_coded, show_conf el f)) :: !finished;
                          todo := nextnodes @ !todo
-          | PROP(p) -> finished := (i, ((if p el then 0 else 1), 0, [i], show_conf el f)) :: !finished
+          | PROP(p) -> finished := (i, ((if p el then 0 else 1), plr_Even, [i], show_conf el f)) :: !finished
     end;
     visited.(i) <- true
   done;

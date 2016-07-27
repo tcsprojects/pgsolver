@@ -16,7 +16,7 @@ let generator_game_func arguments =
   let game = pg_create m in
   for i=0 to m-1 do
     pg_set_priority game i (i mod 2);
-    pg_set_owner game i (i mod 2);
+    pg_set_owner game i (plr_benefits i);
     pg_set_desc game i (Some (string_of_int i));
     pg_add_edge game i ((i+1) mod m);
     pg_add_edge game i ((i+2) mod m)

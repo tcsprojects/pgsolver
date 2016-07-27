@@ -53,7 +53,7 @@ let generator_game_func arguments =
   done;
 
   pg_init size (fun i -> (i,
-			  Random.int 2,
+			  plr_random (),
 			  pg.(i),
 			  Some (string_of_int i))
 	       );;

@@ -75,7 +75,9 @@ let plr_Odd = 1
 let plr_Zero = plr_Even
 let plr_One = plr_Odd
 let plr_undef = -1
-		  
+
+let plr_random _ = Random.int 2
+			      
 let plr_opponent pl = 1 - pl
 let plr_benefits pr = pr mod 2
 			       
@@ -246,6 +248,7 @@ let pg_set_predecessors gm v ws =
   Array.iter (fun u -> pg_add_edge gm v u) ws
  *)
 
+ 
 (**************************************************************
  * Solutions                                                  *
  **************************************************************)

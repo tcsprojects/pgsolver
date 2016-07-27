@@ -59,6 +59,8 @@ val plr_Even  : player
 val plr_Odd   : player
 val plr_undef : player
 
+val plr_random : unit -> player
+			   
 val plr_opponent : player -> player
 val plr_benefits : priority -> player
 val plr_show : player -> string

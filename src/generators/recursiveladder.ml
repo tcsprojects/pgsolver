@@ -28,7 +28,7 @@ let generator_game_func arguments =
   	let prnt j pr pl succs =
 	  let j' = start_idx + j in
 	  pg_set_priority game j' pr;
-	  pg_set_owner game j' ((start_pl + pl) mod 2);
+	  pg_set_owner game j' (plr_benefits (start_pl + pl));
 	  pg_set_desc game j' (Some (string_of_int (start_idx + j)));
 	  List.iter (fun w -> pg_add_edge game j' (w+start_idx)) succs
 	in

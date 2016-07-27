@@ -34,17 +34,17 @@ let successors ts =
 let finished ts = (ts.(0) = []) && (ts.(2) = []) 
 
 type formulaType = FP of int * int             (* fixpoint formula with priority and next subformula *)
-                 | BOOL of int * int * int     (* con-/disjunction with player and left and right subformula *)
-                 | MOD of int * int            (* modality with player and next subformula *)
+                 | BOOL of player * int * int     (* con-/disjunction with player and left and right subformula *)
+                 | MOD of player * int            (* modality with player and next subformula *)
                  | PROP of (towers -> bool)    (* proposition with function that evaluates it in a state *)
 
 (* CTL-formula: EF finished,
    in mu-calculus: mu X. finished \/ <>X *)
 
 let formula = [| FP(1,1);          
-                 BOOL(0,2,3);      
+                 BOOL(plr_Even,2,3);      
                  PROP(finished);   
-                 MOD(0,0) |]
+                 MOD(plr_Even,0) |]
 
 module GameNode = 
 struct
@@ -111,7 +111,7 @@ let towers_of_hanoi_func arguments =
     begin
       match formula.(f) with
             FP(p,g) -> let v = encode el g in
-                       finished := (i, (p,0,[v],show_conf el f)) :: !finished;
+                       finished := (i, (p,plr_Even,[v],show_conf el f)) :: !finished;
                        todo := (el,g,v) :: !todo 
           | BOOL(pl,g,h) -> let v = encode el g in
                             let w = encode el h in
@@ -121,7 +121,7 @@ let towers_of_hanoi_func arguments =
                          let nextnodes_coded = List.map (fun (_,_,v) -> v) nextnodes in
                          finished := (i, (0,pl,nextnodes_coded, show_conf el f)) :: !finished;
                          todo := nextnodes @ !todo
-          | PROP(p) -> finished := (i, ((if p el then 0 else 1), 0, [i], show_conf el f)) :: !finished
+          | PROP(p) -> finished := (i, ((if p el then 0 else 1), plr_Even, [i], show_conf el f)) :: !finished
     end;
     visited.(i) <- true
   done;
