@@ -141,14 +141,12 @@ val universal_solve_fallback: universal_solve_options ->
 
 (* Calling universal_solve_by_player_solver options player_solver game starts the universal solving process using player_solver as a backend. Instead of a solver backend that solves arbitrary sccs player_solver is supposed to solve a SCC w.r.t. a given player, for instance if player_solver scc 0 is called, the backend is supposed to determine whether a node is won by player 0 (return 0 for this node) or not (return -1 for this node). The strategy that is returned by player_solver is only considered w.r.t. the given player. Calling universal_solve_by_player_solver returns the solved game as a pair of solution and strategy. *)
 val universal_solve_by_player_solver: universal_solve_options ->
-                                      (paritygame -> int ->
+                                      (paritygame -> player ->
                                        solution * strategy) ->
                                       paritygame -> solution * strategy
 
 (* Calling universal_solve_trivial verbosity game starts the universal solving process with a trivial i.e. not-solving backend. This function is legal to be called when game can be completely solved by the universal solving process without requiring the backend. Calling universal_solve_trivial returns the solved game as a pair of solution and strategy.*)
-val universal_solve_trivial: verbosity_level ->
-                             paritygame -> solution * strategy
+val universal_solve_trivial: verbosity_level -> paritygame -> solution * strategy
 
 (* Calling compute_winning_nodes verbosity game strategy player considers the subgame of game w.r.t. the strategy decisions for player; the strategy is assumed to be total w.r.t. player. It returns the list of nodes player wins on the game following strategy. *)
-val compute_winning_nodes: verbosity_level -> paritygame ->
-                           strategy -> int -> int list
+val compute_winning_nodes: verbosity_level -> paritygame -> strategy -> player -> node list

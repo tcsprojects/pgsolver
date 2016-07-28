@@ -81,13 +81,13 @@ type paritygame
 
 val pg_create     : int -> paritygame
 val pg_init       : int -> (int -> (priority * player * node list * string option)) -> paritygame
-val pg_sort       : ((priority * player * nodeset * nodeset * string option) -> (priority * player * nodeset * nodeset * string option) -> int) -> paritygame -> unit
 val pg_size	  : paritygame -> int
 val pg_node_count : paritygame -> int
 val pg_edge_count : paritygame -> int
 val pg_copy       : paritygame -> paritygame
 
-					    
+
+				  
 (**************************************************************
  * node access and modification functions                     *
  *                                                            *
@@ -110,9 +110,10 @@ val pg_set_desc'  : paritygame -> node -> string -> unit
 
 val pg_isDefined : paritygame -> node -> bool
 					   
-val pg_iterate : (node -> (priority * player * nodeset * nodeset * string option) -> unit) -> paritygame -> unit 
-val pg_map     : (node -> (priority * player * nodeset * nodeset * string option) -> (priority * player * nodeset * nodeset * string option)) -> paritygame -> paritygame 
-val pg_map2    : (node -> (priority * player * nodeset * nodeset * string option) -> 'a) -> paritygame -> 'a array 
+val pg_iterate      : (node -> (priority * player * nodeset * nodeset * string option) -> unit) -> paritygame -> unit
+val pg_edge_iterate : (node -> node -> unit) -> paritygame -> unit
+val pg_map          : (node -> (priority * player * nodeset * nodeset * string option) -> (priority * player * nodeset * nodeset * string option)) -> paritygame -> paritygame 
+val pg_map2         : (node -> (priority * player * nodeset * nodeset * string option) -> 'a) -> paritygame -> 'a array 
 
 (* all DEPRECATED
 val pg_get_node   : paritygame -> node -> (priority * player * nodeset * nodeset * string option)
@@ -144,6 +145,11 @@ val pg_remove_nodes   : paritygame -> node list -> unit
 val pg_remove_edges   : paritygame -> (node * node) list -> unit
 
 
+(* sorting *)
+val pg_sort                   : ((priority * player * nodeset * nodeset * string option) ->
+				 (priority * player * nodeset * nodeset * string option) -> int) -> paritygame -> unit
+
+
 (**************************************************************
  * Solutions, strategies and solvers                          *
  *                                                            *
@@ -157,7 +163,7 @@ type global_solver = (paritygame -> solution * strategy)
 
 (* Creates a solution space for a parity game. Initially, every node is won by player plr_undef *)
 val sol_create : paritygame -> solution
-
+val sol_make   : int -> solution
 
 
 		       
@@ -262,7 +268,7 @@ val collect_max_parity_nodes: paritygame -> node list
 
 val subgame_by_edge_pred: paritygame -> (int -> int -> bool) -> paritygame
 val subgame_by_strat: paritygame -> strategy -> paritygame
-val subgame_by_strat_pl: paritygame -> strategy -> int -> paritygame
+val subgame_by_strat_pl: paritygame -> strategy -> player -> paritygame
 
 (* Calling subgame_by_list game nodes returns a compressed sub game induced and ordered by the nodes-list *)
 val subgame_by_list: paritygame -> int list -> paritygame

@@ -334,7 +334,7 @@ let universal_solve_run options stats backend game' =
         stats.recursive_calls := !(stats.recursive_calls) + 1;
 
 		timer_start stats.logistics_timing;
-        let sol = Array.make n (-1) in
+        let sol = sol_create game in
         let strat = Array.make n (-1) in
         timer_stop stats.logistics_timing;
 
@@ -394,7 +394,7 @@ let universal_solve_run options stats backend game' =
             ) nodes;
             for j = 0 to n - 1 do
                 sol.(idxmap.(j)) <- sol'.(j);
-                if sol'.(j) >= 0
+                if sol'.(j) != plr_undef
                 then solved := idxmap.(j)::!solved
                 else failwith "subgame was not solved!";
                 if (strat'.(j) >= 0) then strat.(idxmap.(j)) <- idxmap.(strat'.(j))
@@ -416,9 +416,9 @@ let universal_solve_run options stats backend game' =
         			timer_start stats.solvespec_single_parity_timing;
         			(
                         match (is_single_parity_game game) with None -> () |
-                            Some player -> (
+                            Some prio -> (
 			        			msg_tagged SPECIAL 0 (fun _ -> "Solving this single parity SCC...");
-                                result := Some (solve_single_parity_scc game player);
+                                result := Some (solve_single_parity_scc game (if prio=0 then plr_Even else plr_Odd));
                                 stat_addint [stats.solvespec_single_parity_nodes;
                                              stats.special_nodes;
                                              stats.universal_solved_nodes;
@@ -486,7 +486,7 @@ let universal_solve_run options stats backend game' =
                 (************************************************************
                  * BACKEND                                                  *
                  ************************************************************)
-
+				
 				timer_stop stats.universal_timing;
 				timer_start stats.backend_timing;
 				msg_incrdepth ();
@@ -498,89 +498,89 @@ let universal_solve_run options stats backend game' =
 				timer_start stats.universal_timing;
 				timer_start stats.logistics_timing;
 				let n = pg_size game in
-                let (w0, w1) = (ref TreeSet.empty_def, ref TreeSet.empty_def) in
-                let counter = ref 0 in
-                for i = 0 to n - 1 do
-                    if (sol.(i) = 0) then w0 := TreeSet.add i !w0;
-                    if (sol.(i) = 1) then w1 := TreeSet.add i !w1;
-                    if sol.(i) >= 0 then incr counter;
-                    if not (pg_isDefined game i) || (pg_get_owner game i != sol.(i))
-                    then strat.(i) <- -1;
-                done;
+				let (w0, w1) = (ref TreeSet.empty_def, ref TreeSet.empty_def) in
+				let counter = ref 0 in
+				for i = 0 to n - 1 do
+				  if (sol.(i) = plr_Even) then w0 := TreeSet.add i !w0;
+				  if (sol.(i) = plr_Odd) then w1 := TreeSet.add i !w1;
+				  if sol.(i) != plr_undef then incr counter;
+				  if not (pg_isDefined game i) || (pg_get_owner game i != sol.(i))
+				  then strat.(i) <- -1;
+				done;
 				msg_plain BACKEND 0 (fun _ -> string_of_int !counter ^ " out of " ^ string_of_int n ^ "\n");
-
-                stat_addint [stats.backend_investigated_nodes] (fun _ -> n);
-                stat_addint [stats.backend_solved_nodes;
-                			 stats.overall_solved_nodes] (fun _ -> !counter);
+				
+				stat_addint [stats.backend_investigated_nodes] (fun _ -> n);
+				stat_addint [stats.backend_solved_nodes;
+                			     stats.overall_solved_nodes] (fun _ -> !counter);
 				timer_stop stats.logistics_timing;
-                if !counter = 0
-                then failwith "universal_solve fatal error: backend solved nothing at all!";
-                if !counter < n then (
-                	timer_start stats.logistics_timing;
-                	timer_stop stats.logistics_timing;
-                	timer_start stats.attractor_timing;
-                	msg_tagged ATTRACTOR 0 (fun _ -> "Building attractor... ");
-                	let (sol0, sol1) = attractor_closure_inplace_sol_strat game (fun _ -> true) sol strat !w0 !w1 in
-
-                	msg_plain ATTRACTOR 0 (fun _ -> "investigated " ^ (string_of_int (List.length sol0 + List.length sol1)) ^ ", adding "  ^ (string_of_int (TreeSet.cardinal (TreeSet.union (TreeSet.of_list_def sol0) (TreeSet.of_list_def sol1)) - !counter)) ^ "!\n");
-                    stat_addint [stats.attractor_investigated_nodes] (fun _ -> List.length sol0 + List.length sol1);
-
-                    stat_addint [stats.attractor_solved_nodes;
-                                 stats.overall_solved_nodes;
-                                 stats.universal_solved_nodes]
-                                 (fun _ -> TreeSet.cardinal (TreeSet.union (TreeSet.of_list_def sol0) (TreeSet.of_list_def sol1)) - !counter);
-                	timer_stop stats.attractor_timing;
-
-                	if (List.length sol0) + (List.length sol1) < n then (
-   						msg_tagged BACKEND 0 (fun _ -> "SCC was not completely solved.\n");
-
-                		timer_start stats.logistics_timing;
-						pg_remove_nodes game sol0;
-						pg_remove_nodes game sol1;
-                        timer_stop stats.logistics_timing;
-                		let (sol', strat') = universal_solve_decompose game (recdepth + 1) in
-                		timer_start stats.logistics_timing;
-                        merge_strategies_inplace strat strat';
-                        merge_solutions_inplace sol sol';
-                        timer_stop stats.logistics_timing
-                	)
-                );
-                result := Some (sol, strat)
+				if !counter = 0
+				then failwith "universal_solve fatal error: backend solved nothing at all!";
+				if !counter < n then (
+                		  timer_start stats.logistics_timing;
+                		  timer_stop stats.logistics_timing;
+                		  timer_start stats.attractor_timing;
+                		  msg_tagged ATTRACTOR 0 (fun _ -> "Building attractor... ");
+                		  let (sol0, sol1) = attractor_closure_inplace_sol_strat game (fun _ -> true) sol strat !w0 !w1 in
+				  
+                		  msg_plain ATTRACTOR 0 (fun _ -> "investigated " ^ (string_of_int (List.length sol0 + List.length sol1)) ^ ", adding "  ^ (string_of_int (TreeSet.cardinal (TreeSet.union (TreeSet.of_list_def sol0) (TreeSet.of_list_def sol1)) - !counter)) ^ "!\n");
+				  stat_addint [stats.attractor_investigated_nodes] (fun _ -> List.length sol0 + List.length sol1);
+				  
+				  stat_addint [stats.attractor_solved_nodes;
+					       stats.overall_solved_nodes;
+					       stats.universal_solved_nodes]
+					      (fun _ -> TreeSet.cardinal (TreeSet.union (TreeSet.of_list_def sol0) (TreeSet.of_list_def sol1)) - !counter);
+                		  timer_stop stats.attractor_timing;
+				  
+                		  if (List.length sol0) + (List.length sol1) < n then (
+   				    msg_tagged BACKEND 0 (fun _ -> "SCC was not completely solved.\n");
+				    
+                		    timer_start stats.logistics_timing;
+				    pg_remove_nodes game sol0;
+				    pg_remove_nodes game sol1;
+				    timer_stop stats.logistics_timing;
+                		    let (sol', strat') = universal_solve_decompose game (recdepth + 1) in
+                		    timer_start stats.logistics_timing;
+				    merge_strategies_inplace strat strat';
+				    merge_solutions_inplace sol sol';
+				    timer_stop stats.logistics_timing
+                		  )
+				);
+				result := Some (sol, strat)
 			);
-			match !result with Some res -> res | None -> failwith "impossible"
+		match !result with Some res -> res | None -> failwith "impossible"
         in
-
+	
         let attractor_closure init =
-        	let q = SingleOccQueue.create () in
-        	let attr = ref [] in
-        	List.iter (fun i -> SingleOccQueue.add i q) init;
-        	while (not (SingleOccQueue.is_empty q)) do
-        		let v = SingleOccQueue.take q in
-        		let winner = sol.(v) in
-        		let to_remove = ref [] in
-        		ns_iter (fun w ->
-        			if sol.(w) < 0 then (
-        				if (pg_get_owner game w = winner) then (
-        					sol.(w) <- winner;
-        					touchedscc.(sccindex.(w)) <- true;
-        					strat.(w) <- v;
-        					SingleOccQueue.add w q;
-        					attr := w::!attr
-        				)
-        				else if ns_size (pg_get_successors game w) = 1 then (
-        					sol.(w) <- winner;
-        					touchedscc.(sccindex.(w)) <- true;
-        					SingleOccQueue.add w q;
-        					attr := w::!attr
-        				)
-        				else to_remove := (w, v)::!to_remove
-        			)
-        		) (pg_get_predecessors game v);
-					  pg_remove_edges game !to_remove;
-        	done;
-        	!attr
+          let q = SingleOccQueue.create () in
+          let attr = ref [] in
+          List.iter (fun i -> SingleOccQueue.add i q) init;
+          while (not (SingleOccQueue.is_empty q)) do
+            let v = SingleOccQueue.take q in
+            let winner = sol.(v) in
+            let to_remove = ref [] in
+            ns_iter (fun w ->
+        	     if sol.(w) = plr_undef then (
+        	       if (pg_get_owner game w = winner) then (
+        		 sol.(w) <- winner;
+        		 touchedscc.(sccindex.(w)) <- true;
+        		 strat.(w) <- v;
+        		 SingleOccQueue.add w q;
+        		 attr := w::!attr
+        	       )
+        	       else if ns_size (pg_get_successors game w) = 1 then (
+        		 sol.(w) <- winner;
+        		 touchedscc.(sccindex.(w)) <- true;
+        		 SingleOccQueue.add w q;
+        		 attr := w::!attr
+        	       )
+        	       else to_remove := (w, v)::!to_remove
+        	     )
+        	    ) (pg_get_predecessors game v);
+	    pg_remove_edges game !to_remove;
+          done;
+          !attr
         in
-
+	
         (************************************************************
          * RECURSIVE PROCESSING OF SCCs                             *
          ************************************************************)
@@ -591,7 +591,7 @@ let universal_solve_run options stats backend game' =
                 solvedscc.(r) <- true;
                 timer_start stats.logistics_timing;
         		let untouched = if (touchedscc.(r))
-        						then Some (List.filter (fun v -> sol.(v) < 0) sccs.(r))
+        						then Some (List.filter (fun v -> sol.(v) = plr_undef) sccs.(r))
         						else None
         		in
         		timer_stop stats.logistics_timing;
@@ -619,9 +619,9 @@ let universal_solve_run options stats backend game' =
                                       let h = List.hd sccs.(r) in
 				      let pl = pg_get_owner game h in
                                         if (ns_size (pg_get_successors game h) = 0)
-                                        then sol.(h) <- 1 - pl
+                                        then sol.(h) <- plr_opponent pl
                                         else (
-                                            sol.(h) <- (pg_get_priority game h) mod 2;
+                                            sol.(h) <- plr_benefits (pg_get_priority game h);
                                             if (sol.(h) = pl)
                                             then strat.(h) <- h
 					                    );
@@ -667,7 +667,7 @@ let universal_solve_run options stats backend game' =
 
 	let n = pg_size game' in
 	let m = pg_node_count game' in
-	let solution = Array.make n (-1) in
+	let solution = sol_create game' in
 	let strategy = Array.make n (-1) in
 
 	timer_stop stats.logistics_timing;
@@ -843,27 +843,27 @@ let universal_solve options backend game =
 
 let universal_solve_fallback options backend fallback =
 	let solver game =
-		let (sol, strat) = backend game in
-		if ArrayUtils.exists sol (fun _ pl -> pl >= 0)
-		then (sol, strat)
-		else fallback game
+	  let (sol, strat) = backend game in
+	  if ArrayUtils.exists sol (fun _ pl -> pl != plr_undef)
+	  then (sol, strat)
+	  else fallback game
 	in
-		universal_solve options solver;;
+	universal_solve options solver;;
 
 
 let universal_solve_by_player_solver options solver game =
-	let (sol, strat) = universal_solve options (fun g -> solver g 0) game in
+	let (sol, strat) = universal_solve options (fun g -> solver g plr_Even) game in
 	let solved = ref [] in
 	let n = pg_size game in
 	for i = 0 to n - 1 do
-		if sol.(i) = 0 then solved := i::!solved
+		if sol.(i) = plr_Even then solved := i::!solved
 	done;
 	let game' = pg_copy game in
 	pg_remove_nodes game' !solved;
-	let (sol', strat') = universal_solve options (fun g -> solver g 1) game' in
+	let (sol', strat') = universal_solve options (fun g -> solver g plr_Odd) game' in
 	for i = 0 to n - 1 do
-		if sol'.(i) = 1 then (
-			sol.(i) <- 1;
+		if sol'.(i) = plr_Odd then (
+			sol.(i) <- plr_Odd;
 			strat.(i) <- strat'.(i)
 		)
 	done;
@@ -872,7 +872,7 @@ let universal_solve_by_player_solver options solver game =
 
 
 let universal_solve_trivial verb_level game =
-	universal_solve (universal_solve_def_options false verb_level) (fun _ -> ([||], [||])) game;;
+	universal_solve (universal_solve_def_options false verb_level) (fun _ -> (sol_make 0, [||])) game;;
 
 
 let compute_winning_nodes verb_level game strat pl =

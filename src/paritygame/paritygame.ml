@@ -125,7 +125,10 @@ let pg_set_node' pg i node = pg.(i) <- node;;
 let pg_iterate = Array.iteri
 let pg_map = Array.mapi
 let pg_map2 = Array.mapi
-			    
+
+let pg_edge_iterate f pg =
+  pg_iterate (fun v -> fun (_,_,succs,_,_) -> ns_iter (fun w -> f v w) succs) pg
+		       
 let pg_find_desc pg desc = ArrayUtils.find (fun (_,_,_,_,desc') -> desc = desc') pg
 
 let pg_add_edge gm v u =
@@ -254,7 +257,8 @@ let pg_set_predecessors gm v ws =
  **************************************************************)
 
 let sol_create game = Array.make (pg_size game) plr_undef
-		       
+let sol_make n = Array.make n plr_undef
+			    
 
 							      
 (**************************************************************
@@ -1338,3 +1342,73 @@ module Build = functor (T: GameNode) ->
       transform nodes;
       game
   end;;
+
+
+(** moved from transformations since it is an inplace modification **)
+(* broken code, too hard to fix, replaced by non-inplace version
+let sort_game_inplace pg cmp =
+
+  let n = pg_size pg in
+  
+  let encode pl i =
+    if pl = plr_Even then
+      i
+    else if pl = plr_Odd then
+      (n + i)
+    else
+      -n - i
+  in
+  
+  let decode k =
+    let a = abs k in
+    if a < n then
+      (plr_Even, k)
+    else if k >= n then
+      (plr_Odd, a - n)
+    else
+      (plr_undef, a - n)
+  in
+
+  (*
+  for i = 0 to n - 1 do
+    pg_set_owner pg i (encode (pg_get_owner pg i) i)
+  done;
+   *)
+  
+  let b (pr, pl, d, _, s) = (pr, fst (decode pl), d, s) in
+  
+  pg_sort (fun x y -> cmp (b x) (b y)) pg;
+  
+  let perm = Array.make n (-1) in
+  let perm' = Array.make n (-1) in
+  
+  let codes = Array.init n (fun i -> encode (pg_get_owner pg i)) in  
+  for i = 0 to n - 1 do
+    let (pl', j) = decode codes.(i) in
+    perm.(i) <- j;
+    perm'.(j) <- i;
+  done;
+
+  (* remove and store edges, then add them again *)
+  let edges = ref [] in
+  pg_edge_iterate (fun v -> fun w -> edges := (v,w) :: !edges) pg;
+  List.iter (fun (v,w) -> pg_del_edge pg v w) !edges;
+  for i=0 to n-1 do
+    pg_set_owner pg i pl';
+    
+  done;
+  List.iter (fun (v,w) -> pg_add_edge pg perm.(v) perm.(w)) !edges;
+
+  for i = 0 to n - 1 do
+    let delta = pg_get_successors pg i in 
+    ns_iter (fun el -> pg_del_edge pg i el;
+		       pg_add_edge pg i perm'.(el)) delta  (* TODO: not sure that this works. What if perm'.(el) equals some other el in later iterations?
+                                                                    Maybe needs to be reimplemented making proper use of edge addition and deletion functions. *)
+  done;
+  
+  (perm, perm');;
+  
+let sort_game_by_prio_inplace pg =
+  sort_game_inplace pg (fun (pr1, _, _, _) (pr2, _, _, _) -> pr1 - pr2)
+  *)
+

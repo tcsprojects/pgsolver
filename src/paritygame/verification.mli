@@ -1,15 +1,16 @@
 open Paritygame;;
 
-
+type verifier = paritygame -> solution -> strategy -> (node list * string) option
+									  
 (* Default verification *)
-val verify_solution_strategy: paritygame -> solution -> strategy -> (int list * string) option
+val verify_solution_strategy: verifier
 
 (* Using universal_solve *)
-val verify_solution_strategy_univ: paritygame -> solution -> strategy -> (int list * string) option
+val verify_solution_strategy_univ: verifier
 
 (* Using compute_winning_nodes_direct *)
-val verify_solution_strategy_direct: paritygame -> solution -> strategy -> (int list * string) option
+val verify_solution_strategy_direct: verifier
 
 (* Using a generic algorithm *)
-val verify_solution_strategy_generic: paritygame -> solution -> strategy -> (int list * string) option
+val verify_solution_strategy_generic: verifier
 

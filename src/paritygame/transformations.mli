@@ -59,10 +59,6 @@ val bouncing_node_transformation: paritygame -> paritygame
 
 val compress_nodes: paritygame -> paritygame * int array * int array
 
-val sort_game_inplace : paritygame -> ((priority * player * nodeset * string option) -> (priority * player * nodeset * string option) -> int) -> (player array * node array)
-
-val sort_game_by_prio_inplace : paritygame -> (int array * int array)
-
 val normal_form_translation: paritygame -> paritygame
 
 val normal_form_revertive_translation: paritygame -> solution -> strategy -> solution * strategy
@@ -72,3 +68,12 @@ val uniquize_sorted_prios_inplace: paritygame -> unit
 val uniquize_prios_inplace: paritygame -> unit
 
 val min_max_swap_transformation: paritygame -> paritygame
+
+						 
+(* broken; unfixed; replaced by non-inplace version, specialised to sorting by priority comparison
+val sort_game_inplace         : paritygame -> ((priority * player * nodeset * string option) ->
+					       (priority * player * nodeset * string option) -> int) ->
+				(player array * node array)
+ *)
+						 
+val sort_game_by_prio : paritygame -> (paritygame * node array * node array)
