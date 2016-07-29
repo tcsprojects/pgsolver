@@ -161,11 +161,13 @@ type solution = player array
 type strategy = node array
 type global_solver = (paritygame -> solution * strategy)
 
-(* Creates a solution space for a parity game. Initially, every node is won by player plr_undef *)
-val sol_create : paritygame -> solution
-val sol_make   : int -> solution
+(* create solution spaces for a parity game *)
+val sol_create : paritygame -> solution                       (* initially, every node is won by player plr_undef *)
+val sol_make   : int -> solution                              (* same as sol_create but only gets to know the size of the game *)
+val sol_init   : paritygame -> (node -> player) -> solution   (* create solution space initially filled with values *)
 
-
+(* test solutions *)
+val sol_number_solved : solution -> int
 		       
 (**************************************************************
  * Formatting Functions                                       *
@@ -377,7 +379,7 @@ val is_single_parity_game: paritygame -> priority option
 
 val number_of_strategies : paritygame -> player -> int -> int
 
-val compute_priority_reach_array : paritygame -> int -> int array array
+val compute_priority_reach_array : paritygame -> player -> int array array  (* TODO: what is this int? *)
 
 (*
 val compute_priority_reach_array': paritygame -> int array array

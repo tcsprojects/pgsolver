@@ -545,7 +545,7 @@ let test_improving_switches game strategy valu n =
 	let info = strategy_info game strategy in
 	let strat a i b j = if StrategyHelper.is game strategy (a ^ string_of_int i) (b ^ string_of_int j) then 1 else 0 in
 	let impr = Array.init (pg_size game) (fun i ->
-    (pg_get_owner game i = 0) && (strategy.(i) != best_decision_by_valuation_ordering game node_total_ordering_by_position valu i)
+    (pg_get_owner game i = plr_Even) && (strategy.(i) != best_decision_by_valuation_ordering game node_total_ordering_by_position valu i)
   ) in
 	let check_impr desc s i assrt =
 		let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
@@ -1183,7 +1183,7 @@ let improvement_policy_optimize_fair tie_break
 	let l = ref [] in
 	let minvalue = ref (-1) in
 	pg_iterate (fun i (_, pl, tr, _, _) ->
-		if pl = 0 then
+		if pl = plr_Even then
 			Array.iteri (fun j k ->		
 				if cmp strategy.(i) k < 0 then (
 					if !minvalue = -1 then minvalue := occ.(i).(j);
@@ -1337,7 +1337,7 @@ let strategy_improvement_optimize_fair_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position
 	                     (improvement_policy_optimize_fair improvement_policy_optimize_fair_default_tie_break) (
 		pg_map2 (fun _ (_, pl, tr, _, _) ->
-			if pl = 1 then [||]
+			if pl = plr_Odd then [||]
 			else Array.make (ns_size tr) 0
 		) game
 	) false "STRIMPR_FAIR";;
@@ -1347,7 +1347,7 @@ let strategy_improvement_optimize_fair_sub_exp_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position 
                          (improvement_policy_optimize_fair improvement_policy_optimize_fair_sub_exp_tie_break) (
 		pg_map2 (fun _ (_, pl, tr, _, _) ->
-			if pl = 1 then [||]
+			if pl = plr_Odd then [||]
 			else Array.make (ns_size tr) 0
 		) game
 	) false "STRIMPR_FAIRSE";;
@@ -1371,7 +1371,7 @@ let initial_strategy_for_exp_game game =
 	in		
 	let strategy = initial_strategy_by_best_reward game in
 	pg_iterate (fun i (pr, pl, tr, _, de) ->
-		if (pr >= 0) && (pl = 0) && (ns_size tr >= 2) then (
+		if (pl = plr_Even) && (ns_size tr >= 2) then (
 			let (c, j) = parse de in
 			match c with
 			| 'a' -> strategy.(i) <- find ("o" ^ string_of_int j)
@@ -1395,7 +1395,7 @@ let strategy_improvement_optimize_fair_exp_policy game =
 	strategy_improvement game initial_strategy_for_exp_game node_total_ordering_by_position 
                          (improvement_policy_optimize_fair improvement_policy_optimize_fair_sub_exp_tie_break) (
 		pg_map2 (fun _ (_, pl, tr, _, _) ->
-			if pl = 1 then [||]
+			if pl = plr_Odd then [||]
 			else Array.make (ns_size tr) 0
 		) game
 	) false "STRIMPR_FAIRSE";;

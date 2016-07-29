@@ -122,7 +122,11 @@ let pg_isDefined game v = let (p,_,_,_,_) = game.(v) in
 let pg_get_node pg i = pg.(i);;
 let pg_set_node' pg i node = pg.(i) <- node;;
 
-let pg_iterate = Array.iteri
+let pg_iterate f game =
+  for i=0 to (pg_size game) - 1 do
+    if pg_isDefined game i then f i (pg_get_node game i)
+  done
+    
 let pg_map = Array.mapi
 let pg_map2 = Array.mapi
 
@@ -258,9 +262,12 @@ let pg_set_predecessors gm v ws =
 
 let sol_create game = Array.make (pg_size game) plr_undef
 let sol_make n = Array.make n plr_undef
-			    
+let sol_init game f = Array.init (pg_size game) f			    
 
-							      
+let sol_number_solved sol =
+  Array.fold_left (fun c e -> if e = plr_undef then c else c + 1) 0 sol
+
+  
 (**************************************************************
  * Formatting Functions                                       *
  **************************************************************)

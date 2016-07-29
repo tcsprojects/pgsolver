@@ -15,7 +15,7 @@ let evaluate_player1_strategy game node_compare strategy =
 	let game' = pg_copy game in
 	for i = 0 to pg_size game' - 1 do
 		pg_set_priority game' i (1 + pg_get_priority game' i);
-		pg_set_owner game' i (1 - pg_get_owner game' i)
+		pg_set_owner game' i (plr_opponent (pg_get_owner game' i))
 	done;
 	evaluate_strategy game' node_compare strategy
 

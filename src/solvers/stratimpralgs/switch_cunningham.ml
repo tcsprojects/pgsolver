@@ -27,7 +27,7 @@ let improvement_policy_optimize_roundrobin game node_total_ordering (e, next) ol
 let improvement_policy_optimize_roundrobin_default_first_edge game v =
 	let n = pg_size game in
 	let i = ref ((v+1) mod n) in
-	while (pg_get_owner game !i = 1) do
+	while (pg_get_owner game !i = plr_Odd) do
 		i := (!i + 1) mod n
 	done;
 	(!i, ns_some (pg_get_successors game !i))
@@ -50,7 +50,7 @@ let improvement_policy_optimize_roundrobin_ordering_first game (ordering, backtr
 let improvement_policy_optimize_roundrobin_ordering_build game cmp =
 	let l = ref [] in
 	pg_iterate (fun v (_, pl, tr, _, _) ->
-		if (pl = 0) then
+		if (pl = plr_Even) then
 			ns_iter (fun w ->
 				l := (v,w)::!l
 			) tr

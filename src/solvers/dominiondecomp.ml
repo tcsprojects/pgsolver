@@ -17,7 +17,7 @@ let newwin options game =
 
 	let n = pg_size game in
 	let l = int_of_float (ceil (sqrt (float (2 * n)))) in
-	let sol = Array.make n (-1) in
+	let sol = sol_create game in
 	let strat = Array.make n (-1) in
 	let options' = (universal_options_alter_verb options verbosity_level_default) in
 
@@ -56,9 +56,9 @@ let newwin options game =
 				done;
 				!found
             )
-            else if is_dominion !nodeset 0
+            else if is_dominion !nodeset plr_Even
             then Some(0, !nodeset)
-            else if is_dominion !nodeset 1
+            else if is_dominion !nodeset plr_Odd
             then Some(1, !nodeset)
             else None
         in

@@ -33,7 +33,7 @@ let solve_scc_restr game player u =
         done
     in
 
-	solve_scc_reach game player spmidx spmupd;;
+    solve_scc_reach game player spmidx spmupd;;
 
 
 let solve_scc game =
@@ -46,20 +46,20 @@ let solve_scc game =
 	let correct (sol, strat) pl =
 		for i = 0 to n - 1 do
 			if sol.(i) != pl then (
-				sol.(i) <- -1;
+				sol.(i) <- plr_undef;
 				strat.(i) <- -1;
 			)
 		done
 	in
 
-	let (sol, strat) = solve_scc_restr game 0 u in
-	correct (sol, strat) 0;
+	let (sol, strat) = solve_scc_restr game plr_Even u in
+	correct (sol, strat) plr_Even;
 
-	if ArrayUtils.exists sol (fun _ pl -> pl >= 0)
+	if ArrayUtils.exists sol (fun _ pl -> pl != plr_undef)
 	then (sol, strat)
 	else (
-        let (sol, strat) = solve_scc_restr game 1 u in
-        correct (sol, strat) 1;
+        let (sol, strat) = solve_scc_restr game plr_Odd u in
+        correct (sol, strat) plr_Odd;
         (sol, strat)
 	);;
 

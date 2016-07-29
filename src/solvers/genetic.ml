@@ -225,11 +225,13 @@ struct
   let compete game estr0 estr1 =
     let (str0,g00,g01) = estr0 in
     let (str1,g10,g11) = estr1 in
-    let wins = [| g00; g11 |] in
+    let wins0 = ref g00 in
+    let wins1 = ref g11 in
 
     let l = Array.length str1 in
     let passed = Array.make l (-2) in  (* -2 = not passed yet, -1 = passed but winner not clear yet, 0 = winner is 0, 1 = winner is 1 *)
-    let choices = [| []; [] |] in
+    let choices0 = ref [] in
+    let choices1 = ref [] in
     let next_start = ref 0 in
 
     let history = ref [] in
@@ -237,7 +239,7 @@ struct
     let found = ref false in
     let max_prio = ref 0 in
     let finished = ref false in
-    let winner = ref (-1) in
+    let winner = ref plr_undef in
 
     while !next_start < l do
 
@@ -246,7 +248,7 @@ struct
         if passed.(!node) >= 0 then
           (* current play has joined an old play for which the winner has been determined already *)
           begin
-            winner := passed.(!node);
+            winner := if passed.(!node) = 1 then plr_Odd else if passed.(!node) = 0 then plr_Even else plr_undef;
             finished := true
           end
         else if passed.(!node) = -1 then
@@ -259,7 +261,7 @@ struct
               max_prio := max !max_prio (pg_get_priority game v);
               found := (v = !node)
             done;
-            winner := !max_prio mod 2;
+            winner := plr_benefits !max_prio;
             finished := true
           end
         else
@@ -268,30 +270,31 @@ struct
             passed.(!node) <- -1;
             history := !node :: !history;
             let p = pg_get_owner game !node in
-            choices.(p) <- !node :: choices.(p);
-            let str = if p=0 then str0 else str1 in
+	    let choices = if p = plr_Even then choices0 else choices1 in
+            choices := !node :: !choices;
+            let str = if p = plr_Even then str0 else str1 in
             node := fst str.(!node)
           end
       done;
       
       (* record winner globally *)
-      wins.(!winner) <- wins.(!winner) + 1;
+      if !winner = plr_Even then incr wins0 else incr wins1;
       
       (* record winner locally *)
-      let vs = choices.(!winner) in
-      let str = if !winner=0 then str0 else str1 in
+      let vs = if !winner = plr_Even then !choices0 else !choices1 in
+      let str = if !winner = plr_Even then str0 else str1 in
       List.iter (fun v -> let (c,e) = str.(v) in
                           str.(v) <- (c,e+1);
-                          passed.(v) <- !winner) vs;
-      List.iter (fun v -> passed.(v) <- !winner) (choices.(1 - !winner));
+                          passed.(v) <- if !winner = plr_Even then 0 else 1) vs;
+      List.iter (fun v -> passed.(v) <- if !winner = plr_Even then 0 else 1) (if !winner = plr_Even then !choices1 else !choices0);
 
 
       (* tidy data structures *)
       history := [];
       found := false;
-      choices.(0) <- [];
-      choices.(1) <- [];
-      winner := -1;
+      choices0 := [];
+      choices1 := [];
+      winner := plr_undef;
       finished := false;
 
       (* find next node to start a play from *)
@@ -300,7 +303,7 @@ struct
       done;
       node := !next_start
     done;
-    ((str0,wins.(0),g01),(str1,g10,wins.(1)))
+    ((str0,!wins0,g01),(str1,g10,!wins1))
 
 end ;;
 
@@ -321,8 +324,7 @@ let solve' game =
   done;
   msg_tagged 3 (fun _ -> "Genetic pool now has " ^ string_of_int (DynArray.length pool) ^ " strategies.\n");
 
-  let l = pg_size game in  
-  let sol = Array.make l (-1) in
+  let sol = sol_create game in
   let wstr = ref [||] in
 
   (* iterate over competitions, and possibly procreations, mutations and tests until a winning strategy has been found *)
@@ -394,11 +396,11 @@ let solve' game =
         let str = Array.init (Array.length str) (fun i -> fst str.(i)) in
 
         (* not only choose a strategy randomly but also the player whom we consider *)
-        let p = if g0 >= g1 then 0 else 1 in
-        msg_tagged 3 (fun _ -> "Looks like I should better start with the test for player " ^ string_of_int p ^ ".\n");
+        let p = if g0 >= g1 then plr_Even else plr_Odd in
+        msg_tagged 3 (fun _ -> "Looks like I should better start with the test for player " ^ plr_show p ^ ".\n");
 
         let ws = compute_winning_nodes 3 game str p in (* die 3 muss ersetzt werden!!! *)
-        msg_tagged 3 (fun _ -> "The strategy is winning for player " ^ string_of_int p ^ " on nodes {" ^ String.concat "," (List.map string_of_int ws) ^ "}.\n");
+        msg_tagged 3 (fun _ -> "The strategy is winning for player " ^ plr_show p ^ " on nodes {" ^ String.concat "," (List.map string_of_int ws) ^ "}.\n");
         if ws <> [] then
           begin
             found := true;
@@ -407,8 +409,8 @@ let solve' game =
           end
         else 
           begin
-            let p = 1-p in
-            msg_tagged 3 (fun _ -> "Alright. Will try player " ^ string_of_int p ^ " as well, if I must.\n");
+            let p = plr_opponent p in
+            msg_tagged 3 (fun _ -> "Alright. Will try player " ^ plr_show p ^ " as well, if I must.\n");
             let ws = compute_winning_nodes 3 game str p in (* die 3 muss ersetzt werden!!! *)
             msg_tagged 3 (fun _ -> "The strategy is winning on nodes {" ^ String.concat "," (List.map string_of_int ws) ^ "}.\n");
             if ws <> [] then

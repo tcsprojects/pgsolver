@@ -68,8 +68,8 @@ let relevance_total_ordering game node_total_ordering i j =
 	tuple_total_ordering compare (node_total_ordering game) (pg_get_priority game i, i) (pg_get_priority game j, j)
 
 let reward_total_ordering game node_total_ordering i j =
-	let ri = reward 0 (pg_get_priority game i) in
-	let rj = reward 0 (pg_get_priority game j) in
+	let ri = reward plr_Even (pg_get_priority game i) in
+	let rj = reward plr_Even (pg_get_priority game j) in
 	let c = compare ri rj in
 	if c != 0 then c
 	else node_total_ordering game (if ri mod 2 = 0 then i else j) (if ri mod 2 = 0 then j else i)
@@ -77,7 +77,7 @@ let reward_total_ordering game node_total_ordering i j =
 let initial_strategy_by_what game selector =
 	Array.init (pg_size game) (fun i ->
 				   let tr = pg_get_successors game i in
-				   if not (pg_isDefined game i) || (pg_get_owner game i = 1) || (ns_isEmpty tr) then -1 else selector tr
+				   if not (pg_isDefined game i) || (pg_get_owner game i = plr_Odd) || (ns_isEmpty tr) then -1 else selector tr
 	)
   
 let initial_strategy_by_first_edge game = initial_strategy_by_what game ns_first
@@ -116,31 +116,31 @@ let best_decision_by_ordering game ordering v =
 	let ordering x y = ordering x y >= 0 in
 	let pl = pg_get_owner game v in
 	let tr = pg_get_successors game v in
-	ns_max tr (fun x y -> if pl = 1 then ordering x y else ordering y x)
+	ns_max tr (fun x y -> if pl = plr_Odd then ordering x y else ordering y x)
 
 let best_decision_by_valuation_ordering game node_total_ordering valu v =
 	best_decision_by_ordering game (node_valuation_total_ordering game node_total_ordering valu) v
 
 let strategy_improvable game node_total_ordering strat valu =
     ArrayUtils.exists strat (fun i j ->
-        (pg_get_owner game i = 0) &&
+        (pg_get_owner game i = plr_Even) &&
         (node_valuation_ordering game node_total_ordering valu.(j)
         						 valu.(best_decision_by_valuation_ordering game node_total_ordering valu i) < 0)
     )
 
 let winning_regions game valu =
-    Array.init (Array.length valu) (fun i ->
+    sol_init game (fun i ->
         let (v, _, _) = valu.(i) in
-        pg_get_priority game v mod 2
+        plr_benefits (pg_get_priority game v)
     )
 
 let winning_strategies game node_total_ordering strat valu =
     Array.init (Array.length valu) (fun i ->
         let (v, _, _) = valu.(i) in
-        let winner = pg_get_priority game v mod 2 in
+        let winner = plr_benefits (pg_get_priority game v) in
         let player = pg_get_owner game i in
         if winner = player
-        then if player = 0 then strat.(i)
+        then if player = plr_Even then strat.(i)
              else best_decision_by_valuation_ordering game node_total_ordering valu i
         else -1
     )
@@ -202,7 +202,7 @@ let evaluate_strategy game node_total_ordering strat =
 let compute_counter_strategy game strategy = 
 	let valu = evaluate_strategy game node_total_ordering_by_position strategy in
 	Array.init (Array.length valu) (fun i ->
-		if pg_get_owner game i = 0
+		if pg_get_owner game i = plr_Even
 		then -1
 		else best_decision_by_valuation_ordering game node_total_ordering_by_position valu i
 	)
@@ -594,7 +594,7 @@ let strategy_improvement (game: paritygame)
     );
     (*TEST*)
 
-	(winning_regions game !valu, winning_strategies game node_compare !strat !valu)
+    (winning_regions game !valu, winning_strategies game node_compare !strat !valu)
 
 
 
@@ -609,7 +609,7 @@ let strategy_improvement' (game: paritygame)
 	let game' = alternating_transformation game true in
 	let game'' = cheap_escape_cycles_transformation game' false in
 	let (sol'', strat'') = strategy_improvement game'' init_strat node_compare impr_policy impr_policy_init check_policy ident in
-	let sol = Array.init (pg_size game') (fun i -> sol''.(i)) in
+	let sol = sol_init game' (fun v -> sol''.(v)) in
 	let strat = Array.init (pg_size game') (fun i -> strat''.(i)) in
 	let (sol', strat') = alternating_revertive_restriction game game' sol strat in
 	for i = 0 to pg_size game - 1 do
@@ -626,7 +626,7 @@ let strategy_improvement'' (game: paritygame)
 						  (ident: string) =
 	let game' = cheap_escape_cycles_transformation game false in
 	let (sol', strat') = strategy_improvement game' init_strat node_compare impr_policy (impr_policy_init game') check_policy ident in
-	let sol = Array.init (pg_size game) (fun i -> sol'.(i)) in
+	let sol = sol_init game (fun i -> sol'.(i)) in
 	let strat = Array.init (pg_size game) (fun i -> strat'.(i)) in
 	(sol, strat);;
 
@@ -750,20 +750,20 @@ let mdplike_valuation game minprio strategy =
 			queue := [i];
 		);
 	done;
-	let is_cycle_node j = pg_get_owner game j = 0 && ns_exists (fun k -> ns_exists (fun l -> l = j) (pg_get_successors game k)) (pg_get_successors game j) in
+	let is_cycle_node j = pg_get_owner game j = plr_Even && ns_exists (fun k -> ns_exists (fun l -> l = j) (pg_get_successors game k)) (pg_get_successors game j) in
 	while !queue != [] do
 		let head = List.hd !queue in
 		queue := List.tl !queue;
 		ns_iter (fun i ->
 			if not finished.(i) then (
-				if pg_get_owner game i = 0 && finished.(strategy.(i)) then (
+				if pg_get_owner game i = plr_Even && finished.(strategy.(i)) then (
 					valu.(i) <- valu.(strategy.(i));
 					valu.(i) <- (TreeMap.add i 1.0 (fst valu.(i)), None);
 					finished.(i) <- true;
 					queue := i::!queue
-				) else if pg_get_owner game i = 1 then (
+				) else if pg_get_owner game i = plr_Odd then (
 					(* This is not the most general approach but good enough for what we are trying to do right now *)
-					let nodes = ns_filter (fun j -> pg_get_owner game j = 1 || strategy.(j) != i) (pg_get_successors game i) in
+					let nodes = ns_filter (fun j -> pg_get_owner game j = plr_Odd || strategy.(j) != i) (pg_get_successors game i) in
   					let len = ns_size nodes in
 	  				let nodes = if ns_size nodes < 2 then nodes else ns_filter is_cycle_node nodes in
 					if (ns_forall (fun j -> finished.(j)) nodes) then (
@@ -787,8 +787,8 @@ let mdplike_valuation game minprio strategy =
 		) (pg_get_predecessors game head);
 	done;	
 	for i = 0 to n - 1 do
-		if (pg_get_owner game i = 1) then (
-			let nodes = ns_filter (fun j -> pg_get_owner game j = 1 || strategy.(j) != i) (pg_get_successors game i) in
+		if (pg_get_owner game i = plr_Odd) then (
+			let nodes = ns_filter (fun j -> pg_get_owner game j = plr_Odd || strategy.(j) != i) (pg_get_successors game i) in
 			if ns_size nodes > 1 then (
 				let exit_node = ref (-1) in
 				ns_iter (fun j -> if not (is_cycle_node j) then exit_node := j) nodes;
@@ -801,8 +801,8 @@ let mdplike_valuation game minprio strategy =
 		valu.(i) <- (TreeMap.filter (fun j _ -> pg_get_priority game j >= minprio) (fst valu.(i)), snd valu.(i));
 	done; 
 	for i = 0 to n - 1 do
-		if (pg_get_owner game i = 1 && snd valu.(i) != None && OptionUtils.get_some (snd valu.(i)) = true) then (
-			let nodes = ns_filter (fun j -> pg_get_owner game j = 1 || strategy.(j) != i) (pg_get_successors game i) in
+		if (pg_get_owner game i = plr_Odd && snd valu.(i) != None && OptionUtils.get_some (snd valu.(i)) = true) then (
+			let nodes = ns_filter (fun j -> pg_get_owner game j = plr_Odd || strategy.(j) != i) (pg_get_successors game i) in
 			if ns_size nodes > 1 then (
 				let exit_node = ref (-1) in
 				ns_iter (fun j -> if not (is_cycle_node j) then exit_node := j) nodes;

@@ -23,8 +23,8 @@ let solve' (game: paritygame) =
     let tra i = pg_get_successors game i in
     let isEven i = (prio i) mod 2 = 0 in
     let isOdd i = (prio i) mod 2 = 1 in
-    let isP0 i = (pl i) = 0 in
-    let isP1 i = (pl i) = 1 in
+    let isP0 i = (pl i) = plr_Even in
+    let isP1 i = (pl i) = plr_Odd in
 
     let lessRel i j =
         let pi = prio i in
@@ -306,7 +306,8 @@ let solve' (game: paritygame) =
     msg_plain 2 (fun _ -> "\n");
 
     (* Finished *)
-    let solution = Array.map (fun (w, _, _) -> (prio w) mod 2) valu in
+    let solution = sol_create game in
+    Array.iter (fun (w, _, _) -> solution.(w) <- plr_benefits (prio w)) valu;
     let strategy = Array.make n (-1) in
     	for i = 0 to n - 1 do
     		strategy.(i) <-	if isP0 i

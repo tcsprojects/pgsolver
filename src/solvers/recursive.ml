@@ -17,7 +17,7 @@ let solver rec_solve game =
     let msg_plain = message in
     let l = pg_size game in
     msg_tagged 3 (fun _ -> "Solving the game: " ^ format_game game ^ "\n");
-    let solution = Array.make l (-1) in
+    let solution = sol_create game in
     let strategy = Array.make l (-1) in
 
     let max_prio = ref (-1) in
@@ -33,7 +33,7 @@ let solver rec_solve game =
     else if not !more_than_one
     then (message 3 (fun _ -> "  Only " ^ (if !max_prio mod 2 = 0 then "even" else "odd") ^
                      " priority " ^ string_of_int !max_prio ^ " present\n");
-          let winner = !max_prio mod 2 in
+          let winner = plr_benefits !max_prio in
           for v=0 to l-1 do
             let p' = pg_get_priority game v in
 	    let pl' = pg_get_owner game v in
@@ -49,9 +49,9 @@ let solver rec_solve game =
           (solution,strategy))
     else (
     	  let max_prio = ref (pg_max_prio game) in
-    	  let pl = !max_prio mod 2 in
+    	  let pl = plr_benefits !max_prio in
           msg_tagged 3 (fun _ -> "Highest priority " ^ string_of_int !max_prio ^ " belongs to player " ^
-                              string_of_int pl ^ "\n");
+                              plr_show pl ^ "\n");
           let nodes_with_prio_p = collect_max_parity_nodes game in
 
           msg_tagged 3 (fun _ -> "The following nodes have priority " ^ string_of_int !max_prio ^
@@ -60,7 +60,7 @@ let solver rec_solve game =
 
           let attr = attr_closure_inplace game strategy pl nodes_with_prio_p in
 
-          msg_tagged 3 (fun _ -> "The attractor of P for player " ^ string_of_int pl ^ " is: {" ^
+          msg_tagged 3 (fun _ -> "The attractor of P for player " ^ plr_show pl ^ " is: {" ^
                      String.concat "," (List.map string_of_int attr) ^ "}\n");
 
           let game' = pg_copy game in
@@ -71,7 +71,7 @@ let solver rec_solve game =
 
           msg_tagged 3 (fun _ -> "Checking whether the opponent wins from any node of the subgame ...");
 
-          if not (Array.fold_left (fun b -> fun s -> b || s = 1-pl) false sol)
+          if not (Array.fold_left (fun b -> fun s -> b || s = plr_opponent pl) false sol)
           then (msg_plain 3 (fun _ -> " no\n");
                 msg_tagged 3 (fun _ -> "Merging and completing strategies and solutions:\n");
 
@@ -90,17 +90,17 @@ let solver rec_solve game =
                 (solution,strategy))
           else (message 3 (fun _ -> " yes\n");
                 let opponent_win = ref [] in
-                let opp = 1-pl in
+                let opp = plr_opponent pl in
                 for v=0 to (l-1) do
                   if sol.(v) = opp then opponent_win := v :: !opponent_win
                 done;
-                msg_tagged 3 (fun _ -> "Opponent " ^ string_of_int opp ^ " wins from nodes Q = {" ^
+                msg_tagged 3 (fun _ -> "Opponent " ^ plr_show opp ^ " wins from nodes Q = {" ^
                           String.concat "," (List.map string_of_int !opponent_win) ^ "}\n");
 
                 List.iter (fun v -> strategy.(v) <- -1) attr;
 
                 let attr = attr_closure_inplace game strategy opp !opponent_win in
-                msg_tagged 3 (fun _ -> "The attractor of Q for player " ^ string_of_int opp ^ " is: {" ^
+                msg_tagged 3 (fun _ -> "The attractor of Q for player " ^ plr_show opp ^ " is: {" ^
                           String.concat "," (List.map string_of_int attr) ^ "}\n");
 
                 List.iter (fun v -> solution.(v) <- opp) attr;

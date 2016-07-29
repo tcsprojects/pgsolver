@@ -42,18 +42,17 @@ let add_est est pr =
 
 let initial_estimation game d =
 	let n = pg_size game in
-	let rew = reward 0 in
-	Array.init n (fun i ->
-			       let pl = pg_get_owner game i in
+	let rew = reward plr_Even in
+	Array.init n (fun i -> let pl = pg_get_owner game i in
 			       let delta = pg_get_successors game i in
-		let e = Array.make d 0 in
-		if pl = 1 then (
-		  let pr = ns_fold (fun pr j -> let pr' = pg_get_priority game j in
-							if rew pr' > rew pr	then pr	else pr'
-					   ) (2 * d) delta in
-			if pr > 0 then e.(pr - 1) <- 1
-		);
-		Escape e
+			       let e = Array.make d 0 in
+			       if pl = plr_Odd then (
+				 let pr = ns_fold (fun pr j -> let pr' = pg_get_priority game j in
+							       if rew pr' > rew pr	then pr	else pr'
+						  ) (2 * d) delta in
+				 if pr > 0 then e.(pr - 1) <- 1
+			       );
+			       Escape e
 	);;
 
 let format_estentry = function PosInfty -> "+oo" | Escape esc ->
@@ -68,7 +67,7 @@ let zero_arena arena estimation =
 	let pred u v = compare estimation.(u) (add_est estimation.(v) (pg_get_priority arena v)) = 0 in
 	subgame_by_edge_pred arena (fun u v -> let pl = pg_get_owner arena u in
 					       let delta = pg_get_successors arena u in
-					       (pred u v) && ((pl = 1) || (ns_forall (pred u) delta))
+					       (pred u v) && ((pl = plr_Odd) || (ns_forall (pred u) delta))
 	);;
 
 let is_infty = function PosInfty -> true | _ -> false;;
@@ -76,9 +75,9 @@ let is_infty = function PosInfty -> true | _ -> false;;
 let is_zero = function Escape esc -> ArrayUtils.forall esc (fun _ e -> e = 0) | _ -> false;;
 
 let counter_strategy zero_arena estimation =
-	let seed = collect_nodes zero_arena (fun i (_, pl, delta, _, _) -> pl = 0 && ns_size delta = 0 && (not (is_infty estimation.(i)))) in
+	let seed = collect_nodes zero_arena (fun i (_, pl, delta, _, _) -> pl = plr_Even && ns_size delta = 0 && (not (is_infty estimation.(i)))) in
 	let strat = Array.make (pg_size zero_arena) (-1) in
-	let _ = attr_closure_inplace zero_arena strat 1 seed in
+	let _ = attr_closure_inplace zero_arena strat plr_Odd seed in
 	strat;;
 
 let addition d = function
@@ -130,12 +129,12 @@ let basic_update_step arena d estimation =
 	  let pl = pg_get_owner arena i in
 	  let delta = pg_get_successors arena i in
 	  if ns_size delta = 0 then (
-	    if pl = 0
+	    if pl = plr_Even
 	    then green_all_evaluated := i::!green_all_evaluated
 	    else red_all_evaluated := i::!red_all_evaluated;
 	    eval_state.(i) <- 2
 	  )
-	  else if pl = 1 then red_rest := i::!red_rest
+	  else if pl = plr_Odd then red_rest := i::!red_rest
 	done;
 
 	let update_todo i =
@@ -146,12 +145,12 @@ let basic_update_step arena d estimation =
 			   let delta = pg_get_successors arena j in
 			   if (eval_state.(j) = 0) || (eval_state.(j) = 3) then (
 			     if ns_forall (fun k -> eval_state.(k) = 1) delta then (
-                	       if pl = 0
+                	       if pl = plr_Even
 			       then green_all_evaluated := j::!green_all_evaluated
 			       else red_all_evaluated := j::!red_all_evaluated;
 			       eval_state.(j) <- 2;
 			     )
-			     else if (pl = 1) then (
+			     else if (pl = plr_Odd) then (
                 	       if (ns_exists (fun k -> (eval_state.(k) = 1) && (is_zero upd.(k)) && (is_zero (improv_pot arena d (j, k) estimation))) delta)
                 	       then (
                 		 red_one0_evaluated := j::!red_one0_evaluated;
@@ -222,7 +221,7 @@ let update_strategy0 arena est_after strat =
 	Array.iteri (fun i est ->
 		     let pl = pg_get_owner arena i in
 		     let delta =  Array.of_list (ns_nodes (pg_get_successors arena i)) in
-		     if (pl = 0) && (strat.(i) = -1) && (is_infty est)
+		     if (pl = plr_Even) && (strat.(i) = -1) && (is_infty est)
 		     then strat.(i) <- array_max delta (fun x y -> compare est_after.(x) est_after.(y) < 0)
 		    ) est_after;;
   
@@ -231,7 +230,7 @@ let get_intermediate_strategy0 arena est_after strat' =
 	let strat = Array.copy strat' in
 	Array.iteri (fun i est ->
 		let delta =  Array.of_list (ns_nodes (pg_get_successors arena i)) in
-		if (pg_get_owner arena i = 0) && (strat.(i) = -1) && (Array.length delta > 0)
+		if (pg_get_owner arena i = plr_Even) && (strat.(i) = -1) && (Array.length delta > 0)
 		then strat.(i) <- array_max delta (fun x y -> compare (add_est est_after.(x) (pg_get_priority arena x))
 		                                                      (add_est est_after.(y) (pg_get_priority arena y)) < 0)
 	) est_after;
@@ -260,7 +259,7 @@ let solve_scc game' =
 		est := est';
 	done;
 	if !verbosity = 2 then msg_plain 2 (fun _ -> "\n");
-	let sol = Array.init n (fun i -> if is_infty (!est).(i) then 0 else 1) in
+	let sol = sol_init game (fun i -> if is_infty (!est).(i) then plr_Even else plr_Odd) in
 
 	let strat' = counter_strategy (zero_arena !arena !est) !est in
 	merge_strategies_inplace strat strat';
