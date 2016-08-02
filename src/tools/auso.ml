@@ -21,7 +21,7 @@ let _ =
 
 	let (in_channel,name) = (stdin,"STDIN") in
 
-	let game = parse_parity_game in_channel in
+	let game = Parsers.parse_parity_game in_channel in
     let n = pg_size game in
     
     (* Remove trivial player 0 nodes *)

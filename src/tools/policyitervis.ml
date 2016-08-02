@@ -61,7 +61,7 @@ let _ =
 	localopt_compact_priorities = false ;
   });
 
-  let game = parse_parity_game stdin in
+  let game = Parsers.parse_parity_game stdin in
 
 	let before_iteration i =
 		out ("beginfig(" ^ string_of_int (i + !add_iteration) ^ ");\n")

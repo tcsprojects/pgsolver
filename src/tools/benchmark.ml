@@ -122,7 +122,7 @@ let _ =
 
   let in_channels = if !input_files = [] then [stdin] else List.map open_in !input_files in
 
-  let games = List.map (fun in_channel -> Paritygame.parse_parity_game in_channel) in_channels in
+  let games = List.map (fun in_channel -> Parsers.parse_parity_game in_channel) in_channels in
 
   let game_count = ref 0 in
   let game_size = ref 0 in

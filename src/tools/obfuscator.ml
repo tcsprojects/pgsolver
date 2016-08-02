@@ -31,7 +31,7 @@ let _ =
 
   let in_channel = if !input_file = "" then stdin else open_in !input_file in
 
-  let game = Paritygame.parse_parity_game in_channel in
+  let game = Parsers.parse_parity_game in_channel in
 
   let m = pg_size game in
   let swap = Array.make m 0 in

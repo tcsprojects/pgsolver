@@ -191,10 +191,10 @@ let _ =
 	  let game = (
 		match !solver with
 			LocalSolver _ ->
-				let (init, g) = Tcsgameparser.parse_explicit_initpg in_channel in
+				let (init, g) = Parsers.parse_init_parity_game in_channel in
 				initnode := init;
-				pg_init (Array.length g) (fun i -> let (a,b,c,d) = g.(i) in  (a, (if b=0 then plr_Even else plr_Odd), Array.to_list c, (if d = "" then None else Some d)))
-		|	_ -> parse_parity_game in_channel
+				g
+		|	_ -> Parsers.parse_parity_game in_channel
 	  )in
 	  SimpleTiming.stop timobj;
 	  message 1 (fun _ -> (SimpleTiming.format timobj) ^ "\n");
@@ -236,7 +236,7 @@ let _ =
 										 ([||],[||])
 									 )
 									 else (
-										Tcsgameparser.parse_explicit_parity_solution (open_in !parse_sol)
+										Parsers.parse_solution (open_in !parse_sol)
 									 )
 			| YesSolver(id,solve) -> message 1 (fun _ -> "Chosen solver `" ^ id ^ "' " ^
 												String.make (22 - (String.length id)) '.' ^ " ");

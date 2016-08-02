@@ -21,7 +21,7 @@ let _ =
 
 	let (in_channel,name) = (stdin,"STDIN") in
 
-	let game = parse_parity_game in_channel in
+	let game = Parsers.parse_parity_game in_channel in
 	
 	let number_of_nodes = ref 0 in
 	let number_of_player0_nodes = ref 0 in

@@ -91,6 +91,7 @@ MODULES_WITHOUT_SOLVERS_AND_LIB=$(OBJDIR)/basics.$(COMPILEEXT) \
         $(OBJDIR)/info.$(COMPILEEXT) \
 	$(OBJDIR)/whoiswho.$(COMPILEEXT) \
 	$(OBJDIR)/paritygame.$(COMPILEEXT) \
+	$(OBJDIR)/parsers.$(COMPILEEXT) \
 	$(OBJDIR)/mdp.$(COMPILEEXT) \
 	$(OBJDIR)/solvers.$(COMPILEEXT) \
 	$(OBJDIR)/generators.$(COMPILEEXT) \
@@ -236,6 +237,7 @@ OBFUSCATOR_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
                    $(OBJDIR)/basics.$(COMPILEEXT) \
                    $(OBJDIR)/info.$(COMPILEEXT) \
                    $(OBJDIR)/paritygame.$(COMPILEEXT) \
+                   $(OBJDIR)/parsers.$(COMPILEEXT) \
                    $(OBJDIR)/obfuscator.$(COMPILEEXT)
 
 obfuscator: $(INTERFACES) $(OBFUSCATOR_MODULES)
@@ -245,6 +247,7 @@ COMBINE_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
                    $(OBJDIR)/basics.$(COMPILEEXT) \
                    $(OBJDIR)/info.$(COMPILEEXT) \
                    $(OBJDIR)/paritygame.$(COMPILEEXT) \
+                   $(OBJDIR)/parsers.$(COMPILEEXT) \
                    $(OBJDIR)/transformations.$(COMPILEEXT) \
                    $(OBJDIR)/combine.$(COMPILEEXT) \
 
@@ -255,6 +258,7 @@ INFOTOOL_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
                    $(OBJDIR)/basics.$(COMPILEEXT) \
                    $(OBJDIR)/info.$(COMPILEEXT) \
                    $(OBJDIR)/paritygame.$(COMPILEEXT) \
+                   $(OBJDIR)/parsers.$(COMPILEEXT) \
                    $(OBJDIR)/transformations.$(COMPILEEXT) \
                    $(OBJDIR)/infotool.$(COMPILEEXT) \
 
@@ -265,6 +269,7 @@ WINNINGSTRATS_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
                    $(OBJDIR)/basics.$(COMPILEEXT) \
                    $(OBJDIR)/info.$(COMPILEEXT) \
                    $(OBJDIR)/paritygame.$(COMPILEEXT) \
+                   $(OBJDIR)/parsers.$(COMPILEEXT) \
                    $(OBJDIR)/solvers.$(COMPILEEXT) \
                    $(OBJDIR)/specialsolve.$(COMPILEEXT) \
                    $(OBJDIR)/transformations.$(COMPILEEXT) \
@@ -279,6 +284,7 @@ IMPRARENA_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
                    $(OBJDIR)/basics.$(COMPILEEXT) \
                    $(OBJDIR)/info.$(COMPILEEXT) \
                    $(OBJDIR)/paritygame.$(COMPILEEXT) \
+                   $(OBJDIR)/parsers.$(COMPILEEXT) \
                    $(OBJDIR)/solvers.$(COMPILEEXT) \
                    $(OBJDIR)/specialsolve.$(COMPILEEXT) \
                    $(OBJDIR)/transformations.$(COMPILEEXT) \
@@ -293,6 +299,7 @@ FULLIMPRARENA_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
                    $(OBJDIR)/basics.$(COMPILEEXT) \
                    $(OBJDIR)/info.$(COMPILEEXT) \
                    $(OBJDIR)/paritygame.$(COMPILEEXT) \
+                   $(OBJDIR)/parsers.$(COMPILEEXT) \
                    $(OBJDIR)/solvers.$(COMPILEEXT) \
                    $(OBJDIR)/specialsolve.$(COMPILEEXT) \
                    $(OBJDIR)/transformations.$(COMPILEEXT) \
@@ -307,6 +314,7 @@ AUSO_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
                    $(OBJDIR)/basics.$(COMPILEEXT) \
                    $(OBJDIR)/info.$(COMPILEEXT) \
                    $(OBJDIR)/paritygame.$(COMPILEEXT) \
+                   $(OBJDIR)/parsers.$(COMPILEEXT) \
                    $(OBJDIR)/solvers.$(COMPILEEXT) \
                    $(OBJDIR)/specialsolve.$(COMPILEEXT) \
                    $(OBJDIR)/transformations.$(COMPILEEXT) \
@@ -321,6 +329,7 @@ COMPLEXDECOMP_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
                    $(OBJDIR)/basics.$(COMPILEEXT) \
                    $(OBJDIR)/info.$(COMPILEEXT) \
                    $(OBJDIR)/paritygame.$(COMPILEEXT) \
+                   $(OBJDIR)/parsers.$(COMPILEEXT) \
                    $(OBJDIR)/solvers.$(COMPILEEXT) \
                    $(OBJDIR)/specialsolve.$(COMPILEEXT) \
                    $(OBJDIR)/transformations.$(COMPILEEXT) \
@@ -335,6 +344,7 @@ TRANSFORMER_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
                    $(OBJDIR)/basics.$(COMPILEEXT) \
                    $(OBJDIR)/info.$(COMPILEEXT) \
                    $(OBJDIR)/paritygame.$(COMPILEEXT) \
+                   $(OBJDIR)/parsers.$(COMPILEEXT) \
                    $(OBJDIR)/transformations.$(COMPILEEXT) \
                    $(OBJDIR)/transformer.$(COMPILEEXT)
 
@@ -369,8 +379,8 @@ policyitervis: $(INTERFACES)  $(MODULES) $(OBJDIR)/policyitervis.$(COMPILEEXT)
 COMPRESSOR_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
                    $(OBJDIR)/info.$(COMPILEEXT) \
                    $(OBJDIR)/basics.$(COMPILEEXT) \
-                   \
                    $(OBJDIR)/paritygame.$(COMPILEEXT) \
+                   $(OBJDIR)/parsers.$(COMPILEEXT) \
                    $(OBJDIR)/transformations.$(COMPILEEXT) \
                    $(OBJDIR)/compressor.$(COMPILEEXT)
 

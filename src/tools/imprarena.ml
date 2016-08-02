@@ -20,7 +20,7 @@ let _ =
 
 	let (in_channel,name) = (stdin,"STDIN") in
 
-	let game = parse_parity_game in_channel in
+	let game = Parsers.parse_parity_game in_channel in
 	
 	let pre_strategy = Array.make (pg_size game) "" in
 	

@@ -390,24 +390,6 @@ let format_game gm =
 
 
 (**************************************************************
- * Parsing Functions                                          *
- **************************************************************)
- 
-let parse_parity_game ch =
-  let rawgame = Tcsgameparser.parse_explicit_pg ch in
-  let game = pg_create (Array.length rawgame) in
-  Array.iteri (fun v -> fun (pr,pl,succs,desc) -> pg_set_priority game v pr;
-						  pg_set_owner game v pl;
-						  pg_set_desc game v (if desc = "" then None else Some desc);
-						  Array.iter (fun w -> pg_add_edge game v w) succs
-	      )
-	      rawgame;
-  game
-
- 
- 
- 
-(**************************************************************
  * Node Orderings                                             *
  **************************************************************)
 

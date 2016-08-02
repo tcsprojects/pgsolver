@@ -20,7 +20,7 @@ let _ =
 
 	let (in_channel,name) = (stdin,"STDIN") in
 
-	let game = parse_parity_game in_channel in
+	let game = Parsers.parse_parity_game in_channel in
 	
 	let print_strat strategy =
 		let valu = evaluate_strategy game node_total_ordering_by_position strategy in
