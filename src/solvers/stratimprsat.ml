@@ -30,7 +30,7 @@ let solve' game sink0 sink1 =
 	for i = 0 to n - 1 do
 	  let pr = pg_get_priority game i in
 	  let pl = pg_get_owner game i in
-	  let tr = pg_get_successors game i in
+	  let tr = Array.of_list (ns_nodes (pg_get_successors game i)) in
 	  (* Strategy *)
 	  solver#add_helper_exactlyone 0 (Array.length tr - 1) [||] (fun j -> Po (Strategy (i, tr.(j))));
 	  (* Path Sets *)
@@ -111,7 +111,7 @@ let solve' game sink0 sink1 =
 	
 	let sol = Array.init n (fun i -> solver#get_variable (Winning i)) in
 	let strat = Array.init n (fun i -> if sol.(i) = pg_get_owner game i
-	                                   then let delta = pg_get_successors game i in
+	                                   then let delta = Array.of_list (ns_nodes (pg_get_successors game i)) in
 	                                        delta.(solver#get_variable_first (Array.map (fun j -> Strategy (i, j)) delta)) else -1) in
 	
 	solver#dispose;

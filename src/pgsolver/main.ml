@@ -9,6 +9,7 @@ open Univsolve ;;
 open Solvers ;;
 open Generators ;;
 open Whoiswho ;;
+open Solverlist;;
 
 module CommandLine =
 struct

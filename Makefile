@@ -130,10 +130,10 @@ $(TCSLIBOBJ)/%.$(COMPILELIBEXT):
 $(SATSOLVERSOBJ)/satsolvers.$(COMPILEEXT):
 	make -C $(SATSOLVERSROOT) all
 
-main: $(OBJDIR)/main.$(COMPILEEXT)
+main: $(OBJDIR)/solverlist.$(COMPILEEXT) $(OBJDIR)/main.$(COMPILEEXT)
 
 exec:
-	$(OCAMLCOMP) -o $(EXECUTABLE) $(CPPCOMPILER) nums.$(COMPILELIBEXT) $(SMTMODULES) $(SATSOLVERMODSX) $(SATSOLVERMODS) $(MODULES) $(GENERATOR_MODULES) $(OBJDIR)/main.$(COMPILEEXT)
+	$(OCAMLCOMP) -o $(EXECUTABLE) $(CPPCOMPILER) nums.$(COMPILELIBEXT) $(SMTMODULES) $(SATSOLVERMODSX) $(SATSOLVERMODS) $(MODULES) $(GENERATOR_MODULES) $(OBJDIR)/solverlist.$(COMPILEEXT) $(OBJDIR)/main.$(COMPILEEXT)
 
 libexec:
 	$(OCAMLCOMP) -a -o $(LIBRARYNAME) $(CPPCOMPILER) $(MODULES_WITHOUT_SOLVERS_AND_LIB) $(PGSOLVERS) $(OBJDIR)/libpgsolver.$(COMPILEEXT)
@@ -188,11 +188,6 @@ $(OBJDIR)/%.cmi: $(SRCDIR)/pgsolver/%.mli
 
 $(OBJDIR)/%.cmi: $(SRCDIR)/%.mli
 	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-whoiswho: $(SRCDIR)/pgsolver/whoiswho.ml
-
-$(SRCDIR)/pgsolver/whoiswho.ml: $(SRCDIR)/pgsolver/encipher.ml
-	$(OCAML) $< > $@
 
 generators: $(GENERATORS:$(OBJDIR)/%.$(COMPILEEXT)=%) stratimprgen
 
@@ -407,7 +402,6 @@ package: whoiswho
 	$(TAR) rvf $(PACKAGE) --exclude=.svn --exclude=$(OBJDIR)/* --exclude=$(BINDIR)/* --exclude=*~ --transform "s,SATSolversForOCaml,pgsolver/satsolvers," $(SATSOLVERSROOT)/bin $(SATSOLVERSROOT)/obj $(SATSOLVERSROOT)/src $(SATSOLVERSROOT)/tester $(SATSOLVERSROOT)/Makefile $(SATSOLVERSROOT)/Config.default $(SATSOLVERSROOT)/Config.include $(SATSOLVERSROOT)/Solvers.default
 	$(TAR) rvf $(PACKAGE) --exclude=.svn --exclude=$(OBJDIR)/* --exclude=$(BINDIR)/* --exclude=*~ --transform "s,TCSlib,pgsolver/TCSlib," $(TCSLIBROOT)/obj $(TCSLIBROOT)/src $(TCSLIBROOT)/Makefile $(TCSLIBROOT)/Config.default
 	$(GZIP) $(PACKAGE)
-#	$(TAR) czvf $(PACKAGE) --exclude=.svn --exclude=$(OBJDIR)/* --exclude=$(BINDIR)/* --exclude=satsolvers/$(OBJDIR)/* --exclude=satsolvers/$(BINDIR)/* --exclude=$(SRCDIR)/temp/* --exclude=*~ --exclude="$(SRCDIR)/pgsolver/encipher.*" --transform "s,^,pgsolver/," Makefile Config.default README install.txt src bin obj satsolvers/bin satsolvers/obj satsolvers/src satsolvers/tester satsolvers/Makefile satsolvers/Config.default doc/pgsolver.pdf
 
 DEPENDENCY_INCLUDES=-I $(SRCDIR)/pgsolver \
                     -I $(SRCDIR)/generators \

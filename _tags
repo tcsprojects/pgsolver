@@ -1,0 +1,9 @@
+"src/pgsolver": include
+"src/paritygame": include
+"src/solvers": include
+"src/solvers/stratimpralgs": include
+"tcslib/src/utils": include
+"tcslib/src/data": include
+"tcslib/src/automata/parser": include
+"tcslib/src/automata": include
+"satsolversforocaml/src": include

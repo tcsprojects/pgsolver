@@ -236,13 +236,13 @@ let solve' game =
     let ws = pg_get_successors game v in
     (match pl with
       0 -> (message 3 (fun _ -> "  `" ^ show_var 0 (S v) ^ " -> " ^
-                       String.concat " + " (List.map (fun w -> show_var 0 (TE (v,w))) (Array.to_list ws)) ^ "': ");
-            schedule_clause (Array.append [|getNSVar v|] (Array.map (fun w -> getTEVar (v,w)) ws));
+                       String.concat " + " (List.map (fun w -> show_var 0 (TE (v,w))) (ns_nodes ws)) ^ "': ");
+            schedule_clause (Array.append [|getNSVar v|] (Array.map (fun w -> getTEVar (v,w)) (Array.of_list (ns_nodes ws))));
             ns_iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 1 (S v) ^ " -> " ^ show_var 0 (TA (v,w)) ^ "': ");
                                  schedule_clause [| getSVar v; getTAVar (v,w) |]) ws)
     | 1 -> (message 3 (fun _ -> "  `" ^ show_var 1 (S v) ^ " -> " ^
-                       String.concat " + " (List.map (fun w -> show_var 0 (TA (v,w))) (Array.to_list ws)) ^ "': ");
-            schedule_clause (Array.append [|getSVar v|] (Array.map (fun w -> getTAVar (v,w)) ws));
+                       String.concat " + " (List.map (fun w -> show_var 0 (TA (v,w))) (ns_nodes ws)) ^ "': ");
+            schedule_clause (Array.append [|getSVar v|] (Array.map (fun w -> getTAVar (v,w)) (Array.of_list (ns_nodes (ws)))));
             ns_iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 0 (S v) ^ " -> " ^ show_var 0 (TE (v,w)) ^ "': ");
                                  schedule_clause [| getNSVar v; getTEVar (v,w) |]) ws)
     | _ -> ());
@@ -349,7 +349,7 @@ let solve' game =
           let succs = pg_get_successors game v in
           let get_fun = if winner = 0 then getTEVar else getTAVar in
           let y = try
-                    ArrayUtils.find (fun w -> let j = get_fun (v,w) in solver#get_assignment j) succs
+                   ns_find (fun w -> let j = get_fun (v,w) in solver#get_assignment j) succs
                   with _ -> failwith "Fatal error: node belonging to strategy has no successor within that strategy!!!"
           in
           message 3 (fun _ -> (string_of_int y) ^ "\n");

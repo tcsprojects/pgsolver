@@ -18,3 +18,5 @@ doc/main.dvi
 doc/main.thm
 doc/main.toc
 .paths
+_build
+*.native
