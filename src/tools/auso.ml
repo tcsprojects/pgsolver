@@ -28,7 +28,7 @@ let _ =
     for i = 0 to n-1 do
       let pl = pg_get_owner game i in
       let tr = pg_get_successors game i in
-      if (pl = 0) && (Array.length tr = 1)
+      if (pl = plr_Even) && (ns_size tr = 1)
       then pg_set_owner game i 1
     done;
   
@@ -37,8 +37,8 @@ let _ =
     for i = n-1 downto 1 do
         let pl = pg_get_owner game i in
         let tr = pg_get_successors game i in
-        if (pl = 0)
-        then m.(i-1) <- Array.length tr * m.(i)
+        if (pl = plr_Even)
+        then m.(i-1) <- ns_size tr * m.(i)
         else m.(i-1) <- m.(i)
     done;
   
@@ -46,10 +46,10 @@ let _ =
     let strategy_to_int strategy =
       let x = ref 0 in
       for i = n-1 downto 0 do
-	let pl = pg_get_owner game in 
+	let pl = pg_get_owner game i in 
         let tr = pg_get_successors game i in
-        if (pl = 0) then (
-          let j = ArrayUtils.index_of tr strategy.(i) in
+        if (pl = plr_Even) then (
+          let j = ArrayUtils.index_of (Array.of_list (ns_nodes tr)) strategy.(i) in
           x := !x + m.(i) * j;
 		)
       done;
@@ -77,8 +77,8 @@ let _ =
      for i = 0 to n-1 do
        let pl = pg_get_owner game i in
        let tr = pg_get_successors game i in
-       if (pl = 0) then (
-         let j = ArrayUtils.index_of tr strategy.(i) in
+       if (pl = plr_Even) then (
+         let j = ArrayUtils.index_of (Array.of_list (ns_nodes tr)) strategy.(i) in
          s := !s ^ string_of_int j
        )
      done;
@@ -90,8 +90,8 @@ let _ =
      then callback strategy
      else
        let pl = pg_get_owner game index in
-       let tr = pg_get_successors game index in
-       if pl = 1
+       let tr = (Array.of_list (ns_nodes (pg_get_successors game index))) in
+       if pl = plr_Odd
        then iterate strategy (index + 1) callback
        else
          for j = 0 to Array.length tr - 1 do
@@ -103,9 +103,8 @@ let _ =
    out "* ";
    for i = 0 to n - 1 do
      let pl = pg_get_owner game i in
-     let tr = pg_get_successors game i in
      let desc = pg_get_desc game i in
-     if (pl = 0) then
+     if (pl = plr_Even) then
        match desc with
          None -> print_string " _" |
          Some s -> print_string (" " ^ s)
@@ -118,8 +117,9 @@ let _ =
      let l = ref [] in
      let k = ref [] in
      for i = 0 to n - 1 do
-       let (_, pl, tr, _) = game.(i) in
-       if (pl = 0) then
+				let pl = pg_get_owner game i in
+       let tr = (Array.of_list (ns_nodes (pg_get_successors game i))) in
+       if (pl = plr_Even) then
          for j = 0 to Array.length tr - 1 do
            let c = node_valuation_ordering game node_total_ordering_by_position valu.(strategy.(i)) valu.(tr.(j)) in
            if (c != 0) then (

@@ -32,8 +32,13 @@ let _ =
 	let number_of_player0_edges = ref 0 in
 	let number_of_player1_edges = ref 0 in
 	
-	pg_iter (fun (pr, pl, tr, _) ->
-		let trn = Array.length tr in
+	let n = pg_size game in
+	
+	for i = 0 to n - 1 do 
+	  let pr = pg_get_priority game i in
+		let pl = pg_get_owner game i in
+		let tr = pg_get_successors game i in
+		let trn = ns_size tr in
 		incr number_of_nodes;
 		number_of_edges := !number_of_edges + trn;
 		if pl = 0 then (
@@ -46,7 +51,7 @@ let _ =
 		);
 		if (!min_priority < 0) || (pr < !min_priority) then min_priority := pr;
 		if (!max_priority < 0) || (pr > !max_priority) then max_priority := pr;
-	) game;
+	done;
 	
 	out ("Number of Nodes    : " ^ string_of_int !number_of_nodes ^ "\n");
 	out ("Number of P0 Nodes : " ^ string_of_int !number_of_player0_nodes ^ "\n");

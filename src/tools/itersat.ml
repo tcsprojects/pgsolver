@@ -2,6 +2,7 @@ open Arg ;;
 open Tcsargs;;
 open Basics ;;
 open Paritygame ;;
+open Parsers ;; 
 open Tcstiming ;;
 open Tcsset;;
 open Tcslist;;
@@ -334,7 +335,7 @@ let set_player l n =
 
 
 let game_to_conjunction game =
- 	let n = Array.length game in
+ 	let n = pg_size game in
 	let pr = Array.init n (fun i ->
 			if (pg_get_priority game i) mod 2 = 0
 			then Ne (Parity i)
@@ -383,7 +384,7 @@ let forbid_game_with_strategy game strat =
 
 let load_game_by_file f =
   let in_channel = open_in f in
-  Parserhelper.parse_from_channel in_channel false
+  Parsers.parse_parity_game in_channel
 
 let assume_game_list l n =
 	List.iter assume_game (List.map load_game_by_file l)
@@ -978,20 +979,20 @@ let get_worst_cycles n u =
 
 let get_valuation n u v =
 	(solver#get_variable_first (Array.init n (fun a -> WorstCycle (u, v, a))),
-	 IntSetUtils.of_list (List.filter (fun i -> solver#get_variable_bool (WorstPathSet(u, v, i))) (Array.to_list (Array.init n (fun i -> i)))),
+	 TreeSet.of_list compare (List.filter (fun i -> solver#get_variable_bool (WorstPathSet(u, v, i))) (Array.to_list (Array.init n (fun i -> i)))),
 	 solver#get_variable_count (Array.init n (fun i -> WorstPathLen (u, v, i))) - 1)
 
 
 let get_paritygame n =
 	let s = get_strategy n 0 in
-	Array.init n (fun i ->
+	pg_init n (fun i ->
 		let l = ref [] in
 		for j = 0 to n - 1 do
 			if (s.(i) != j) && (solver#get_variable_bool (Edge (i, j))) then l := j::!l
 		done;
 		((i * 2 + solver#get_variable (Parity i)),
 		 (solver#get_variable (Player i)),
-		 (Array.of_list (if s.(i) != -1 then !l @ [s.(i)] else !l)),
+		 (if s.(i) != -1 then !l @ [s.(i)] else !l),
 		 (Some (string_of_int i)))
 	)
 
@@ -1125,7 +1126,7 @@ let _ =
 				if j < !k then
 					for i = 0 to n - 1 do
 						let (u, a, e) = get_valuation n j i in
-						message 1 (fun _ -> string_of_int i ^ " --> " ^ string_of_int u ^ " " ^ IntSetUtils.format a ^ " " ^ string_of_int e ^ "\n");
+						message 1 (fun _ -> string_of_int i ^ " --> " ^ string_of_int u ^ " " ^ TreeSet.format string_of_int a ^ " " ^ string_of_int e ^ "\n");
 					done
 				done;
 		);

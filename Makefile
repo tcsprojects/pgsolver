@@ -1,425 +1,157 @@
-###########################################################
-#
-# INCLUDING CONFIGURATION FILE
-#
-###########################################################
+# SMTMODULES=-ccopt "-I$(Z3DIR)/ocaml -L$(Z3DIR)/ocaml -L$(Z3DIR)/lib" -cclib -lz3 $(OCAML_DIR)/libcamlidl.a $(Z3DIR)/ocaml/z3.$(COMPILELIBEXT)
+# SAT?
 
-ifeq ($(strip $(wildcard Config)),)
-	include Config.default
-else
-	include Config
-endif
 
-ifeq "$(COMPILE_WITH_OPT)" "YES"
+all: pgsolver generators tools test
 
-COMPILEEXT=cmx
-OCAMLCOMP=$(OCAMLOPT)
-COMPILELIBEXT=cmxa
 
-else
 
-COMPILEEXT=cmo
-OCAMLCOMP=$(OCAMLC)
-COMPILELIBEXT=cma
+pgsolver:
+	ocamlbuild -libs nums main.native
+	mv main.native bin/pgsolver
 
-endif
 
 
-SATSOLVERSOBJ=$(SATSOLVERSROOT)/obj
+test:
+	ocamlbuild -libs nums -package oUnit solverstest.native
+	mv solverstest.native bin/ounit
+	
 
-TCSLIBOBJ=$(TCSLIBROOT)/obj
 
+generators: randomgame laddergame clusteredrandomgame cliquegame modelcheckerladder recursiveladder steadygame jurdzinskigame elevatorverification towersofhanoi langincl stratimprgen
 
-ifeq "$(HASSMT)" "YES"
 
-SMTMODULES=-ccopt "-I$(Z3DIR)/ocaml -L$(Z3DIR)/ocaml -L$(Z3DIR)/lib" -cclib -lz3 $(OCAML_DIR)/libcamlidl.a $(Z3DIR)/ocaml/z3.$(COMPILELIBEXT)
-
-endif
-
-
-###########################################################
-#
-# SETUP INCLUDES DIRECTIVE, SATSOLVERS AND COMPILER
-#
-###########################################################
-
-INCLUDES=-I $(SRCDIR) -I $(OBJDIR) -I $(OCAML_DIR) -I $(SATSOLVERSOBJ) -I $(TCSLIBOBJ) -I $(Z3DIR)/ocaml
-
-include $(SATSOLVERSROOT)/Config.include
-
-ifeq "$(HASSAT)" "YES"
-
-CPPCOMPILER=-cc $(OCAMLOPTCPP)
-
-endif
-
-
-###########################################################
-#
-# INCLUDE LIST OF SOLVERS
-#
-###########################################################
-
-PGSOLVERSOBJ=$(OBJDIR)
-
-include SolverList
-
-
-
-###########################################################
-#
-# INCLUDE LIST OF GENERATORS
-#
-###########################################################
-
-GENERATORSOBJ=$(OBJDIR)
-
-include GeneratorList
-
-ifeq "$(LINKGENERATORS)" "YES"
-
-GENERATOR_MODULES=$(GENERATORS)
-
-endif
-
-SATSOLVERMODSX=$(SATSOLVERSOBJ)/satwrapper.$(COMPILEEXT) \
-        $(SATSOLVERSOBJ)/satsolvers.$(COMPILEEXT)
-
-
-
-MODULES_WITHOUT_SOLVERS_AND_LIB=$(OBJDIR)/basics.$(COMPILEEXT) \
-        $(OBJDIR)/info.$(COMPILEEXT) \
-	$(OBJDIR)/whoiswho.$(COMPILEEXT) \
-	$(OBJDIR)/paritygame.$(COMPILEEXT) \
-	$(OBJDIR)/parsers.$(COMPILEEXT) \
-	$(OBJDIR)/mdp.$(COMPILEEXT) \
-	$(OBJDIR)/solvers.$(COMPILEEXT) \
-	$(OBJDIR)/generators.$(COMPILEEXT) \
-	$(OBJDIR)/specialsolve.$(COMPILEEXT) \
-	$(OBJDIR)/transformations.$(COMPILEEXT) \
-	$(OBJDIR)/univsolve.$(COMPILEEXT) \
-	$(OBJDIR)/verification.$(COMPILEEXT)
-
-MODULES_WITHOUT_SOLVERS = $(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-	$(MODULES_WITHOUT_SOLVERS_AND_LIB)
-
-MODULES=$(MODULES_WITHOUT_SOLVERS) \
-	$(PGSOLVERS)
-
-INTERFACES=$(MODULES:.$(COMPILEEXT)=.cmi)
-
-EXECUTABLE=$(BINDIR)/pgsolver
-LIBRARYNAME=$(OBJDIR)/libpgsolver.$(COMPILELIBEXT)
-
-PACKAGE=pgsolver.tar
-
-pgsolver: satsolvers $(INTERFACES) $(MODULES) $(GENERATOR_MODULES) main exec
-
-library: satsolvers $(INTERFACES) $(OBJDIR)/libpgsolver.cmi $(MODULES) $(OBJDIR)/libpgsolver.$(COMPILEEXT) libexec
-
-all: pgsolver library generators tools
-
-satsolvers: $(SATSOLVERSOBJ)/satsolvers.$(COMPILEEXT)
-
-$(TCSLIBOBJ)/%.cmi:
-	make -C $(TCSLIBROOT) all
-
-$(TCSLIBOBJ)/%.$(COMPILELIBEXT):
-	make -C $(TCSLIBROOT) all
-
-$(SATSOLVERSOBJ)/satsolvers.$(COMPILEEXT):
-	make -C $(SATSOLVERSROOT) all
-
-main: $(OBJDIR)/solverlist.$(COMPILEEXT) $(OBJDIR)/main.$(COMPILEEXT)
-
-exec:
-	$(OCAMLCOMP) -o $(EXECUTABLE) $(CPPCOMPILER) nums.$(COMPILELIBEXT) $(SMTMODULES) $(SATSOLVERMODSX) $(SATSOLVERMODS) $(MODULES) $(GENERATOR_MODULES) $(OBJDIR)/solverlist.$(COMPILEEXT) $(OBJDIR)/main.$(COMPILEEXT)
-
-libexec:
-	$(OCAMLCOMP) -a -o $(LIBRARYNAME) $(CPPCOMPILER) $(MODULES_WITHOUT_SOLVERS_AND_LIB) $(PGSOLVERS) $(OBJDIR)/libpgsolver.$(COMPILEEXT)
-
-$(OBJDIR)/%.$(COMPILEEXT): ./tests/%.ml
-	ocamlfind ocamlopt -c -o $@ -package oUnit -linkpkg -I $(TCSLIBOBJ) -I obj $<
-
-$(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/pgsolver/%.ml
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/generators/%.ml
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/generators/stratimpr/%.ml
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.cmi: $(SRCDIR)/generators/policyiter/%.mli
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/generators/policyiter/%.ml
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/generators/policyiter/generators/%.ml
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/tools/%.ml
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/paritygame/%.ml
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/solvers/%.ml
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/solvers/stratimpralgs/%.ml
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.$(COMPILEEXT): $(SRCDIR)/%.ml
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.cmi: $(SRCDIR)/paritygame/%.mli
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.cmi: $(SRCDIR)/solvers/%.mli
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.cmi: $(SRCDIR)/solvers/stratimpralgs/%.mli
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.cmi: $(SRCDIR)/pgsolver/%.mli
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-$(OBJDIR)/%.cmi: $(SRCDIR)/%.mli
-	$(OCAMLCOMP) $(INCLUDES) -c -o $@ $<
-
-generators: $(GENERATORS:$(OBJDIR)/%.$(COMPILEEXT)=%) stratimprgen
-
-tools: obfuscator transformer compressor combine benchmark infotool winningstrats
-
-%: $(SRCDIR)/generators/%.ml $(OBJDIR)/%.$(COMPILEEXT) $(OBJDIR)/rungenerator.$(COMPILEEXT)
-	$(OCAMLCOMP) $(CPPCOMPILER) -o $(BINDIR)/$@ nums.$(COMPILELIBEXT) $(OBJDIR)/info.$(COMPILEEXT) $(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) $(OBJDIR)/paritygame.$(COMPILEEXT) $(OBJDIR)/generators.$(COMPILEEXT) $(OBJDIR)/$@.$(COMPILEEXT) $(OBJDIR)/rungenerator.$(COMPILEEXT)
-
-%: $(SRCDIR)/generators/stratimpr/%.ml $(OBJDIR)/%.$(COMPILEEXT) $(OBJDIR)/rungenerator.$(COMPILEEXT)
-	$(OCAMLCOMP) $(CPPCOMPILER) -o $(BINDIR)/$@ nums.$(COMPILELIBEXT) $(OBJDIR)/info.$(COMPILEEXT) $(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) $(OBJDIR)/paritygame.$(COMPILEEXT) $(OBJDIR)/generators.$(COMPILEEXT) $(OBJDIR)/$@.$(COMPILEEXT) $(OBJDIR)/rungenerator.$(COMPILEEXT)
-
-STRATIMPR_LOWERBOUNDS=$(OBJDIR)/zadehexp.$(COMPILEEXT) \
-                     $(OBJDIR)/cunninghamexp.$(COMPILEEXT) \
-                     $(OBJDIR)/zadehsubexp.$(COMPILEEXT) \
-                     $(OBJDIR)/cunninghamsubexp.$(COMPILEEXT) \
-                     $(OBJDIR)/fearnleysubexp.$(COMPILEEXT) \
-                     $(OBJDIR)/friedmannsubexp.$(COMPILEEXT) \
-                     $(OBJDIR)/switchallsubexp.$(COMPILEEXT) \
-                     $(OBJDIR)/switchbestsubexp.$(COMPILEEXT) \
-                     $(OBJDIR)/switchallexp.$(COMPILEEXT) \
-                     $(OBJDIR)/switchbestexp.$(COMPILEEXT) \
-                     $(OBJDIR)/randomfacetsubexp.$(COMPILEEXT) \
-                     $(OBJDIR)/randomedgesubexp.$(COMPILEEXT) \
-                     $(OBJDIR)/randomedgeexptest.$(COMPILEEXT)
-
-
-STRATIMPRGEN_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-                     $(OBJDIR)/basics.$(COMPILEEXT) \
-                     $(OBJDIR)/info.$(COMPILEEXT) \
-                     $(OBJDIR)/paritygame.$(COMPILEEXT) \
-                     $(OBJDIR)/mdp.$(COMPILEEXT) \
-                     $(OBJDIR)/stratimprgenerators.$(COMPILEEXT) \
-                     $(STRATIMPR_LOWERBOUNDS) \
-                     $(OBJDIR)/stratimprgen.$(COMPILEEXT)
-
-
-stratimprgen: $(INTERFACES) $(OBJDIR)/stratimprgenerators.cmi $(STRATIMPRGEN_MODULES)
-	$(OCAMLCOMP) $(CPPCOMPILER) nums.$(COMPILELIBEXT) -o $(BINDIR)/stratimprgen $(STRATIMPRGEN_MODULES)
-
-
-OBFUSCATOR_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-                   $(OBJDIR)/basics.$(COMPILEEXT) \
-                   $(OBJDIR)/info.$(COMPILEEXT) \
-                   $(OBJDIR)/paritygame.$(COMPILEEXT) \
-                   $(OBJDIR)/parsers.$(COMPILEEXT) \
-                   $(OBJDIR)/obfuscator.$(COMPILEEXT)
-
-obfuscator: $(INTERFACES) $(OBFUSCATOR_MODULES)
-	$(OCAMLCOMP) $(CPPCOMPILER) -o $(BINDIR)/obfuscator $(OBFUSCATOR_MODULES)
-
-COMBINE_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-                   $(OBJDIR)/basics.$(COMPILEEXT) \
-                   $(OBJDIR)/info.$(COMPILEEXT) \
-                   $(OBJDIR)/paritygame.$(COMPILEEXT) \
-                   $(OBJDIR)/parsers.$(COMPILEEXT) \
-                   $(OBJDIR)/transformations.$(COMPILEEXT) \
-                   $(OBJDIR)/combine.$(COMPILEEXT) \
-
-combine: $(INTERFACES) $(COMBINE_MODULES)
-	$(OCAMLCOMP) $(CPPCOMPILER) -o $(BINDIR)/combine $(COMBINE_MODULES)
-
-INFOTOOL_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-                   $(OBJDIR)/basics.$(COMPILEEXT) \
-                   $(OBJDIR)/info.$(COMPILEEXT) \
-                   $(OBJDIR)/paritygame.$(COMPILEEXT) \
-                   $(OBJDIR)/parsers.$(COMPILEEXT) \
-                   $(OBJDIR)/transformations.$(COMPILEEXT) \
-                   $(OBJDIR)/infotool.$(COMPILEEXT) \
-
-infotool: $(INTERFACES) $(INFOTOOL_MODULES)
-	$(OCAMLCOMP) $(CPPCOMPILER) -o $(BINDIR)/infotool $(INFOTOOL_MODULES)
-
-WINNINGSTRATS_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-                   $(OBJDIR)/basics.$(COMPILEEXT) \
-                   $(OBJDIR)/info.$(COMPILEEXT) \
-                   $(OBJDIR)/paritygame.$(COMPILEEXT) \
-                   $(OBJDIR)/parsers.$(COMPILEEXT) \
-                   $(OBJDIR)/solvers.$(COMPILEEXT) \
-                   $(OBJDIR)/specialsolve.$(COMPILEEXT) \
-                   $(OBJDIR)/transformations.$(COMPILEEXT) \
-                   $(OBJDIR)/univsolve.$(COMPILEEXT) \
-                   $(OBJDIR)/recursive.$(COMPILEEXT) \
-                   $(OBJDIR)/winningstrats.$(COMPILEEXT) \
-
-winningstrats: $(INTERFACES) $(WINNINGSTRATS_MODULES)
-	$(OCAMLCOMP) $(CPPCOMPILER) -o $(BINDIR)/winningstrats $(WINNINGSTRATS_MODULES)
-
-IMPRARENA_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-                   $(OBJDIR)/basics.$(COMPILEEXT) \
-                   $(OBJDIR)/info.$(COMPILEEXT) \
-                   $(OBJDIR)/paritygame.$(COMPILEEXT) \
-                   $(OBJDIR)/parsers.$(COMPILEEXT) \
-                   $(OBJDIR)/solvers.$(COMPILEEXT) \
-                   $(OBJDIR)/specialsolve.$(COMPILEEXT) \
-                   $(OBJDIR)/transformations.$(COMPILEEXT) \
-                   $(OBJDIR)/univsolve.$(COMPILEEXT) \
-                   $(OBJDIR)/stratimpralgs.$(COMPILEEXT) \
-                   $(OBJDIR)/imprarena.$(COMPILEEXT) \
-
-imprarena: $(INTERFACES) $(IMPRARENA_MODULES)
-	$(OCAMLCOMP) $(CPPCOMPILER) str.$(COMPILELIBEXT) -o $(BINDIR)/imprarena $(IMPRARENA_MODULES)
-
-FULLIMPRARENA_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-                   $(OBJDIR)/basics.$(COMPILEEXT) \
-                   $(OBJDIR)/info.$(COMPILEEXT) \
-                   $(OBJDIR)/paritygame.$(COMPILEEXT) \
-                   $(OBJDIR)/parsers.$(COMPILEEXT) \
-                   $(OBJDIR)/solvers.$(COMPILEEXT) \
-                   $(OBJDIR)/specialsolve.$(COMPILEEXT) \
-                   $(OBJDIR)/transformations.$(COMPILEEXT) \
-                   $(OBJDIR)/univsolve.$(COMPILEEXT) \
-                   $(OBJDIR)/stratimpralgs.$(COMPILEEXT) \
-                   $(OBJDIR)/fullimprarena.$(COMPILEEXT) \
-
-fullimprarena: $(INTERFACES) $(FULLIMPRARENA_MODULES)
-	$(OCAMLCOMP) $(CPPCOMPILER) str.$(COMPILELIBEXT) -o $(BINDIR)/fullimprarena $(FULLIMPRARENA_MODULES)
-
-AUSO_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-                   $(OBJDIR)/basics.$(COMPILEEXT) \
-                   $(OBJDIR)/info.$(COMPILEEXT) \
-                   $(OBJDIR)/paritygame.$(COMPILEEXT) \
-                   $(OBJDIR)/parsers.$(COMPILEEXT) \
-                   $(OBJDIR)/solvers.$(COMPILEEXT) \
-                   $(OBJDIR)/specialsolve.$(COMPILEEXT) \
-                   $(OBJDIR)/transformations.$(COMPILEEXT) \
-                   $(OBJDIR)/univsolve.$(COMPILEEXT) \
-                   $(OBJDIR)/stratimpralgs.$(COMPILEEXT) \
-                   $(OBJDIR)/auso.$(COMPILEEXT) \
-
-auso: $(INTERFACES) $(AUSO_MODULES)
-	$(OCAMLCOMP) $(CPPCOMPILER) str.$(COMPILELIBEXT) -o $(BINDIR)/auso $(AUSO_MODULES)
-
-COMPLEXDECOMP_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-                   $(OBJDIR)/basics.$(COMPILEEXT) \
-                   $(OBJDIR)/info.$(COMPILEEXT) \
-                   $(OBJDIR)/paritygame.$(COMPILEEXT) \
-                   $(OBJDIR)/parsers.$(COMPILEEXT) \
-                   $(OBJDIR)/solvers.$(COMPILEEXT) \
-                   $(OBJDIR)/specialsolve.$(COMPILEEXT) \
-                   $(OBJDIR)/transformations.$(COMPILEEXT) \
-                   $(OBJDIR)/univsolve.$(COMPILEEXT) \
-                   $(OBJDIR)/stratimpralgs.$(COMPILEEXT) \
-                   $(OBJDIR)/complexdecomp.$(COMPILEEXT) \
-
-complexdecomp: $(INTERFACES) $(COMPLEXDECOMP_MODULES)
-	$(OCAMLCOMP) $(CPPCOMPILER) str.$(COMPILELIBEXT) -o $(BINDIR)/complexdecomp $(COMPLEXDECOMP_MODULES)
-
-TRANSFORMER_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-                   $(OBJDIR)/basics.$(COMPILEEXT) \
-                   $(OBJDIR)/info.$(COMPILEEXT) \
-                   $(OBJDIR)/paritygame.$(COMPILEEXT) \
-                   $(OBJDIR)/parsers.$(COMPILEEXT) \
-                   $(OBJDIR)/transformations.$(COMPILEEXT) \
-                   $(OBJDIR)/transformer.$(COMPILEEXT)
-
-transformer: $(INTERFACES) $(TRANSFORMER_MODULES)
-	$(OCAMLCOMP) $(CPPCOMPILER) -o $(BINDIR)/transformer $(TRANSFORMER_MODULES)
-
-ITERSAT_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-        $(OBJDIR)/basics.$(COMPILEEXT) \
-		$(OBJDIR)/info.$(COMPILEEXT) \
-		$(OBJDIR)/paritygame.$(COMPILEEXT) \
-		$(SATSOLVERSOBJ)/satwrapper.$(COMPILEEXT) \
-		$(SATSOLVERSOBJ)/satsolvers.$(COMPILEEXT) \
-		$(SATSOLVERSOBJ)/pseudosatwrapper.$(COMPILEEXT) \
-		$(SATSOLVERSOBJ)/preprocessor.$(COMPILEEXT) \
-		$(SATSOLVERSOBJ)/externalsat.$(COMPILEEXT) \
-		$(SATSOLVERMODS)
-
-ITERSAT_INTERFACES=$(ITERSAT_MODULES:.$(COMPILEEXT)=.cmi)
-
-itersat: satsolvers $(ITERSAT_INTERFACES) $(ITERSAT_MODULES) $(OBJDIR)/itersat.$(COMPILEEXT)
-	$(OCAMLCOMP) -o $(BINDIR)/itersat $(CPPCOMPILER) $(ITERSAT_MODULES) $(OBJDIR)/itersat.$(COMPILEEXT)
-
-benchmark: satsolvers $(INTERFACES) $(MODULES) $(OBJDIR)/benchmark.$(COMPILEEXT)
-	$(OCAMLCOMP) $(LPMODULESCC) -o $(BINDIR)/benchmark $(CPPCOMPILER) nums.$(COMPILELIBEXT) $(SMTMODULES) $(SATSOLVERMODSX) $(SATSOLVERMODS) $(MODULES) $(OBJDIR)/benchmark.$(COMPILEEXT)
-
-benchstratimpr: $(INTERFACES)  $(MODULES) $(OBJDIR)/benchstratimpr.$(COMPILEEXT)
-	$(OCAMLCOMP) -o $(BINDIR)/benchstratimpr $(CPPCOMPILER) nums.$(COMPILELIBEXT)  $(MODULES) $(OBJDIR)/benchstratimpr.$(COMPILEEXT)
-
-policyitervis: $(INTERFACES)  $(MODULES) $(OBJDIR)/policyitervis.$(COMPILEEXT)
-	$(OCAMLCOMP) -o $(BINDIR)/policyitervis $(CPPCOMPILER) str.$(COMPILELIBEXT) nums.$(COMPILELIBEXT) $(MODULES) $(OBJDIR)/policyitervis.$(COMPILEEXT)
-
-COMPRESSOR_MODULES=$(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) \
-                   $(OBJDIR)/info.$(COMPILEEXT) \
-                   $(OBJDIR)/basics.$(COMPILEEXT) \
-                   $(OBJDIR)/paritygame.$(COMPILEEXT) \
-                   $(OBJDIR)/parsers.$(COMPILEEXT) \
-                   $(OBJDIR)/transformations.$(COMPILEEXT) \
-                   $(OBJDIR)/compressor.$(COMPILEEXT)
-
-compressor: $(INTERFACES) $(COMPRESSOR_MODULES)
-	$(OCAMLCOMP) $(CPPCOMPILER) -o $(BINDIR)/compressor $(COMPRESSOR_MODULES)
-
-
-clean:
-	rm -f $(OBJDIR)/*.o $(OBJDIR)/*.cm*
-	rm -f $(SRCDIR)/pgsolver/whoiswho.ml
-	rm -f $(EXECUTABLE)
-
-cleansat:
-	make -C $(SATSOLVERSROOT) clean
-
-veryclean: clean
-	rm -f $(BINDIR)/randomgame $(BINDIR)/clusteredrandomgame $(BINDIR)/steadygame $(BINDIR)/recursiveladder $(BINDIR)/jurdzinskigame $(BINDIR)/laddergame $(BINDIR)/obfuscator $(BINDIR)/transformer $(BINDIR)/compressor $(BINDIR)/benchmark $(BINDIR)/itersat
-
-cleanall: cleansat veryclean
-
-package: whoiswho
-	$(MAKE) -C doc
-	$(TAR) cvf $(PACKAGE) --exclude=.svn --exclude=$(OBJDIR)/* --exclude=$(BINDIR)/* --exclude=$(SRCDIR)/temp/* --exclude=*~ --transform "s,^,pgsolver/," Makefile GeneratorList SolverList Config.default README install.txt changelog.txt src bin obj doc/pgsolver.pdf
-	$(TAR) rvf $(PACKAGE) --exclude=.svn --exclude=$(OBJDIR)/* --exclude=$(BINDIR)/* --exclude=*~ --transform "s,SATSolversForOCaml,pgsolver/satsolvers," $(SATSOLVERSROOT)/bin $(SATSOLVERSROOT)/obj $(SATSOLVERSROOT)/src $(SATSOLVERSROOT)/tester $(SATSOLVERSROOT)/Makefile $(SATSOLVERSROOT)/Config.default $(SATSOLVERSROOT)/Config.include $(SATSOLVERSROOT)/Solvers.default
-	$(TAR) rvf $(PACKAGE) --exclude=.svn --exclude=$(OBJDIR)/* --exclude=$(BINDIR)/* --exclude=*~ --transform "s,TCSlib,pgsolver/TCSlib," $(TCSLIBROOT)/obj $(TCSLIBROOT)/src $(TCSLIBROOT)/Makefile $(TCSLIBROOT)/Config.default
-	$(GZIP) $(PACKAGE)
-
-DEPENDENCY_INCLUDES=-I $(SRCDIR)/pgsolver \
-                    -I $(SRCDIR)/generators \
-                    -I $(SRCDIR)/tools \
-                    -I $(SRCDIR)/paritygame \
-                    -I $(SRCDIR)/solvers \
-                    -I $(SRCDIR)
-
-
-TESTS: library obj/solverstest.cmx Makefile
-	ocamlfind ocamlopt -o bin/ounit -package oUnit -linkpkg -I $(TCSLIBOBJ) -I obj nums.cmxa $(TCSLIBOBJ)/tcslib.$(COMPILELIBEXT) obj/libpgsolver.cmxa $(PGSOLVERS) obj/solverstest.cmx
-	bin/ounit
-
-
-depend:
-	$(OCAMLDEP) $(DEPENDENCY_INCLUDES) $(SRCDIR)/*/*ml $(SRCDIR)/*/*.mli | sed "s#$(SRCDIR)/[^/]*#$(OBJDIR)#g" > .depend
-
-ifeq ($(strip $(wildcard .depend)),)
-	include .depend
-endif
-
+randomgame:
+	echo "open Randomgame;; open Rungenerator;;" > temprandomgame.ml
+	ocamlbuild -libs nums temprandomgame.native
+	mv temprandomgame.native bin/randomgame
+	rm temprandomgame.ml
+	
+laddergame:
+	echo "open Laddergame;; open Rungenerator;;" > templaddergame.ml
+	ocamlbuild -libs nums templaddergame.native
+	mv templaddergame.native bin/laddergame
+	rm templaddergame.ml
+	
+clusteredrandomgame:
+	echo "open Clusteredrandomgame;; open Rungenerator;;" > tempclusteredrandomgame.ml
+	ocamlbuild -libs nums tempclusteredrandomgame.native
+	mv tempclusteredrandomgame.native bin/clusteredrandomgame
+	rm tempclusteredrandomgame.ml
+
+cliquegame:
+	echo "open Cliquegame;; open Rungenerator;;" > tempcliquegame.ml
+	ocamlbuild -libs nums tempcliquegame.native
+	mv tempcliquegame.native bin/cliquegame
+	rm tempcliquegame.ml
+
+modelcheckerladder:
+	echo "open Modelcheckerladder;; open Rungenerator;;" > tempmodelcheckerladder.ml
+	ocamlbuild -libs nums tempmodelcheckerladder.native
+	mv tempmodelcheckerladder.native bin/modelcheckerladder
+	rm tempmodelcheckerladder.ml
+
+recursiveladder:
+	echo "open Recursiveladder;; open Rungenerator;;" > temprecursiveladder.ml
+	ocamlbuild -libs nums temprecursiveladder.native
+	mv temprecursiveladder.native bin/recursiveladder
+	rm temprecursiveladder.ml
+
+steadygame:
+	echo "open Steadygame;; open Rungenerator;;" > tempsteadygame.ml
+	ocamlbuild -libs nums tempsteadygame.native
+	mv tempsteadygame.native bin/steadygame
+	rm tempsteadygame.ml
+
+jurdzinskigame:
+	echo "open Jurdzinskigame;; open Rungenerator;;" > tempjurdzinskigame.ml
+	ocamlbuild -libs nums tempjurdzinskigame.native
+	mv tempjurdzinskigame.native bin/jurdzinskigame
+	rm tempjurdzinskigame.ml
+
+elevatorverification:
+	echo "open Elevatorverification;; open Rungenerator;;" > tempelevatorverification.ml
+	ocamlbuild -libs nums tempelevatorverification.native
+	mv tempelevatorverification.native bin/elevatorverification
+	rm tempelevatorverification.ml
+
+towersofhanoi:
+	echo "open Towersofhanoi;; open Rungenerator;;" > temptowersofhanoi.ml
+	ocamlbuild -libs nums temptowersofhanoi.native
+	mv temptowersofhanoi.native bin/towersofhanoi
+	rm temptowersofhanoi.ml
+
+langincl:
+	echo "open Langincl;; open Rungenerator;;" > templangincl.ml
+	ocamlbuild -libs nums templangincl.native
+	mv templangincl.native bin/langincl
+	rm templangincl.ml
+
+stratimprgen:
+	echo "open Stratimprgen;; open Rungenerator;;" > tempstratimprgen.ml
+	ocamlbuild -libs nums tempstratimprgen.native
+	mv tempstratimprgen.native bin/stratimprgen
+	rm tempstratimprgen.ml
+
+
+
+tools: auso benchmark benchstratimpr combine complexdecomp compressor fullimprarena imprarena infotool obfuscator policyitervis transformer winningstrats itersat
+
+
+
+obfuscator:
+	ocamlbuild -libs nums obfuscator.native
+	mv obfuscator.native bin/obfuscator
+
+transformer:
+	ocamlbuild -libs nums transformer.native
+	mv transformer.native bin/transformer
+
+compressor:
+	ocamlbuild -libs nums compressor.native
+	mv compressor.native bin/compressor
+
+combine:
+	ocamlbuild -libs nums combine.native
+	mv combine.native bin/combine
+
+infotool:
+	ocamlbuild -libs nums infotool.native
+	mv infotool.native bin/infotool
+	
+winningstrats:	
+	ocamlbuild -libs nums winningstrats.native
+	mv winningstrats.native bin/winningstrats
+	
+benchmark: 
+	ocamlbuild -libs nums benchmark.native
+	mv benchmark.native bin/benchmark
+
+imprarena: 
+	ocamlbuild -libs nums -libs str imprarena.native
+	mv imprarena.native bin/imprarena
+	
+fullimprarena: 
+	ocamlbuild -libs nums fullimprarena.native
+	mv fullimprarena.native bin/fullimprarena
+	
+auso: 
+	ocamlbuild -libs nums auso.native
+	mv auso.native bin/auso
+	
+complexdecomp:
+	ocamlbuild -libs nums complexdecomp.native
+	mv complexdecomp.native bin/complexdecomp
+
+policyitervis:
+	ocamlbuild -libs nums policyitervis.native
+	mv policyitervis.native bin/policyitervis
+
+benchstratimpr:
+	ocamlbuild -libs nums benchstratimpr.native
+	mv benchstratimpr.native bin/benchstratimpr
+
+itersat:
+	ocamlbuild -libs nums itersat.native
+	mv itersat.native bin/itersat
+	

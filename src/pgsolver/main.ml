@@ -8,6 +8,7 @@ open Verification ;;
 open Univsolve ;;
 open Solvers ;;
 open Generators ;;
+open Generatorlist ;;
 open Whoiswho ;;
 open Solverlist;;
 

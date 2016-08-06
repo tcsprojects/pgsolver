@@ -2,8 +2,16 @@
 "src/paritygame": include
 "src/solvers": include
 "src/solvers/stratimpralgs": include
+"src/generators": include
+"src/generators/policyiter": include
+"src/generators/policyiter/generators": include
+"src/tools": include
+"tests": include
 "tcslib/src/utils": include
 "tcslib/src/data": include
 "tcslib/src/automata/parser": include
 "tcslib/src/automata": include
 "satsolversforocaml/src": include
+"satsolversforocaml/src/pseudosat": include
+"satsolversforocaml/src/externalsat": include
+"satsolversforocaml/src/preprocessor": include

@@ -1,4 +1,5 @@
 open OUnit
+open Solverlist;;
 
 let random_game (size, max_prio, outdegmin, outdegmax, self_cycles, seed) =
 		Random.init seed;

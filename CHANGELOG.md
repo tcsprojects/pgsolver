@@ -1,3 +1,6 @@
+Aug 5 2016		Oliver Friedmann
+ - Change Makefile to use Ocamlbuild instead
+
 Jul 1 2016		Oliver Friedmann
  - Added unit tests
 

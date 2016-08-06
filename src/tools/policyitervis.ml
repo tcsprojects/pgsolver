@@ -8,6 +8,7 @@ open Univsolve;;
 open Solvers ;;
 open Str ;;
 open Stratimpralgs ;;
+open Solverlist;;
 
 module CommandLine =
 struct
@@ -116,9 +117,12 @@ let _ =
 
 		if counter >= !start_iteration && (match !end_iteration with None -> true | Some end_idx -> counter <= end_idx) then (
 			before_iteration counter;
-    		pg_iterate (fun i -> fun (_, pl, tr, _) ->
+			let n = pg_size game in
+			for i = 0 to n - 1 do
+			let pl = pg_get_owner game i in
+			let tr = pg_get_successors game i in
 				let from_node = get_ident i in
-				Array.iter (fun j ->
+				ns_iter (fun j ->
 					    let to_node = get_ident j in
 					    let kind =
 					      if pl = 0 then
@@ -134,7 +138,7 @@ let _ =
 					    in
 					    set_edge_iteration from_node to_node kind
 					   ) tr
-    			   ) game;			
+    			   done;		
 		after_iteration counter;
 		);
 	);

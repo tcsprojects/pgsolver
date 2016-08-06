@@ -307,7 +307,7 @@ let solve' (game: paritygame) =
 
     (* Finished *)
     let solution = sol_create game in
-    Array.iter (fun (w, _, _) -> solution.(w) <- plr_benefits (prio w)) valu;
+    Array.iteri (fun i (w, _, _) -> solution.(i) <- plr_benefits (prio w)) valu;
     let strategy = Array.make n (-1) in
     	for i = 0 to n - 1 do
     		strategy.(i) <-	if isP0 i
