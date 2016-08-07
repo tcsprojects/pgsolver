@@ -1274,14 +1274,14 @@ let box game t =
 
 module type GameNode = 
   sig
-    type node
+    type gamenode
 
-    val compare    : node -> node -> int
+    val compare    : gamenode -> gamenode -> int
 
-    val owner      : node -> int
-    val priority   : node -> int
-    val successors : node -> node list
-    val name       : node -> string option
+    val owner      : gamenode -> player
+    val priority   : gamenode -> priority
+    val successors : gamenode -> gamenode list
+    val name       : gamenode -> string option
   end;;
 
 module Build = functor (T: GameNode) ->
@@ -1289,7 +1289,7 @@ module Build = functor (T: GameNode) ->
 
     module Encoding = Map.Make(
       struct 
-        type t = T.node 
+        type t = T.gamenode 
         let compare = T.compare 
       end);;
 

@@ -52,7 +52,7 @@ val ns_nodes   : nodeset -> node list
  * Warning: the types may become abstract in the future       *
  **************************************************************)
 
-type player = int
+type player (* = int *)    (* TODO: should be abstract *)
 type priority = int
 
 val plr_Even  : player
@@ -114,16 +114,10 @@ val pg_iterate      : (node -> (priority * player * nodeset * nodeset * string o
 val pg_edge_iterate : (node -> node -> unit) -> paritygame -> unit
 val pg_map          : (node -> (priority * player * nodeset * nodeset * string option) -> (priority * player * nodeset * nodeset * string option)) -> paritygame -> paritygame 
 val pg_map2         : (node -> (priority * player * nodeset * nodeset * string option) -> 'a) -> paritygame -> 'a array 
-
-(* all DEPRECATED
-val pg_get_node   : paritygame -> node -> (priority * player * nodeset * nodeset * string option)
-val pg_set_node   : paritygame -> node -> priority -> player -> nodeset -> nodeset -> string option -> unit
-val pg_set_node'  : paritygame -> int -> (priority * player * nodeset * nodeset * string option) -> unit
-*)
 					    
 val pg_find_desc  : paritygame -> string option -> node
 
-(* Calling pg_get_index game returns the index of the game *)
+(* `pg_get_index <game>' returns the index of the game <game>*)
 val pg_get_index      : paritygame -> int
 
 (* `pg_prio_nodes <game> <prio>' returns a list of all nodes having priority <prio> *)
@@ -132,11 +126,6 @@ val pg_prio_nodes: paritygame -> priority -> node list
 (* returns a list of all the priorities occurring in the game *)
 val pg_get_selected_priorities : paritygame -> (priority -> bool) -> priority list
 val pg_get_priorities : paritygame -> priority list
-
-					       
-(*
-val pg_get_tr_index_of: paritygame -> int -> int -> int (* DEPRECATED *)
-*)
 						     
 (* `pg_remove_nodes <game> <node_list>' removes all nodes from <game> that are specified in <node_list> *)
 val pg_remove_nodes   : paritygame -> node list -> unit
@@ -224,17 +213,6 @@ val pg_min_prio       : paritygame -> priority
 (* Calling pg_max_prio_for game player returns the greatest reward for player occurring in the game *)
 val pg_max_prio_for   : paritygame -> player -> priority
 
-
-
-(**************************************************************
- * Inplace Modifications                                      *
- **************************************************************)
-
-(* 
-val pg_add_successor  : paritygame -> int -> int -> unit  (* DEPRECATED *)
-val pg_add_successors : paritygame -> int -> int array -> unit (* DEPRECATED *)
-*)
-						  
 
 
 
@@ -462,19 +440,29 @@ val box     : paritygame -> NodeSet.t -> NodeSet.t
  * Building Parity Games                                      *
  **************************************************************)
 
+(* This can be used to build parity games starting from a particular node in an on-the-fly fashion.
+   It is particularly useful when the resulting size is not (easily) known in advance. For an example
+   of its use, see src/generators/langincl.ml . 
+
+   To use it, define a module of the type GameNode using some type gamenode to represent nodes and
+   giving functions that read off the priority, owner successors and possible name of a game node.
+   The module obtained by applying the functor Build then gives you a module with a function that
+   builds a parity game from some initial node containing all the game nodes that are reachable from
+   the initial one via the successor function. *)
+					   
 module type GameNode =
   sig
-    type node
+    type gamenode
 
-    val compare    : node -> node -> int
+    val compare    : gamenode -> gamenode -> int
 
-    val owner      : node -> int
-    val priority   : node -> int
-    val successors : node -> node list
-    val name       : node -> string option
+    val owner      : gamenode -> player
+    val priority   : gamenode -> priority
+    val successors : gamenode -> gamenode list
+    val name       : gamenode -> string option
   end
 
 module Build: functor (T: GameNode) -> 
   sig
-    val build_from_node : T.node -> paritygame
+    val build_from_node : T.gamenode -> paritygame
   end

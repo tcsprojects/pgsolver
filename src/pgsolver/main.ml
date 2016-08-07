@@ -262,14 +262,14 @@ let _ =
 	  for i=1 to l do
 		let j = l-i in
 		let pl = pg_get_owner game j in
-		if solution.(j) = 0
+		if solution.(j) = plr_Even
 		then (win0 := j :: !win0;
 			  let k = strategy.(j) in
-			  if pl=0 then str0 := (string_of_int j ^ "->" ^ string_of_int k) :: !str0);
-		if solution.(j) = 1
+			  if pl=plr_Even then str0 := (string_of_int j ^ "->" ^ string_of_int k) :: !str0);
+		if solution.(j) = plr_Odd
 		then (win1 := j :: !win1;
 			  let k = strategy.(j) in
-			  if pl=1 then str1 := (string_of_int j ^ "->" ^ string_of_int k) :: !str1)
+			  if pl=plr_Odd then str1 := (string_of_int j ^ "->" ^ string_of_int k) :: !str1)
 	  done;
 	  if (!print_strategies) then (
 		  let first = ref false in

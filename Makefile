@@ -5,17 +5,14 @@
 all: pgsolver generators tools test
 
 
-
 pgsolver:
 	ocamlbuild -libs nums main.native
 	mv main.native bin/pgsolver
 
 
-
 test:
 	ocamlbuild -libs nums -package oUnit solverstest.native
 	mv solverstest.native bin/ounit
-	
 
 
 generators: randomgame laddergame clusteredrandomgame cliquegame modelcheckerladder recursiveladder steadygame jurdzinskigame elevatorverification towersofhanoi langincl stratimprgen
@@ -26,13 +23,13 @@ randomgame:
 	ocamlbuild -libs nums temprandomgame.native
 	mv temprandomgame.native bin/randomgame
 	rm temprandomgame.ml
-	
+
 laddergame:
 	echo "open Laddergame;; open Rungenerator;;" > templaddergame.ml
 	ocamlbuild -libs nums templaddergame.native
 	mv templaddergame.native bin/laddergame
 	rm templaddergame.ml
-	
+
 clusteredrandomgame:
 	echo "open Clusteredrandomgame;; open Rungenerator;;" > tempclusteredrandomgame.ml
 	ocamlbuild -libs nums tempclusteredrandomgame.native
@@ -118,11 +115,11 @@ combine:
 infotool:
 	ocamlbuild -libs nums infotool.native
 	mv infotool.native bin/infotool
-	
+
 winningstrats:	
 	ocamlbuild -libs nums winningstrats.native
 	mv winningstrats.native bin/winningstrats
-	
+
 benchmark: 
 	ocamlbuild -libs nums benchmark.native
 	mv benchmark.native bin/benchmark
@@ -130,15 +127,15 @@ benchmark:
 imprarena: 
 	ocamlbuild -libs nums -libs str imprarena.native
 	mv imprarena.native bin/imprarena
-	
+
 fullimprarena: 
 	ocamlbuild -libs nums fullimprarena.native
 	mv fullimprarena.native bin/fullimprarena
-	
+
 auso: 
 	ocamlbuild -libs nums auso.native
 	mv auso.native bin/auso
-	
+
 complexdecomp:
 	ocamlbuild -libs nums complexdecomp.native
 	mv complexdecomp.native bin/complexdecomp
@@ -154,4 +151,6 @@ benchstratimpr:
 itersat:
 	ocamlbuild -libs nums itersat.native
 	mv itersat.native bin/itersat
-	
+
+clean:
+	ocamlbuild -clean

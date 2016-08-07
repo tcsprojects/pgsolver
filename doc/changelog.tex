@@ -4,7 +4,24 @@ Changes are classified according to their importance. Changes effecting only the
 parts of the tool or are less important otherwise are marked with one asterisk ($\ast$). Changes
 that are worth noting like the addition of new features etc.\ are marked with two asterisks 
 ($\ast\ast$). Finally, major changes that would effect usability, for example breaks in backwards
-compatibility, changes in the user interface, etc., are marked with three asterisks ($\ast\ast\ast$)
+compatibility, changes in the user interface, etc., are marked with three asterisks ($\ast\ast\ast$).
+
+Changes incorporated into version 4:
+\begin{itemize}
+\item[$\ast\ast\ast$] The interface and implementation of the module \texttt{Paritygame} have undergone some major changes,
+     mostly concerning the data types for parity games. This type is now abstract, so access to and manipulations of parity games
+     are now only possible through specialised functions in this module. A direct access of parity games as arrays is no longer
+     possible. Consequently, access to parity games in all other modules has been changed accordingly. This encapsulation step 
+     enables us to change the internal data structures for parity games easily for optimisation purposes without changing any of 
+     the algorithms around them. It is also worth noticing that a node in a parity game now knows its predecessors as well as its
+     successors. Hence, functions for computing transposed graphs etc.\ have been removed.
+\item[$\ast\ast$] \pgsolver is now built using \texttt{ocamlbuild}. It requires the OCaml packages \texttt{ocamlfind} and \texttt{ounit}.
+     Get them using \texttt{opam}.
+\item[$\ast\ast\ast$] A textual presentation of a parity game now has to start with the keyword \texttt{parity} followed by the number of
+     nodes in the game. Note that before it was possible to omit this information and, if given, the number was interpreted as the largest
+     identifier of a node in the game. So any ``\texttt{parity} $n$'' should now be ``\texttt{parity} $n+1$''. \TODO{change this in the
+       description of the grammar!}
+\end{itemize}
 
 Changes incorporated into version 3:
 \begin{itemize}

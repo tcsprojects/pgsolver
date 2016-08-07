@@ -8,10 +8,10 @@ let even x = (x mod 2) = 0
 
 module LangInclGame = Build( 
   struct
-    type node = int * int
+    type gamenode = int * int
     let compare = compare
 
-    let owner _ = 1
+    let owner _ = plr_Odd
 
     let priority (u,v) = if even v then 2 else if u > 0 then 1 else 0
 
