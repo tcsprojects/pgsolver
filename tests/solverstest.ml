@@ -1,11 +1,12 @@
-open OUnit
+open OUnit;;
 open Solverlist;;
+open Paritygame;;
 
 let random_game (size, max_prio, outdegmin, outdegmax, self_cycles, seed) =
 		Random.init seed;
     Paritygame.pg_init size (fun i -> (
 			Random.int max_prio,
-  	  Random.int 2,
+  	  (if Random.int 2 = 0 then plr_Even else plr_Odd),
 	    Array.to_list (Array.map (fun j ->
 				if j < i || self_cycles then j else j + 1
 			)

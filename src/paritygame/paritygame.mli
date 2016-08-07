@@ -80,7 +80,7 @@ type paritygame
  **************************************************************)
 
 val pg_create     : int -> paritygame
-val pg_init       : int -> (int -> (priority * player * node list * string option)) -> paritygame
+val pg_init       : int -> (node -> (priority * player * node list * string option)) -> paritygame
 val pg_size	  : paritygame -> int
 val pg_node_count : paritygame -> int
 val pg_edge_count : paritygame -> int

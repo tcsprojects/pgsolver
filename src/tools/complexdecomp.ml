@@ -41,7 +41,7 @@ let _ =
 		let trn = ns_size tr in
 		incr number_of_nodes;
 		number_of_edges := !number_of_edges + trn;
-		if pl = 0 then (
+		if pl = plr_Even then (
 			incr number_of_player0_nodes;
 			number_of_player0_edges := !number_of_player0_edges + trn
 		)
@@ -93,7 +93,7 @@ let _ =
 					let sub = pg_copy game in
 					let subnodes = TreeSet.of_list_def nodes in
 					List.iter (fun v ->
-						if (pg_get_owner game v = 1) && (not (TreeSet.mem tau.(v) subnodes))
+						if (pg_get_owner game v = plr_Odd) && (not (TreeSet.mem tau.(v) subnodes))
 						then
 						  begin
 						    ns_iter (fun w -> pg_del_edge sub v w) (pg_get_successors sub v);

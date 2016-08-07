@@ -4,10 +4,10 @@ open Bytes;;
 let parse_init_parity_game in_channel = 
 	let game = ref (pg_create 0) in
 	let add v pr pl succs desc =
-		pg_set_priority !game v pr;
-		pg_set_owner !game v pl;
-		pg_set_desc !game v (if desc = "" then None else Some desc);
-		List.iter (fun w -> pg_add_edge !game v w) succs
+	  pg_set_priority !game v pr;
+	  pg_set_owner !game v (if pl = 0 then plr_Even else plr_Odd);
+	  pg_set_desc !game v (if desc = "" then None else Some desc);
+	  List.iter (fun w -> pg_add_edge !game v w) succs
 	in
 	let queue = ref [] in
 	let max_node = ref (-1) in
@@ -28,9 +28,7 @@ let parse_init_parity_game in_channel =
 
 let parse_parity_game in_channel = snd (parse_init_parity_game in_channel)
  
-let parse_solution = Tcsgameparser.parse_explicit_parity_solution
-
-
+(*
 let parse_parity_game in_channel =
   let max_prio = ref -1 in  (* for possible later use, so that it does not have to be recomputed *)
   let min_prio = ref -1 in  (* dito *)
@@ -150,5 +148,8 @@ let parse_parity_game in_channel =
 	 | Failure e -> parse_error ("does not look like a valid identifier for a node: " ^ e));
  
   done
-
+ *)
     
+let parse_solution in_channel =
+	let (sol, str) = Tcsgameparser.parse_explicit_parity_solution in_channel in
+	(Array.map (fun pl -> if pl = 0 then plr_Even else plr_Odd) sol, str)
