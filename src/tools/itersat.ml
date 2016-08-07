@@ -342,7 +342,7 @@ let game_to_conjunction game =
 			else Po (Parity i)
 		) in
 	let pl = Array.init n (fun i ->
-			if pg_get_owner game i = 0
+			if pg_get_owner game i = plr_Even
 			then Ne (Player i)
 			else Po (Player i)
 		) in
@@ -991,7 +991,7 @@ let get_paritygame n =
 			if (s.(i) != j) && (solver#get_variable_bool (Edge (i, j))) then l := j::!l
 		done;
 		((i * 2 + solver#get_variable (Parity i)),
-		 (solver#get_variable (Player i)),
+		 (if solver#get_variable (Player i) = 0 then plr_Even else plr_Odd),
 		 (if s.(i) != -1 then !l @ [s.(i)] else !l),
 		 (Some (string_of_int i)))
 	)

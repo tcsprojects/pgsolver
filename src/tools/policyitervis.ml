@@ -109,7 +109,7 @@ let _ =
 		let less i j = node_valuation_ordering game node_compare valu.(i) valu.(j) < 0 in
 		let counter_strat =
 			Array.init (Array.length valu) (fun i ->
-				if pg_get_owner game i = 1
+				if pg_get_owner game i = plr_Odd
 				then best_decision_by_valuation_ordering game node_compare valu i
 				else -1
 			)
@@ -125,7 +125,7 @@ let _ =
 				ns_iter (fun j ->
 					    let to_node = get_ident j in
 					    let kind =
-					      if pl = 0 then
+					      if pl = plr_Even then
 						if strat.(i) = j
 						then Even_player_strategy
 						else if less j strat.(i)

@@ -29,7 +29,7 @@ let _ =
       let pl = pg_get_owner game i in
       let tr = pg_get_successors game i in
       if (pl = plr_Even) && (ns_size tr = 1)
-      then pg_set_owner game i 1
+      then pg_set_owner game i plr_Odd
     done;
   
     (* Multiplier Table *)

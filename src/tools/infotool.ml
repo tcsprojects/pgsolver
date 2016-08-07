@@ -33,7 +33,7 @@ let _ =
 		let trn = ns_size tr in
 		incr number_of_nodes;
 		number_of_edges := !number_of_edges + trn;
-		if pl = 0 then (
+		if pl = plr_Even then (
 			incr number_of_player0_nodes;
 			number_of_player0_edges := !number_of_player0_edges + trn
 		)

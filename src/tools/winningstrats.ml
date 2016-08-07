@@ -6,9 +6,9 @@ module CommandLine =
 struct
   let input_file = ref ""
 
-  let player = ref 0
+  let player = ref plr_Even
 
-  let speclist =  [(["--player"; "-p"], Int(fun i -> player := i),
+  let speclist =  [(["--player"; "-p"], Int(fun i -> if i = 1 then player := plr_Odd),
                       "\n     winning strategy for player (default: 0)") ]
                    
   let header = Info.get_title "Winning Strategies "
@@ -31,7 +31,7 @@ let _ =
 	
   print_string ("\nWinning Set:\n " ^ Paritygame.format_solution sol ^ "\n");
 	
-	print_string ("\nWinning Strategies for Player " ^ string_of_int !player ^ "\n");
+	print_string ("\nWinning Strategies for Player " ^ string_of_int (if !player = plr_Even then 0 else 1) ^ "\n");
 
 	let number = ref 0 in
 	

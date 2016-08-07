@@ -59,7 +59,7 @@ let _ =
   print_string "Swapping table:\n";
   Array.iteri (fun i -> fun j -> print_string ("  " ^ string_of_int i ^ " -> " ^ string_of_int j ^ "\n")) swap;
 *)
-  let game' = pg_init m (fun _ -> (0,0,[],None)) in
+  let game' = pg_init m (fun _ -> (0,plr_Even,[],None)) in
 
   for i=0 to m-1 do
     let p = pg_get_priority game i in

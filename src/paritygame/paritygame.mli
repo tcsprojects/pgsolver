@@ -52,7 +52,7 @@ val ns_nodes   : nodeset -> node list
  * Warning: the types may become abstract in the future       *
  **************************************************************)
 
-type player = int
+type player (*= int*)
 type priority = int
 
 val plr_Even  : player
