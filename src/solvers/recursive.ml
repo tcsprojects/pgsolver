@@ -22,26 +22,18 @@ let solver rec_solve game =
 
     let max_prio = ref (-1) in
     let more_than_one = ref false in
-    for v=0 to l-1 do
-      let p = pg_get_priority game v in
-      if p <> -1
-      then (if !max_prio > -1 && p <> !max_prio then more_than_one := true;
-            if p > !max_prio then max_prio := p)
-    done;
+    pg_iterate (fun v -> fun (pr,_,_,_,_) -> if pr <> -1
+					     then (if !max_prio > -1 && pr <> !max_prio then more_than_one := true;
+						   if pr > !max_prio then max_prio := pr)) game;
 
     if !max_prio = -1 then (solution, strategy)
     else if not !more_than_one
     then (message 3 (fun _ -> "  Only " ^ (if !max_prio mod 2 = 0 then "even" else "odd") ^
                      " priority " ^ string_of_int !max_prio ^ " present\n");
           let winner = plr_benefits !max_prio in
-          for v=0 to l-1 do
-            let p' = pg_get_priority game v in
-	    let pl' = pg_get_owner game v in
-	    let ws = pg_get_successors game v in 
-            if p' <> -1
-            then (solution.(v) <- winner;
-                  if pl'=winner then strategy.(v) <- ns_some ws)
-          done;
+	  pg_iterate (fun v -> fun (p',pl',ws,_,_) -> if p' <> -1
+						      then (solution.(v) <- winner;
+							    if pl'=winner then strategy.(v) <- ns_some ws)) game;
           message 3 (fun _ -> "  Returned solution:\n    " ^
                      format_solution solution ^ "\n");
           message 3 (fun _ -> "  Returned strategy:\n    " ^
@@ -75,13 +67,8 @@ let solver rec_solve game =
           then (msg_plain 3 (fun _ -> " no\n");
                 msg_tagged 3 (fun _ -> "Merging and completing strategies and solutions:\n");
 
-                for v=0 to l-1 do
-                  if pg_isDefined game' v then
-		    begin
-		      solution.(v) <- pl;
-                      if pg_get_owner game' v = pl then strategy.(v) <- str.(v)
-		    end
-                done;
+		pg_iterate (fun v -> fun (_,pl',_,_,_) -> solution.(v) <- pl;
+							  if pl' = pl then strategy.(v) <- str.(v)) game';
                 List.iter (fun v -> solution.(v) <- pl) attr;
                 List.iter (fun v -> if pg_get_owner game v = pl then let ws = pg_get_successors game v in strategy.(v) <- ns_some ws) nodes_with_prio_p;
 
@@ -116,13 +103,8 @@ let solver rec_solve game =
 
                 msg_tagged 3 (fun _ -> "Merging and completing strategies and solutions:\n");
 
-                for v=0 to l-1 do
-                  if pg_isDefined game' v then
-		    begin
-		      solution.(v) <- sol.(v);
-                      if pg_get_owner game' v = sol.(v) then strategy.(v) <- str.(v)
-		    end
-                done;
+                pg_iterate (fun v -> fun (_,ow,_,_,_) -> solution.(v) <- sol.(v);
+							 if ow = sol.(v) then strategy.(v) <- str.(v)) game';
 
                 msg_tagged 3 (fun _ -> "Solution: " ^ format_solution solution ^ "\n");
                 msg_tagged 3 (fun _ -> "Strategy: " ^ format_strategy strategy ^ "\n");

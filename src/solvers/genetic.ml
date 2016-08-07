@@ -163,10 +163,7 @@ struct
   let give_birth game =
     let l = pg_size game in
     let str = Array.make l (0,0) in
-    for i=0 to l-1 do
-      let ws = Array.of_list (ns_nodes (pg_get_successors game i)) in
-      str.(i) <- (ws.(Random.int (Array.length ws)), 0)
-    done;
+    pg_iterate (fun v -> fun (_,_,ws,_,_) -> str.(v) <- (ns_some ws, 0)) game;
     (str,0,0)
 
 
