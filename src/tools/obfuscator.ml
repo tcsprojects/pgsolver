@@ -61,36 +61,12 @@ let _ =
 *)
   let game' = pg_init m (fun _ -> (0,plr_Even,[],None)) in
 
-  for i=0 to m-1 do
-    let p = pg_get_priority game i in
-    let pl = pg_get_owner game i in
-    let succs = pg_get_successors game i in
-    let name = pg_get_desc game i in
-
-(*
-    let n = ns_size succs in
-    let succs' = Array.copy succs in
-    if !obfuscate_edges then (
-        for k=1 to 10*(n-1) do
-          let j = Random.int n in
-          let j' = Random.int n in
-
-          let x = succs'.(j) in
-          succs'.(j) <- succs'.(j');
-          succs'.(j') <- x
-        done
-    );
-    let succs' = if !reverse_edges then
-                    Array.init n (fun i -> succs'.(n-i-1))
-                 else succs' 
-    in
- *)
-    let i' = swap.(i) in
-    pg_set_priority game' i' p;
-    pg_set_owner game' i' pl;
-    pg_set_desc game' i' name;
-    ns_iter (fun w -> pg_add_edge game' i' swap.(w)) succs
-  done;
+  pg_iterate (fun i -> fun (p,pl,succs,_,name) -> let i' = swap.(i) in
+						  pg_set_priority game' i' p;
+						  pg_set_owner game' i' pl;
+						  pg_set_desc game' i' name;
+						  ns_iter (fun w -> pg_add_edge game' i' swap.(w)) succs)
+	     game;
 
 (*  print_string "Obfuscated game:\n"; *)
   Paritygame.print_game game'

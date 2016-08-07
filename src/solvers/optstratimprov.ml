@@ -125,18 +125,14 @@ let basic_update_step arena d estimation =
 		h
 	in
 
-	for i = 0 to n - 1 do
-	  let pl = pg_get_owner arena i in
-	  let delta = pg_get_successors arena i in
-	  if ns_size delta = 0 then (
-	    if pl = plr_Even
-	    then green_all_evaluated := i::!green_all_evaluated
-	    else red_all_evaluated := i::!red_all_evaluated;
-	    eval_state.(i) <- 2
-	  )
-	  else if pl = plr_Odd then red_rest := i::!red_rest
-	done;
-
+        pg_iterate (fun i -> fun (_,pl,delta,_,_) -> if ns_size delta = 0 then (
+						       if pl = plr_Even
+						       then green_all_evaluated := i::!green_all_evaluated
+						       else red_all_evaluated := i::!red_all_evaluated;
+						       eval_state.(i) <- 2
+						     )
+						     else if pl = plr_Odd then red_rest := i::!red_rest) arena;
+			     
 	let update_todo i =
 		eval_state.(i) <- 1;
 		decr todo;
@@ -196,20 +192,20 @@ let basic_update_step arena d estimation =
 		else (
 			red_rest := List.filter (fun r -> eval_state.(r) = 0) !red_rest;
 			let (i, est) = List.fold_left (fun (i, est) r ->
-                let delta =  Array.of_list (ns_nodes (pg_get_successors arena r)) in
-				let est' = minop (Array.map (fun g ->
-					if eval_state.(g) = 1
-					then addition d (upd.(g), (improv_pot arena d (r, g) estimation))
-					else PosInfty
-				) delta) in
-				if (i = -1) || (compare est est' >= 0)
-				then (r, est')
-				else (i, est)
-			) (-1, PosInfty) !red_rest in
+						       let delta =  Array.of_list (ns_nodes (pg_get_successors arena r)) in
+						       let est' = minop (Array.map (fun g ->
+										    if eval_state.(g) = 1
+										    then addition d (upd.(g), (improv_pot arena d (r, g) estimation))
+										    else PosInfty
+										   ) delta) in
+						       if (i = -1) || (compare est est' >= 0)
+						       then (r, est')
+						       else (i, est)
+						      ) (-1, PosInfty) !red_rest in
 			msg_tagged 3 (fun _ -> "Rule 4 is applied to " ^ string_of_int i ^ " : ");
 			update_todo i;
 			upd.(i) <- est;
-            msg_plain 3 (fun _ -> format_estentry upd.(i) ^ "\n");
+			msg_plain 3 (fun _ -> format_estentry upd.(i) ^ "\n");
 		)
  	done;
 

@@ -26,14 +26,13 @@ let _ =
 	
 	let rg = Str.regexp "\\(.*\\)\\[\\(.*\\)\\]" in
 	
-	for i = 0 to pg_size game - 1 do
-		if pg_get_owner game i = plr_Even then (
-			let desc = OptionUtils.get_some (pg_get_desc game i) in
-			if not (Str.string_match rg desc 0) then failwith "No strategy included!";
-			pre_strategy.(i) <- Str.matched_group 2 desc;
-			pg_set_desc game i (Some (Str.matched_group 1 desc))
-		);
-	done;
+	pg_iterate (fun i -> fun (_,ow,_,_,desc) -> if ow = plr_Even then (
+						      let desc = OptionUtils.get_some desc in
+						      if not (Str.string_match rg desc 0) then failwith "No strategy included!";
+						      pre_strategy.(i) <- Str.matched_group 2 desc;
+						      pg_set_desc game i (Some (Str.matched_group 1 desc))
+						    )
+		   ) game;
 	
 	let strategy = Array.init (pg_size game) (fun i ->
 		if pre_strategy.(i) = "" then -1
@@ -49,10 +48,8 @@ let _ =
 	let ordered = ref (TreeSet.empty compare_by_desc) in
 	let longest = ref 0 in
 	
-	for i = 0 to pg_size game - 1 do
-		longest := max !longest (String.length (OptionUtils.get_some (pg_get_desc game i)));
-		ordered := TreeSet.add i !ordered
-	done;
+	pg_iterate (fun i -> fun (_,_,_,_,desc) -> longest := max !longest (String.length (OptionUtils.get_some desc));
+						   ordered := TreeSet.add i !ordered) game;
 	
 	let getd i = (StringUtils.fillup (OptionUtils.get_some (pg_get_desc game i)) !longest ' ') in
 	

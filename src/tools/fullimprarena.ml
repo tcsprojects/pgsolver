@@ -32,21 +32,19 @@ let _ =
 		let ordered = ref (TreeSet.empty compare_by_desc) in
 		let longest = ref 0 in
 		
-		for i = 0 to pg_size game - 1 do
-			longest := max !longest (String.length (OptionUtils.get_some (pg_get_desc game i)));
-			ordered := TreeSet.add i !ordered
-		done;
+		pg_iterate (fun i -> fun (_,_,_,_,desc) -> longest := max !longest (String.length (OptionUtils.get_some desc));
+							   ordered := TreeSet.add i !ordered) game;
 		
 		let getd i = (StringUtils.fillup (OptionUtils.get_some (pg_get_desc game i)) !longest ' ') in
 		
 		TreeSet.iter (fun i ->
 			out (getd i);
 			out " | ";
-		let pl = pg_get_owner game i in
-		let tr = pg_get_successors game i in 
+			let pl = pg_get_owner game i in
+			let tr = pg_get_successors game i in 
 			let j =
-				if pl = plr_Even then strategy.(i)
-				else best_decision_by_valuation_ordering game node_total_ordering_by_position valu i
+			  if pl = plr_Even then strategy.(i)
+			  else best_decision_by_valuation_ordering game node_total_ordering_by_position valu i
 			in
 			out (getd j);
 			out " | ";
@@ -67,12 +65,12 @@ let _ =
 		else (
 		let pl = pg_get_owner game i in
 		let tr = pg_get_successors game i in 
-			if pl = plr_Odd
-			then iterate_strat strategy (i + 1)
-			else ns_iter (fun j ->
-				strategy.(i) <- j;
-				iterate_strat strategy (i + 1)
-			) tr
+		if pl = plr_Odd
+		then iterate_strat strategy (i + 1)
+		else ns_iter (fun j ->
+			      strategy.(i) <- j;
+			      iterate_strat strategy (i + 1)
+			     ) tr
 		)
 	in
 		

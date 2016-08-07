@@ -120,12 +120,10 @@ let solve_scc_reach game player spmidx updspm =
     let sol = sol_create game in
     let strat = Array.make n (-1) in
 
-    for i = 0 to n - 1 do
-        message 3 (fun _ -> "Checking " ^ string_of_int i ^ "\n");
-        sol.(i) <- if isTop spmidx.(i) then plr_opponent player else player;
-        if (pg_get_owner game i = player) && (player = sol.(i))
-        then strat.(i) <- ns_minarg (pg_get_successors game i) (fun q -> spmidx.(q)) (less 0)
-    done;
+    pg_iterate (fun i -> fun (_,ow,succs,_,_) -> message 3 (fun _ -> "Checking " ^ string_of_int i ^ "\n");
+						 sol.(i) <- if isTop spmidx.(i) then plr_opponent player else player;
+						 if (ow = player) && (player = sol.(i))
+						 then strat.(i) <- ns_minarg succs (fun q -> spmidx.(q)) (less 0)) game;
 
     (sol, strat);;
 

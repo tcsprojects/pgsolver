@@ -15,24 +15,24 @@ open Smallprogress;;
 let solve_scc_restr game player u =
     let spmidx = Array.map (Array.map (fun m -> (0, min m u))) (compute_priority_reach_array game player) in
 
-	let spmupd spmz _ =
-		let l = Array.length spmz in
-		let c = ref (Array.fold_left (fun r (v, _) -> r + v) 0 spmz) in
-        for i = 0 to l - 1 do
-            if (fst spmz.(i) > snd spmz.(i)) || (!c > u) then (
-            	c := !c - (fst spmz.(i));
-                spmz.(i) <- (0, snd spmz.(i));
-                if (i < l - 1) then (
-                	spmz.(i + 1) <- (1 + fst spmz.(i + 1), snd spmz.(i + 1));
-                	incr c
-                )
-                else for j = 0 to l - 1 do
-                        spmz.(j) <- (snd spmz.(j), snd spmz.(j))
-                     done
-            )
-        done
+    let spmupd spmz _ =
+      let l = Array.length spmz in
+      let c = ref (Array.fold_left (fun r (v, _) -> r + v) 0 spmz) in
+      for i = 0 to l - 1 do
+        if (fst spmz.(i) > snd spmz.(i)) || (!c > u) then (
+          c := !c - (fst spmz.(i));
+          spmz.(i) <- (0, snd spmz.(i));
+          if (i < l - 1) then (
+            spmz.(i + 1) <- (1 + fst spmz.(i + 1), snd spmz.(i + 1));
+            incr c
+          )
+          else for j = 0 to l - 1 do
+                 spmz.(j) <- (snd spmz.(j), snd spmz.(j))
+               done
+        )
+      done
     in
-
+    
     solve_scc_reach game player spmidx spmupd;;
 
 

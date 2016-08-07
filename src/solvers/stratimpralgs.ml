@@ -477,159 +477,158 @@ let strategy_improvement (game: paritygame)
         if !verbosity > 2 then (
 
             let g = subgame_by_edge_pred game (fun u v -> (!strat).(u) = -1 || (!strat).(u) = v) in
-            for i = 0 to pg_size game - 1 do
-                pg_set_desc g i (Some (string_of_int i ^ " : " ^ format_node_valuation (!valu).(i)))
-            done;
+	    pg_iterate (fun i -> fun _ -> pg_set_desc g i (Some (string_of_int i ^ " : " ^ format_node_valuation (!valu).(i)))) game;
+ 
 (*            msg_tagged_nl 3 (fun _ -> "\nMade valuation:\n" ^ game_to_string g ^ "\n"); *)
 
-			let myfmt game strat =
-			  let a = Array.mapi (fun i j -> if (j >= 0) && (ns_size (pg_get_successors game i) > 1) then get_desc game i i ^ "->" ^ get_desc game j j else "") strat in
-			  let b = List.filter (fun s -> not (s = "" || s = "->")) (Array.to_list a) in
-			  ListUtils.format (fun s -> s) (List.sort compare b)
-			in
-			msg_tagged_nl 3 (fun _ -> "0-Strategy: " ^ myfmt game !strat ^ "\n");
-			let strat' = Array.mapi (fun i j ->
-						 if j < 0 then best_decision_by_valuation_ordering game node_compare !valu i else -1
-						) !strat in
-			msg_tagged_nl 3 (fun _ -> "1-Strategy: " ^ myfmt game strat' ^ "\n");
-			let impr = ref [] in
-			Array.iteri (fun i j ->
-				     if j != -1 then ns_iter (fun k ->
-							      if node_valuation_ordering game node_compare !valu.(j) !valu.(k) < 0
-							      then impr := (i,k)::!impr
-							     ) (pg_get_successors game i)
-				    ) !strat;
-			msg_tagged_nl 3 (fun _ -> "Improvement-Arena: " ^ ListUtils.format (fun (i,j) -> get_desc game i i ^ "->" ^ get_desc game j j) (List.sort compare !impr) ^ "\n")
+	    let myfmt game strat =
+	      let a = Array.mapi (fun i j -> if (j >= 0) && (ns_size (pg_get_successors game i) > 1) then get_desc game i i ^ "->" ^ get_desc game j j else "") strat in
+	      let b = List.filter (fun s -> not (s = "" || s = "->")) (Array.to_list a) in
+	      ListUtils.format (fun s -> s) (List.sort compare b)
+	    in
+	    msg_tagged_nl 3 (fun _ -> "0-Strategy: " ^ myfmt game !strat ^ "\n");
+	    let strat' = Array.mapi (fun i j ->
+				     if j < 0 then best_decision_by_valuation_ordering game node_compare !valu i else -1
+				    ) !strat in
+	    msg_tagged_nl 3 (fun _ -> "1-Strategy: " ^ myfmt game strat' ^ "\n");
+	    let impr = ref [] in
+	    Array.iteri (fun i j ->
+			 if j != -1 then ns_iter (fun k ->
+						  if node_valuation_ordering game node_compare !valu.(j) !valu.(k) < 0
+						  then impr := (i,k)::!impr
+						 ) (pg_get_successors game i)
+			) !strat;
+	    msg_tagged_nl 3 (fun _ -> "Improvement-Arena: " ^ ListUtils.format (fun (i,j) -> get_desc game i i ^ "->" ^ get_desc game j j) (List.sort compare !impr) ^ "\n")
         )
     in
-	let show_changed oldstrat newstrat =
-		if !verbosity > 2 then (
-			let l = ref [] in
-			Array.iteri (fun i j ->
-				if newstrat.(i) != j then l := (i,j,newstrat.(i))::!l
-			) oldstrat;
-			msg_tagged_nl 3 (fun _ -> "Strategy-Change: " ^ ListUtils.format (fun (i,j,k) -> get_desc game i i ^ "->" ^ get_desc game j j ^ "/" ^ get_desc game k k) (List.sort compare !l) ^ "\n")
-		)
-	in
-
-	(* TEST *)
-	let old = ref (-1) in
-	let t = ref "" in
+    let show_changed oldstrat newstrat =
+      if !verbosity > 2 then (
 	let l = ref [] in
-	(* TEST *)
-
-    while (improvable !strat !valu) do
-    	show_eval ();
-        incr counter;
-
-        msg_tagged 2 (fun _ -> "Iteration: " ^ string_of_int !counter ^ "\r");
-		
-		(
-		match !_strat_impr_callback with
-			None -> ()
-		|	Some c -> c !strat !counter
-		);
-
-        (* TEST *)
-        if !enable_exp_bit_count then (
-            let (s, v) = format_game_state game !valu in
-            let s = string_of_int !counter ^ " : " ^ s in
-			msg_tagged_nl 3 (fun _ -> "\nIteration: " ^ s ^ "\n");
-            if (!old != v) || (!t <> s) then l := (s, v)::!l;
-            t := s;
-            old := v
-        );
-        (* TEST *)
-
-		let old = !strat in
-        strat := improve !strat !valu;
-		show_changed old !strat;
-        let valu' = evaluate !strat in
-        if check_policy && (not (less_valuation (node_valuation_ordering game node_compare) !valu valu')) then (
-	        valu := valu';
-        	show_eval ();
-        	failwith "valuation improvement failure"
-        );
-        valu := valu'
-    done;
-
-    incr counter;
-	(
-	match !_strat_impr_callback with
-		None -> ()
-	|	Some c -> c !strat !counter
-	);
+	Array.iteri (fun i j ->
+		     if newstrat.(i) != j then l := (i,j,newstrat.(i))::!l
+		    ) oldstrat;
+	msg_tagged_nl 3 (fun _ -> "Strategy-Change: " ^ ListUtils.format (fun (i,j,k) -> get_desc game i i ^ "->" ^ get_desc game j j ^ "/" ^ get_desc game k k) (List.sort compare !l) ^ "\n")
+      )
+    in
     
     (* TEST *)
-    if !enable_exp_bit_count then (
+    let old = ref (-1) in
+    let t = ref "" in
+    let l = ref [] in
+    (* TEST *)
+    
+    while (improvable !strat !valu) do
+      show_eval ();
+      incr counter;
+      
+      msg_tagged 2 (fun _ -> "Iteration: " ^ string_of_int !counter ^ "\r");
+      
+      (
+	match !_strat_impr_callback with
+	  None -> ()
+	 |	Some c -> c !strat !counter
+      );
+      
+      (* TEST *)
+      if !enable_exp_bit_count then (
         let (s, v) = format_game_state game !valu in
         let s = string_of_int !counter ^ " : " ^ s in
-		msg_tagged_nl 3 (fun _ -> "\nIteration: " ^ s ^ "\n");
+	msg_tagged_nl 3 (fun _ -> "\nIteration: " ^ s ^ "\n");
         if (!old != v) || (!t <> s) then l := (s, v)::!l;
         t := s;
         old := v
+      );
+      (* TEST *)
+      
+      let old = !strat in
+      strat := improve !strat !valu;
+      show_changed old !strat;
+      let valu' = evaluate !strat in
+      if check_policy && (not (less_valuation (node_valuation_ordering game node_compare) !valu valu')) then (
+	valu := valu';
+        show_eval ();
+        failwith "valuation improvement failure"
+      );
+      valu := valu'
+    done;
+    
+    incr counter;
+    (
+      match !_strat_impr_callback with
+	None -> ()
+       |	Some c -> c !strat !counter
+    );
+    
+    (* TEST *)
+    if !enable_exp_bit_count then (
+      let (s, v) = format_game_state game !valu in
+      let s = string_of_int !counter ^ " : " ^ s in
+      msg_tagged_nl 3 (fun _ -> "\nIteration: " ^ s ^ "\n");
+      if (!old != v) || (!t <> s) then l := (s, v)::!l;
+      t := s;
+      old := v
     );
     (* TEST *)
-
+    
     show_eval ();
     last_iteration_count := !counter;
-
+    
     msg_plain 2 (fun _ -> "\n");
-
+    
     (*TEST*)
     if !enable_exp_bit_count then (
-
-        (*
+      
+      (*
         List.iter (fun (s, v) -> msg_tagged 2 (fun _ -> s ^ " = " ^ string_of_int v ^ "\n")) (List.rev !l);
-        *)
-
-        let l = transform_game_state_list !l in
-
-        (*
+       *)
+      
+      let l = transform_game_state_list !l in
+      
+      (*
         List.iter (fun (s, v) -> msg_tagged 2 (fun _ -> s ^ " = " ^ string_of_int v ^ "\n")) l;
-        *)
-
-        last_exp_bit_count := List.length l;
-        msg_tagged 2 (fun _ -> "Bit Rounds: " ^ string_of_int !last_exp_bit_count ^ "\n")
+       *)
+      
+      last_exp_bit_count := List.length l;
+      msg_tagged 2 (fun _ -> "Bit Rounds: " ^ string_of_int !last_exp_bit_count ^ "\n")
     );
     (*TEST*)
-
+    
     (winning_regions game !valu, winning_strategies game node_compare !strat !valu)
-
-
-
-
+      
+      
+      
+      
 let strategy_improvement' (game: paritygame)
-						  (init_strat: initial_strategy_fun)
-						  (node_compare: node_total_ordering_fun)
-						  (impr_policy: 'a improvement_policy_fun)
-						  (impr_policy_init: 'a)
-						  (check_policy: bool)
-						  (ident: string) =
-	let game' = alternating_transformation game true in
-	let game'' = cheap_escape_cycles_transformation game' false in
-	let (sol'', strat'') = strategy_improvement game'' init_strat node_compare impr_policy impr_policy_init check_policy ident in
-	let sol = sol_init game' (fun v -> sol''.(v)) in
-	let strat = Array.init (pg_size game') (fun i -> strat''.(i)) in
-	let (sol', strat') = alternating_revertive_restriction game game' sol strat in
-	for i = 0 to pg_size game - 1 do
-		if sol'.(i) != pg_get_owner game i then strat'.(i) <- -1
-	done;
-	(sol', strat');;
-
+			  (init_strat: initial_strategy_fun)
+			  (node_compare: node_total_ordering_fun)
+			  (impr_policy: 'a improvement_policy_fun)
+			  (impr_policy_init: 'a)
+			  (check_policy: bool)
+			  (ident: string) =
+  let game' = alternating_transformation game true in
+  let game'' = cheap_escape_cycles_transformation game' false in
+  let (sol'', strat'') = strategy_improvement game'' init_strat node_compare impr_policy impr_policy_init check_policy ident in
+  let sol = sol_init game' (fun v -> sol''.(v)) in
+  let strat = Array.init (pg_size game') (fun i -> strat''.(i)) in
+  let (sol', strat') = alternating_revertive_restriction game game' sol strat in
+  for i = 0 to pg_size game - 1 do
+    if sol'.(i) != pg_get_owner game i then strat'.(i) <- -1
+  done;
+  (sol', strat');;
+  
 let strategy_improvement'' (game: paritygame)
-						  (init_strat: initial_strategy_fun)
-						  (node_compare: node_total_ordering_fun)
-						  (impr_policy: 'a improvement_policy_fun)
-						  (impr_policy_init: (paritygame -> 'a))
-						  (check_policy: bool)
-						  (ident: string) =
-	let game' = cheap_escape_cycles_transformation game false in
-	let (sol', strat') = strategy_improvement game' init_strat node_compare impr_policy (impr_policy_init game') check_policy ident in
-	let sol = sol_init game (fun i -> sol'.(i)) in
-	let strat = Array.init (pg_size game) (fun i -> strat'.(i)) in
-	(sol, strat);;
-
+			   (init_strat: initial_strategy_fun)
+			   (node_compare: node_total_ordering_fun)
+			   (impr_policy: 'a improvement_policy_fun)
+			   (impr_policy_init: (paritygame -> 'a))
+			   (check_policy: bool)
+			   (ident: string) =
+  let game' = cheap_escape_cycles_transformation game false in
+  let (sol', strat') = strategy_improvement game' init_strat node_compare impr_policy (impr_policy_init game') check_policy ident in
+  let sol = sol_init game (fun i -> sol'.(i)) in
+  let strat = Array.init (pg_size game) (fun i -> strat'.(i)) in
+  (sol, strat);;
+  
 let improvement_policy_no_user_data imprpolicy = fun g o u s v -> (imprpolicy g o s v, u);;
 
 
@@ -744,12 +743,11 @@ let mdplike_valuation game minprio strategy =
 	let valu = Array.make n (TreeMap.empty (flip (relevance_total_ordering game node_total_ordering_by_priority_and_position)), None) in
 	let finished = Array.make n false in
 	let queue = ref [] in 
-	for i = 0 to n - 1 do
-		if pg_get_priority game i = 1 then (
-			finished.(i) <- true;
-			queue := [i];
-		);
-	done;
+	pg_iterate (fun i -> fun (pr,_,_,_,_) -> if pr = 1 then (
+						   finished.(i) <- true;
+						   queue := [i];
+						 )) game;
+
 	let is_cycle_node j = pg_get_owner game j = plr_Even && ns_exists (fun k -> ns_exists (fun l -> l = j) (pg_get_successors game k)) (pg_get_successors game j) in
 	while !queue != [] do
 		let head = List.hd !queue in
@@ -786,44 +784,40 @@ let mdplike_valuation game minprio strategy =
 			)
 		) (pg_get_predecessors game head);
 	done;	
-	for i = 0 to n - 1 do
-		if (pg_get_owner game i = plr_Odd) then (
-			let nodes = ns_filter (fun j -> pg_get_owner game j = plr_Odd || strategy.(j) != i) (pg_get_successors game i) in
-			if ns_size nodes > 1 then (
-				let exit_node = ref (-1) in
-				ns_iter (fun j -> if not (is_cycle_node j) then exit_node := j) nodes;
-				let exit_node = !exit_node in
-				valu.(i) <- (fst valu.(i), Some (not (TreeMap.mem i (fst valu.(exit_node)))));
-			)
-		);
-	done;
+	pg_iterate (fun i -> fun (_,ow,succs,_,_) ->
+			     if ow = plr_Odd then (
+			       let nodes = ns_filter (fun j -> pg_get_owner game j = plr_Odd || strategy.(j) != i) succs in
+			       if ns_size nodes > 1 then (
+				 let exit_node = ref (-1) in
+				 ns_iter (fun j -> if not (is_cycle_node j) then exit_node := j) nodes;
+				 let exit_node = !exit_node in
+				 valu.(i) <- (fst valu.(i), Some (not (TreeMap.mem i (fst valu.(exit_node)))));
+			       )
+			     )) game;
+			     
 	for i = 0 to n - 1 do
 		valu.(i) <- (TreeMap.filter (fun j _ -> pg_get_priority game j >= minprio) (fst valu.(i)), snd valu.(i));
 	done; 
-	for i = 0 to n - 1 do
-		if (pg_get_owner game i = plr_Odd && snd valu.(i) != None && OptionUtils.get_some (snd valu.(i)) = true) then (
-			let nodes = ns_filter (fun j -> pg_get_owner game j = plr_Odd || strategy.(j) != i) (pg_get_successors game i) in
-			if ns_size nodes > 1 then (
-				let exit_node = ref (-1) in
-				ns_iter (fun j -> if not (is_cycle_node j) then exit_node := j) nodes;
-				let exit_node = !exit_node in
-				valu.(i) <- (fst valu.(i), Some (compare_mdplike_valuation game valu exit_node i > 0));
-			)
-		);
-	done;
+
+	pg_iterate (fun i -> fun (_,ow,succs,_,_) ->
+			     if ow = plr_Odd && snd valu.(i) != None && OptionUtils.get_some (snd valu.(i)) = true then (
+			       let nodes = ns_filter (fun j -> pg_get_owner game j = plr_Odd || strategy.(j) != i) succs in
+			       if ns_size nodes > 1 then (
+				 let exit_node = ref (-1) in
+				 ns_iter (fun j -> if not (is_cycle_node j) then exit_node := j) nodes;
+				 let exit_node = !exit_node in
+				 valu.(i) <- (fst valu.(i), Some (compare_mdplike_valuation game valu exit_node i > 0));
+			       )
+			     )) game;
+							
 	let failed = ref false in
 	for i = 0 to n - 1 do
 		if (not finished.(i)) then failed := true;
 	done;
 	if (!failed) then (
 		let g = subgame_by_strat game strategy in
-		let m = pg_size g in
-		for i = 0 to m - 1 do
-			pg_set_desc g i (Some ((OptionUtils.get_some (pg_get_desc g i)) ^ " - " ^ (if finished.(i) then "GOOD" else "BAD")))
-		done;
-		print_game (g);
+		pg_iterate (fun i -> fun (_,_,_,_,d) -> pg_set_desc g i (Some ((OptionUtils.get_some d) ^ " - " ^ (if finished.(i) then "GOOD" else "BAD")))) g;
+		print_game g;
 		failwith "failed";
 	);
 	valu;;
-
-	

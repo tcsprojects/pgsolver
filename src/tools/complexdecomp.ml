@@ -32,26 +32,20 @@ let _ =
 	let number_of_player0_edges = ref 0 in
 	let number_of_player1_edges = ref 0 in
 	
-	let n = pg_size game in
-	
-	for i = 0 to n - 1 do 
-	  let pr = pg_get_priority game i in
-		let pl = pg_get_owner game i in
-		let tr = pg_get_successors game i in
-		let trn = ns_size tr in
-		incr number_of_nodes;
-		number_of_edges := !number_of_edges + trn;
-		if pl = plr_Even then (
-			incr number_of_player0_nodes;
-			number_of_player0_edges := !number_of_player0_edges + trn
-		)
-		else (
-			incr number_of_player1_nodes;
-			number_of_player1_edges := !number_of_player1_edges + trn
-		);
-		if (!min_priority < 0) || (pr < !min_priority) then min_priority := pr;
-		if (!max_priority < 0) || (pr > !max_priority) then max_priority := pr;
-	done;
+	pg_iterate (fun i -> fun (pr,pl,tr,_,_) -> let trn = ns_size tr in
+						   incr number_of_nodes;
+						   number_of_edges := !number_of_edges + trn;
+						   if pl = plr_Even then (
+						     incr number_of_player0_nodes;
+						     number_of_player0_edges := !number_of_player0_edges + trn
+						   )
+						   else (
+						     incr number_of_player1_nodes;
+						     number_of_player1_edges := !number_of_player1_edges + trn
+						   );
+						   if (!min_priority < 0) || (pr < !min_priority) then min_priority := pr;
+						   if (!max_priority < 0) || (pr > !max_priority) then max_priority := pr
+		   ) game;
 	
 	out ("Number of Nodes    : " ^ string_of_int !number_of_nodes ^ "\n");
 	out ("Number of P0 Nodes : " ^ string_of_int !number_of_player0_nodes ^ "\n");

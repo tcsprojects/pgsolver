@@ -64,7 +64,10 @@ val plr_random : unit -> player
 val plr_opponent : player -> player
 val plr_benefits : priority -> player
 val plr_show : player -> string
-				 
+
+(* applies a function to both players *)
+val plr_iterate : (player -> unit) -> unit
+					
 val prio_good_for_player : priority -> player -> bool
 			
 						 

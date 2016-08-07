@@ -82,7 +82,10 @@ let plr_opponent pl = 1 - pl
 let plr_benefits pr = pr mod 2
 			       
 let plr_show = string_of_int
-		 
+
+let plr_iterate f =
+  f plr_Even; f plr_Odd
+		
 (**************************************************************
  * priorities                                                 *
  **************************************************************)

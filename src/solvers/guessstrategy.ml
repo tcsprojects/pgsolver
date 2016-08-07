@@ -24,11 +24,7 @@ let solve game =
         let generate_strat game pl =
             let n = pg_size game in
             let s = Array.make n (-1) in
-            for i = 0 to n - 1 do
-              let pl' = pg_get_owner game i in
-	      let d = pg_get_successors game i in
-              if (pl = pl') then s.(i) <- ns_some d 
-            done;
+	    pg_iterate (fun v -> fun (_,pl',d,_,_) -> if (pl = pl') then s.(v) <- ns_some d) game; 
             s
         in
 

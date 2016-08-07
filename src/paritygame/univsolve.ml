@@ -344,12 +344,9 @@ let universal_solve_run options stats backend game' =
 		let n = pg_size game in
 		let l = ref [] in
 		let a = Array.make n (-1) in
-		for i = n - 1 downto 0 do
-			if pg_isDefined game i then (
-				l := i::!l;
-				a.(i) <- 0;
-			)
-		done;
+		pg_iterate (fun i _ -> l := i::!l;
+				       a.(i) <- 0
+			   ) game;
 		([|!l|], a, [|[]|], [0])
 	in
 

@@ -191,25 +191,23 @@ let solve' game =
   let prio_table = SingleTable.create 100 in
   let present_prios  = ref [] in
 	
-	let m = pg_size game in
+  let m = pg_size game in
 	
-	for i = 0 to m - 1 do
-		let p = pg_get_priority game i in
-		let n = try
-                                  SingleTable.find prio_table p
-                                with _ -> 0
-                        in
-                        SingleTable.remove prio_table p;
-                        SingleTable.add prio_table p (n+1);
+  pg_iterate (fun i -> fun (pr,_,_,_,_) -> let n = try
+					       SingleTable.find prio_table p
+					     with _ -> 0
+					   in
+					   SingleTable.remove prio_table p;
+					   SingleTable.add prio_table p (n+1);
+					   
+					   present_prios := insert p !present_prios
+	     ) game;
+  
 
-                        present_prios := insert p !present_prios
-	done;
-
-
-	let binlog n = int_of_float (ceil ((log (float_of_int n)) /. (log 2.))) in
-	let odd p = p mod 2 = 1 in
-	let even p = p mod 2 = 0 in
-			  
+  let binlog n = int_of_float (ceil ((log (float_of_int n)) /. (log 2.))) in
+  let odd p = p mod 2 = 1 in
+  let even p = p mod 2 = 0 in
+  
 			  
   let hbit prio =
     try
@@ -219,149 +217,147 @@ let solve' game =
   in
 
   message 3 (fun _ -> "    Priorities present in current subgame are {" ^
-                      String.concat "," (List.map string_of_int !present_prios) ^ "}\n");
+			String.concat "," (List.map string_of_int !present_prios) ^ "}\n");
   message 3 (fun _ -> "    Number of nodes with certain priority in current subgame: " ^
-                      String.concat ", "
-                                    (SingleTable.fold (fun prio -> fun n -> fun l ->
-                                                        ("<" ^ string_of_int prio ^ ":" ^ string_of_int n ^ ">") :: l)
-                                                      prio_table [])
-                      ^ "\n");
-
+			String.concat ", "
+				      (SingleTable.fold (fun prio -> fun n -> fun l ->
+									      ("<" ^ string_of_int prio ^ ":" ^ string_of_int n ^ ">") :: l)
+							prio_table [])
+			^ "\n");
+  
   msg_tagged 2 (fun _ -> "Using backend sat solver: " ^ (Satsolvers.get_default ())#identifier ^ "\n");
   msg_tagged 2 (fun _ -> "Number of nodes in the game    : " ^ string_of_int m ^ "\n");
-
+	
   message 3 (fun _ -> "Creating and scheduling clauses for addition ...\n");
-  for v=0 to m-1 do
-    let pl = pg_get_owner game v in
-    let ws = pg_get_successors game v in
-    (match pl with
-      0 -> (message 3 (fun _ -> "  `" ^ show_var 0 (S v) ^ " -> " ^
-                       String.concat " + " (List.map (fun w -> show_var 0 (TE (v,w))) (ns_nodes ws)) ^ "': ");
-            schedule_clause (Array.append [|getNSVar v|] (Array.map (fun w -> getTEVar (v,w)) (Array.of_list (ns_nodes ws))));
-            ns_iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 1 (S v) ^ " -> " ^ show_var 0 (TA (v,w)) ^ "': ");
-                                 schedule_clause [| getSVar v; getTAVar (v,w) |]) ws)
-    | 1 -> (message 3 (fun _ -> "  `" ^ show_var 1 (S v) ^ " -> " ^
-                       String.concat " + " (List.map (fun w -> show_var 0 (TA (v,w))) (ns_nodes ws)) ^ "': ");
-            schedule_clause (Array.append [|getSVar v|] (Array.map (fun w -> getTAVar (v,w)) (Array.of_list (ns_nodes (ws)))));
-            ns_iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 0 (S v) ^ " -> " ^ show_var 0 (TE (v,w)) ^ "': ");
-                                 schedule_clause [| getNSVar v; getTEVar (v,w) |]) ws)
-    | _ -> ());
-    ns_iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 0 (TE (v,w)) ^ " -> " ^ show_var 0 (S w) ^ "': ");
-                         schedule_clause [| getNTEVar (v,w) ; getSVar w |];
-                         message 3 (fun _ -> "  `" ^ show_var 0 (TA (v,w)) ^ " -> " ^ show_var 1 (S w) ^ "': ");
-                         schedule_clause [| getNTAVar (v,w); getNSVar w |]) ws
-  done;
-
+  pg_iterate (fun v -> fun (_,pl,ws,_,_) -> 
+		       (if pl=plr_Even then 
+			  begin
+			    message 3 (fun _ -> "  `" ^ show_var 0 (S v) ^ " -> " ^
+						  String.concat " + " (List.map (fun w -> show_var 0 (TE (v,w))) (ns_nodes ws)) ^ "': ");
+			    schedule_clause (Array.append [|getNSVar v|] (Array.map (fun w -> getTEVar (v,w)) (Array.of_list (ns_nodes ws))));
+			    ns_iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 1 (S v) ^ " -> " ^ show_var 0 (TA (v,w)) ^ "': ");
+					      schedule_clause [| getSVar v; getTAVar (v,w) |]) ws
+			  end
+			else
+			  begin
+			    message 3 (fun _ -> "  `" ^ show_var 1 (S v) ^ " -> " ^
+						  String.concat " + " (List.map (fun w -> show_var 0 (TA (v,w))) (ns_nodes ws)) ^ "': ");
+			    schedule_clause (Array.append [|getSVar v|] (Array.map (fun w -> getTAVar (v,w)) (Array.of_list (ns_nodes (ws)))));
+			    ns_iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 0 (S v) ^ " -> " ^ show_var 0 (TE (v,w)) ^ "': ");
+					      schedule_clause [| getNSVar v; getTEVar (v,w) |]) ws
+			  end);
+		       ns_iter (fun w -> message 3 (fun _ -> "  `" ^ show_var 0 (TE (v,w)) ^ " -> " ^ show_var 0 (S w) ^ "': ");
+					 schedule_clause [| getNTEVar (v,w) ; getSVar w |];
+					 message 3 (fun _ -> "  `" ^ show_var 0 (TA (v,w)) ^ " -> " ^ show_var 1 (S w) ^ "': ");
+					 schedule_clause [| getNTAVar (v,w); getNSVar w |]) ws
+	     ) game;
+	
   let to_expand = ref [] in
   let remember var = to_expand := var::!to_expand in
-
-  for v=0 to m-1 do
-    let p = pg_get_priority game v in
-    let ws = pg_get_successors game v in 
-(*    let scc_v = sccindex.(v) in *)
-
-    ns_iter (fun w ->
-      let bigger_prios = List.filter (fun r -> r > p) !present_prios in
-      List.iter (fun p' -> let k = (v,w,p',hbit p') in
-                           message 3 (fun _ -> "  `" ^ show_var 0 (TE (v,w)) ^ " -> " ^ show_var 0 (GE k) ^ "': ");
-                           schedule_clause [| getNTEVar (v,w) ; getGEVar k |];
-                           remember (GE k)) (List.filter odd bigger_prios);
-      List.iter (fun p' -> let k = (v,w,p',hbit p') in
-                           message 3 (fun _ -> "  `" ^ show_var 0 (TA (v,w)) ^ " -> " ^ show_var 0 (GE k) ^ "': ");
-                           schedule_clause [| getNTAVar (v,w) ; getGEVar k |];
-                           remember (GE k)) (List.filter even bigger_prios);
-      let k = (v,w,p,hbit p) in
-      (if odd p
-      then (message 3 (fun _ -> "  `" ^ show_var 0 (TE (v,w)) ^ " -> " ^ show_var 0 (GR k) ^ "': ");
-            schedule_clause [| getNTEVar (v,w) ; getGRVar k |])
-      else (message 3 (fun _ -> "  `" ^ show_var 0 (TA (v,w)) ^ " -> " ^ show_var 0 (GR k) ^ "': ");
-            schedule_clause [| getNTAVar (v,w) ; getGRVar k |]));
-      remember (GR k)) ws
-  done;
-
+	
+  pg_iterate (fun v -> fun (p,_,ws,_,_) ->   
+	  ns_iter (fun w ->
+		   let bigger_prios = List.filter (fun r -> r > p) !present_prios in
+		   List.iter (fun p' -> let k = (v,w,p',hbit p') in
+					message 3 (fun _ -> "  `" ^ show_var 0 (TE (v,w)) ^ " -> " ^ show_var 0 (GE k) ^ "': ");
+					schedule_clause [| getNTEVar (v,w) ; getGEVar k |];
+					remember (GE k)) (List.filter odd bigger_prios);
+		   List.iter (fun p' -> let k = (v,w,p',hbit p') in
+					message 3 (fun _ -> "  `" ^ show_var 0 (TA (v,w)) ^ " -> " ^ show_var 0 (GE k) ^ "': ");
+					schedule_clause [| getNTAVar (v,w) ; getGEVar k |];
+					remember (GE k)) (List.filter even bigger_prios);
+		   let k = (v,w,p,hbit p) in
+		   (if odd p
+		    then (message 3 (fun _ -> "  `" ^ show_var 0 (TE (v,w)) ^ " -> " ^ show_var 0 (GR k) ^ "': ");
+			  schedule_clause [| getNTEVar (v,w) ; getGRVar k |])
+		    else (message 3 (fun _ -> "  `" ^ show_var 0 (TA (v,w)) ^ " -> " ^ show_var 0 (GR k) ^ "': ");
+			  schedule_clause [| getNTAVar (v,w) ; getGRVar k |]));
+		   remember (GR k)) ws
+	     ) game;
+	
   while !to_expand <> [] do
     (match List.hd !to_expand with
        GE (v,w,i,m) -> message 3 (fun _ -> "  `" ^ show_var 0 (GE (v,w,i,0)) ^ " -> "
-                                        ^ show_var 1 (X (w,i,0)) ^ " + " ^ show_var 0 (X (v,i,0)) ^ "': ");
-                       schedule_clause [| getNGEVar (v,w,i,0) ; getNXVar (w,i,0) ; getXVar (v,i,0) |];
-                       for j=1 to m do
+					   ^ show_var 1 (X (w,i,0)) ^ " + " ^ show_var 0 (X (v,i,0)) ^ "': ");
+		       schedule_clause [| getNGEVar (v,w,i,0) ; getNXVar (w,i,0) ; getXVar (v,i,0) |];
+		       for j=1 to m do
                          let g = getNGEVar (v,w,i,j) in
                          let y = getNXVar (w,i,j) in
                          let x = getXVar (v,i,j) in
                          let g' = getGEVar (v,w,i,j-1) in
                          message 3 (fun _ -> "  `" ^ show_var 0 (GE (v,w,i,j)) ^ " * "
-                                          ^ show_var 0 (X (w,i,j)) ^ " -> " ^ show_var 0 (X (v,i,j)) ^ "': ");
+					     ^ show_var 0 (X (w,i,j)) ^ " -> " ^ show_var 0 (X (v,i,j)) ^ "': ");
                          schedule_clause [| g ; y ; x |];
                          message 3 (fun _ -> "  `" ^ show_var 0 (GE (v,w,i,j)) ^ " * "
-                                          ^ show_var 0 (X (w,i,j)) ^ " -> " ^ show_var 0 (GE (v,w,i,j-1)) ^ "': ");
+					     ^ show_var 0 (X (w,i,j)) ^ " -> " ^ show_var 0 (GE (v,w,i,j-1)) ^ "': ");
                          schedule_clause [| g ; y ; g' |];
                          message 3 (fun _ -> "  `" ^ show_var 0 (GE (v,w,i,j)) ^ " * "
-                                          ^ show_var 1 (X (v,i,j)) ^ " -> " ^ show_var 0 (GE (v,w,i,j-1)) ^ "': ");
+					     ^ show_var 1 (X (v,i,j)) ^ " -> " ^ show_var 0 (GE (v,w,i,j-1)) ^ "': ");
                          schedule_clause [| g ; x ; g' |]
-                       done
+		       done
      | GR (v,w,i,m) -> let g = getNGRVar (v,w,i,0) in
-                       message 3 (fun _ -> "  `" ^ show_var 0 (GR (v,w,i,0)) ^ " -> " ^ show_var 1 (X (w,i,0)) ^ "': ");
-                       schedule_clause [| g ; getNXVar (w,i,0) |];
-                       message 3 (fun _ -> "  `" ^ show_var 0 (GR (v,w,i,0)) ^ " -> " ^ show_var 0 (X (v,i,0)) ^ "': ");
-                       schedule_clause [| g ; getXVar (v,i,0) |];
-                       for j=1 to m do
+		       message 3 (fun _ -> "  `" ^ show_var 0 (GR (v,w,i,0)) ^ " -> " ^ show_var 1 (X (w,i,0)) ^ "': ");
+		       schedule_clause [| g ; getNXVar (w,i,0) |];
+		       message 3 (fun _ -> "  `" ^ show_var 0 (GR (v,w,i,0)) ^ " -> " ^ show_var 0 (X (v,i,0)) ^ "': ");
+		       schedule_clause [| g ; getXVar (v,i,0) |];
+		       for j=1 to m do
                          let g = getNGRVar (v,w,i,j) in
                          let y = getNXVar (w,i,j) in
                          let x = getXVar (v,i,j) in
                          let g' = getGRVar (v,w,i,j-1) in
                          message 3 (fun _ -> "  `" ^ show_var 0 (GR (v,w,i,j)) ^ " * "
-                                          ^ show_var 0 (X (w,i,j)) ^ " -> " ^ show_var 0 (X (v,i,j)) ^ "': ");
+					     ^ show_var 0 (X (w,i,j)) ^ " -> " ^ show_var 0 (X (v,i,j)) ^ "': ");
                          schedule_clause [| g ; y ; x |];
                          message 3 (fun _ -> "  `" ^ show_var 0 (GR (v,w,i,j)) ^ " * "
-                                          ^ show_var 0 (X (w,i,j)) ^ " -> " ^ show_var 0 (GR (v,w,i,j-1)) ^ "': ");
+					     ^ show_var 0 (X (w,i,j)) ^ " -> " ^ show_var 0 (GR (v,w,i,j-1)) ^ "': ");
                          schedule_clause [| g ; y ; g' |];
                          message 3 (fun _ -> "  `" ^ show_var 0 (GR (v,w,i,j)) ^ " * "
-                                          ^ show_var 1 (X (v,i,j)) ^ " -> " ^ show_var 0 (GR (v,w,i,j-1)) ^ "': ");
+					     ^ show_var 1 (X (v,i,j)) ^ " -> " ^ show_var 0 (GR (v,w,i,j-1)) ^ "': ");
                          schedule_clause [| g ; x ; g' |]
-                       done
+		       done
      | _ -> failwith "How did that get here ???"
-
+		     
     );
     to_expand := List.tl !to_expand
   done;
-
+  
   msg_tagged 2 (fun _ -> "Number of clauses: " ^ string_of_int !number_of_clauses ^ " \n");
   msg_tagged 2 (fun _ -> "Number of variables: " ^ string_of_int !number_of_variables ^ " \n");
   let tim = SimpleTiming.init false in
   msg_tagged 2 (fun _ -> SimpleTiming.start tim; "SAT Solving ... ");
   (match solver#solve with
-    SolveSatisfiable -> ()
-  | x -> failwith ("satsolver reports " ^ format_solve_result x ^ " instead of SAT"));
+     SolveSatisfiable -> ()
+   | x -> failwith ("satsolver reports " ^ format_solve_result x ^ " instead of SAT"));
   msg_plain 2 (fun _ -> SimpleTiming.stop tim; "done: " ^ SimpleTiming.format tim ^ "\n");
-
+  
   let solution = Array.make m (-1) in
   let strategy = Array.make m (-1) in
-
+	
   message 3 (fun _ -> "Obtaining values of S-variables ...\n");
-
+	
   SingleTable.iter
-         (fun v -> fun i ->
-          message 3 (fun _ -> "  " ^ show_var 0 (S v) ^ ": ");
-          let x = if solver#get_assignment i then 1 else 0 in
-          let winner = 1-x in
-          message 3 (fun _ -> string_of_int x ^ ", successor: ");
-
-          let succs = pg_get_successors game v in
-          let get_fun = if winner = 0 then getTEVar else getTAVar in
-          let y = try
-                   ns_find (fun w -> let j = get_fun (v,w) in solver#get_assignment j) succs
-                  with _ -> failwith "Fatal error: node belonging to strategy has no successor within that strategy!!!"
-          in
-          message 3 (fun _ -> (string_of_int y) ^ "\n");
-          solution.(v) <- winner;
-          strategy.(v) <- y) stable;
-
+    (fun v -> fun i ->
+	      message 3 (fun _ -> "  " ^ show_var 0 (S v) ^ ": ");
+	      let x = if solver#get_assignment i then 1 else 0 in
+	      let winner = 1-x in
+	      message 3 (fun _ -> string_of_int x ^ ", successor: ");
+	      
+	      let succs = pg_get_successors game v in
+	      let get_fun = if winner = 0 then getTEVar else getTAVar in
+	      let y = try
+		  ns_find (fun w -> let j = get_fun (v,w) in solver#get_assignment j) succs
+                with _ -> failwith "[Viasat] Fatal error: node belonging to strategy has no successor within that strategy!!!"
+	      in
+	      message 3 (fun _ -> (string_of_int y) ^ "\n");
+	      solution.(v) <- if winner=0 then plr_Even else plr_Odd;
+	      strategy.(v) <- y) stable;
+  
   release_encoding ();
   (solution,strategy)
-
-
+	  
+	  
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
-
+  
 
 
 let _ = register_solver solve "viasat" "vs" "use the small progress measure enc. for prop. logic and a reduction to SAT";;

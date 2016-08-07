@@ -13,14 +13,6 @@ let generator_game_func arguments =
 
   let n = int_of_string arguments.(0) in
   let m = 2*n in  
-  let game = pg_create m in
-  for i=0 to m-1 do
-    pg_set_priority game i (i mod 2);
-    pg_set_owner game i (plr_benefits i);
-    pg_set_desc game i (Some (string_of_int i));
-    pg_add_edge game i ((i+1) mod m);
-    pg_add_edge game i ((i+2) mod m)
-  done;
-  game;;
+  pg_init m (fun i -> (i mod 2, plr_benefits i, [ (i+1) mod m; (i+2) mod m ], Some (string_of_int i)));;
   
 Generators.register_generator generator_game_func "laddergame" "Ladder Game";;

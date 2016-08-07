@@ -14,27 +14,27 @@ let partially_solve (game: partial_paritygame) =
     let msg_tagged v = message_autotagged v (fun _ -> "MODELCHECKER") in
     (*let msg_plain = message in*)
 
-	let (start, delta, data, fmtnode') = game in
-	let fmtnode n = match fmtnode' n with None -> "[None]" | Some s -> s in
-	let defIndex = TreeSet.empty_def in
-
-	let counter = ref 0 in
-	let invalidSegments = (ref [], ref []) in
-
-	let nodes = Hashtbl.create 10 in
-
-	let getNodeInfo node =
-		if Hashtbl.mem nodes node
-		then Hashtbl.find nodes node
-		else (([], []), [], None)
-	in
-
-	let setNodeInfo node info =
-		if Hashtbl.mem nodes node
-		then Hashtbl.replace nodes node info
-		else Hashtbl.add nodes node info
-	in
-
+    let (start, delta, data, fmtnode') = game in
+    let fmtnode n = match fmtnode' n with None -> "[None]" | Some s -> s in
+    let defIndex = TreeSet.empty_def in
+    
+    let counter = ref 0 in
+    let invalidSegments = (ref [], ref []) in
+    
+    let nodes = Hashtbl.create 10 in
+    
+    let getNodeInfo node =
+      if Hashtbl.mem nodes node
+      then Hashtbl.find nodes node
+      else (([], []), [], None)
+    in
+    
+    let setNodeInfo node info =
+      if Hashtbl.mem nodes node
+      then Hashtbl.replace nodes node info
+      else Hashtbl.add nodes node info
+    in
+    
     let other p = 1 - p in
     let prioWinner k = k mod 2 in
 

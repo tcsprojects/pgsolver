@@ -19,17 +19,13 @@ let compact_sol_strat_to_sol_strat game comp =
 
 
 let find_useful_self_cycles game =
-    let n = pg_size game in
     let ret = ref [] in
-    for i = 0 to n - 1 do
-			  let pr = pg_get_priority game i in
-			  let pl = pg_get_owner game i in
-			  if prio_good_for_player pr pl then (
-			    ns_iter (fun j ->
-				     if j = i then ret := (i, pl, i)::!ret
-				    ) (pg_get_successors game i)
-			  )
-    done;
+    pg_iterate (fun i -> fun (pr,pl,succs,_,_) -> if prio_good_for_player pr pl then (
+						    ns_iter (fun j ->
+							     if j = i then ret := (i, pl, i)::!ret
+							    ) succs
+						  )
+	       ) game;
     !ret;;
 
 
@@ -46,112 +42,6 @@ let solve_cycle_scc game =
     (solution, strategy)
 
 
-      (*
-type process_result = PlayerWin of strategy * (int array)
-                    | PlayerLoss
-                    | Undecided of int
-
-let solve_single_player_scc game player =
-	let process_scc sccgame sccnodes =
-		let n = pg_size sccgame in
-		let p_pl = ref (-1) in
-		let p_op = ref (-1) in
-		for i = 0 to n - 1 do
-			let pr = pg_get_priority sccgame i in
-			let arg = if pr mod 2 = player then p_pl else p_op in
-			arg := max !arg pr
-		done;
-		if !p_pl > !p_op then (
-		  let strategy = Array.make n (-1) in
-		  let vs = pg_prio_nodes sccgame !p_pl in
-		  let vsset = TreeSet.of_list_def vs in
-		  List.iter (fun i ->
-			     if pg_get_owner sccgame i = player then strategy.(i) <- ns_some (pg_get_successors sccgame i)
-			    ) vs;
-		  let _ = attr_closure_inplace' sccgame strategy player vsset true (fun _ -> true) true in
-		  PlayerWin (strategy, sccnodes)
-		)
-		else if !p_pl < 0 then PlayerLoss
-		else Undecided (!p_pl + 1)
-	in
-	let rec process_undecided sccgame sccnodes p =
-		let n = pg_size sccgame in
-		let strategy = Array.make n (-1) in
-		let vs = collect_nodes_by_prio sccgame (fun pr -> pr >= p) in
-		let vsset = TreeSet.of_list_def vs in
-		let attr = attr_closure_inplace' sccgame strategy (1-player) vsset true (fun _ -> true) true in
-		let backup = ref (TreeSet.of_list_def attr) in
-		List.iter (fun i ->
-			   ns_iter (fun j -> backup := TreeSet.add j !backup) (pg_get_successors sccgame i);
-			   ns_iter (fun j -> backup := TreeSet.add j !backup) (pg_get_predecessors sccgame i);
-			  ) attr;
-		let backuped = ref [] in
-		TreeSet.iter (fun i ->
-			      let pr = pg_get_priority game i in
-			      let pl = pg_get_owner game i in
-			      let succs = pg_get_successors game i in
-			      let desc = pg_get_desc game i in 
-			      backuped := (i, (pr,pl,succs,desc))::!backuped
-			     ) !backup;
-		pg_remove_nodes sccgame attr;
-		let (newsccs,_,_,_) = strongly_connected_components sccgame in
-		let scccount = Array.length newsccs in
-		let todo = ref 0 in
-		let undecided_stack = ref [] in
-		let success = ref None in
-		while (!todo < scccount) && (!success = None) do
-		  let current = newsccs.(!todo) in
-		  let curgame = subgame_by_list sccgame current in
-		  if (pg_size curgame > 1) || (ns_size (pg_get_successors curgame 0) > 0) then (
-            	    let nodelist = Array.of_list current in
-            	    match process_scc curgame nodelist with
-            	        PlayerWin (s, t) -> success := Some (s, t)
-            	     |	Undecided p -> undecided_stack := (curgame, nodelist, p)::!undecided_stack
-            	     |	PlayerLoss -> ()
-		  );
-		  incr todo
-		done;
-		if !success = None then (
-        	  while (!undecided_stack != []) && (!success = None) do
-        	    let (curgame, nodelist, p) = List.hd !undecided_stack in
-        	    undecided_stack := List.tl !undecided_stack;
-        	    success := process_undecided curgame nodelist p
-        	  done
-		);
-		List.iter (fun (i, (pr,pl,succs,desc)) ->
-			   pg_set_priority sccgame i pr;
-			   pg_set_owner sccgame i pl;
-			   pg_set_desc sccgame i desc;
-			   ns_iter (fun w -> message 3 (fun _ -> "Adding edge " ^ string_of_int i ^ "->" ^ string_of_int w ^ " to the following game: " ^ game_to_string sccgame ^ "\n");
-					     pg_add_edge sccgame i w) succs;
- 			  ) !backuped;
-		match !success with
-		  None -> None
-		|   Some (strat, nodes) -> 
-                     Some (strat, Array.map (fun j -> sccnodes.(j)) nodes)
-	in
-	let rec solve_single_player_scc' sccgame sccnodes =
-	  match process_scc sccgame sccnodes with
-	    Undecided p -> process_undecided sccgame sccnodes p
-	   |	PlayerWin (s, t) -> Some (s, t)
-	   |	PlayerLoss -> None
-	in
-	let n = pg_size game in
-	match solve_single_player_scc' game (Array.init n (fun i -> i)) with
-	  Some (strat, sccnodes) -> (let strategy = Array.make n (-1) in
-				     Array.iteri (fun i j ->
-						  strategy.(sccnodes.(i)) <- if j >= 0 then sccnodes.(j) else -1
-						 ) strat;
-				     let vsset = TreeSet.of_array_def sccnodes in
-				     let _ = attr_closure_inplace' game strategy player vsset true (fun _ -> true) true in
-				     (Array.make n player, strategy)
-				    )
-	 |	None -> let strat = Array.init n (fun j ->
-						  if pg_get_owner game j = player then -1 else ns_some (pg_get_successors game j)
-						 )
-			in
-			(Array.make n (1 - player), strat);;
-       *)
 
 let solve_single_player_scc game player =
   let n = pg_size game in
@@ -239,14 +129,8 @@ let solve_single_parity_scc game player =
     let n = pg_size game in
 	let solution = Array.make n player in
 	let strategy = Array.make n (-1) in
-	for i = 0 to n - 1 do
-		if (pg_isDefined game i) && (pg_get_owner game i = player)
-		then strategy.(i) <- ns_first (pg_get_successors game i) 
-	done;
+	pg_iterate (fun i -> fun (_,ow,succs,_,_) -> if ow = player then strategy.(i) <- ns_first (pg_get_successors game i)) game;
 	(solution, strategy);;
-
-
-
 
 
 
@@ -278,41 +162,6 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
 				(pr, pl, delta_small)
 		) 
 	in
-	(*
-    let subnodes_by_list game li =
-        let n = List.length li in
-        let g = Array.make n (-1, -1, ref TreeSet.empty_def) in
-        let i = ref 0 in
-        List.iter (fun arri ->
-		   let pr = pg_get_priority game arri in
-		   let pl = pg_get_owner game arri in
-		   (* TODO: This is serious black magic here. Abusing types. Oliver, why would you do something like this? *)
-		   pg_set_priority game arri (-2);
-		   pg_set_owner game arri !i; (* TODO: this prevents us from making type "player" abstract! *)
-		   g.(!i) <- (pr, pl, ref TreeSet.empty_def);
-		   i := !i + 1
-        ) li;
-        let i = ref 0 in
-        List.iter (fun arri ->
-            let (pr, pl, _) = g.(!i) in
-	    let delta = pg_get_successors game arri in
-            let l = ref TreeSet.empty_def in
-	    ns_iter (fun j ->
-		     if pg_get_priority game j = -2 then l := TreeSet.add (pg_get_owner game j) !l
-		    ) delta;
-            g.(!i) <- (pr, pl, l);
-            i := !i + 1
-        ) li;
-        let i = ref 0 in
-        List.iter (fun arri ->
-            let (pr, pl, _) = g.(!i) in
-						pg_set_priority game arri pr;
-						pg_set_owner game arri pl;
-            i := !i + 1
-        ) li;
-        g
-    in
-*)
     let list_attractor transp getpl strat source_set_ref todo =
     	while not (Queue.is_empty todo) do
     		let x = Queue.take todo in

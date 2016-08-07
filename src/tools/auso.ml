@@ -25,12 +25,9 @@ let _ =
     let n = pg_size game in
     
     (* Remove trivial player 0 nodes *)
-    for i = 0 to n-1 do
-      let pl = pg_get_owner game i in
-      let tr = pg_get_successors game i in
-      if (pl = plr_Even) && (ns_size tr = 1)
-      then pg_set_owner game i plr_Odd
-    done;
+    pg_iterate (fun i -> fun (_,pl,tr,_,_) -> if (pl = plr_Even) && (ns_size tr = 1)
+					      then pg_set_owner game i plr_Odd)
+	       game;
   
     (* Multiplier Table *)
     let m = Array.make n 1 in
@@ -101,14 +98,10 @@ let _ =
    in
       
    out "* ";
-   for i = 0 to n - 1 do
-     let pl = pg_get_owner game i in
-     let desc = pg_get_desc game i in
-     if (pl = plr_Even) then
-       match desc with
-         None -> print_string " _" |
-         Some s -> print_string (" " ^ s)
-   done;
+   pg_iterate (fun i -> fun (_,pl,_,_,desc) -> if pl = plr_Even then
+						 match desc with
+						   None -> print_string " _" |
+						   Some s -> print_string (" " ^ s)) game;
    out "\n";
       
    iterate (Array.make n (-1)) 0 (fun strategy ->
@@ -116,21 +109,19 @@ let _ =
      let valu = evaluate_strategy game node_total_ordering_by_position strategy in
      let l = ref [] in
      let k = ref [] in
-     for i = 0 to n - 1 do
-				let pl = pg_get_owner game i in
-       let tr = (Array.of_list (ns_nodes (pg_get_successors game i))) in
-       if (pl = plr_Even) then
-         for j = 0 to Array.length tr - 1 do
-           let c = node_valuation_ordering game node_total_ordering_by_position valu.(strategy.(i)) valu.(tr.(j)) in
-           if (c != 0) then (
-             temp.(i) <- tr.(j);
-             if c < 0
-             then l := strategy_to_int temp :: !l
-             else k := strategy_to_int temp :: !k;
-             temp.(i) <- strategy.(i)
-           )
-         done;
-     done;
+     pg_iterate (fun i -> fun (_,pl,succs,_,_) -> let tr = Array.of_list (ns_nodes succs) in
+						  if (pl = plr_Even) then
+						    for j = 0 to Array.length tr - 1 do
+						      let c = node_valuation_ordering game node_total_ordering_by_position valu.(strategy.(i)) valu.(tr.(j)) in
+						      if (c != 0) then (
+							temp.(i) <- tr.(j);
+							if c < 0
+							then l := strategy_to_int temp :: !l
+							else k := strategy_to_int temp :: !k;
+							temp.(i) <- strategy.(i)
+						      )
+						    done;
+		) game;
      let l = List.rev !l in
      let k = List.rev !k in
      out (string_of_int (strategy_to_int strategy) ^ "(" ^ format_strategy strategy ^ "): ");
