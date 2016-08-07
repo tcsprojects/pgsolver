@@ -17,10 +17,9 @@ Changes incorporated into version 4:
      successors. Hence, functions for computing transposed graphs etc.\ have been removed.
 \item[$\ast\ast$] \pgsolver is now built using \texttt{ocamlbuild}. It requires the OCaml packages \texttt{ocamlfind} and \texttt{ounit}.
      Get them using \texttt{opam}.
-\item[$\ast\ast\ast$] A textual presentation of a parity game now has to start with the keyword \texttt{parity} followed by the number of
-     nodes in the game. Note that before it was possible to omit this information and, if given, the number was interpreted as the largest
-     identifier of a node in the game. So any ``\texttt{parity} $n$'' should now be ``\texttt{parity} $n+1$''. \TODO{change this in the
-       description of the grammar!}
+\item[$\ast\ast\ast$] If a textual presentation of a parity game start with the keyword \texttt{parity} then it is followed by the number of
+     nodes in the game, rather than the largest identifier of a node in the game. So any ``\texttt{parity} $n$'' should now be 
+     ``\texttt{parity} $n+1$''. \TODO{Is this something we want to go for?}
 \end{itemize}
 
 Changes incorporated into version 3:
