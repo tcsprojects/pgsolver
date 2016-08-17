@@ -5,6 +5,13 @@ open Tcsset;;
 open Tcsgraph;;
 
 
+(**************************************************************
+ * nodes in a parity game                                     *
+ **************************************************************)		    
+
+type node = int
+let node_undef = -1
+
 		    
 (**************************************************************
  * access functions for nodes in set-like data structures for *
@@ -13,7 +20,6 @@ open Tcsgraph;;
  * here: sorted lists                                         *
  **************************************************************)
 
-type node = int
 type nodeset = node list
   
 let ns_isEmpty ws = ws = []
@@ -221,16 +227,6 @@ let pg_init n f =
   done;
   game;;
 
-(* DEPRECATED
-let pg_get_tr_index_of pg v w =
-  let succs = pg_get_successors pg v in
-  let (b,k) = List.fold_left (fun (b,k) -> fun u -> if b || (w=u) then (b,k)
-						    else (false,k+1))
-			     (false,0)
-			     succs
-  in
-  if b then k else raise Not_found
-*)
   
 let pg_remove_nodes game nodes =
   List.iter (fun v -> let succs = pg_get_successors game v in
@@ -246,17 +242,6 @@ let pg_remove_edges game edges =
     List.iter (fun (v, w) -> pg_del_edge game v w) edges;;
 
   
-(* should be DEPRECATED
-let pg_set_successors gm v ws =
-  let succs = pg_get_successors gm v in
-  List.iter (fun u -> pg_del_edge gm v u) succs;
-  Array.iter (fun u -> pg_add_edge gm u v) ws
-	     
-let pg_set_predecessors gm v ws =
-  let preds = pg_get_predecessors gm v in
-  List.iter (fun u -> pg_del_edge gm u v) preds;
-  Array.iter (fun u -> pg_add_edge gm v u) ws
- *)
 
  
 (**************************************************************
@@ -270,7 +255,26 @@ let sol_init game f = Array.init (pg_size game) f
 let sol_number_solved sol =
   Array.fold_left (fun c e -> if e = plr_undef then c else c + 1) 0 sol
 
-  
+let sol_get sol v = sol.(v) 
+let sol_set sol v pl = sol.(v) <- pl
+let sol_iter = Array.iteri  (* TODO: also the undefined ones? *)
+
+(***************************************************************
+ * Strategies                                                  *
+ ***************************************************************)
+							   
+let str_create game = Array.make (pg_size game) node_undef
+let str_make n = Array.make n node_undef 
+let str_init game f = Array.init (pg_size game) f 
+
+let str_get str v = str.(v)
+let str_set str v u = str.(v) <- u 
+let str_iter = Array.iteri (* TODO: also the undefined ones? *)
+
+
+
+
+
 (**************************************************************
  * Formatting Functions                                       *
  **************************************************************)

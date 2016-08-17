@@ -9,7 +9,7 @@ open Tcsset
  * Warning: the type `node' may become abstract in the future  *
  ***************************************************************)
 
-type node = int
+type node (* = int *)
 type nodeset
 
 (* check for emptiness and membership *)
@@ -52,7 +52,7 @@ val ns_nodes   : nodeset -> node list
  * Warning: the types may become abstract in the future       *
  **************************************************************)
 
-type player (* = int *)    (* TODO: should be abstract *)
+type player 
 type priority = int
 
 val plr_Even  : player
@@ -151,16 +151,40 @@ val pg_sort                   : ((priority * player * nodeset * nodeset * string
 
 type solution = player array
 type strategy = node array
-type global_solver = (paritygame -> solution * strategy)
 
 (* create solution spaces for a parity game *)
 val sol_create : paritygame -> solution                       (* initially, every node is won by player plr_undef *)
 val sol_make   : int -> solution                              (* same as sol_create but only gets to know the size of the game *)
 val sol_init   : paritygame -> (node -> player) -> solution   (* create solution space initially filled with values *)
 
-(* test solutions *)
-val sol_number_solved : solution -> int
-		       
+val sol_get    : solution -> node -> player                   (* get the winner of a node according to a solution *)
+val sol_set    : solution -> node -> player -> unit           (* set the winner of a node in a solution *)
+val sol_iter   : (node -> player -> unit) -> solution -> unit (* iterate over all nodes with their winners in a solution space *) (* TODO: also the undefined ones? *)
+						 
+val sol_number_solved : solution -> int                       (* test solutions *)
+
+(* create positional strategies for a parity game 
+ *
+ * A value of type strategy is essentially a map of type node -> node that represents positional strategies for both players.
+ * The player for whom a decision v -> u is included in the strategy is implicitly given by the owner of node v in the underlying parity game.
+ * Warning: a strategy does not remember its underlying parity game. Hence, a strategy that was created for one game can be used for another game,
+ * but this can not only obviously lead to wrong computations but also to runtime errors. (* TODO: is this something we should mend? *)
+ *)
+val str_create : paritygame -> strategy                       (* initially, every node maps to a special undefined node *)
+val str_make   : int -> strategy                              (* same as str_create but only gets to know the size of the game *)
+val str_init   : paritygame -> (node -> node) -> strategy     (* create strategy initially filled with decisions according to its second argument *)
+
+val str_get    : strategy -> node -> node                     (* get the strategy decision at a node *)
+val str_set    : strategy -> node -> node -> unit             (* `str_set <str> <v> <u>´ records the strategy decision <v> -> <u> in <str> *)
+val str_iter   : (node -> node -> unit) -> strategy -> unit   (* iterate over all nodes and their corresponding successors in a strategy *) (* TODO: also the undefined ones ? *)
+
+
+(**************************************************************
+ * A type for algorithms that solve a paritygame              *
+ **************************************************************)
+type global_solver = (paritygame -> solution * strategy)
+
+							 
 (**************************************************************
  * Formatting Functions                                       *
  **************************************************************)
