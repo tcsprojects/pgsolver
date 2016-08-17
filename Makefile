@@ -15,7 +15,7 @@ test:
 	mv solverstest.native bin/ounit
 
 
-generators: randomgame laddergame clusteredrandomgame cliquegame modelcheckerladder recursiveladder steadygame jurdzinskigame elevatorverification towersofhanoi langincl stratimprgen
+generators: randomgame laddergame clusteredrandomgame cliquegame modelcheckerladder recursiveladder steadygame jurdzinskigame elevatorverification towersofhanoi langincl stratimprgen recursivedullgame
 
 
 randomgame:
@@ -53,6 +53,12 @@ recursiveladder:
 	ocamlbuild -libs nums temprecursiveladder.native
 	mv temprecursiveladder.native bin/recursiveladder
 	rm temprecursiveladder.ml
+
+recursivedullgame:
+	echo "open Recursivedullgame;; open Rungenerator;;" > temprecursivedullgame.ml
+	ocamlbuild -libs nums temprecursivedullgame.native
+	mv temprecursivedullgame.native bin/recursivedullgame
+	rm temprecursivedullgame.ml
 
 steadygame:
 	echo "open Steadygame;; open Rungenerator;;" > tempsteadygame.ml

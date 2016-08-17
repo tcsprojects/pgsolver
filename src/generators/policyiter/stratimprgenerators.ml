@@ -2,6 +2,51 @@ open Tcsset
 open Paritygame
 open Mdp
 
+
+
+module SymbolicParityGame = struct
+
+	open Tcsset
+	open Tcsgraph
+
+	type 'a symbolic_paritygame = ('a, int) Hashtbl.t * dynamic_paritygame
+
+	let create_new x = (Hashtbl.create 10, DynamicGraph.make ())
+
+	let to_paritygame (ht, gr) =
+		let pg = pg_create (Hashtbl.length ht) in
+		Hashtbl.iter (fun _ ind ->
+			let (pr, pl, desc) = DynamicGraph.get_node_data ind gr in
+			pg_set_priority pg ind pr;
+			pg_set_owner pg ind (if pl = 0 then plr_Even else plr_Odd);
+			pg_set_desc pg ind desc;
+			TreeSet.iter (fun w -> pg_add_edge pg ind w) (DynamicGraph.get_node_succ ind gr)
+		) ht;
+		pg
+
+	let internal_add (ht, gr) symb pr pl desc override =
+		if Hashtbl.mem ht symb
+		then let ind = Hashtbl.find ht symb in
+			 if override then DynamicGraph.set_node_data ind (pr, pl, desc) gr;
+			 ind
+		else let ind = Hashtbl.length ht in
+			 Hashtbl.add ht symb ind;
+			 DynamicGraph.add_node ind (pr, pl, desc) gr;
+			 ind
+   
+    let touch_node (ht, gr) symb =
+   		let _ = internal_add (ht, gr) symb (-1) (-1) None false in ()
+
+	let add_node (ht, gr) symb pr pl tr desc =
+		let ind = internal_add (ht, gr) symb pr pl desc true in
+		Array.iter (fun symb' ->
+			let ind' = internal_add (ht, gr) symb' (-1) (-1) None false in
+			DynamicGraph.add_edge ind ind' gr
+		) tr
+
+end;;
+
+
 type strat_impr_gen_args = string array
 
 type strat_impr_gen = {

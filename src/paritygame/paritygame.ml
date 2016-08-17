@@ -1152,55 +1152,6 @@ let paritygame_to_dynamic_paritygame_by_strategy game strat =
 	graph
 
 
-
-
-(**************************************************************
- * Symbolic Parity Game                                       *
- **************************************************************)
-
-module SymbolicParityGame = struct
-
-	open Tcsset
-
-	type 'a symbolic_paritygame = ('a, int) Hashtbl.t * dynamic_paritygame
-
-	let create_new x = (Hashtbl.create 10, DynamicGraph.make ())
-
-	let to_paritygame (ht, gr) =
-		let pg = pg_create (Hashtbl.length ht) in
-		Hashtbl.iter (fun _ ind ->
-			let (pr, pl, desc) = DynamicGraph.get_node_data ind gr in
-			pg_set_priority pg ind pr;
-			pg_set_owner pg ind pl;
-			pg_set_desc pg ind desc;
-			TreeSet.iter (fun w -> pg_add_edge pg ind w) (DynamicGraph.get_node_succ ind gr)
-		) ht;
-		pg
-
-	let internal_add (ht, gr) symb pr pl desc override =
-		if Hashtbl.mem ht symb
-		then let ind = Hashtbl.find ht symb in
-			 if override then DynamicGraph.set_node_data ind (pr, pl, desc) gr;
-			 ind
-		else let ind = Hashtbl.length ht in
-			 Hashtbl.add ht symb ind;
-			 DynamicGraph.add_node ind (pr, pl, desc) gr;
-			 ind
-   
-    let touch_node (ht, gr) symb =
-   		let _ = internal_add (ht, gr) symb (-1) (-1) None false in ()
-
-	let add_node (ht, gr) symb pr pl tr desc =
-		let ind = internal_add (ht, gr) symb pr pl desc true in
-		Array.iter (fun symb' ->
-			let ind' = internal_add (ht, gr) symb' (-1) (-1) None false in
-			DynamicGraph.add_edge ind ind' gr
-		) tr
-
-end;;
-
-
-
 (********************************************************
  * a type and data structure for sets of game nodes     *
  ********************************************************)
@@ -1309,7 +1260,7 @@ module Build = functor (T: GameNode) ->
                                        !next_code - 1
                                      end
 
-    let build_from_node v = 
+    let build_from_nodes vlist = 
       let rec iterate acc visited = 
         function []          -> acc
                | ((v,c)::vs) -> begin
@@ -1321,7 +1272,7 @@ module Build = functor (T: GameNode) ->
                                     iterate ((c, T.owner v, T.priority v, ds, T.name v) :: acc) (NodeSet.add c visited) ((List.combine ws ds) @ vs)
                                   end
       in
-      let nodes = iterate [] NodeSet.empty [(v,encode v)] in
+      let nodes = iterate [] NodeSet.empty (List.map (fun v -> (v,encode v)) vlist) in
       let game = pg_create (List.length nodes) in
       let rec transform = 
         function []                  -> ()
@@ -1333,6 +1284,10 @@ module Build = functor (T: GameNode) ->
       in
       transform nodes;
       game
+			
+		let build_from_node v =
+		  build_from_nodes [v]
+			
   end;;
 
 

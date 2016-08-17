@@ -374,26 +374,6 @@ val paritygame_to_dynamic_paritygame_by_strategy: paritygame -> strategy -> dyna
 
 
 
-(**************************************************************
- * Symbolic Parity Game                                       *
- **************************************************************)
-
-
-module SymbolicParityGame : sig
-
-	type 'a symbolic_paritygame
-
-	val create_new: 'a -> 'a symbolic_paritygame
-
-	val to_paritygame: 'a symbolic_paritygame -> paritygame
-
-  val touch_node: 'a symbolic_paritygame -> 'a -> unit
-   
-	val add_node: 'a symbolic_paritygame -> 'a -> int -> int -> 'a array -> string option -> unit
-
-end
-
-
 
 (********************************************************
  * a type and data structure for sets of game nodes     *
@@ -468,4 +448,5 @@ module type GameNode =
 module Build: functor (T: GameNode) -> 
   sig
     val build_from_node : T.gamenode -> paritygame
+		val build_from_nodes : T.gamenode list -> paritygame
   end
