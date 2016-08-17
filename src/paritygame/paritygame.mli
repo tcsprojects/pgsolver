@@ -9,7 +9,7 @@ open Tcsset
  * Warning: the type `node' may become abstract in the future  *
  ***************************************************************)
 
-type node (* = int *)
+type node = int
 type nodeset
 
 (* check for emptiness and membership *)
