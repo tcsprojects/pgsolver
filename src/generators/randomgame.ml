@@ -22,9 +22,10 @@ let random_game_func arguments =
 
     Random.self_init ();
 
-    pg_init size (fun i -> (Random.int max_prio,
+    pg_init size (fun v -> let i = nd_reveal v in
+			   (Random.int max_prio,
 			    plr_random (),
-			    List.map (fun j -> if j < i || self_cycles then j else j + 1)
+			    List.map (fun j -> nd_make (if j < i || self_cycles then j else j + 1))
 				     (Array.to_list (Tcsmaths.RandomUtils.get_pairwise_different_from_range (outdegmin + Random.int (outdegmax - outdegmin + 1))
 													    0
 													    (size-1 - (if self_cycles then 0 else 1)))),

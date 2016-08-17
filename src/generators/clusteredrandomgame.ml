@@ -61,11 +61,11 @@ let generator_game_func arguments =
 
   generate recdepth 0 (size - 1);
   
-  pg_init size (fun i ->
-	(Random.int max_prio,
-	 plr_random (),
-	 TreeSet.remove_list_dups pg.(i),
-	 Some (string_of_int i))
+  pg_init size (fun v -> let i = nd_reveal v in
+			 (Random.int max_prio,
+			  plr_random (),
+			  List.map nd_make (TreeSet.remove_list_dups pg.(i)),
+			  Some (string_of_int i))
   );;
 
 Generators.register_generator generator_game_func "clusteredrg" "Clustered Random Game";;

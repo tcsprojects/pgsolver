@@ -16,13 +16,13 @@ module CommandLine =
 struct
   type solver = NoSolver
               | YesSolver of string * global_solver_factory
-			  | LocalSolver of string * partial_solver_factory
+	      | LocalSolver of string * partial_solver_factory
 
   type generator = NoGenerator
                  | YesGenerator of string * (string array -> paritygame)
 
   type verifier = NoVerifier
-  				| YesVerifier of (paritygame -> solution -> strategy -> (int list * string) option)
+  		| YesVerifier of (paritygame -> solution -> strategy -> (node list * string) option)
 
   let solver = ref NoSolver
   

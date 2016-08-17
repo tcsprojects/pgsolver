@@ -26,11 +26,11 @@ let generator_game_func arguments =
   	let mn = i = 0 in
 
   	let prnt j pr pl succs =
-	  let j' = start_idx + j in
+	  let j' = nd_make (start_idx + j) in
 	  pg_set_priority game j' pr;
 	  pg_set_owner game j' (plr_benefits (start_pl + pl));
 	  pg_set_desc game j' (Some (string_of_int (start_idx + j)));
-	  List.iter (fun w -> pg_add_edge game j' (w+start_idx)) succs
+	  List.iter (fun w -> pg_add_edge game j' (nd_make (w+start_idx))) succs
 	in
 
 	if not mn then (

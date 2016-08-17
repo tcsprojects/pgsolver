@@ -10,6 +10,10 @@ open Tcsset
  ***************************************************************)
 
 type node = int
+val nd_undef  : node
+val nd_make   : int -> node   (* turns an int into a node; mostly to be used with paritygame generators that like to build a game using ints for nodes *) 
+val nd_reveal : node -> int   (* provides the inverse function to nd_make *)
+			  
 type nodeset
 
 (* check for emptiness and membership *)
@@ -472,5 +476,5 @@ module type GameNode =
 module Build: functor (T: GameNode) -> 
   sig
     val build_from_node : T.gamenode -> paritygame
-		val build_from_nodes : T.gamenode list -> paritygame
+    val build_from_nodes : T.gamenode list -> paritygame
   end

@@ -10,8 +10,9 @@ open Tcsgraph;;
  **************************************************************)		    
 
 type node = int
-let node_undef = -1
-
+let nd_undef = -1
+let nd_make v = v
+let nd_reveal v = v		  
 		    
 (**************************************************************
  * access functions for nodes in set-like data structures for *
@@ -263,8 +264,8 @@ let sol_iter = Array.iteri  (* TODO: also the undefined ones? *)
  * Strategies                                                  *
  ***************************************************************)
 							   
-let str_create game = Array.make (pg_size game) node_undef
-let str_make n = Array.make n node_undef 
+let str_create game = Array.make (pg_size game) nd_undef
+let str_make n = Array.make n nd_undef 
 let str_init game f = Array.init (pg_size game) f 
 
 let str_get str v = str.(v)
@@ -1268,13 +1269,13 @@ module Build = functor (T: GameNode) ->
       let rec iterate acc visited = 
         function []          -> acc
                | ((v,c)::vs) -> begin
-                                  if NodeSet.mem c visited then
-                                    iterate acc visited vs
-                                  else
-                                    let ws = T.successors v in
-                                    let ds = List.map encode ws in
-                                    iterate ((c, T.owner v, T.priority v, ds, T.name v) :: acc) (NodeSet.add c visited) ((List.combine ws ds) @ vs)
-                                  end
+                                if NodeSet.mem c visited then
+                                  iterate acc visited vs
+                                else
+                                  let ws = T.successors v in
+                                  let ds = List.map encode ws in
+                                  iterate ((c, T.owner v, T.priority v, ds, T.name v) :: acc) (NodeSet.add c visited) ((List.combine ws ds) @ vs)
+                              end
       in
       let nodes = iterate [] NodeSet.empty (List.map (fun v -> (v,encode v)) vlist) in
       let game = pg_create (List.length nodes) in
@@ -1289,8 +1290,7 @@ module Build = functor (T: GameNode) ->
       transform nodes;
       game
 			
-		let build_from_node v =
-		  build_from_nodes [v]
+    let build_from_node v = build_from_nodes [v]
 			
   end;;
 

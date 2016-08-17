@@ -1,5 +1,37 @@
 open Paritygame;;
 
+let n = ref 0
+let with_self_cycles = ref true
+			   
+module Clique =
+  struct
+    type gamenode = int
+
+    let compare = compare
+
+    let owner i = plr_benefits i
+
+    let priority i = i
+
+    let successors i = 
+      let rec succs acc j =
+	if j=i
+	then (if !with_self_cycles
+	      then succs (j::acc) (j-1)
+	      else succs acc (j-1))
+	else (if j<0
+	      then acc
+	      else succs (j::acc) (j-1))
+      in
+      succs [] !n
+
+    let name i = Some (string_of_int i)
+
+    let initial_node = 0
+  end;;
+
+module CliqueGame = Build(Clique);;
+  
 let generator_game_func arguments = 
 
   let show_help _ =
@@ -8,27 +40,13 @@ let generator_game_func arguments =
 		    "       where n = Number of nodes\n" ^
 		      "             <cycles> is either the string > self < or absent\n\n")
   in
-						  
-  let successors n i s =
-    let rec succs acc j =
-      if j=i
-      then (if s
-	    then succs (j::acc) (j-1)
-	    else succs acc (j-1))
-      else (if j<0
-	    then acc
-	    else succs (j::acc) (j-1))
-    in
-    succs [] n
-  in
-  
-  let (size,with_self_cycles) =
-    try
-      (int_of_string arguments.(0), Array.length arguments = 2 && arguments.(1) = "self")
-    with _ -> (show_help (); exit 1)
-  in
 
-  pg_init size (fun i -> (i, plr_benefits i, successors (size-1) i with_self_cycles, Some (string_of_int i)));;
+  (try
+    n := int_of_string arguments.(0);
+    with_self_cycles := Array.length arguments = 2 && arguments.(1) = "self"
+  with _ -> (show_help (); exit 1));
+
+  CliqueGame.build_from_node Clique.initial_node
 
 
-Generators.register_generator generator_game_func "cliquegame" "Clique Game";;
+let _ = Generators.register_generator generator_game_func "cliquegame" "Clique Game";;

@@ -13,6 +13,8 @@ let generator_game_func arguments =
 
   let n = int_of_string arguments.(0) in
   let m = 2*n in  
-  pg_init m (fun i -> (i mod 2, plr_benefits i, [ (i+1) mod m; (i+2) mod m ], Some (string_of_int i)));;
+
+  pg_init m (fun v -> let i = nd_reveal v in
+		      (i mod 2, plr_benefits i, [ nd_make ((i+1) mod m); nd_make ((i+2) mod m) ], Some (string_of_int i)));;
   
 Generators.register_generator generator_game_func "laddergame" "Ladder Game";;

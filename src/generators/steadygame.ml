@@ -52,9 +52,10 @@ let generator_game_func arguments =
   	else if lenj = indegmax then DynArray.delete inavail jj;
   done;
 
-  pg_init size (fun i -> (i,
+  pg_init size (fun v -> let i = nd_reveal v in
+			 (i,
 			  plr_random (),
-			  pg.(i),
+			  List.map nd_make pg.(i),
 			  Some (string_of_int i))
 	       );;
 
