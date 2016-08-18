@@ -9,7 +9,7 @@ open Tcsset
  * Warning: the type `node' may become abstract in the future  *
  ***************************************************************)
 
-type node = int
+type node (* = int *)
 val nd_undef  : node
 val nd_make   : int -> node   (* turns an int into a node; mostly to be used with paritygame generators that like to build a game using ints for nodes *) 
 val nd_reveal : node -> int   (* provides the inverse function to nd_make *)
@@ -356,12 +356,12 @@ val pg_set_dominion: (paritygame -> solution * strategy) -> paritygame -> node T
  **************************************************************)
 
 type partial_paritygame = int * (int -> int Enumerators.enumerator) * (int -> int * int) * (int -> string option)
-type partial_solution = int -> int * int option
+type partial_solution = node -> int * int option
 type partial_solver = partial_paritygame -> partial_solution
 
-val induce_partialparitygame: paritygame -> int -> partial_paritygame
+val induce_partialparitygame: paritygame -> node -> partial_paritygame
 
-val induce_counting_partialparitygame: paritygame -> int -> int ref * partial_paritygame
+val induce_counting_partialparitygame: paritygame -> node -> int ref * partial_paritygame
 
 val partially_solve_dominion: paritygame -> int -> partial_solver -> solution * strategy
 

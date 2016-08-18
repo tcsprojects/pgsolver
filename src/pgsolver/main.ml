@@ -43,7 +43,7 @@ struct
 
   let solving = ref true
   
-  let initnode = ref 0 
+  let initnode = ref nd_undef  (* TODO: was "0", does any code rely on this being node 0? Then we should define a nd_def_init in paritygame.mli *)
 
   let verifier = ref NoVerifier
 
@@ -126,7 +126,7 @@ struct
                      "<solver>\n     solves globally, valid solvers are" ^
                      fold_solvers (fun _ ident _ _ t -> t ^ " " ^ ident) ""); 
                    (["--locallysolve"; "-local"], Tuple [String (fun s -> let (solve, _, _) = find_partial_solver s in solver := LocalSolver (s, solve));
-                                                        Int (fun i -> initnode := i)],
+                                                        Int (fun i -> initnode := nd_make i)],
                      "<solver> <node>\n     solves locally, valid solvers are" ^
                      fold_partial_solvers (fun _ ident _ _ t -> t ^ " " ^ ident) ""); 
                    (["--args"; "-x"], String(fun s -> solveargs := s),
@@ -190,14 +190,13 @@ let _ =
 	  message 1 (fun _ -> "Parsing ............................... ");
 	  let timobj = SimpleTiming.init true in
 (*	  let game = Parserhelper.parse_from_channel in_channel !perform_sanity_check in *)
-	  let game = (
-		match !solver with
-			LocalSolver _ ->
-				let (init, g) = Parsers.parse_init_parity_game in_channel in
-				initnode := init;
-				g
-		|	_ -> Parsers.parse_parity_game in_channel
-	  )in
+	  let game = (match !solver with
+			LocalSolver _ -> let (init, g) = Parsers.parse_init_parity_game in_channel in
+					 initnode := init;
+					 g
+		      | _             -> Parsers.parse_parity_game in_channel
+		     )
+	  in
 	  SimpleTiming.stop timobj;
 	  message 1 (fun _ -> (SimpleTiming.format timobj) ^ "\n");
 	  game

@@ -15,12 +15,12 @@ module SymbolicParityGame = struct
 
 	let to_paritygame (ht, gr) =
 		let pg = pg_create (Hashtbl.length ht) in
-		Hashtbl.iter (fun _ ind ->
-			let (pr, pl, desc) = DynamicGraph.get_node_data ind gr in
+		Hashtbl.iter (fun _ ind' -> let ind = nd_make ind' in
+			let (pr, pl, desc) = DynamicGraph.get_node_data ind' gr in
 			pg_set_priority pg ind pr;
 			pg_set_owner pg ind (if pl = 0 then plr_Even else plr_Odd);
 			pg_set_desc pg ind desc;
-			TreeSet.iter (fun w -> pg_add_edge pg ind w) (DynamicGraph.get_node_succ ind gr)
+			TreeSet.iter (fun w -> pg_add_edge pg ind (nd_make w)) (DynamicGraph.get_node_succ ind' gr)
 		) ht;
 		pg
 
