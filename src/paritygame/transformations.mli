@@ -15,7 +15,7 @@ val remove_useless_self_cycles_inplace: paritygame -> node list
  * Local Preprocessing                                        *
  **************************************************************)
 
-val compact_prio_inplace: paritygame -> bool -> int array
+val compact_prio_inplace: paritygame -> bool -> priority array
 
 val priority_propagation_inplace: paritygame -> unit
 

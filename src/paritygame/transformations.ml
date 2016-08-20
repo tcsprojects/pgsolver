@@ -35,10 +35,7 @@ let remove_useless_self_cycles_inplace game =
 let compact_prio_inplace (pg: paritygame) real_alternation =
   let n = pg_size pg in
   let getpr i = pg_get_priority pg i in
-  let prios = Array.make n (-1) in
-  for i = 0 to n - 1 do
-    prios.(i) <- i
-  done;
+  let prios = Array.init n (fun i -> i) in
   Array.sort (fun i j -> (getpr i) - (getpr j)) prios;
   let rec count index i last =
     if i >= n
@@ -184,7 +181,7 @@ let single_scc_transformation pg =
 		let roots = List.filter (fun v -> pg_get_priority pg v >= 0) (List.map (fun i -> List.hd sccs.(i)) roots) in
 		if has0 then (
 		  let v = !ptr0 in
-		  let v' = v+1 in
+		  let v' = v + 1 in
 		  pg_set_priority pg' v 0;
 		  pg_set_owner pg' v plr_Odd;
 		  pg_set_desc pg' v None;
@@ -198,7 +195,7 @@ let single_scc_transformation pg =
 		);
 		if has1 then (
 		  let v = !ptr1 in
-		  let v' = v+1 in
+		  let v' = v + 1 in
 		  pg_set_priority pg' v 0;
 		  pg_set_owner pg' v plr_Even;
 		  pg_set_desc pg' v None;

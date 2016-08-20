@@ -1,7 +1,7 @@
 open Basics;;
 open Paritygame;;
 
-type compact_sol_strat = (int * player * int) list
+type compact_sol_strat = (node * player * node) list
 					   
 val compact_sol_strat_to_sol_strat: paritygame -> compact_sol_strat -> solution * strategy
 

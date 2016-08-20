@@ -13,7 +13,9 @@ type node = int
 let nd_undef = -1
 let nd_make v = v
 let nd_reveal v = v		  
-		    
+
+let nd_show = string_of_int
+		
 (**************************************************************
  * access functions for nodes in set-like data structures for *
  * successors and predecessors in a game                      *

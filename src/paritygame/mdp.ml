@@ -25,28 +25,27 @@ let parity_game_to_generalized_mdp pg min_even_prio is_epsilon =
 	let epsilon = BigFloat.of_big_ints BigInt.one (BigInt.int_power_int !real_n (!mp-min_even_prio+2+1)) in
 	let mdp = Array.make (n + !p) Sink in
 	let q = ref n in
-	pg_iterate (fun v -> fun (pr,pl,tr,_,desc) ->
-			     let i = nd_reveal v in
+	pg_iterate (fun i -> fun (pr,pl,tr,_,desc) ->
 			     let trsize = ns_size tr in
 			     if pr = 1 then (
 			       mdp.(i) <- Sink;
 			     )
 			     else if trsize = 1 then
 			       mdp.(i) <- if pr >= min_even_prio
-					  then Reward (BigFloat.of_big_int (BigInt.int_power_int (- !real_n) (pr - min_even_prio + 2)), nd_reveal (ns_some tr))
-					  else Reward (BigFloat.of_int 0, nd_reveal (ns_some tr))
+					  then Reward (BigFloat.of_big_int (BigInt.int_power_int (- !real_n) (pr - min_even_prio + 2)), ns_some tr)
+					  else Reward (BigFloat.of_int 0, ns_some tr)
 			     else (
 			       let b = if pr >= min_even_prio then !q else 0 in
 			       if pr >= min_even_prio then (
 				 ns_iter (fun j ->
-					  mdp.(!q) <- Reward (BigFloat.of_big_int (BigInt.int_power_int (- !real_n) (pr - min_even_prio + 2)), nd_reveal j);
+					  mdp.(!q) <- Reward (BigFloat.of_big_int (BigInt.int_power_int (- !real_n) (pr - min_even_prio + 2)), j);
 					  incr q
 					 ) tr
 			       );
 			       let mapi f =
 				 let i = ref 0 in
 				 let a = ref [] in
-				 ns_iter (fun j -> a := (f !i (nd_reveal j))::!a; incr i) tr;
+				 ns_iter (fun j -> a := (f !i j)::!a; incr i) tr;
 				 Array.of_list (List.rev !a)
 			       in
 			       if pl = plr_Even then (

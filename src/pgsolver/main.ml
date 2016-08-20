@@ -43,7 +43,7 @@ struct
 
   let solving = ref true
   
-  let initnode = ref nd_undef  (* TODO: was "0", does any code rely on this being node 0? Then we should define a nd_def_init in paritygame.mli *)
+  let initnode = ref 0 
 
   let verifier = ref NoVerifier
 
@@ -126,7 +126,7 @@ struct
                      "<solver>\n     solves globally, valid solvers are" ^
                      fold_solvers (fun _ ident _ _ t -> t ^ " " ^ ident) ""); 
                    (["--locallysolve"; "-local"], Tuple [String (fun s -> let (solve, _, _) = find_partial_solver s in solver := LocalSolver (s, solve));
-                                                        Int (fun i -> initnode := nd_make i)],
+                                                        Int (fun i -> initnode := i)],
                      "<solver> <node>\n     solves locally, valid solvers are" ^
                      fold_partial_solvers (fun _ ident _ _ t -> t ^ " " ^ ident) ""); 
                    (["--args"; "-x"], String(fun s -> solveargs := s),
@@ -257,35 +257,33 @@ let _ =
 	  let win1 = ref [] in
 	  let str0 = ref [] in
 	  let str1 = ref [] in
-	  let l = Array.length solution in
-	  for i=1 to l do
-		let j = l-i in
-		let pl = pg_get_owner game j in
-		if solution.(j) = plr_Even
-		then (win0 := j :: !win0;
-			  let k = strategy.(j) in
-			  if pl=plr_Even then str0 := (string_of_int j ^ "->" ^ string_of_int k) :: !str0);
-		if solution.(j) = plr_Odd
-		then (win1 := j :: !win1;
-			  let k = strategy.(j) in
-			  if pl=plr_Odd then str1 := (string_of_int j ^ "->" ^ string_of_int k) :: !str1)
-	  done;
+	  sol_iter (fun j -> fun pl -> let ow = pg_get_owner game j in
+				       if pl = plr_Even then
+					 (win0 := j :: !win0;
+					  if ow=plr_Even then let k = str_get strategy j in
+							      str0 := (nd_show j ^ "->" ^ nd_show k) :: !str0)
+				       else if pl= plr_Odd then
+					 (win1 := j :: !win1;
+					  if ow=plr_Odd then let k = str_get strategy j in
+							     str1 := (nd_show j ^ "->" ^ nd_show k) :: !str1)
+		   ) solution;
+
 	  if (!print_strategies) then (
 		  let first = ref false in
 		  message 1 (fun _ -> "\nPlayer 0 wins from nodes:\n  ");
 		  message 1 (fun _ -> "{");
 		  first := true;
-		  List.iter (fun i -> message 1 (fun _ -> (if !first then "" else ", ") ^ string_of_int i); first := false) !win0;
+		  List.iter (fun i -> message 1 (fun _ -> (if !first then "" else ", ") ^ nd_show i); first := false) !win0;
 		  message 1 (fun _ -> "}\n");
 		  message 1 (fun _ -> "with strategy\n  ");
-		  message 1 (fun _ -> "[" ^ String.concat "," !str0 ^ "]\n\n");
+		  message 1 (fun _ -> "[" ^ String.concat "," (List.rev !str0) ^ "]\n\n");
 		  message 1 (fun _ -> "Player 1 wins from nodes:\n  ");
 		  message 1 (fun _ -> "{");
 		  first := true;
-		  List.iter (fun i -> message 1 (fun _ -> (if !first then "" else ", ") ^ string_of_int i); first := false) !win1;
+		  List.iter (fun i -> message 1 (fun _ -> (if !first then "" else ", ") ^ nd_show i); first := false) !win1;
 		  message 1 (fun _ -> "}\n");
 		  message 1 (fun _ -> "with strategy\n  ");
-		  message 1 (fun _ -> "[" ^ String.concat "," !str1 ^ "]\n");
+		  message 1 (fun _ -> "[" ^ String.concat "," (List.rev !str1) ^ "]\n");
 	  );
 
 	  if !make_dotty_graph then Paritygame.to_dotty_file game solution strategy !dotty_file;
@@ -308,7 +306,7 @@ let _ =
 					message 1 (fun _ -> (SimpleTiming.format timobj) ^ " - " ^
 					"INVALID solution and/or strategy!\n" ^
 					"Reason: " ^ err ^ "\n" ^
-					"Trace:  " ^ (List.fold_left (fun s i -> s ^ "->" ^ (string_of_int i)) "" trace) ^ "\n\n"
+					"Trace:  " ^ (List.fold_left (fun s i -> s ^ "->" ^ nd_show i) "" trace) ^ "\n\n"
 				);
 				exit 1)
 		)

@@ -11,9 +11,13 @@ open Tcsset
 
 type node = int
 val nd_undef  : node
+(*
 val nd_make   : int -> node   (* turns an int into a node; mostly to be used with paritygame generators that like to build a game using ints for nodes *) 
 val nd_reveal : node -> int   (* provides the inverse function to nd_make *)
-			  
+ *)
+		  
+val nd_show : node -> string
+			
 type nodeset
 
 (* check for emptiness and membership *)
