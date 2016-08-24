@@ -12,13 +12,12 @@ type generalized_mdp = generalized_mdp_node array
 let parity_game_to_generalized_mdp pg min_even_prio is_epsilon =
 	let n = pg_size pg in
 	let real_n = ref 0 in
-	(*	let s = ref (-1) in *)   (* TODO: please check: I commented this and the command "s := i" below, and the module compiles fine. So "s" does not seem to get used at all. *)
 	let p = ref 0 in
 	let mp = ref 0 in
 	pg_iterate (fun i -> fun (pr,_,succs,_,_) -> let trsize = ns_size succs in
 						     mp := max !mp pr;
 						     if pr >= min_even_prio then incr real_n;
-						     if pr = 1 then () (* s := i *)
+						     if pr = 1 then ()
 						     else if trsize > 1 && pr >= min_even_prio
 						     then p := !p + trsize)
 		   pg;

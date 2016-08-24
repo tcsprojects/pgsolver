@@ -9,7 +9,6 @@ open Transformations;;
 open Specialsolve;;
 
 
-(* TODO: - Add transitive hull / remove edge stuff *)
 
 
 
