@@ -239,7 +239,7 @@ let solve' game =
         spmz
     in
 
-    (* Returns true iff x <_pr y w.r.t. player *)   (* TODO: A bit confusing! There is a less : priority -> ... in solve_scc_reach! Maybe better to use two different names? *)
+    (* Returns true iff x <_pr y w.r.t. player *)
     let less player pr x y =
         let rec less' pr' =
             if pr' > pr then (

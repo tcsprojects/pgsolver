@@ -123,7 +123,7 @@ let improvement_policy_vorobyov2 game node_compare
 				let (i,j) = impr_edges.(Random.int (Array.length impr_edges)) in
 				let strategy' = Array.copy strategy in
 				strategy'.(i) <- j;
-				pg_add_edge ga i j; (* TODO: please check that this line is intended. The old line simplified a lot to this one. *)
+				pg_add_edge ga i j;
 				(strategy', (ga, TreeSet.add (i,j) ed, TreeSet.remove (i,j) av, nu - 1)::stack)
 			)
 		)

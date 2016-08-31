@@ -383,7 +383,7 @@ val is_single_parity_game: paritygame -> priority option
 
 val number_of_strategies : paritygame -> player -> int -> int
 
-val compute_priority_reach_array : paritygame -> player -> int array array  (* TODO: what is this int? *)
+val compute_priority_reach_array : paritygame -> player -> int array array  (* TODO: what is this int? -- ints, counting number of occurrences *)
 
 (*
 val compute_priority_reach_array': paritygame -> int array array
