@@ -31,7 +31,7 @@ let ns_elem = List.mem
 let ns_fold = List.fold_left
 let ns_iter = List.iter
 let ns_filter = List.filter
-let ns_map f = ns_fold (fun ns v -> let u = f v in if not ns_elem u ns then u::ns else ns) [] 
+let ns_map f = ns_fold (fun ns v -> let u = f v in if not (ns_elem u ns) then u::ns else ns) [] 
 let ns_size = List.length
 let ns_exists = List.exists
 let ns_forall = List.for_all
