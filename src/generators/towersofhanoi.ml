@@ -1,6 +1,7 @@
 open Paritygame ;;
 
-  
+let levels = ref 0
+		 
 module ToHGame = Build( 
   struct
     type gamenode = int list array
@@ -37,9 +38,15 @@ module ToHGame = Build(
 	end
 	  
 
-    let name ts = Some ("[" ^ (String.concat "," (List.map string_of_int ts.(0))) ^ "] " ^
-			  "[" ^ (String.concat "," (List.map string_of_int ts.(1))) ^ "] " ^
-			    "[" ^ (String.concat "," (List.map string_of_int ts.(2))) ^ "]")
+    let show_node ts = Some ("[" ^ (String.concat "," (List.map string_of_int ts.(0))) ^ "] " ^
+			       "[" ^ (String.concat "," (List.map string_of_int ts.(1))) ^ "] " ^
+				 "[" ^ (String.concat "," (List.map string_of_int ts.(2))) ^ "]")
+
+    let initnodes _ = 
+      let rec lvs i aux = if i=0 then aux else lvs (i-1) (i::aux)
+      in
+      [ [| lvs !levels []; []; [] |] ]
+
   end);;
 
 
@@ -55,20 +62,14 @@ let towers_of_hanoi_func arguments =
 	
   if (Array.length arguments <> 1) then (show_help (); exit 1);
 
-  let levels = (try
-                   int_of_string arguments.(0)
-                 with _ -> (show_help (); exit 1))
-  in
+  (try
+      levels := int_of_string arguments.(0)
+    with _ -> (show_help (); exit 1));
 
-  if not (levels > 0) then (show_help(); exit 1);
+  if not (!levels > 0) then (show_help(); exit 1);
 
-  let initialGameNode = 
-    let rec lvs i aux = if i=0 then aux else lvs (i-1) (i::aux)
-    in
-    [| lvs levels []; []; [] |]
-  in
 
-  ToHGame.build_from_node initialGameNode
+  ToHGame.build ()
 
 
 let _ = Generators.register_generator towers_of_hanoi_func "towersofhanoi" "Towers of Hanoi Reachability Game";;

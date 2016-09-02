@@ -31,7 +31,7 @@ let ns_elem = List.mem
 let ns_fold = List.fold_left
 let ns_iter = List.iter
 let ns_filter = List.filter
-let ns_map = List.map (* TODO: needs to be remimplemented: if the mapping function is not injective then it violates the invariant of not storing duplicate elements *)
+let ns_map f = ns_fold (fun ns v -> let u = f v in if not ns_elem u ns then u::ns else ns) [] 
 let ns_size = List.length
 let ns_exists = List.exists
 let ns_forall = List.for_all
@@ -103,6 +103,8 @@ type priority = int
 
 let prio_good_for_player pr pl = if pl = plr_Even then pr mod 2 = 0 else pr mod 2 = 1
 
+let odd pr = pr mod 2 = 1 
+let even pr = pr mod 2 = 0 
 									   
 (**************************************************************
  * Parity Game Definitions                                    *
@@ -260,7 +262,7 @@ let sol_number_solved sol =
 
 let sol_get sol v = sol.(v) 
 let sol_set sol v pl = sol.(v) <- pl
-let sol_iter = Array.iteri  (* TODO: also the undefined ones? *)
+let sol_iter = Array.iteri  
 
 (***************************************************************
  * Strategies                                                  *
@@ -272,7 +274,7 @@ let str_init game f = Array.init (pg_size game) f
 
 let str_get str v = str.(v)
 let str_set str v u = str.(v) <- u 
-let str_iter = Array.iteri (* TODO: also the undefined ones? *)
+let str_iter = Array.iteri 
 
 
 
@@ -1233,7 +1235,7 @@ let box game t =
  * Building Parity Games                                *
  ********************************************************)
 
-module type GameNode = 
+module type PGDescription = 
   sig
     type gamenode
 
@@ -1242,16 +1244,29 @@ module type GameNode =
     val owner      : gamenode -> player
     val priority   : gamenode -> priority
     val successors : gamenode -> gamenode list
-    val name       : gamenode -> string option
+    val show_node  : gamenode -> string option
+
+    val initnodes  : unit -> gamenode list
   end;;
 
-module Build = functor (T: GameNode) ->
+module type PGBuilder = 
+  sig
+    type gamenode
+	   
+    val build            : unit -> paritygame
+    val build_from_node  : gamenode -> paritygame
+    val build_from_nodes : gamenode list -> paritygame
+  end
+
+module Build(T: PGDescription) : (PGBuilder with type gamenode = T.gamenode ) =
   struct
 
+    type gamenode = T.gamenode  
+	   
     module Encoding = Map.Make(
       struct 
         type t = T.gamenode 
-        let compare = T.compare 
+        let compare = compare 
       end);;
 
     let codes = ref Encoding.empty
@@ -1276,7 +1291,7 @@ module Build = functor (T: GameNode) ->
                                 else
                                   let ws = T.successors v in
                                   let ds = List.map encode ws in
-                                  iterate ((c, T.owner v, T.priority v, ds, T.name v) :: acc) (NodeSet.add c visited) ((List.combine ws ds) @ vs)
+                                  iterate ((c, T.owner v, T.priority v, ds, T.show_node v) :: acc) (NodeSet.add c visited) ((List.combine ws ds) @ vs)
                               end
       in
       let nodes = iterate [] NodeSet.empty (List.map (fun v -> (v,encode v)) vlist) in
@@ -1293,75 +1308,8 @@ module Build = functor (T: GameNode) ->
       game
 			
     let build_from_node v = build_from_nodes [v]
-			
+
+    let build _ = build_from_nodes (T.initnodes ())
   end;;
 
-
-(** moved from transformations since it is an inplace modification **)
-(* broken code, too hard to fix, replaced by non-inplace version
-let sort_game_inplace pg cmp =
-
-  let n = pg_size pg in
-  
-  let encode pl i =
-    if pl = plr_Even then
-      i
-    else if pl = plr_Odd then
-      (n + i)
-    else
-      -n - i
-  in
-  
-  let decode k =
-    let a = abs k in
-    if a < n then
-      (plr_Even, k)
-    else if k >= n then
-      (plr_Odd, a - n)
-    else
-      (plr_undef, a - n)
-  in
-
-  (*
-  for i = 0 to n - 1 do
-    pg_set_owner pg i (encode (pg_get_owner pg i) i)
-  done;
-   *)
-  
-  let b (pr, pl, d, _, s) = (pr, fst (decode pl), d, s) in
-  
-  pg_sort (fun x y -> cmp (b x) (b y)) pg;
-  
-  let perm = Array.make n (-1) in
-  let perm' = Array.make n (-1) in
-  
-  let codes = Array.init n (fun i -> encode (pg_get_owner pg i)) in  
-  for i = 0 to n - 1 do
-    let (pl', j) = decode codes.(i) in
-    perm.(i) <- j;
-    perm'.(j) <- i;
-  done;
-
-  (* remove and store edges, then add them again *)
-  let edges = ref [] in
-  pg_edge_iterate (fun v -> fun w -> edges := (v,w) :: !edges) pg;
-  List.iter (fun (v,w) -> pg_del_edge pg v w) !edges;
-  for i=0 to n-1 do
-    pg_set_owner pg i pl';
-    
-  done;
-  List.iter (fun (v,w) -> pg_add_edge pg perm.(v) perm.(w)) !edges;
-
-  for i = 0 to n - 1 do
-    let delta = pg_get_successors pg i in 
-    ns_iter (fun el -> pg_del_edge pg i el;
-		       pg_add_edge pg i perm'.(el)) delta  (* TODO: not sure that this works. What if perm'.(el) equals some other el in later iterations?
-                                                                    Maybe needs to be reimplemented making proper use of edge addition and deletion functions. *)
-  done;
-  
-  (perm, perm');;
-  
-let sort_game_by_prio_inplace pg =
-  sort_game_inplace pg (fun (pr1, _, _, _) (pr2, _, _, _) -> pr1 - pr2)
-  *)
 

@@ -5,6 +5,7 @@
 "src/generators": include
 "src/generators/policyiter": include
 "src/generators/policyiter/generators": include
+"src/generators/modelchecking": include
 "src/tools": include
 "tests": include
 "tcslib/src/utils": include

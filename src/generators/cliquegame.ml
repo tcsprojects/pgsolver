@@ -25,9 +25,9 @@ module Clique =
       in
       succs [] !n
 
-    let name i = Some (string_of_int i)
+    let show_node i = Some (string_of_int i)
 
-    let initial_node = 0
+    let initnodes _ = [0]
   end;;
 
 module CliqueGame = Build(Clique);;
@@ -46,7 +46,7 @@ let generator_game_func arguments =
     with_self_cycles := Array.length arguments = 2 && arguments.(1) = "self"
   with _ -> (show_help (); exit 1));
 
-  CliqueGame.build_from_node Clique.initial_node
+  CliqueGame.build ()
 
 
 let _ = Generators.register_generator generator_game_func "cliquegame" "Clique Game";;

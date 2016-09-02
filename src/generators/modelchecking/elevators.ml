@@ -1,123 +1,87 @@
 open Tcsset ;;
 open Paritygame ;;
-
+open Mucalculus ;;
+  
 let rec range i j = if j >= i then i :: (range (i+1) j) else []
+
+let rec insert x = function []    -> [x]
+                          | y::ys -> if x=y then y::ys else y::(insert x ys)
 
 let storeys = ref 0
 
 (* fair means that any new request will be added to the end of the list (FIFO),
    whereas unfair means that it will be added to the beginning (LIFO) *)
 let fair = ref true
-    
-module Elevators = 
+
+		
+module ElevatorProblem = 
   struct
-    type elevator = { position: int;
-                      dooropen: bool;
-                      requests: int list }
+    type state = { position: int;
+                   dooropen: bool;
+                   requests: int list }
+			   
+    type proposition = IsAt of int
+		     | IsPressed of int
 
-    type formulaType = FP of int * int             (* fixpoint formula with priority and next subformula *)
-                     | BOOL of player * int * int     (* con-/disjunction with player and left and right subformula *)
-                     | MOD of player * int            (* modality with player and next subformula *)
-                     | PROP of (elevator -> bool)  (* proposition with function that evaluates it in a state *)
+    let show_proposition = function IsAt(i) -> "at_" ^ string_of_int i
+				  | IsPressed(i) -> "pressed_" ^ string_of_int i
+									       
+    type action = Step
+    let actions _ = [ Step ]
+    let show_action = function Step -> "*"
+					 
+    let successors el _ = 
+      (* any button could be pressed or no requests could come in *)
+      let els = el::(List.map (fun i -> { position = el.position; 
+					  dooropen = el.dooropen; 
+					  requests = if !fair 
+                                                     then insert i el.requests
+                                                     else i::(List.filter (fun j -> j<>i) el.requests)}) 
+			      (range 0 (!storeys-1)))
+      in
+      
+      (* for each possibility decide in which direction to go *)
+      TreeSet.remove_list_dups (List.map (fun el -> if el.requests <> [] && not el.dooropen then
+						      begin
+							let r = List.hd el.requests in
+							let delta = compare r el.position in
+							let newposition = el.position + delta in
+							{ position = newposition;
+							  dooropen = (newposition=r);
+							  requests = if newposition=r then List.tl el.requests else el.requests }
+						      end
+						    else
+						      { position = el.position;
+							dooropen = false;
+							requests = el.requests })
+					 els)
 
-    type gamenode = elevator * int
+    let initstate _ = {position = 0; dooropen = false; requests = []}
 
-    let compare = compare
 
-    (* CTL* formula:    A(GF isPressed(i) -> GF isAt(i)) == -E(GF isPressed(i) /\ FG -isAT(i))
+    let show_state el = "[" ^ (String.make el.position '.') ^ (if el.dooropen then "O" else "X") ^ 
+			  (String.make (!storeys - el.position - 1) '.') ^ "] " ^
+			    String.concat "," (List.map string_of_int el.requests)
+
+    let labels el = function IsAt(i)      -> el.position = i
+			   | IsPressed(i) -> List.mem i el.requests 		   
+
+    (* 
+     CTL* formula:    A(GF isPressed(i) -> GF isAt(i)) == -E(GF isPressed(i) /\ FG -isAT(i))
      in mu-calculus:  nu X.mu Y.nu Z.[]X /\ (isAt(i) \/ ([]Z /\ (-isPressed(i) \/ []Y)))  
-
-     0   X
-     1   []X /\ (isAt(i) \/ ([]Z /\ (-isPressed(i) \/ []Y)))
-     2   []X
-     3   isAt(i) \/ ([]Z /\ (-isPressed(i) \/ []Y))
-     4   isAt(i) 
-     5   []Z /\ (-isPressed(i) \/ []Y)
-     6   []Z
-     7   Z
-     8   -isPressed(i) \/ []Y
-     9   -isPressed(i)
-     10  []Y
-     11  Y
      *)
 
-    let formula = 
-      let isPressed i el = List.mem i el.requests in
-      let isAt i el = (i = el.position) in
-      let form i =
-      [| FP(2,1);
-         BOOL(plr_Odd,2,3);
-         MOD(plr_Odd,0);
-         BOOL(plr_Even,4,5);
-         PROP(isAt i);
-         BOOL(plr_Odd,6,8);
-         MOD(plr_Odd,7);
-         FP(0,1);
-         BOOL(plr_Even,9,10);
-         PROP(fun el -> not (isPressed i el));
-         MOD(plr_Odd,11);
-         FP(1,1) |]
-	in
-	form (!storeys -1)
-    
-    let owner (el,f) = match formula.(f) with
-	FP(_,_)      -> plr_Even
-      | BOOL(pl,_,_) -> pl
-      | MOD(pl,_)    -> pl
-      | PROP(g)      -> if g el then plr_Even else plr_Odd
+    let property _ = Nu("X", Mu("Y", Nu("Z", Conj[ Box(None,Var("X"));
+  					           Disj[ Prop(IsAt(!storeys - 1));
+							 Conj[ Box(None,Var("Z"));
+						               Disj[ Neg(Prop(IsPressed(!storeys - 1))); 
+								     Box(None,Var("Y"))] ] ] ])))
 
-    let priority (el,f) = match formula.(f) with
-	FP(p,_)     -> p
-      | BOOL(_,_,_) -> 1
-      | MOD(_,_)    -> 1
-      | PROP(g)     -> if g el then 0 else 1
 
-    let successors (el,f) =
-      let rec insert x = function []    -> [x]
-				| y::ys -> if x=y then y::ys else y::(insert x ys)
-      in
-      let next_states el = 
-        (* any button could be pressed or no requests could come in *)
-	let els = el::(List.map (fun i -> { position = el.position; 
-					    dooropen = el.dooropen; 
-					    requests = if !fair 
-                                                       then insert i el.requests
-                                                       else i::(List.filter (fun j -> j<>i) el.requests)}) 
-				(range 0 (!storeys-1))) in
-	
-	(* for each possibility decide in which direction to go *)
-	TreeSet.remove_list_dups (List.map (fun el -> if el.requests <> [] && not el.dooropen then
-							begin
-							  let r = List.hd el.requests in
-							  let delta = compare r el.position in
-							  let newposition = el.position + delta in
-							  { position = newposition;
-							    dooropen = (newposition=r);
-							    requests = if newposition=r then List.tl el.requests else el.requests }
-							end
-						      else
-							{ position = el.position;
-							  dooropen = false;
-							  requests = el.requests })
-					   els)
-      in
-      match formula.(f) with
-            FP(_,g)     -> [ (el,g) ] 
-          | BOOL(_,g,h) -> [ (el,g); (el,h) ]
-          | MOD(_,g)    -> List.map (fun el' -> (el',g)) (next_states el)
-          | PROP(_)     -> [ (el,f) ] 
-
-    let name (el,f) =
-      let show_state el = "[" ^ (String.make el.position '.') ^ (if el.dooropen then "O" else "X") ^ 
-			    (String.make (!storeys - el.position - 1) '.') ^ "] " ^
-			      String.concat "," (List.map string_of_int el.requests)
-      in
-      Some (show_state el ^ " |= " ^ string_of_int f)
-
-    let initialConf = ({position = 0; dooropen = false; requests = []}, 0)
+		     
   end;;
 
-module EVGame = Build(Elevators);;
+module EVGame = Make(ElevatorProblem);;
 		   
 
 let elevator_verification_func arguments = 
@@ -141,7 +105,7 @@ let elevator_verification_func arguments =
       storeys := int_of_string arguments.(0)
   with _ -> (show_help (); exit 1));
 
-  EVGame.build_from_node Elevators.initialConf
+  EVGame.build ()
 
 
 let _ = Generators.register_generator elevator_verification_func "elevatorvergm" "Elevator Verification Game";;

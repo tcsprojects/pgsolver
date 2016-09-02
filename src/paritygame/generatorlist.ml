@@ -6,6 +6,6 @@ open Modelcheckerladder;;
 open Recursiveladder;;
 open Steadygame;;
 open Jurdzinskigame;;
-open Elevatorverification;;
+open Elevators;;
 open Towersofhanoi;;
 open Langincl;;

@@ -77,6 +77,9 @@ val plr_show : player -> string
 val plr_iterate : (player -> unit) -> unit
 					
 val prio_good_for_player : priority -> player -> bool
+
+val odd: priority -> bool
+val even: priority -> bool
 			
 						 
 (**************************************************************
@@ -167,7 +170,7 @@ val sol_init   : paritygame -> (node -> player) -> solution   (* create solution
 
 val sol_get    : solution -> node -> player                   (* get the winner of a node according to a solution *)
 val sol_set    : solution -> node -> player -> unit           (* set the winner of a node in a solution *)
-val sol_iter   : (node -> player -> unit) -> solution -> unit (* iterate over all nodes with their winners in a solution space *) (* TODO: also the undefined ones? *)
+val sol_iter   : (node -> player -> unit) -> solution -> unit (* iterate over all nodes with their winners in a solution space *) 
 						 
 val sol_number_solved : solution -> int                       (* test solutions *)
 
@@ -176,7 +179,7 @@ val sol_number_solved : solution -> int                       (* test solutions 
  * A value of type strategy is essentially a map of type node -> node that represents positional strategies for both players.
  * The player for whom a decision v -> u is included in the strategy is implicitly given by the owner of node v in the underlying parity game.
  * Warning: a strategy does not remember its underlying parity game. Hence, a strategy that was created for one game can be used for another game,
- * but this can not only obviously lead to wrong computations but also to runtime errors. (* TODO: is this something we should mend? *)
+ * but this can not only obviously lead to wrong computations but also to runtime errors. *)
  *)
 val str_create : paritygame -> strategy                       (* initially, every node maps to a special undefined node *)
 val str_make   : int -> strategy                              (* same as str_create but only gets to know the size of the game *)
@@ -184,13 +187,13 @@ val str_init   : paritygame -> (node -> node) -> strategy     (* create strategy
 
 val str_get    : strategy -> node -> node                     (* get the strategy decision at a node *)
 val str_set    : strategy -> node -> node -> unit             (* `str_set <str> <v> <u>´ records the strategy decision <v> -> <u> in <str> *)
-val str_iter   : (node -> node -> unit) -> strategy -> unit   (* iterate over all nodes and their corresponding successors in a strategy *) (* TODO: also the undefined ones ? *)
+val str_iter   : (node -> node -> unit) -> strategy -> unit   (* iterate over all nodes and their corresponding successors in a strategy *) 
 
 
 (**************************************************************
  * A type for algorithms that solve a paritygame              *
  **************************************************************)
-type global_solver = (paritygame -> solution * strategy)
+type global_solver = paritygame -> solution * strategy
 
 							 
 (**************************************************************
@@ -199,12 +202,7 @@ type global_solver = (paritygame -> solution * strategy)
 
 val game_to_string : paritygame -> string
 
-(* not implemented (yet)
-val solution_to_string : solution -> string
-val strategy_to_string : strategy -> string
- *)
-
-(* Calling print_game game prints game on STDOUT s.t. it could be parsed again. *)
+(* `print_game <game>' prints <game> on STDOUT s.t. it could be parsed again. *)
 val print_game : paritygame -> unit
 
 val print_solution_strategy_parsable : solution -> strategy -> unit
@@ -305,9 +303,6 @@ val merge_solutions_inplace : solution -> solution -> unit
  **************************************************************)
 
 type scc = int
-(*
-val strongly_connected_components' : paritygame -> (node list array) -> node list array * scc array * scc list array * scc list (* DEPRECATED *)
- *)
 	     
 (* `strongly_connected_components <game>' decomposes the game into its SCCs. 
    It returns a tuple (<sccs>, <sccindex>, <topology>, <roots>) where 
@@ -383,7 +378,7 @@ val is_single_parity_game: paritygame -> priority option
 
 val number_of_strategies : paritygame -> player -> int -> int
 
-val compute_priority_reach_array : paritygame -> player -> int array array  (* TODO: what is this int? -- ints, counting number of occurrences *)
+val compute_priority_reach_array : paritygame -> player -> int array array  
 
 (*
 val compute_priority_reach_array': paritygame -> int array array
@@ -443,10 +438,10 @@ end
 
 (********************************************************
  * Modal logic operations on sets of game nodes.        *
- * takes a set of nodes, a parity game and its          *
- *  transposed graph                                    *
  ********************************************************)
 
+(* `diamond <pg> <ns>' returns the set of all nodes in <pg> that have a successor in <ns>. 
+    Likewise, `box' does so for nodes whose successors are all in <ns>. *)
 val diamond : paritygame -> NodeSet.t -> NodeSet.t
 val box     : paritygame -> NodeSet.t -> NodeSet.t
 
@@ -459,13 +454,15 @@ val box     : paritygame -> NodeSet.t -> NodeSet.t
    It is particularly useful when the resulting size is not (easily) known in advance. For an example
    of its use, see src/generators/langincl.ml . 
 
-   To use it, define a module of the type GameNode using some type gamenode to represent nodes and
-   giving functions that read off the priority, owner successors and possible name of a game node.
+   To use it, define a module of the type PGDescription using some type gamenode to represent nodes and
+   giving functions that read off the priority, owner successors, a possible string representation of a 
+   game node, and a list of particular initial nodes.
    The module obtained by applying the functor Build then gives you a module with a function that
-   builds a parity game from some initial node containing all the game nodes that are reachable from
-   the initial one via the successor function. *)
+   builds a parity game containing all the game nodes that are reachable these initial ones. Additionally,
+   you get functions that take nodes as arguments from which to build the parity game. 
+*)
 					   
-module type GameNode =
+module type PGDescription =
   sig
     type gamenode
 
@@ -473,12 +470,20 @@ module type GameNode =
 
     val owner      : gamenode -> player
     val priority   : gamenode -> priority
-    val successors : gamenode -> gamenode list
-    val name       : gamenode -> string option
+    val successors : gamenode -> gamenode list   (* should always return a non-empty list *)
+    val show_node  : gamenode -> string option
+
+    val initnodes  : unit -> gamenode list 
   end
 
-module Build: functor (T: GameNode) -> 
+module type PGBuilder = 
   sig
-    val build_from_node : T.gamenode -> paritygame
-    val build_from_nodes : T.gamenode list -> paritygame
+    type gamenode
+	   
+    val build            : unit -> paritygame
+    val build_from_node  : gamenode -> paritygame
+    val build_from_nodes : gamenode list -> paritygame
   end
+
+module Build(T: PGDescription) : PGBuilder with type gamenode = T.gamenode 
+
