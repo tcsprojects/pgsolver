@@ -303,7 +303,7 @@ let game_to_string game =
  
 let print_game game =
 	let n = pg_size game in
-	print_string ("parity " ^ string_of_int (n-1) ^ ";\n");
+	print_string ("parity " ^ string_of_int n ^ ";\n");
 	for i = 0 to n - 1 do
 	  let (pr, pl, succs, _, desc) = pg_get_node game i in
 	  if pr >= 0 && pl >= 0 && pl <= 1 then (

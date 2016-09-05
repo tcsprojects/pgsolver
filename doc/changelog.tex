@@ -6,7 +6,7 @@ that are worth noting like the addition of new features etc.\ are marked with tw
 ($\ast\ast$). Finally, major changes that would effect usability, for example breaks in backwards
 compatibility, changes in the user interface, etc., are marked with three asterisks ($\ast\ast\ast$).
 
-Changes incorporated into version 4:
+Changes incorporated into version 4.0:
 \begin{itemize}
 \item[$\ast\ast\ast$] The interface and implementation of the module \texttt{Paritygame} have undergone some major changes,
      mostly concerning the data types for parity games. This type is now abstract, so access to and manipulations of parity games
@@ -16,10 +16,12 @@ Changes incorporated into version 4:
      the algorithms around them. It is also worth noticing that a node in a parity game now knows its predecessors as well as its
      successors. Hence, functions for computing transposed graphs etc.\ have been removed.
 \item[$\ast\ast$] \pgsolver is now built using \texttt{ocamlbuild}. It requires the OCaml packages \texttt{ocamlfind} and \texttt{ounit}.
-     Get them using \texttt{opam}.
-\item[$\ast\ast\ast$] If a textual presentation of a parity game start with the keyword \texttt{parity} then it is followed by the number of
+     Get them using \texttt{opam}. Moreover, \pgsolver now requires OCaml version 4.03.0.
+\item[$\ast\ast\ast$] If a textual presentation of a parity game starts with the keyword \texttt{parity} then it is followed by the number of
      nodes in the game, rather than the largest identifier of a node in the game. So any ``\texttt{parity} $n$'' should now be 
      ``\texttt{parity} $n+1$''. \TODO{Is this something we want to go for?}
+\item[$\ast$] A framework for the easy creation of benchmarks derived from model-checking problems is now provided. 
+\item[$\ast\ast$] Support for the rather old SAT solver \texttt{zChaff} has been discontinued.  
 \end{itemize}
 
 Changes incorporated into version 3:

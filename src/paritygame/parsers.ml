@@ -17,7 +17,7 @@ let parse_init_parity_game in_channel =
 	) in
 	let init_value = ref 0 in
 	Tcsgameparser.parse_parity_game (fun n ->
-		game := pg_create (n + 1);
+		game := pg_create n;
 		adder := add
 	) (fun i -> init_value := i) !adder (fun _ -> ()) in_channel;
 	if !queue != [] then (
