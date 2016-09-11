@@ -9,8 +9,8 @@ open Satwrapper;;
 type vars =
  	Winning of int
 |	Strategy of (int * int)
-|	SubEdge of (int * int * int)
-|	ReachLower of (int * int * int * int)
+|	SubEdge of (player * int * int)
+|	ReachLower of (player * int * int * int)
 
 
 let msg_tagged v = message_autotagged v (fun _ -> "SATSOLVE");;
@@ -31,13 +31,13 @@ let solve' game =
 
 	pg_iterate (fun i -> fun (_,pl,delta,_,_) ->
 			     ns_iter (fun j ->
-				      solver#add_clause_array [|Ne (SubEdge (0, i, j)); Ne (Winning i)|];
-				      solver#add_clause_array [|Ne (SubEdge (1, i, j)); Po (Winning i)|];
-				      solver#add_clause_array [|Ne (SubEdge (0, i, j)); Ne (Winning j)|];
-				      solver#add_clause_array [|Ne (SubEdge (1, i, j)); Po (Winning j)|];
+				      solver#add_clause_array [|Ne (SubEdge (plr_Even, i, j)); Ne (Winning i)|];
+				      solver#add_clause_array [|Ne (SubEdge (plr_Odd, i, j)); Po (Winning i)|];
+				      solver#add_clause_array [|Ne (SubEdge (plr_Even, i, j)); Ne (Winning j)|];
+				      solver#add_clause_array [|Ne (SubEdge (plr_Odd, i, j)); Po (Winning j)|];
 				      solver#add_clause_array [|Ne (SubEdge (pl, i, j)); Po (Strategy (i, j))|];
-				      solver#add_clause_array [|if pl = 1 then Po (Winning i) else Ne (Winning i); Po (SubEdge (1 - pl, i, j))|];
-				      solver#add_clause_array [|if pl = 1 then Ne (Winning i) else Po (Winning i); Ne (Strategy (i, j)); Po (SubEdge (pl, i, j))|]
+				      solver#add_clause_array [|if pl = plr_Odd then Po (Winning i) else Ne (Winning i); Po (SubEdge (plr_opponent pl, i, j))|];
+				      solver#add_clause_array [|if pl = plr_Odd then Ne (Winning i) else Po (Winning i); Ne (Strategy (i, j)); Po (SubEdge (pl, i, j))|]
 				     ) delta) game;
 							  
 	plr_iterate (fun p -> 
@@ -59,7 +59,7 @@ let solve' game =
 	      done) game
 	    ) game);
 
-	pg_iterate (fun i -> fun (pr,_,_,_,_) -> solver#add_clause_array [|Ne (ReachLower (1 - pr mod 2, i, i, i))|]) game;
+	pg_iterate (fun i -> fun (pr,_,_,_,_) -> solver#add_clause_array [|Ne (ReachLower (plr_opponent (plr_benefits pr), i, i, i))|]) game;
 
  	let v = solver#variable_count + solver#helper_variable_count in
   	let c = solver#clause_count + solver#helper_clause_count in
@@ -78,7 +78,7 @@ let solve' game =
 	let satis = solver#get_solve_result = SolveSatisfiable in
 	if not satis then failwith "impossible: unsatisfiable";
 
-	let sol = Array.init n (fun i -> solver#get_variable (Winning i)) in
+	let sol = Array.init n (fun i -> if solver#get_variable (Winning i) = 0 then plr_Even else plr_Odd) in
 	let strat = Array.init n (fun i -> if sol.(i) = pg_get_owner game i
 	                                   then let delta = Array.of_list (ns_nodes (pg_get_successors game i)) in
 	                                        delta.(solver#get_variable_first (Array.map (fun j -> Strategy (i, j)) delta)) else -1)
@@ -90,5 +90,7 @@ let solve' game =
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
 
 
-let _ = register_solver solve "satsolve" "ss" "directly solve the game by an NP predicate";;
+let _ =
+  if (List.length (Satsolvers.get_list ()) > 0)
+	then register_solver solve "satsolve" "ss" "directly solve the game by an NP predicate";;
 

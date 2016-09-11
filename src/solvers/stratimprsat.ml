@@ -28,7 +28,6 @@ let solve' game sink0 sink1 =
 	let par a = (pg_get_priority game a) mod 2 in
 
 	for i = 0 to n - 1 do
-	  let pr = pg_get_priority game i in
 	  let pl = pg_get_owner game i in
 	  let tr = Array.of_list (ns_nodes (pg_get_successors game i)) in
 	  (* Strategy *)
@@ -84,7 +83,7 @@ let solve' game sink0 sink1 =
 		      Array.iter (fun k ->
 				  if not (j = k) then (
 				    lower_node_for k j;
-				    if pl = 0
+				    if pl = plr_Even
 				    then solver#add_clause_array [|Ne (Strategy (i, j)); Po (LowerNode(k, j))|]
 				    else solver#add_clause_array [|Ne (Strategy (i, k)); Po (LowerNode(k, j))|]
 				  )
@@ -109,7 +108,7 @@ let solve' game sink0 sink1 =
 	let satis = solver#get_solve_result = SolveSatisfiable in
 	if not satis then failwith "impossible: unsatisfiable";
 	
-	let sol = Array.init n (fun i -> solver#get_variable (Winning i)) in
+	let sol = Array.init n (fun i -> if solver#get_variable (Winning i) = 0 then plr_Even else plr_Odd) in
 	let strat = Array.init n (fun i -> if sol.(i) = pg_get_owner game i
 	                                   then let delta = Array.of_list (ns_nodes (pg_get_successors game i)) in
 	                                        delta.(solver#get_variable_first (Array.map (fun j -> Strategy (i, j)) delta)) else -1) in
@@ -141,6 +140,8 @@ let solve''' game =
 let solve game =
   universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve''' game
 		  
-let _ = register_solver solve "stratimprsat" "is" "solve the game by a strategy improvement reduction to SAT";;
+let _ =
+  if (List.length (Satsolvers.get_list ()) > 0)
+	then register_solver solve "stratimprsat" "is" "solve the game by a strategy improvement reduction to SAT";;
   
   

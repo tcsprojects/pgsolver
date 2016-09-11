@@ -5,12 +5,16 @@ open Arg ;;
 open Tcstiming;;
 open Paritygame ;;
 open Verification ;;
+
+open Generatedsat;;
+
 open Univsolve ;;
 open Solvers ;;
 open Generators ;;
 open Generatorlist ;;
 open Whoiswho ;;
 open Solverlist;;
+
 
 module CommandLine =
 struct

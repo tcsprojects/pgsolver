@@ -193,7 +193,7 @@ let solve' game =
 	
   let m = pg_size game in
 	
-  pg_iterate (fun i -> fun (pr,_,_,_,_) -> let n = try
+  pg_iterate (fun i -> fun (p,_,_,_,_) -> let n = try
 					       SingleTable.find prio_table p
 					     with _ -> 0
 					   in
@@ -330,7 +330,7 @@ let solve' game =
    | x -> failwith ("satsolver reports " ^ format_solve_result x ^ " instead of SAT"));
   msg_plain 2 (fun _ -> SimpleTiming.stop tim; "done: " ^ SimpleTiming.format tim ^ "\n");
   
-  let solution = Array.make m (-1) in
+  let solution = Array.make m (plr_Even) in
   let strategy = Array.make m (-1) in
 	
   message 3 (fun _ -> "Obtaining values of S-variables ...\n");
@@ -359,6 +359,8 @@ let solve' game =
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
   
 
-
-let _ = register_solver solve "viasat" "vs" "use the small progress measure enc. for prop. logic and a reduction to SAT";;
+ 
+let _ =
+  if (List.length (Satsolvers.get_list ()) > 0)
+	then register_solver solve "viasat" "vs" "use the small progress measure enc. for prop. logic and a reduction to SAT";;
 

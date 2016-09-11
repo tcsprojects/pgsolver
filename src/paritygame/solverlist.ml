@@ -20,9 +20,7 @@ include Switch_random;;
 include Switch_snare;;
 include Switch_zadeh;;
 include Stratimprdisc;;
-(*
-include Satsolve;;
 include Viasat;;
+include Satsolve;;
 include Stratimprsat;;
-*)
 (*include Smtsolve;;*)
