@@ -676,10 +676,10 @@ let universal_solve_run options stats backend game' =
 	if m > 0 then (
 
         timer_start stats.logistics_timing;
-		msg_tagged MAIN 0 (fun _ -> "Building transposed graph...");
+	(* msg_tagged MAIN 0 (fun _ -> "Building transposed graph..."); *)
         let game = pg_copy game' in
-		msg_plain MAIN 0 (fun _ -> "finished\n");
-
+	(* msg_plain MAIN 0 (fun _ -> "finished\n"); *)
+	
         timer_stop stats.logistics_timing;
 
 

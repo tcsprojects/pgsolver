@@ -1186,17 +1186,6 @@ end);;
 
 (* return the set of all nodes which have a successors in t *)
 
-(* DEPRECATED
-let diamond_with_transposed_graph t game tg =
-  NodeSet.fold (fun v -> fun s -> 
-                 List.fold_left (fun s' -> fun u -> 
-                                   let (pr,_,_,_) = game.(u) in
-                                   if (pr >=0) then 
-                                     NodeSet.add u s'
-                                   else s')  
-                                 s tg.(v)) 
-               t NodeSet.empty 
- *)
   
 let diamond game t =
   NodeSet.fold (fun v -> fun s -> 
@@ -1209,17 +1198,6 @@ let diamond game t =
   
   
 (* return the set of all nodes for which all successors are in t *)
-
-(* DEPRECATED
-let box_with_transposed_graph t game tg =
-  let c = diamond_with_transposed_graph t game tg in      
-  NodeSet.filter (fun v -> let (pr, _, successors, _) = game.(v) in
-                          if pr >= 0 then
-                            Array.fold_left (fun b -> fun w -> b && NodeSet.mem w t) true successors
-                          else
-                            false
-                 ) c 
- *)
 
 let box game t =
   let c = diamond game t in      
