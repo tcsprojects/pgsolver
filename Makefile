@@ -1,4 +1,3 @@
-# TODO: Update Zchaff + Minisat
 # TODO: SMTMODULES=-ccopt "-I$(Z3DIR)/ocaml -L$(Z3DIR)/ocaml -L$(Z3DIR)/lib" -cclib -lz3 $(OCAML_DIR)/libcamlidl.a $(Z3DIR)/ocaml/z3.$(COMPILELIBEXT)
 
 
@@ -6,7 +5,7 @@ LIBS = nums,str
 
 all: pgsolver generators tools test
 
-include SatCompile
+include satsolversforocaml/SatCompile
 
 pgsolver: generatesat
 	ocamlbuild $(SATFLAGS) -libs $(LIBS) main.native
