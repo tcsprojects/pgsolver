@@ -30,103 +30,246 @@ a module in OCaml.
 \item[\texttt{paritygame}] contains modules that define parity games as a data structure and
      provide functionality for that, e.g.\ in the form of procedures that compute SCC decompositions
      etc.;
-% \item[\texttt{parser}] contains modules for the lexer and parser of the parity game specification
-%     format;
 \item[\texttt{pgsolver}] contains modules for the actual program \texttt{pgsolver};
-\item[\texttt{solvers}] contains the parity game solvers, each in a separate module;
-% \item[\texttt{zchaff}] contains the interface to the external C++ functions in the \texttt{zChaff}
-%     library.
+\item[\texttt{solvers}] contains the parity game solvers, each in a separate module.
 \end{description}
 
-\section{Definitions of Important Data Types}
+\section{Data Types and Functions for Manipulating Parity Games}
 
 The signature file
 \begin{verbatim}
 src/paritygame/paritygame.mli
 \end{verbatim}
-contains the definition of parity games as a data structure.
+contains the definition of parity games as an abstract data structure.
+A parity game is internally stored as an array of node definitions but this may or may not change in the future
+in favour of a more efficient implementation. There are also (abstract) data types for representing nodes, players,
+priorities, sets of nodes, strategies, solutions and solutions, which will be introduced in detail in the following.
+
+\subsection{Nodes}
+
+The type of a node in a paritygame is one of the few types that are not abstract. For sake of efficiency, a node is 
+simply an integer value:
 \begin{verbatim}
-type paritygame = (int * int * int array * string option) array
+   type node = int
 \end{verbatim}
-A parity game is internally stored as an array of node definitions. Hence, the size of the array
-is at least the number of nodes in the game. A node is a value of type \texttt{int} -- it is
-implicitly assumed that the nodes' names in a game are $0,\ldots,n$ for some $n \in \Nat$. The
-value stored in the array at position $i$ defines the node $i$ in the game. Such a value is of
-the form \verb#(priority, player, successors, name)# where
-\begin{itemize}
-\item \texttt{priority} is a value of type \texttt{int} defining the node's priority. Admissible
-      values are $0,1,2,\ldots$
-\item \texttt{player} is a value of type \texttt{int} determining whether or not node $i$ belongs
-      to $V_0$ or $V_1$. Admissible values are only $0$ or $1$.
-\item \texttt{successors} is an array with entries of type \texttt{int} defining the outgoing edges
-      of node $i$. There is an edge to node $j$ iff $j$ occurs somewhere in the array. Multiple
-      occurrences of successor nodes in such an array are not explicitly forbidden. Hence, it is
-      actually possible to define a multi-graph. However, it is easy to see that
-      multiple edges do not affect the winning regions or strategies.
-\item \texttt{name} of type \texttt{string option} is an optional name for the node which can be
-      used in displaying the game. The default value is \texttt{None} representing no name. A value
-      of the form \verb#Some("Europe")# declares the string \texttt{Europe} as the symbolic name of
-      node $i$.
-\end{itemize}
+Beware that the type node may become abstract in the future, so try to avoid to arithmetic etc.\ on nodes. 
 
-\begin{example}
-The parity game in Ex.~\ref{ex:examplegame} whose graph is shown in Fig.~\ref{fig:examplegame} on
-page~\pageref{fig:examplegame} would, for example, be represented as the following array.
+There is currently only one function that is specific to nodes; it turns a node into a string for output purposes.
 \begin{verbatim}
-[| (6,1,[|4;2|],Some("Africa")); (8,1,[|2;4;3|],Some("America"));
-   (7,0,[|3;1;0;4|],Some("Asia")); (6,0,[|4;2|],Some("Australia"));
-   (5,1,[|0|],Some("Antarctica")) |]
+   val nd_show : node -> string
 \end{verbatim}
-\end{example}
 
-It is possible to leave nodes undefined by given them the value \verb#(-1,-1,[||],None)# for example. 
-% Take the Jurdzi{\'n}ski games shown in Fig.~\ref{fig:marcingame}
-% on page~\pageref{fig:marcingame} for example. When generating these it may be helpful to add a fourth
-% node to every small triangle that makes up the entire rectangular structure in order to have a simpler
-% enumeration of the graph's nodes. 
-%Such a node could be defined using .
 
-The signature file
+\subsection{Sets of Nodes}
+
+Many algorithms manipulate sets of nodes, for instance they take the set of all nodes with highest priority etc. For 
+such purposes, \verb#paritygame.mli# provides an abstract data type and functions for storing and manipulating sets of nodes.
 \begin{verbatim}
-src/paritygame/paritygame.mli
+   type nodeset
 \end{verbatim}
-also contains two type definitions for a parity game's \emph{solution} -- the node set's partition into
-winning regions -- and positional \emph{strategies}.
+Currently, this type is implemented as a simple ordered list without duplicates. The functions for creation and manipulation
+follow the standard \verb#Set# interface. Use
 \begin{verbatim}
-type solution = int array
-type strategy = int array
+   val ns_empty   : nodeset
+   val ns_make    : node list -> nodeset
 \end{verbatim}
-Internally, both simply are arrays with entries of type \texttt{int}. Note that a solution or a strategy
-only makes sense in the context of a parity game, but this is not respected by this definition of data
-structures. The program itself has to ensure that it does not lose the connection between a solution array
-and the corresponding game for example.
+to create a set of nodes, either initially empty or from a given list of nodes. It is possible to add nodes to existing sets
+or deletes nodes from them using
+\begin{verbatim}
+   val ns_add     : node -> nodeset -> nodeset
+   val ns_del     : node -> nodeset -> nodeset
+\end{verbatim}
+In the latter case \verb#ns_del v vs# returns vs if \verb#v# is not a member of \verb#vs#.
 
-Given a parity game, represented as an array of length $n$ as above, a solution to this is an \texttt{int}
-array \texttt{s} of length $n$ as well. The entry at position $i$ in \texttt{s} is either $0$ or $1$ --
-indicating whether or not node $i$ belongs to $W_0$ or $W_1$. The value $-1$ is also allowed, enabling partial
-solving. This is used to indicate that a solution for node $i$ has not been computed.
+Desctruction of node sets is implemented as 
+\begin{verbatim}
+   val ns_nodes   : nodeset -> node list
+\end{verbatim}
+which returns all the elements of a set of nodes as a list.
 
-An array of type \texttt{strategy} contains, in effect, two positional strategies -- one for each player.
-Again, such strategies are only well-defined in the context of a given parity game, although this is
-not reflected by the typing. Remember that the node set $V$ of a parity game is partitioned into
-$V_0$ and $V_1$, assigning an owner to each node in the game. If there are $n$ nodes, then a valid
-strategy array is also of size $n$. Let \texttt{game} be the array representation of a parity game as
-described above. Now take some $i < n$ and let \texttt{(priority,player,succs,name)} be the definition of
-node $i$, i.e.\ the entry at position $i$ in the array \texttt{game}. Remember that \texttt{succs} is, again,
-an array with entries of type \texttt{int} that contains the indices of all the successors of $i$. Now
-the array \texttt{strategy} defines two positional strategies $\sigma_0$ and $\sigma_1$ for players
-$0$ and $1$ in the following sense. The entry at position $i$ is $j$ iff player $\sigma_p(i) = k$ where
-$k$ is the value of the \texttt{succs}-array at position $j$, and $p$ is the value of \texttt{player}.
-In other words, the \texttt{strategy} array contains for every node the index of the outgoing edge that
-the owner of the node should take in a move.
+For tests on emptiness and on membership of a particular node in a set use
+\begin{verbatim}
+   val ns_isEmpty : nodeset -> bool
+   val ns_elem    : node -> nodeset -> bool
+\end{verbatim}
+There are more general tests, for instance if a node set includes some node with a particular property, or if all of them do so:
+\begin{verbatim}
+   val ns_exists  : (node -> bool) -> nodeset -> bool			
+   val ns_forall  : (node -> bool) -> nodeset -> bool			
+\end{verbatim}
+It is possible to extract nodes from a node set, either some with a particular property (\verb#ns_find#) or a random one (\verb#ns_some#)
+or the first, resp.\ last in some canonical order (\verb#ns_first#, \verb#ns_last#), or the one that is maximal w.r.t.\ a total order
+(\verb#ns_max#).
+\begin{verbatim} 
+   val ns_find    : (node -> bool) -> nodeset -> node
+   val ns_some    : nodeset -> node
+   val ns_first   : nodeset -> node
+   val ns_last    : nodeset -> node
+   val ns_max     : nodeset -> (node -> node -> bool) -> node
+\end{verbatim}
+The cardinality of a set of nodes is computed by
+\begin{verbatim}
+   val ns_size    : nodeset -> int
+\end{verbatim}
+Finally, there are the typical iterator functions 
+\begin{verbatim}
+   val ns_fold    : ('a -> node -> 'a) -> 'a -> nodeset -> 'a
+   val ns_iter    : (node -> unit) -> nodeset -> unit
+   val ns_map     : (node -> node) -> nodeset -> nodeset
+   val ns_filter  : (node -> bool) -> nodeset -> nodeset
+\end{verbatim}
+that behave as one would expect. Note that there is no control over the order in which nodes in a set are processed in \verb#ns_iter f vs# 
+or \verb#ns_fold f x vs#; hence for a uniquely determined result the function \verb#f# should be independent of that order. 
 
-Clearly, the strategies represented by such arrays need not be winning strategies. It is assumed, though,
-that, in the context of a solution array, the strategies are winning strategies on those parts of the game
-that are won by each player respectively. Hence, admissible values for entries in a strategy array
-are $0,1,\ldots$ but values $j \ge 1$ may lead to exceptions due to array indices that are out of bounds.
-The value $-1$ is also allowed to indicate that a strategy is not defined for a certain node. This enables
-partial solving and should only occur in conjunction with a $-1$ in the corresponding position of the
-solution array indicating that the node has not been solved by a solver.
+
+\subsection{Players and Priorities}
+
+There are two types representing players and priorities.
+\begin{verbatim}
+   type player 
+   type priority = int
+\end{verbatim}
+Players are abstract but priorities are just integers. Only non-negative integers should be used as priorities.
+
+There are constants defining the two players of a parity game. Some algorithms may have to defer the decisio about who wins which node in a game;
+for such cases there is also a constant representing an undefined player. At last, there is a function which can be used to obtain a random player
+with even distribution between \verb#plr_Even# and \verb#plr_Odd#.
+\begin{verbatim} 
+   val plr_Even   : player
+   val plr_Odd    : player
+   val plr_undef  : player
+   val plr_random : unit -> player
+\end{verbatim}
+There are a few functions realising some minor arithmetic on the data type \verb#player#, for instance computing a player's opponent, for obtaining
+a string representation, or for applying a function to both players.
+\begin{verbatim}
+   val plr_opponent : player -> player
+   val plr_show     : player -> string
+   val plr_iterate  : (player -> unit) -> unit
+\end{verbatim}
+There are some functions that link players and priorities, for instance by checking whether a priority is good for some player in the sense that
+even priorities are good for \verb#plr_Even# and odd ones for \verb#plr_Odd#. Likewise it is possible to obtain the benefitting player directly.
+\begin{verbatim}
+   val prio_good_for_player : priority -> player -> bool
+   val plr_benefits         : priority -> player
+\end{verbatim}
+These functions essentially test the parity of an integer value; there are also functions to do this directly. 					
+\begin{verbatim}
+   val odd: priority -> bool
+   val even: priority -> bool
+\end{verbatim}
+It is unlikely, yet not impossible, that the type \verb#priority# will become abstract in the future. Hence, it is advisable to only manipulate
+priorities through these functions.
+
+
+\subsection{Parity Games}
+
+The most important type in this module is the data type for parity games.
+\begin{verbatim}
+   type paritygame
+\end{verbatim}
+Note that as of version 4.0, the implementation of this type is no longer visible to the other modules, for reasons of code reliability. There are,
+however, several functions that allow parity games to be created, manipulated and used.
+
+There are three ways for creating a fresh parity game. 
+\begin{verbatim}
+   val pg_create : int -> paritygame
+   val pg_init   : int -> 
+                   (node -> (priority * player * node list * string option)) -> 
+                   paritygame
+   val pg_copy   : paritygame -> paritygame
+\end{verbatim}
+The former two expect the number of nodes of the game as a parameter. In case of \verb#pg_create#, the resulting game has no edges, the owner of each node
+is \verb#plr_undef# and the priorities cannot be assumed to be non-negative integer values. The second function can be used to create a game and
+fill it with some structure. Calling \verb#pg_init n f# will return a parity game with \verb#n# nodes such that the result of calling \verb#f i#
+contains the priority, owner, list of successor nodes and possibly a name of the \verb#i#-th node in the game. Function \verb#pg_copy# creates a fresh
+copy of an existing game which may be handy for algorithms that manipulate games and have to revert certain changes.
+
+Given a parity game, such information about a node can be extracted using the following functions.
+\begin{verbatim}
+   val pg_get_priority     : paritygame -> node -> priority
+   val pg_get_owner        : paritygame -> node -> player
+   val pg_get_successors   : paritygame -> node -> nodeset
+   val pg_get_predecessors : paritygame -> node -> nodeset
+\end{verbatim}
+It is possible to search for the node name (as an integer, resp.\ value of type \verb#node#) given its description.
+\begin{verbatim}
+   val pg_find_desc  : paritygame -> string option -> node
+\end{verbatim}
+There are two function for finding nodes according to their priorities.
+\begin{verbatim}
+   val pg_prio_nodes              : paritygame -> priority -> node list
+   val pg_get_selected_priorities : paritygame -> 
+                                    (priority -> bool) -> 
+                                    priority list
+\end{verbatim}
+A parity game can be modified inplace by setting, resp.\ changing the priority or string description or owner of a node, or by adding an 
+edge between two nodes.
+\begin{verbatim}
+   val pg_set_priority : paritygame -> node -> priority -> unit
+   val pg_set_owner    : paritygame -> node -> player -> unit
+   val pg_get_desc     : paritygame -> node -> string option
+   val pg_set_desc     : paritygame -> node -> string option -> unit
+   val pg_get_desc'    : paritygame -> node -> string
+   val pg_set_desc'    : paritygame -> node -> string -> unit
+   val pg_add_edge     : paritygame -> node -> node -> unit
+\end{verbatim}
+It is also possible to delete a set of nodes given as a list, or to remove a single edge or a set of edges, given as a list of node pairs. These
+deletions also work inplace.
+\begin{verbatim}
+   val pg_remove_nodes : paritygame -> node list -> unit
+   val pg_del_edge     : paritygame -> node -> node -> unit
+   val pg_remove_edges : paritygame -> (node * node) list -> unit
+\end{verbatim}
+Note that using any of these can result in a game in which a node has no successor anymore. Deleting undefined nodes or non-existing edges results
+in no change.
+
+Some structural information about a parity game can be obtained, namely the size (i.e.\ number of nodes), the number of edges, or the index (i.e.\ number
+of different priorities). 
+\begin{verbatim}
+   val pg_size	         : paritygame -> int
+   val pg_node_count     : paritygame -> int
+   val pg_edge_count     : paritygame -> int
+   val pg_get_index      : paritygame -> int
+   val pg_get_priorities : paritygame -> priority list
+\end{verbatim}
+The latter returns a list of all the priorities that are being used in the game.
+
+There is a subtle difference between \verb#pg_size# and \verb#pg_node_count#. The latter only counts nodes that are defined, so for instance
+\verb#pg_size (pg_create 2)# will return \verb#2#, while \verb#pg_node_count (pg_create 2)# will return \verb#0#. Checking whether a node is defined
+can be done using
+\begin{verbatim}
+   val pg_isDefined : paritygame -> node -> bool
+\end{verbatim}
+Finally, there are iterator functions for parity games that traverse through all defined nodes, resp.\ all existing edges.
+\begin{verbatim}
+  val pg_iterate      : (node -> 
+                         (priority * player * nodeset * nodeset * string option) -> 
+                         unit) -> paritygame -> unit
+  val pg_edge_iterate : (node -> node -> unit) -> paritygame -> unit
+\end{verbatim}
+
+\subsection{Solutions and Strategies}
+
+A solution of a parity game is a mapping of nodes to players, determining who wins the game starting in that particular node.
+A (memory-less) strategy (for both players) is a set of edges, including exactly one edge for each node that is won by the
+player who owns the node. The interface \verb#paritygame.mli# provides two data structures for solutions and strategies which are
+based on the fact that nodes are non-negative integer values.
+\begin{verbatim}
+   type solution = player array
+   type strategy = node array
+\end{verbatim}
+A solution with value \verb#plr_Even# at position \verb#v# for instance represents the fact that player Even wins node \verb#v#.
+Such arrays can contain the value \verb#plr_undef#.
+
+An array of type \verb#strategy# can contain the value \verb#nd_undef#, representing the fact that the strategy decision at that position
+is either unknown or unnecessary because the node is not won by its owner.
+
+Note that an array of type \verb#strategy# contains, in effect, two positional strategies -- one for each player.
+
+There is no mechanism that links a solution or strategy array to a particular parity game. It is the programmer's task to ensure
+that the solution for one game is not used for another game. This could result in runtime errors like array access outside their
+bounds.
 
 \section{Implementing a New Solver}
 
