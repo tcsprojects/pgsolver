@@ -1075,14 +1075,8 @@ let is_single_parity_game game =
 
 let number_of_strategies game pl m =
   let n = ref 1 in
-  let i = ref 0 in
-  let l = pg_size game in
-  while !i < l && !n < m do
-    if pl = pg_get_owner game !i then n := !n * (ns_size (pg_get_successors game !i));
-    incr i
-  done;
+  pg_iterate (fun v -> fun (_,p,vs,_,_) -> if !n < m && p=pl then n := !n * (ns_size vs)) game;
   min !n m
-
 
 
 let compute_priority_reach_array game player =

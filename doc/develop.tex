@@ -11,7 +11,7 @@ Implementing a new algorithm requires two steps only.
       winning regions and winning strategies for the two players. It must reside in a new
       module.
 \item Integrate this function into the main program such that the new solver can be used
-      by giving \texttt{pgsolver} a certain command-line argument. Then adjust the
+      by giving \pgsolver a certain command-line argument. Then adjust the
       \texttt{SolverList} such that the new module is compiled with the rest of the tool.
 \end{enumerate}
 
@@ -163,6 +163,7 @@ priorities through these functions.
 
 
 \subsection{Parity Games}
+\label{sec:paritygamesmodule}
 
 The most important type in this module is the data type for parity games.
 \begin{verbatim}
@@ -377,37 +378,31 @@ simply have to give it four arguments.
       your algorithm.
 \item The second one is a string which should contain a concise but reasonably expressive synonym for your
       algorithm. It must not contain white spaces because it will be prefixed by two dashes ``\texttt{--}''
-      and used as a command-line parameter that tells \texttt{pgsolver} to use your algorithm.
+      and used as a command-line parameter that tells \pgsolver to use your algorithm.
 \item The third one is a string which contains an even shorter synonym for your algorithm. It will be
       prefixed by a single dash symbol ``\texttt{-}'' and used as a command-line parameter for \texttt{pgsolver}
       with the same effect.
-\item The fourth argument is again a string which contains a description of what \texttt{pgsolver} does
+\item The fourth argument is again a string which contains a description of what \pgsolver does
       when given any of the the command-line parameters derived from the second or third argument.
 \end{itemize}
 After compilation, called \texttt{bin/pgsolver --help} should result in output containing the following
 lines.
 \begin{verbatim}
-PGSolver Collection Ver. 3: Parity Game Solver
-Authors: Oliver Friedmann and Martin Lange, University of Munich,
-         2008-2010
-http://www.tcs.ifi.lmu.de/pgsolver
+PGSolver Collection Ver. 4.0: Parity Game Solver
+Authors: Oliver Friedmann (University of Munich) and Martin Lange (University of Kassel), 2008-2016
+http://tcsprojects.org
 
 Usage: pgsolver [options] [infile]
 Solves the parity game given in <infile>. If this argument is omitted it
 reads a game from STDIN.
 
 Options are
-  -v <level>
-     sets the verbosity level, valid arguments are 0-3, default is 1
   ...
-  --detpoly, -dp
-     use the brand-new deterministic polytime algorithm
+  --globallysolve, -global <solver>
+     solves globally, valid solvers are ... detpoly ...
+  ...
 \end{verbatim}
-Finally, calling \texttt{bin/pgsolver -dp} or \texttt{bin/pgsolver --detpoly} will solve a parity game
-using your algorithm.
-
-We leave it up to you to find the right bits in the code that you have to edit in order to make
-\texttt{pgsolver} say that you have also contributed to the tool.
+Finally, calling \texttt{bin/pgsolver -global detpoly} will solve a parity game using your algorithm.
 
 
 
@@ -423,14 +418,17 @@ directory for example then this can be found in the file \texttt{src/paritygame/
 %\paragraph{Basics Module}
 \subsection{The {\ttfamily Basics} Module}
 
-This module in the subdirectory \texttt{utils} contains only one function at the moment which is used to
-output string messages to \texttt{STDOUT} depending on the configured verbosity level.
+The main function in this module in the subdirectory \texttt{pgsolver} is used for producing output 
+messages to \texttt{STDOUT} during a run of \pgsolver depending on the configured verbosity level.
 
 \begin{description}
 \itemsep3mm
-\item \verb+val message : int -> (unit -> string) -> unit+ \ \\
+\item \verb+type verbosity_level = int+\ \\
+Used to define different levels of verbosity during the program's execution.
+
+\item \verb+val message : verbosity_level -> (unit -> string) -> unit+ \ \\
 Calling \verb+message v (fun _ -> s)+ outputs the string \verb+s+ on \texttt{STDOUT} if the currently
-set verbosity level is greater or equal than \verb+v+.
+set verbosity level is greater than or equal to \verb+v+.
 
 \item \verb+val verbosity_level_verbose : verbosity_level+ \ \\
 Predefined verbosity level constant for verbose output (2).
@@ -442,76 +440,58 @@ Predefined verbosity level constant for debug output (3).
 
 \subsection{The {\ttfamily Paritygame} Module}
 
-This module in the \texttt{paritygame} subdirectory contains many useful routines for creating, accessing,
-manipulating, printing, decomposing and generally handling parity games. Some of the most useful functions
-are as follows:
+In addition to the basic functions for creating, accessing and manipulating parity games that have been described in
+Section~\ref{sec:paritygamesmodule} already, this module in the \texttt{paritygame} subdirectory contains more useful 
+routines for handling parity games. 
 
 \begin{description}
 \itemsep3mm
 \item \verb+val print_game : paritygame -> unit+ \ \\
 Calling \verb+print_game game+ prints game on \texttt{STDOUT} s.t.\ it could be parsed again.
 
-\item \verb+val pg_max_prio : paritygame -> int+ \ \\
+\item \verb+val pg_max_prio : paritygame -> priority+ \ \\
 Calling \verb+pg_max_prio game+ returns the greatest priority occurring in the \verb+game+.
 
-\item \verb+val pg_min_prio : paritygame -> int+ \ \\
+\item \verb+val pg_min_prio : paritygame -> priority+ \ \\
 Calling \verb+pg_min_prio game+ returns the least priority occurring in the \verb+game+.
 
-\item \verb+val pg_max_prio_for : paritygame -> int -> int+ \ \\
+\item \verb+val pg_max_prio_for : paritygame -> player -> priority+ \ \\
 Calling \verb+pg_max_prio_for game player+ returns the greatest reward for \verb+player+ occurring in the \verb+game+.
 
-\item \verb+val pg_get_index : paritygame -> int+ \ \\
-Calling \verb+pg_get_index game+ returns the index of the \verb+game+.
-
-\item \verb+val pg_remove_nodes : paritygame -> int list -> unit+ \ \\
-Calling \verb+pg_remove_nodes game node_list+ removes all nodes specified in \verb+node_list+.
-
-\item \verb+val pg_remove_edges : paritygame -> (int * int) list -> unit+ \ \\
-Calling \verb+pg_remove_edges game edge_list+ removes all edges specified in \verb+edge_list+.
-
-\item \verb+val collect_max_prio_nodes : paritygame -> int list+ \ \\
+\item \verb+val collect_max_prio_nodes : paritygame -> node list+ \ \\
 Calling \verb+collect_max_prio_nodes game+ returns all nodes with greatest priority.
 
-\item \verb+val subgame_by_list : paritygame -> int list -> paritygame+ \ \\
+\item \verb+val subgame_by_list : paritygame -> node list -> paritygame+ \ \\
 Calling \verb+subgame_by_list game nodes+ returns a compressed subgame induced and ordered by the \verb+nodes+-list
 
 \item \verb+val merge_strategies_inplace : strategy -> strategy -> unit+ \ \\
 Calling \verb+merge_strategies_inplace strat1 strat2+ adds all strategy decisions from \verb+strat2+ to
-\verb+strat1+. Throws an \verb+Unmergable+-Exception if the domain of both strategies is not empty, i.e.\ if
+\verb+strat1+. Throws an \verb+Unmergable+-Exception if the intersection of the domains of both strategies is not empty, i.e.\ if
 there is an index $i$ such that the values of \verb+strat1+ and \verb+strat2+ at index $i$ are both not
-$-1$.
+\verb#nd_undef#.
 
 \item \verb+val merge_solutions_inplace : solution -> solution -> unit+ \ \\
-Calling \verb+merge_solutions_inplace sol1 sol2+ adds all solution informations from \verb+sol2+ to \verb+sol1+.
-Throws an \verb+Unmergable+-Exception if the domain of both solutions is not empty, see above.
-
-\item \verb+val game_to_transposed_graph : paritygame -> int list array+ \ \\
-Calling \verb+game_to_transposed_graph game+ returns the transposed graph associated with the \verb+game+. It is
-stipped of information about nodes' owners and priorities. At index $i$ it contains a list containing the
-identifiers of all predecessors of node $i$ in \verb+game+.
-
-\item \verb+val game_to_graph : paritygame -> int list array+ \ \\
-Calling \verb+game_to_graph game+ returns the graph associated with the \verb+game+. See the former function
-for a description of how graphs are represented.
+Calling \verb+merge_solutions_inplace sol1 sol2+ adds all solution information from \verb+sol2+ to \verb+sol1+.
+Throws an \verb+Unmergable+-Exception if the intersection of the domains of both solutions is not empty, see above.
 
 \item
 \begin{verbatim}
 val strongly_connected_components: paritygame ->
-                                   int list array *
-                                   int array *
-                                   int list array *
-                                   int list
+                                      (node list array *
+                                       scc array *
+                                       scc list array *
+                                       scc list)
 \end{verbatim}
 Calling \verb+strongly_connected_components game+ decomposes the \verb+game+ into its SCCs. It returns a tuple
 \verb+(sccs, sccindex, topology, roots)+ where \verb+sccs+ is an array mapping each SCC to its list of nodes,
 \verb+sccindex+ is an array mapping each node to its SCC (represented by an integer value), \verb+topology+ is an
 array mapping each SCC to the list of its immediate successing SCCs and \verb+roots+ is the list of SCC having no
-predecessing SCCs.
+predecessing SCCs. The type \verb#scc# is (currently) just a synonym for \verb#int#. 
 
 \item
 \begin{verbatim}
 val attr_closure_inplace: paritygame -> strategy ->
-                          int -> int list -> int list
+                          player -> node list -> node list
 \end{verbatim}
 Calling \verb+attr_closure_inplace game strategy player region returns+ the attractor for the given \verb+player+
 and \verb+region+. Additionally all necessary strategy decisions for \verb+player+ leading into the \verb+region+
@@ -540,14 +520,14 @@ backend. It returns the solved game as a pair of \verb+solution+ and \verb+strat
 \begin{verbatim}
 val universal_solve_by_player_solver :
   universal_solve_options ->
-      (paritygame -> int -> solution * strategy) ->
+      (paritygame -> player -> solution * strategy) ->
       paritygame -> solution * strategy
 \end{verbatim}
 Calling \verb+universal_solve_by_player_solver verbosity player_solver game+ \linebreak starts the universal
 solving process using \verb+player_solver+ as a backend. Instead of a solver backend that solves arbitrary SCCs
-\verb+player_solver+ is supposed to solve an SCC w.r.t.\ a given player, for instance if \verb+player_solver scc 0+
-is called, the backend is supposed to determine whether a node is won by player $0$ (return $0$ for this node) or
-not (return $-1$ for this node). The strategy that is returned by \verb+player_solver+ is only considered w.r.t.\
+\verb+player_solver+ is supposed to solve an SCC w.r.t.\ a given player, for instance if \verb+player_solver scc plr_Even+
+is called, the backend is supposed to determine whether a node is won by player $0$ (return \verb#plr_Even# for this node) or
+not (return \verb#plr_undef# for this node). The strategy that is returned by \verb+player_solver+ is only considered w.r.t.\
 the given player. The function returns the solved game as a pair of \verb+solution+ and \verb+strategy+.
 
 \item
@@ -563,7 +543,7 @@ pair of \verb+solution+ and \verb+strategy+.
 \item
 \begin{verbatim}
 val compute_winning_nodes :
-   verbosity_level -> paritygame -> strategy -> int -> int list
+   verbosity_level -> paritygame -> strategy -> player -> node list
 \end{verbatim}
 Calling \verb+compute_winning_nodes verbosity game strategy player+ considers \linebreak the subgame of \verb+game+ w.r.t.\
 the \verb+strategy+ decisions for \verb+player+; the strategy is assumed to be total w.r.t.\ \verb+player+. It
@@ -571,6 +551,93 @@ returns the list of nodes \verb+player+ wins on the game following \verb+strateg
 \end{description}
 In all these cases the argument \verb+verbosity+ is used to determine whether or not statistics should be printed
 at the end.
+
+\section{Creating New Benchmarks}
+
+\subsection{The Functor \texttt{Build}}
+The creation of new families of parity games, for example as new benchmarks, is eased by the functor \texttt{Build} in
+\texttt{paritygame.mli}. It automates the creation of the necessary data structures for a parity game and allows the
+user to specify such a game freely, using their own data types for nodes. In order to do so, one has to implement the
+signature
+\begin{verbatim}
+  module type PGDescription =
+    sig
+      type gamenode
+
+      val compare    : gamenode -> gamenode -> int
+
+      val owner      : gamenode -> player
+      val priority   : gamenode -> priority
+      val successors : gamenode -> gamenode list   (* should always return a non-empty list *)
+      val show_node  : gamenode -> string option
+
+      val initnodes  : unit -> gamenode list 
+    end
+\end{verbatim}
+i.e.\ create a module that implements some data type \verb#gamenode# and functions which determine the owner and the
+priority of a node as well as its successors. Additionally, one has to provide a function that potentially yields a
+textual representation of a node, used for instance in displaying a game graphically. Finally, the function \verb#initnodes#
+should return a list of initial nodes in such a parity game. 
+
+The \verb#compare# function needs to provide a total order on nodes. It typically suffices to implement it generically via
+\verb#let compare = compare#.
+
+Applying the functor \verb#Build# to a module of type \verb#PGDescription# results in a module of type
+\begin{verbatim}
+  module type PGBuilder = 
+    sig
+      type gamenode
+	     
+      val build            : unit -> paritygame
+      val build_from_node  : gamenode -> paritygame
+      val build_from_nodes : gamenode list -> paritygame
+    end
+\end{verbatim}
+i.e.\ a module which provides functions that build a parity game, either starting generically from the initial nodes as 
+defined by the function \verb#initnodes#, or specifically from a particular node or node list. The game is created by 
+traversing its description starting at the chosen nodes and exploring successors successively. The user has to guarantee
+that the description yields a finite game; otherwise the \verb#build#-functions may not terminate.
+
+The total order given by \verb#compare# is needed to store the nodes of the game description in a hash table or balanced
+tree where they are implicitly converted into values of type \verb#node#.
+
+Examples of how to use the functor \verb#Build# for conveniently building parity games on-the-fly can be found in the
+\texttt{generators}-subdirectory, for example in the benchmark modules \texttt{towersofhanoi}, \texttt{elevatorverification},
+\texttt{jurdzinskigame}, \texttt{langincl}, etc.
+
+\subsection{Registering New Generators}
+
+The modules for benchmarks typically only provide a function that creates a parity game as a value of type \verb#paritygame#.
+They do not call the functions themselves, nor are they concerned with where the resulting parity games are being used.
+
+These functions are then used in two places: the most visible one is through the module \texttt{rungenerator} in the 
+\texttt{pgsolver} subdirectory. It calls the corresponding function and then prints the resulting game on standard output.
+This code is used to create the stand-alone binaries for benchmark creation in the \texttt{bin}-subdirectory.
+
+Printing games and parsing games is very costly, so it is not advisable to use this method to run serious benchmarks. It is
+also obviously wasteful to create a paritygame in the correct data type, print it and then parse it again into this data type.
+This is why \pgsolver provides a way of integrating the benchmark creation into the main program. This means that games only
+need to be created once before they can be solved, without the need to print and parse them. The key to this is the function
+\begin{verbatim}
+   val register_generator: (string array -> paritygame) -> string -> string -> unit
+\end{verbatim}
+in the \texttt{generators} module in the subdirectory \texttt{paritygame}. It takes as first argument a function which 
+produces a parity game according to an array of strings which are the command-line parameters given to the generator. The
+two other arguments of type \verb#string# are a short (i.e.\ not containing white spaces) description of the benchmark,
+used to identify this when telling \pgsolver which benchmark to use, and a long description used for instance in the help
+text. 
+
+To integrate your benchmarks fully, create a function \verb#my_generator# of type \verb#string array -> paritygame# that returns a 
+parity game in accordance to a parameter array (for instance conveniently using the functor \verb#Build#), and include
+code of the form
+\begin{verbatim}
+   let _ = Generators.register_generator my_generator "mygen" "My own benchmark generator"
+\end{verbatim}
+somewhere, preferably in the same module as the one containing the benchmark generation code. Say its name is \verb#mygenerator#.
+To ensure that this code is included in the main program during compilation, you need to add \verb#mygenerator.gen# in the
+list of generators in \verb#Makefile#.
+
+
 
 %%% Local Variables:
 %%% mode: latex

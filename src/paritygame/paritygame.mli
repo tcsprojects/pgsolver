@@ -376,6 +376,7 @@ val partially_solve_game: paritygame -> partial_solver -> solution * strategy
 val get_player_decision_info: paritygame -> bool * bool
 val is_single_parity_game: paritygame -> priority option
 
+(* computes the number of strategies for a player in a game; the third parameter is an upper bound on the returned value *)
 val number_of_strategies : paritygame -> player -> int -> int
 
 val compute_priority_reach_array : paritygame -> player -> int array array  
