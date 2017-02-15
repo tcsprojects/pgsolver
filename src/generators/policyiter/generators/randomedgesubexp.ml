@@ -56,29 +56,29 @@ let generator_game_func arguments =
 		else addnodenormal sy pr pl li
 	in
 	
-	addnodenormal FinalCycle 1 1 [FinalCycle];
-	addnodenormal FinalSink (4 * n + 10) 1 [FinalCycle];
-	addnode (UpperSelector n) 3 0 [FinalSink] FinalSink;
-	addnode (CycleSelector n) 3 0 [FinalSink] FinalSink;
-	addnodenormal UpperRoot 8 1 [UpperSelector 0];
-	addnodenormal SelectorRoot 3 1 [CycleSelector 0];
+	addnodenormal FinalCycle 1 plr_Odd [FinalCycle];
+	addnodenormal FinalSink (4 * n + 10) plr_Odd [FinalCycle];
+	addnode (UpperSelector n) 3 plr_Even [FinalSink] FinalSink;
+	addnode (CycleSelector n) 3 plr_Even [FinalSink] FinalSink;
+	addnodenormal UpperRoot 8 plr_Odd [UpperSelector 0];
+	addnodenormal SelectorRoot 3 plr_Odd [CycleSelector 0];
 	
 	for i = 0 to n - 1 do
-		addnodenormal (CycleExit i) (4 * i + 12) 1 [UpperSelector (i + 1)];
-		addnodenormal (AccessExit i) (4 * i + 9) 1 [SelectorRoot];
-		addnodenormal (CycleEntry i) (4 * i + 11) 1 [CycleCenter i];
-		addnodenormal (AccessCenter i) 6 1 [CycleEntry i; AccessNode (i,0)];
-		addnodenormal (CycleCenter i) 6 1 [CycleNode (i,0); (*IntermediateNode (i,0);*) CycleExit i];
-		addnode (UpperSelector i) 3 0 [UpperSelector (i+1); FinalSink; AccessCenter i] FinalSink;
-		addnode (CycleSelector i) 3 0 [CycleSelector (i+1); FinalSink; CycleEntry i] FinalSink;
+		addnodenormal (CycleExit i) (4 * i + 12) plr_Odd [UpperSelector (i + 1)];
+		addnodenormal (AccessExit i) (4 * i + 9) plr_Odd [SelectorRoot];
+		addnodenormal (CycleEntry i) (4 * i + 11) plr_Odd [CycleCenter i];
+		addnodenormal (AccessCenter i) 6 plr_Odd [CycleEntry i; AccessNode (i,0)];
+		addnodenormal (CycleCenter i) 6 plr_Odd [CycleNode (i,0); (*IntermediateNode (i,0);*) CycleExit i];
+		addnode (UpperSelector i) 3 plr_Even [UpperSelector (i+1); FinalSink; AccessCenter i] FinalSink;
+		addnode (CycleSelector i) 3 plr_Even [CycleSelector (i+1); FinalSink; CycleEntry i] FinalSink;
 		for j = 0 to counting_cycle i - 1 do
-			addnode (CycleNode (i,j)) 5 0 [SelectorRoot; FinalSink; (if j < counting_cycle i - 1 then CycleNode (i,j+1) else IntermediateNode (i,0) (*CycleCenter i*))] FinalSink
+			addnode (CycleNode (i,j)) 5 plr_Even [SelectorRoot; FinalSink; (if j < counting_cycle i - 1 then CycleNode (i,j+1) else IntermediateNode (i,0) (*CycleCenter i*))] FinalSink
 		done;
 		for j = 0 to intermediate_cycle - 1 do
-			addnode (IntermediateNode (i,j)) 5 0 [UpperRoot; FinalSink; (if j < intermediate_cycle - 1 then IntermediateNode (i,j+1) else CycleCenter i)] FinalSink
+			addnode (IntermediateNode (i,j)) 5 plr_Even [UpperRoot; FinalSink; (if j < intermediate_cycle - 1 then IntermediateNode (i,j+1) else CycleCenter i)] FinalSink
 		done;
 		for j = 0 to access_cycle - 1 do
-			addnode (AccessNode (i,j)) 5 0 [AccessExit i; FinalSink; (if j < access_cycle - 1 then AccessNode (i,j+1) else AccessCenter i)] FinalSink
+			addnode (AccessNode (i,j)) 5 plr_Even [AccessExit i; FinalSink; (if j < access_cycle - 1 then AccessNode (i,j+1) else AccessCenter i)] FinalSink
 		done;
 	done;
 

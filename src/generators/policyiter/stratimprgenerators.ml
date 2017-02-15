@@ -18,7 +18,7 @@ module SymbolicParityGame = struct
 		Hashtbl.iter (fun _ ind -> 
 			let (pr, pl, desc) = DynamicGraph.get_node_data ind gr in
 			pg_set_priority pg ind pr;
-			pg_set_owner pg ind (if pl = 0 then plr_Even else plr_Odd);
+			pg_set_owner pg ind pl;
 			pg_set_desc pg ind desc;
 			TreeSet.iter (fun w -> pg_add_edge pg ind w) (DynamicGraph.get_node_succ ind gr)
 		) ht;
@@ -35,12 +35,12 @@ module SymbolicParityGame = struct
 			 ind
    
     let touch_node (ht, gr) symb =
-   		let _ = internal_add (ht, gr) symb (-1) (-1) None false in ()
+   		let _ = internal_add (ht, gr) symb (-1) plr_Even None false in ()
 
 	let add_node (ht, gr) symb pr pl tr desc =
 		let ind = internal_add (ht, gr) symb pr pl desc true in
 		Array.iter (fun symb' ->
-			let ind' = internal_add (ht, gr) symb' (-1) (-1) None false in
+			let ind' = internal_add (ht, gr) symb' (-1) plr_Even None false in
 			DynamicGraph.add_edge ind ind' gr
 		) tr
 

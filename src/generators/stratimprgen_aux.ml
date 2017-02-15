@@ -1,1 +1,1 @@
-open Stratimprgen;; open Rungenerator;;
+open Stratimprgen;;

@@ -53,6 +53,10 @@ module StrategyHelper = struct
 			let (_, path, _) = valu.(i) in
 			TreeSet.mem j path
 		with Not_found -> false
+
+	let improvable game strategy valu v =
+		let i = pg_find_desc game (Some v) in
+		best_decision_by_valuation_ordering game node_total_ordering_by_position valu i != strategy.(i)
 		
 end;;
 
@@ -77,12 +81,16 @@ type strategy_info = {
 	e0b: int array;
 	e1b: int array;
 	mu: int;
+	mug: int;
+	mus: int;
 	least_one: int;
 	greatest_one: int;
 	eee: int array array array;
 	eeb: int array array;
 	eeg: int array array;
 };;
+
+
 
 let strategy_info game strategy = 
 	let len = StrategyHelper.length game in
@@ -152,8 +160,10 @@ let strategy_info game strategy =
 		ddd = ddd;
 		least_one = Bits.least_one b;
 		greatest_one = Bits.greatest_one b;
+		mus = Bits.least_zero s;
+		mug = Bits.least_zero g;
 	};;
-	
+
 	
 	
 type val_info = {
@@ -256,7 +266,141 @@ let mdpvaluation_info game strategy compare =
 		mgg = mgg;
 	};;
 
+
+type improvement_info_struct = {
+	imp_b: int array;
+	imp_g: int array;
+	imp_s0: int array;
+	imp_s1: int array;
+	imp_d00: int array;
+	imp_d01: int array;
+	imp_d10: int array;
+	imp_d11: int array;
+	imp_e00: int array;
+	imp_e01: int array;
+	imp_e10: int array;
+	imp_e11: int array;
+};;
+
 						
+let improvement_info game strategy valu =
+	let info = strategy_info game strategy in
+	let improvable s = if StrategyHelper.improvable game strategy valu s then 1 else 0
+	in 
+	{
+		imp_b = Array.init info.len (fun i -> improvable ("m" ^ string_of_int i));
+		imp_g = Array.init info.len (fun i -> improvable ("d" ^ string_of_int i));
+		imp_s0 = Array.init info.len (fun i -> improvable ("g" ^ string_of_int i));
+		imp_s1 = Array.init (info.len-1) (fun i -> improvable ("s" ^ string_of_int i));
+		imp_d00 = Array.init info.len (fun i -> improvable ("a" ^ string_of_int i));
+		imp_d01 = Array.init info.len (fun i -> improvable ("b" ^ string_of_int i));
+		imp_d10 = Array.init (info.len-1) (fun i -> improvable ("w" ^ string_of_int i));
+		imp_d11 = Array.init (info.len-1) (fun i -> improvable ("v" ^ string_of_int i));
+		imp_e00 = Array.init info.len (fun i -> improvable ("o" ^ string_of_int i));
+		imp_e01 = Array.init info.len (fun i -> improvable ("p" ^ string_of_int i));
+		imp_e10 = Array.init (info.len-1) (fun i -> improvable ("q" ^ string_of_int i));
+		imp_e11 = Array.init (info.len-1) (fun i -> improvable ("r" ^ string_of_int i));
+	};;
+
+type occ_info_struct = {
+	occ_b0: int array;
+	occ_b1: int array;
+	occ_g0: int array;
+	occ_g1: int array;
+	occ_s0_0: int array;
+	occ_s0_1: int array;
+	occ_s1_0: int array;
+	occ_s1_1: int array;
+	occ_d0_0_0: int array;
+	occ_d0_0_1: int array;
+	occ_d0_1_0: int array;
+	occ_d0_1_1: int array;
+	occ_d1_0_0: int array;
+	occ_d1_0_1: int array;
+	occ_d1_1_0: int array;
+	occ_d1_1_1: int array;
+	occ_e0_0_0: int array;
+	occ_e0_0_1: int array;
+	occ_e0_1_0: int array;
+	occ_e0_1_1: int array;
+	occ_e1_0_0: int array;
+	occ_e1_0_1: int array;
+	occ_e1_1_0: int array;
+	occ_e1_1_1: int array;
+};;
+
+let occ_info game occ n =
+	let occrec from tto =
+		let i = pg_find_desc game (Some from) in
+		let j = pg_find_desc game (Some tto) in
+		let o = ref 0 in
+		Array.iteri (fun ind k ->
+			if k = j then o := occ.(i).(ind);
+		) (Array.of_list (ns_nodes (pg_get_successors game i)));
+		!o
+	in 
+	let occrecnot from tto =
+		let i = pg_find_desc game (Some from) in
+		let j = pg_find_desc game (Some tto) in
+		let o = ref 0 in
+		Array.iteri (fun ind k ->
+			if k != j then o := occ.(i).(ind);
+		) (Array.of_list (ns_nodes (pg_get_successors game i)));
+		!o
+	in 
+	{
+		occ_b0 = Array.init n (fun i -> occrecnot ("m" ^ string_of_int i) ("d" ^ string_of_int i));
+		occ_b1 = Array.init n (fun i -> occrec ("m" ^ string_of_int i) ("d" ^ string_of_int i));
+		occ_g0 = Array.init n (fun i -> occrec ("d" ^ string_of_int i) ("E" ^ string_of_int i));
+		occ_g1 = Array.init n (fun i -> occrecnot ("d" ^ string_of_int i) ("E" ^ string_of_int i));
+		occ_s0_0 = Array.init n (fun i -> occrec ("g" ^ string_of_int i) ("m" ^ string_of_int 0));
+		occ_s0_1 = Array.init n (fun i -> occrecnot ("g" ^ string_of_int i) ("m" ^ string_of_int 0));
+		occ_s1_0 = Array.init (n-1) (fun i -> occrec ("s" ^ string_of_int i) ("m" ^ string_of_int 0));
+		occ_s1_1 = Array.init (n-1) (fun i -> occrecnot ("s" ^ string_of_int i) ("m" ^ string_of_int 0));
+		occ_d0_0_0 = Array.init n (fun i -> occrecnot ("a" ^ string_of_int i) ("E" ^ string_of_int i));
+		occ_d0_0_1 = Array.init n (fun i -> occrec ("a" ^ string_of_int i) ("E" ^ string_of_int i));
+		occ_d0_1_0 = Array.init n (fun i -> occrecnot ("b" ^ string_of_int i) ("E" ^ string_of_int i));
+		occ_d0_1_1 = Array.init n (fun i -> occrec ("b" ^ string_of_int i) ("E" ^ string_of_int i));
+		occ_d1_0_0 = Array.init (n-1) (fun i -> occrecnot ("v" ^ string_of_int i) ("X" ^ string_of_int i));
+		occ_d1_0_1 = Array.init (n-1) (fun i -> occrec ("v" ^ string_of_int i) ("X" ^ string_of_int i));
+		occ_d1_1_0 = Array.init (n-1) (fun i -> occrecnot ("w" ^ string_of_int i) ("X" ^ string_of_int i));
+		occ_d1_1_1 = Array.init (n-1) (fun i -> occrec ("w" ^ string_of_int i) ("X" ^ string_of_int i));
+		occ_e0_0_0 = Array.init n (fun i -> occrecnot ("o" ^ string_of_int i) ("m" ^ string_of_int 1));
+		occ_e0_0_1 = Array.init n (fun i -> occrec ("o" ^ string_of_int i) ("m" ^ string_of_int 1));
+		occ_e0_1_0 = Array.init n (fun i -> occrecnot ("p" ^ string_of_int i) ("m" ^ string_of_int 1));
+		occ_e0_1_1 = Array.init n (fun i -> occrec ("p" ^ string_of_int i) ("m" ^ string_of_int 1));
+		occ_e1_0_0 = Array.init (n-1) (fun i -> occrecnot ("q" ^ string_of_int i) ("m" ^ string_of_int 1));
+		occ_e1_0_1 = Array.init (n-1) (fun i -> occrec ("q" ^ string_of_int i) ("m" ^ string_of_int 1));
+		occ_e1_1_0 = Array.init (n-1) (fun i -> occrecnot ("r" ^ string_of_int i) ("m" ^ string_of_int 1));
+		occ_e1_1_1 = Array.init (n-1) (fun i -> occrec ("r" ^ string_of_int i) ("m" ^ string_of_int 1));
+	};;
+																								
+let show_info game occ strategy valu n =
+	let string_of_int2 i = if i < 10 then "0" ^ string_of_int i else string_of_int i in
+	let info = strategy_info game strategy in
+	let iinfo = improvement_info game strategy valu in
+	let oinfo = occ_info game occ info.len in
+	let s = ref ("\n|" ^ (string_of_int info.mu) ^ "|bgssddddeeee|bgssddddeeee|b0b1g0g1s0s1s0s1d0d1d0d1d0d1d0d1e0e1e0e1e0e1e0e1|\n" ^
+	                                             "+-+------------+------------+------------------------------------------------+\n") in
+	for i = n-1 downto 0 do
+		s := !s ^ "|" ^ (string_of_int (i+1)) ^ "|" ^ ListUtils.custom_format string_of_int "" "" "" [
+			info.b.(i); info.g.(i); info.sx.(0).(i); (if i < n-1 then info.sx.(1).(i) else 0);
+			info.ddd.(0).(0).(i); info.ddd.(0).(1).(i); (if i < n-1 then info.ddd.(1).(0).(i) else 0); (if i < n-1 then info.ddd.(1).(1).(i) else 0);
+			info.eee.(0).(0).(i); info.eee.(0).(1).(i); (if i < n-1 then info.eee.(1).(0).(i) else 0); (if i < n-1 then info.eee.(1).(1).(i) else 0);
+		] ^ "|" ^ ListUtils.custom_format string_of_int "" "" "" [
+			iinfo.imp_b.(i); iinfo.imp_g.(i); iinfo.imp_s0.(i); (if i < n-1 then iinfo.imp_s1.(i) else 0);
+			iinfo.imp_d00.(i); iinfo.imp_d01.(i); (if i < n-1 then iinfo.imp_d10.(i) else 0); (if i < n-1 then iinfo.imp_d11.(i) else 0);
+			iinfo.imp_e00.(i); iinfo.imp_e01.(i); (if i < n-1 then iinfo.imp_e10.(i) else 0); (if i < n-1 then iinfo.imp_e11.(i) else 0);
+		] ^ "|" ^ ListUtils.custom_format string_of_int2 "" "" "" [
+			oinfo.occ_b0.(i); oinfo.occ_b1.(i); oinfo.occ_g0.(i); oinfo.occ_g1.(i);
+			oinfo.occ_s0_0.(i); oinfo.occ_s0_1.(i); (if i < n-1 then oinfo.occ_s1_0.(i) else 0); (if i < n-1 then oinfo.occ_s1_1.(i) else 0);
+			oinfo.occ_d0_0_0.(i); oinfo.occ_d0_0_1.(i); oinfo.occ_d0_1_0.(i); oinfo.occ_d0_1_1.(i);
+			(if i < n-1 then oinfo.occ_d1_0_0.(i) else 0); (if i < n-1 then oinfo.occ_d1_0_1.(i) else 0); (if i < n-1 then oinfo.occ_d1_1_0.(i) else 0); (if i < n-1 then oinfo.occ_d1_1_1.(i) else 0);
+			oinfo.occ_e0_0_0.(i); oinfo.occ_e0_0_1.(i); oinfo.occ_e0_1_0.(i); oinfo.occ_e0_1_1.(i);
+			(if i < n-1 then oinfo.occ_e1_0_0.(i) else 0); (if i < n-1 then oinfo.occ_e1_0_1.(i) else 0); (if i < n-1 then oinfo.occ_e1_1_0.(i) else 0); (if i < n-1 then oinfo.occ_e1_1_1.(i) else 0);
+		] ^ "|\n";
+  done;
+	!s;;				
 	
 
 let counter_strategy_lookup game strategy len = 
@@ -268,22 +412,95 @@ let counter_strategy_lookup game strategy len =
 	   Array.init (len-1) (fun i -> if strategy.(strategy.(counter.(find "X" i))) = find "d" 0 then 0 else 1) |]);;
 
 let test_assumptions game strategy valu =
+  let assert_iff ident leftformula rightformula left right =
+	  if (left != right)
+		then failwith (ident ^ " : " ^ leftformula ^ " <==> " ^ rightformula)
+	in
+  let assert_ifthen ident leftformula rightformula left right =
+	  if (left && not right)
+		then failwith (ident ^ " : " ^ leftformula ^ " ==> " ^ rightformula)
+	in
 	let info = strategy_info game strategy in
 	let (counter, counterx) = counter_strategy_lookup game strategy info.len in  
-		for i = 0 to info.len - 1 do	
-(**)
-(* - s_i,0 can be 0 instead of 1 iff i + 2 = nu sigma
-- s_i,0 can be 1 instead of 0 iff i + 1 = nu sigma
-
-- s_i,1 can be 0 instead of 1 iff i + 1 = nu sigma
-- s_i,1 can be 1 instead of 0 iff i + 1 < nu sigma
-*)
-
-			
-(*      let bpo = if i = info.len-1 then 0 else info.b.(i+1) in*)
+		for i = 0 to info.len - 1 do
+		  assert_iff "mu assumption" "mu > 0" "info.b.(0)" (info.mu > 0) (info.b.(0) = 1);
+			assert_ifthen "(As1)" "i >= mu && sigma(b_i)" "sigma(s_i)" (i >= info.mu && info.b.(i) = 1) (info.s.(i) = 1); 
+		  assert_ifthen "(As2)" "i < mu && ((sigma(b_2) && i > 1) || sigma(d_i) || !sigma(b_1))" "sigma(s_i)" (i < info.mu && ((info.b.(1) = 1 && i > 0) || info.e.(i) = 1 || info.b.(0) = 0)) (info.s.(i) = 1);
+			if i < info.len - 1 then assert_ifthen "(Ab)" "i < mu - 1 && !sigma(b_i)" "!sigma(b_i+1)" (i < info.mu - 1 && info.b.(i) = 0) (info.b.(i+1) = 0);
+			if info.mu != 0 then assert_ifthen "(Ab2)" "mu != 1 && !sigma(b_mu-1)" "sigma(b_mu)" (info.mu != 0 && info.b.(info.mu - 1) = 0) (info.b.(info.mu) = 1);
+		  if i < info.len - 2 then assert_ifthen "(Ab3)" "sigma(s_i,1) && !sigma(b_i+1)" "sigma(b_i+2) != sigma(g_i+1)" (info.sx.(1).(i) = 1 && info.b.(i+1) = 0) (info.b.(i+2) != info.g.(i+1));
+			if i < info.mu then assert_ifthen "(Ag)" "i < mu" "sigma(g_i) <==> i != mu - 1" (i < info.mu) ((info.g.(i) = 1) = (i != info.mu - 1));
+			assert_ifthen "(Ae)" "sigma(b_i) && (i > 1 || mu = 1 || (sigma(b_2) <==> mu > 2)" "sigma(d_i)" (info.b.(i) = 1 && (i > 0 || info.mu = 0 || ((info.b.(1) = 1) = (info.mu > 1)))) (info.e.(i) = 1);
+		  assert_ifthen "(Ae')" "sigma(b_2) && (2 <= i < mu)" "sigma(d_i)" (info.b.(1) = 1 && 1 <= i && i < info.mu) (info.e.(i) = 1);
+			assert_ifthen "(Aeb1)" "mu = 1 && !sigma(b_1) && i < nub <= mus,mug" "!sigma(eb_i)" (info.mu = 0 && info.b.(0) = 0 && i < info.least_one && info.least_one <= info.mus && info.least_one <= info.mug) (info.eb.(i) = 0);
+			assert_ifthen "(Aeb2)" "mu = 1 && !sigma(b_1) && i < mug <= mus,nub && (PG ==> !sigma(b_mug+1))" "!sigma(eb_i)" (info.mu = 0 && info.b.(0) = 0 && i < info.mug && info.mug <= info.least_one && info.mug <= info.mus && (mdplike || info.b.(info.mug + 1) = 0)) (info.eb.(i) = 0);
+			assert_ifthen "(Aeb3)" "mu = 1 && !sigma(b_1) && i < mus <= mus,nub && MDP" "!sigma(eb_i)" (info.mu = 0 && info.b.(0) = 0 && i < info.mus && info.mus <= info.least_one && info.mus <= info.mug && mdplike) (info.eb.(i) = 0);
+			assert_ifthen "(Age1)" "sigma(eg_i,j) && !sigma(eb_i,j) && info.mu = 1" "!sigma(s_i,j)" (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu = 0) (info.sx.(0).(i) = 0);
+			if i < info.len - 2 then assert_ifthen "(Age1)" "sigma(eg_i,j) && !sigma(eb_i,j) && info.mu = 1" "!sigma(s_i,j)" (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu = 0) (info.sx.(1).(i) = 0);
+			assert_ifthen "(Age2)" "sigma(eg_i,j) && !sigma(eb_i,j) && info.mu = 1" "sigma(d_1)" (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu = 0) (info.e.(0) = 1);
+			if i < info.len - 2 then assert_ifthen "(Age2)" "sigma(eg_i,j) && !sigma(eb_i,j) && info.mu = 1" "sigma(d_1)" (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu = 0) (info.e.(0) = 1);
+			assert_ifthen "(Age3)" "sigma(eg_i,j) && !sigma(eb_i,j) &&" "sigma(s_1)" (info.e0g.(i) = 1 && info.e0b.(i) = 0 && not mdplike) (info.s.(0) = 1);
+			if i < info.len - 2 then assert_ifthen "(Age3)" "sigma(eg_i,j) && !sigma(eb_i,j) && PG" "sigma(s_1)" (info.e1g.(i) = 1 && info.e1b.(i) = 0 && not mdplike) (info.s.(0) = 1);
+			assert_ifthen "(Age4)" "sigma(eg_i,j) && !sigma(eb_i,j) && info.mu = 1" "sigma(g_1) = sigma(b_2)" (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu = 0) (info.g.(0) = info.b.(1));
+			if i < info.len - 2 then assert_ifthen "(Age4)" "sigma(eg_i,j) && !sigma(eb_i,j) && info.mu = 1" "sigma(g_1) = sigma(b_2)" (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu = 0) (info.g.(0) = info.b.(1));
+			if i < info.len - 1 then assert_ifthen "(Age5)" "sigma(eg_i,j) && !sigma(eb_i,j) && info.mu != 1 && sigma(s_i,j)" "sigma(b_i+1) = j" (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu != 0 && info.sx.(0).(i) = 1) (info.b.(i+1) = 0);
+			if i < info.len - 1 then assert_ifthen "(Age5)" "sigma(eg_i,j) && !sigma(eb_i,j) && info.mu != 1 && sigma(s_i,j)" "sigma(b_i+1) = j" (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu != 0 && info.sx.(1).(i) = 1) (info.b.(i+1) = 1);
+		  if i < info.len - 1 then assert_ifthen "(Aeg1)" "sigma(eb_i,j) && !sigma(eg_i,j) && sigma(b_1)" "sigma(b_i+1) != j" (info.e0b.(i) = 1 && info.e0g.(i) = 0 && info.b.(0) = 1) (info.b.(i+1) = 1);
+		  if i < info.len - 1 then assert_ifthen "(Aeg1)" "sigma(eb_i,j) && !sigma(eg_i,j) && sigma(b_1)" "sigma(b_i+1) != j" (info.e1b.(i) = 1 && info.e1g.(i) = 0 && info.b.(0) = 1) (info.b.(i+1) = 0);
+		  assert_ifthen "(Aeg2)" "sigma(eb_i,0) && !sigma(eg_i,0) && sigma(b_1) && sigma(s_i,0)" "mu = i+1" (info.e0b.(i) = 1 && info.e0g.(i) = 0 && info.b.(0) = 1 && info.sx.(0).(i) = 1) (info.mu = i + 1);
+		  assert_ifthen "(Aeg3)" "sigma(eb_i,j) && !sigma(eg_i,j) && sigma(b_1) && sigma(s_i,j) && i > 1" "!sigma(b_2)" (info.e0b.(i) = 1 && info.e0g.(i) = 0 && info.b.(0) = 1 && info.sx.(0).(i) = 1 && i > 0) (info.b.(1) = 0);
+		  assert_ifthen "(Aeg3)" "sigma(eb_i,j) && !sigma(eg_i,j) && sigma(b_1) && sigma(s_i,j) && i > 1" "!sigma(b_2)" (info.e1b.(i) = 1 && info.e1g.(i) = 0 && info.b.(0) = 1 && info.sx.(1).(i) = 1 && i > 0) (info.b.(1) = 0);
+		  assert_ifthen "(Aeg4)" "sigma(eb_i,1) && !sigma(eg_i,1) && sigma(b_1) && sigma(s_i,1)" "mu > i+1" (info.e1b.(i) = 1 && info.e1g.(i) = 0 && info.b.(0) = 1 && info.sx.(1).(i) = 1) (info.mu > i + 1);
+		  assert_ifthen "(Aeg5)" "sigma(eb_i,j) && !sigma(eg_i,j) && sigma(b_1)" "sigma(b_mu)" (info.e0b.(i) = 1 && info.e0g.(i) = 0 && info.b.(0) = 1) (info.b.(info.mu) = 1);
+		  assert_ifthen "(Aeg5)" "sigma(eb_i,j) && !sigma(eg_i,j) && sigma(b_1)" "sigma(b_mu)" (info.e1b.(i) = 1 && info.e1g.(i) = 0 && info.b.(0) = 1) (info.b.(info.mu) = 1);
+		  assert_ifthen "(Aeg6)" "sigma(eb_i,j) && !sigma(eg_i,j) && sigma(b_1) && mu > 2" "!sigma(b_2)" (info.e0b.(i) = 1 && info.e0g.(i) = 0 && info.b.(0) = 1 && info.mu > 1) (info.b.(1) = 0);
+		  assert_ifthen "(Aeg6)" "sigma(eb_i,j) && !sigma(eg_i,j) && sigma(b_1) && mu > 2" "!sigma(b_2)" (info.e1b.(i) = 1 && info.e1g.(i) = 0 && info.b.(0) = 1 && info.mu > 1) (info.b.(1) = 0);
+(*		  assert_ifthen "(Aeg7)" "sigma(b_i+1) != j && sigma(s_i,j) && !sigma(d_i,j)" "sigma(eb_i,j) && !sigma(eg_i,j)" (i < info.len - 1 && info.b.(i+1) = 1 && info.sx.(0).(i) = 1 && info.ex.(0).(i) = 0) (info.e0b.(i) = 1 && info.e0g.(i) = 0);
+		  assert_ifthen "(Aeg7)" "sigma(b_i+1) != j && sigma(s_i,j) && !sigma(d_i,j)" "sigma(eb_i,j) && !sigma(eg_i,j)" (i < info.len - 1 && info.b.(i+1) = 0 && info.sx.(1).(i) = 1 && info.ex.(1).(i) = 0) (info.e1b.(i) = 1 && info.e1g.(i) = 0);*)
+		  if i < info.len - 1 then assert_ifthen "(Abg1)" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(s_i,j)" "sigma(b_i+1)=j" (info.e0b.(i) = 1 && info.e0g.(i) = 1 && info.sx.(0).(i) = 1) (info.b.(i+1) = 0);
+		  if i < info.len - 1 then assert_ifthen "(Abg1)" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(s_i,j)" "sigma(b_i+1)=j" (info.e1b.(i) = 1 && info.e1g.(i) = 1 && info.sx.(1).(i) = 1) (info.b.(i+1) = 1);
+		  assert_ifthen "(Abg2)" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) = sigma(b_2)" "sigma(s_1)" (info.e0b.(i) = 1 && info.e0g.(i) = 1 && info.g.(0) = info.b.(1)) (info.s.(0) = 1);
+		  assert_ifthen "(Abg2)" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) = sigma(b_2)" "sigma(s_1)" (info.e1b.(i) = 1 && info.e1g.(i) = 1 && info.g.(0) = info.b.(1)) (info.s.(0) = 1);
+		  assert_ifthen "(Abg3)" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) = sigma(b_2)" "sigma(d_1)" (info.e0b.(i) = 1 && info.e0g.(i) = 1 && info.g.(0) = info.b.(1)) (info.e.(0) = 1);
+		  assert_ifthen "(Abg3)" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) = sigma(b_2)" "sigma(d_1)" (info.e1b.(i) = 1 && info.e1g.(i) = 1 && info.g.(0) = info.b.(1)) (info.e.(0) = 1);
+		  assert_ifthen "(Abg4)" "sigma(eb_i,j) && sigma(eg_i,j) && !sigma(g_1) && sigma(b_2)" "mu <= 2" (info.e0b.(i) = 1 && info.e0g.(i) = 1 && info.g.(0) = 0 && info.b.(1) = 1) (info.mu <= 1);
+		  assert_ifthen "(Abg4)" "sigma(eb_i,j) && sigma(eg_i,j) && !sigma(g_1) && sigma(b_2)" "mu <= 2" (info.e1b.(i) = 1 && info.e1g.(i) = 1 && info.g.(0) = 0 && info.b.(1) = 1) (info.mu <= 1);
+		  assert_ifthen "(Abg5)" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) && !sigma(b_2)" "mu != 2" (info.e0b.(i) = 1 && info.e0g.(i) = 1 && info.g.(0) = 1 && info.b.(1) = 0) (info.mu != 1);
+		  assert_ifthen "(Abg5)" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) && !sigma(b_2)" "mu != 2" (info.e1b.(i) = 1 && info.e1g.(i) = 1 && info.g.(0) = 1 && info.b.(1) = 0) (info.mu != 1);
+		 		
+		  if (not mdplike) then (
+					assert_ifthen "1" "sigma(d_i,j)" "F_i,j->s_i,j" (info.ex.(0).(i) = 1) (counter.(0).(i) = 1);
+					if i < info.len - 1 then assert_ifthen "1" "sigma(d_i,j)" "F_i,j->s_i,j" (info.ex.(1).(i) = 1) (counter.(1).(i) = 1);
+					assert_ifthen "2" "sigma(eg_i,j) && !sigma(eb_i,j) && mu = 1" "F_i,j->s_i,j" (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu = 0) (counter.(0).(i) = 1);
+					if i < info.len - 1 then assert_ifthen "2" "sigma(eg_i,j) && !sigma(eb_i,j) && mu = 1" "F_i,j->s_i,j" (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu = 0) (counter.(1).(i) = 1);
+					assert_ifthen "3" "sigma(eg_i,j) && !sigma(eb_i,j) && mu != 1" "F_i,j->g_1" (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu != 0) (counter.(0).(i) = 0 && counterx.(0).(i) = 0);
+					if i < info.len - 1 then assert_ifthen "3" "sigma(eg_i,j) && !sigma(eb_i,j) && mu != 1" "F_i,j->g_1" (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu != 0) (counter.(1).(i) = 0 && counterx.(1).(i) = 0);
+					if i < info.len - 1 then assert_ifthen "4" "sigma(eb_i,j) && !sigma(eg_i,j) && !sigma(b_1) && (!sigma(s_i,j) || sigma(b_i+1) = j)" "F_i,j->b_2" (info.e0g.(i) = 0 && info.e0b.(i) = 1 && info.b.(0) = 0 && (info.sx.(0).(i) = 0 || info.b.(i+1) = 0)) (counter.(0).(i) = 0 && counterx.(0).(i) = 1);
+					if i < info.len - 1 then assert_ifthen "4" "sigma(eb_i,j) && !sigma(eg_i,j) && !sigma(b_1) && (!sigma(s_i,j) || sigma(b_i+1) = j)" "F_i,j->b_2" (info.e1g.(i) = 0 && info.e1b.(i) = 1 && info.b.(0) = 0 && (info.sx.(1).(i) = 0 || info.b.(i+1) = 1)) (counter.(1).(i) = 0 && counterx.(1).(i) = 1);
+					if i < info.len - 1 then assert_ifthen "5" "sigma(eb_i,j) && !sigma(eg_i,j) && (sigma(b_1) || (sigma(s_i,j) && sigma(b_i+1) != j))" "F_i,j->s_i,j" (info.e0g.(i) = 0 && info.e0b.(i) = 1 && (info.b.(0) = 1 || (info.sx.(0).(i) = 1 && info.b.(i+1) != 0))) (counter.(0).(i) = 1);
+					if i < info.len - 1 then assert_ifthen "5" "sigma(eb_i,j) && !sigma(eg_i,j) && (sigma(b_1) || (sigma(s_i,j) && sigma(b_i+1) != j))" "F_i,j->s_i,j" (info.e1g.(i) = 0 && info.e1b.(i) = 1 && (info.b.(0) = 1 || (info.sx.(1).(i) = 1 && info.b.(i+1) != 1))) (counter.(1).(i) = 1);
+					assert_ifthen "6" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) != sigma(b_2)" "F_i,j->g_1" (info.e0g.(i) = 1 && info.e0b.(i) = 1 && info.g.(0) != info.b.(1)) (counter.(0).(i) = 0 && counterx.(0).(i) = 0);
+					if i < info.len - 1 then assert_ifthen "6" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) != sigma(b_2)" "F_i,j->g_1" (info.e1g.(i) = 1 && info.e1b.(i) = 1 && info.g.(0) != info.b.(1)) (counter.(1).(i) = 0 && counterx.(1).(i) = 0);
+					assert_ifthen "7" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) = sigma(b_2)" "F_i,j->b_2" (info.e0g.(i) = 1 && info.e0b.(i) = 1 && info.g.(0) = info.b.(1)) (counter.(0).(i) = 0 && counterx.(0).(i) = 1);
+					if i < info.len - 1 then assert_ifthen "7" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) = sigma(b_2)" "F_i,j->b_2" (info.e1g.(i) = 1 && info.e1b.(i) = 1 && info.g.(0) = info.b.(1)) (counter.(1).(i) = 0 && counterx.(1).(i) = 1);
+			);
+		
+		
+		if ((not mdplike) && info.s.(i) = 1 && info.e.(i) = 0) then (
+			let x = counter.(info.g.(i)).(i) = 1 in
+			let y = i < info.len - 1 && info.b.(i+1) != info.g.(i) in
+			if x != y 
+			then failwith "yikes";
+		);
+		
+		
+		
+		(*
 		  let sxb = if i = info.len-1 then 0 else 1-info.b.(i+1) in
 			let mui = if info.mu <= i + 1 then 1 else 0 in
 			let lei = if info.least_one > i + 1 then 1 else 0 in
+			
+			if (info.mu = 0 && info.b.(0) = 1) then failwith "impossible";
 
 			if info.sx.(0).(i) != sxb && info.sx.(0).(i) != mui
 			then print_string ("\nWrong" ^ string_of_int i ^ "/" ^ string_of_int info.least_one ^ "\n");
@@ -292,56 +509,84 @@ let test_assumptions game strategy valu =
 			if info.sx.(1).(i) = sxb && info.sx.(1).(i) = 1 && info.b.(0) = 0 && info.sx.(1).(i) != lei && not mdplike
 			then print_string ("\nXrong" ^ string_of_int i ^ "/" ^ string_of_int info.least_one ^ "\n");
 			
-			(*
-			if (info.e0g.(i) = 1 && info.e0b.(i) = 1) then (
-				if (info.eb.(0) = 0) then (
-					  if (info.s.(0) = 0) then print_string("aksdfasdkf");
-						if (info.mu = 0) then (
-					  	if (info.g.(0) != info.b.(1)) then print_string("aksdfasdkf");
-						);
-						if (info.mu > 0) then (
-					  	if (info.b.(0) = 0) then print_string("aksdfasdkf");
-							if (info.mu = 1) then (
-								if (info.g.(0) = 1) then print_string "asdfasdfasdf";
-							);
-							if (info.mu > 1) then (
-								if (info.g.(0) = 0) then print_string "asdfasdfasdf";
-							);
-						);
-				);
-				if (info.b.(0) = 1) then (
-					if (info.mu = 0) then print_string "\nLoops\n";
-				);
-				if (info.b.(0) = 0) then (
-					if (info.mu > 0) then print_string "\nWhoops\n";
-					if (info.eb.(0) = 0) then (
-							if (info.g.(0) != info.b.(1)) then print_string "asdhfk";
-							if (info.s.(0) = 0) then print_string "aksjdhf";
-					);
-				);
-			);
-			*)
+			
+			if (info.mu = 0 && i > 0 && info.b.(i) = 0 && info.s.(i) = 1 && info.e.(i) = 1) then failwith "arg";
+			
+			if (info.mu != 0 && info.b.(info.mu -1) = 0 && info.b.(info.mu) = 0) then print_string("noway\n");
 			
 			if (info.e0g.(i) = 0 && info.e0b.(i) = 1 && info.b.(0) = 1 && i < info.len - 1 && info.b.(i+1) = 0) then print_string("S0\n");
 			if (info.e0g.(i) = 0 && info.e0b.(i) = 1 && info.b.(0) = 1 && info.sx.(0).(i) = 0 && (info.mu = 0 || info.b.(info.mu) = 0)) then print_string("S0\n");
+
+			if (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu = 0 && info.sx.(0).(i) = 1) then print_string("foobarina\n");
+			if (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu = 0 && info.sx.(1).(i) = 1) then print_string("foobarina\n");
+			if (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu = 0 && info.e.(0) = 0) then print_string("foobarina\n");
+			if (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu = 0 && info.e.(0) = 0) then print_string("foobarina\n");
+			if (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.s.(0) = 0) then print_string("foobarinaX\n");
+			if (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.s.(0) = 0) then print_string("foobarinaY\n");
+			if (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu = 0 && info.g.(0) != info.b.(1)) then print_string("foobarinaX\n");
+			if (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu = 0 && info.g.(0) != info.b.(1)) then print_string("foobarinaY\n");
+
+			if ( info.mu > 0 && 0= info.b.(0)) then print_string("foobarinaY\n");
 			
+			if (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu > 0 && i < info.len - 1 && info.b.(i+1) = 1 && info.sx.(0).(i) = 1) then print_string("foobarinaXX\n");
+			if (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu > 0 && i < info.len - 1 && info.b.(i+1) = 0 && info.sx.(1).(i) = 1) then print_string("foobarinaZZ\n");
+
+			if (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu > 0 && i < info.len - 1 && info.b.(i+1) = 0 && info.sx.(0).(i) = 1 && i = info.mu - 1) then print_string("foobarina!!\n");
+			if (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu > 0 && i < info.len - 1 && info.b.(i+1) = 1 && info.sx.(1).(i) = 1 && i = info.mu - 2) then print_string("foobarinaZZ\n");
+
+									
 			if (info.e0g.(i) = 1 && info.e0b.(i) = 0) then (
 				if (info.mu = 0) then (
-					  (* Assumptions *)
 						if (info.sx.(0).(i) = 1) then print_string("\nasdfasdf\n");
 						if (info.b.(0) = 1) then print_string("\nasdfasdf\n");
 					);
 					let x = if (info.mu = 0) then 0 else 1 in
 					if (counter.(0).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int counter.(0).(i) ^ "\n");
 			);
+			if (info.e0g.(i) = 0 && info.e0b.(i) = 1 && info.b.(0) = 1) then (
+					if (i < info.len - 1 && info.b.(i+1) = 0) then failwith "asdf";
+			);
+			if (info.e1g.(i) = 0 && info.e1b.(i) = 1 && info.b.(0) = 1) then (
+					if (i < info.len - 1 && info.b.(i+1) = 1) then failwith "asdf";
+			);
 			if (info.e0g.(i) = 0 && info.e0b.(i) = 1) then (
 					let x = if info.b.(0) = 0 && (info.sx.(0).(i) = 0 || i = info.len - 1 || info.b.(i+1) = 0) then 1 else 0 in
+					
+					if (x = 0 &&  i < info.len - 1 && info.b.(i+1) = 0) then failwith "asdf";
+					
+					if (info.sx.(0).(i) = 1 && info.b.(0) = 1 && info.mu != i+1) then failwith "fdsay";
+					if (info.sx.(0).(i) = 1 && info.b.(0) = 1 && i > 0 && info.b.(1) = 1) then failwith "rrer";
+					if (info.sx.(0).(i) = 1 && info.b.(0) = 1 && info.b.(i+1) = 0) then failwith "fdsay";
+					if (info.sx.(0).(i) = 1 && info.b.(0) = 1 && i >= 1 && info.b.(1) = 1) then failwith "fdsay";
+					if (info.sx.(0).(i) = 0 && info.b.(0) = 1 && (info.b.(1) = 1 && info.mu != 1)) then failwith "fdsay!";
+					if (info.b.(0) = 1 && info.mu > 1 && info.b.(1) = 1) then failwith "fdsfdfdfdfax";
+
+										if (info.b.(0) = 1 && info.b.(info.mu) = 0) then failwith "fdsazzzx";
+
+										
 					if (counter.(0).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int x ^ "\n");
+			);
+			
+				  if (i + 1 < info.len && info.b.(i+1) = 1 && info.sx.(0).(i) = 1 && info.g.(i) = 1) then failwith "asdfasf";
+				  if (i + 1 < info.len && info.b.(i+1) = 0 && info.sx.(1).(i) = 1 && info.g.(i) = 0) then failwith "asdfasf";
+			
+			if (info.e0g.(i) = 1 && info.e0b.(i) = 1) then (
+					if (counter.(0).(i) = 1) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int counter.(0).(i) ^ "\n");
+					let x = if info.e.(0) = 0 || info.g.(0) != info.b.(1) then 1 else 0 in
+					
+				  if (i + 1 < info.len && info.b.(i+1) = 1 && info.sx.(0).(i) = 1) then failwith "asdfasf";
+					if (info.s.(0) = 0 && info.g.(0) = info.b.(1) && info.e.(0) = 1) then failwith "w00t";
+					
+					if (info.e.(0) = 0 &&  info.g.(0) = info.b.(1)) then failwith "nope";
+					
+					if (info.g.(0) = 0 && info.b.(1) = 1 && info.mu > 1) then failwith "aha";
+					if (info.g.(0) = 1 && info.b.(1) = 0 && info.mu = 1) then failwith "sjs";
+
+					if (counterx.(0).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int x ^ "\n");
 			);
 			
 			if (info.e1g.(i) = 1 && info.e1b.(i) = 0) then (
 				if (info.mu = 0) then (
-					  (* Assumptions *)
 						if (info.sx.(1).(i) = 1) then print_string("\nasdfasdf\n");
 						if (info.b.(0) = 1) then print_string("\nasdfasdf\n");
 					);
@@ -350,57 +595,51 @@ let test_assumptions game strategy valu =
 			);
 			if (info.e1g.(i) = 0 && info.e1b.(i) = 1) then (
 					let x = if info.b.(0) = 0 && (info.sx.(1).(i) = 0 || i = info.len - 1 || info.b.(i+1) = 1) then 1 else 0 in
+
+					if (x = 0 &&  i < info.len - 1 && info.b.(i+1) = 1) then failwith "asdf";
+
+					
+
+					if (info.sx.(1).(i) = 1 && info.b.(0) = 1 && info.mu <= i+1) then failwith "fdsax";
+					if (info.sx.(1).(i) = 1 && info.b.(0) = 1 && i > 0 && info.b.(1) = 1) then failwith "fdsax";
+					if (info.b.(0) = 1 && info.mu > 1 && info.b.(1) = 1) then failwith "fdsfdfdfdfax";
+					if (info.b.(0) = 1 && info.b.(info.mu) = 0) then failwith "fdsazzzx";
+					if (info.sx.(1).(i) = 0 && info.b.(0) = 1 && (info.b.(1) = 1 && info.mu != 1)) then failwith "fdsay?";
+
+					if (info.g.(0) = 0 && info.b.(1) = 1 && info.mu > 1) then failwith "aha";
+					if (info.g.(0) = 1 && info.b.(1) = 0 && info.mu = 1) then failwith "sjs";
+
 					if (counter.(1).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int x ^ "\n");
+					
+					
+					if (info.sx.(1).(i) = 1 && info.b.(i+1) = 0) then (
+						if (info.eb.(i) = 0) then (
+							print_string "rats";
+						);
+					);
+					
 			);
 			if (info.e1g.(i) = 1 && info.e1b.(i) = 1) then (
 					if (counter.(1).(i) = 1) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int counter.(1).(i) ^ "\n");
 					let x = if info.e.(0) = 0 || info.g.(0) != info.b.(1) then 1 else 0 in
 
+				  if (i + 1 < info.len && info.b.(i+1) = 0 && info.sx.(1).(i) = 1) then failwith "asdfasf";
+					if (info.s.(0) = 0 && info.g.(0) = info.b.(1) && info.e.(0) = 1) then failwith "w11t";
+					if (info.e.(0) = 0 && info.g.(0) = info.b.(1)) then failwith "nope";
+
 					if (counterx.(1).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int x ^ "\n");
 			);
-			(* We are here now *)
 															
 																																													
-		  if info.b.(i) = 0 && i >= info.mu && i > 0 then (
-				(*
-				if (info.g.(i) =0 && info.eb.(i) = 1 && info.eg.(i) = 1 && info.b.(0) = 1) then print_string ("\ndubbelju\n");
-				*)
-(*
-			 if (info.g.(i) = bpo) then print_string("\nasdf\n");*)
-				     (* FOR MDP: even inequality. *)
-				(*
-		     if info.g.(i) = 1 && info.s.(i) < bpo && (not mdplike || info.s.(i) != bpo) then print_string ("\nWrong" ^ string_of_int info.s.(i) ^ "\n");
-				*)
-		     
-		     (*
-		     if i < info.len - 1 && info.b.(i+1) = 1 && info.g.(i) = 1 then print_string ("\nW00t  " ^ string_of_int i ^ "\n");
-		     *)
-		     
-		     (* Probably more interesting to look at F_i *)
-				(*if (info.g.(i) = 0 && info.e.(i) = 0 && counter.(0).(i) = 0) then print_string("\nFuck\n");*)
-				(* FOR PG: on the left side; PG does everything; valuation needs to be pretty direct *)
-				
-		  ); 
-		
-				
-(*
-		if (info.b.(0) = 0 && info.g.(0) = 1 && info.mu = 0 && info.b.(1) = 0 && i < info.least_one - 1) then (
-				if (info.s.(i) = 0) then print_string ("shit " ^ string_of_int i ^ "\n");
-		);
-	*)	
-		(* A1 *)
-(*	if (i >= info.mu && info.b.(i) = 1) || (i < info.mu) then ( *)
 		if (i >= info.mu && info.b.(i) = 1) || (i < info.mu && i > 0 && info.b.(1) = 1) || (i < info.mu && info.e.(i) = 1) || (i < info.mu && info.b.(0) = 0) then (
 			if (info.s.(i) != 1) then print_string ("\n\nAs" ^ string_of_int i ^ "/" ^ string_of_int info.mu ^ "\n\n");
 		);
 		if (i < info.len-1 && info.mu > 0 && i >= info.mu) then (
 			 if (info.sx.(1 - info.b.(i+1)).(i) != 0) then print_string ("\n\nAs!\n\n");
 		);
-		(* A2 *)
 		if (i < info.mu - 1 && info.b.(i+1) = 1) then (
 				if (info.b.(i) != 1) then print_string ("\n\nAb\n\n");
 		);
-		(* A3 *)
 		if (info.b.(i) = 1 && i > 0) ||
 		   (info.b.(i) = 1 && i = 0 && info.mu = 0) ||
 			 (info.b.(1) = 1 && i > 0 && i < info.mu) ||
@@ -408,22 +647,14 @@ let test_assumptions game strategy valu =
 				if (info.e.(i) != 1) then print_string ("\n\nAF\n\n");
 		);
 
-		(* A4 *)
 		if (i < info.mu) then (
 				if (info.g.(i) != (if i != info.mu - 1 then 1 else 0)) then print_string ("\n\nAg\n\n");
 		);
-		(* A5 Consequence *)
-		(*
-		if (info.b.(i) = 1) then (
-			if (info.g.(i) = 0 && not (StrategyHelper.leads_to game valu ("m" ^ string_of_int i) ("g" ^ string_of_int i))) then print_string "\nWrong\n";
-			if (info.g.(i) = 1 && not (StrategyHelper.leads_to game valu ("m" ^ string_of_int i) ("s" ^ string_of_int i))) then print_string "\nWrong!\n";
-		);
-		*)
 		if info.mu = 0 && info.b.(0) = 0 && Bits.least_one info.b <= Bits.least_zero info.s && Bits.least_one info.b <= Bits.least_zero info.g && info.eb.(i) = 1 && i < Bits.least_one info.b then print_string  ("\n\nEbbb\n\n");
 		if info.mu = 0 && info.b.(0) = 0 && Bits.least_zero info.g <= Bits.least_one info.b && Bits.least_zero info.g <= Bits.least_zero info.s && info.eb.(i) = 1 && i < Bits.least_zero info.g && (mdplike || info.b.(Bits.least_zero info.g + 1) = 0) then print_string  ("\n\nAbbb\n\n");
 		if info.mu = 0 && info.b.(0) = 0 && Bits.least_zero info.s <= Bits.least_one info.b && Bits.least_zero info.s <= Bits.least_zero info.g && info.eb.(i) = 1 && i < Bits.least_zero info.s && mdplike then print_string  ("\n\nCbbb\n\n");
-		
-	done;	
+		*)
+	done;
 	(* b_i never meets g_0, b_0, b_1 *)	
 	for i = 1 to info.len - 1 do
 		if (StrategyHelper.leads_to game valu ("m" ^ string_of_int i) "d0") then print_string ("\n\nb_" ^ string_of_int i ^ " to g_0\n\n");
@@ -541,11 +772,21 @@ if (info.mu = 0 && info.b.(0) = 0) then (
 	
 	
 	
+	
 let test_improving_switches game strategy valu n =
+	let best_decision v =
+		let cmp =
+			if not mdplike
+			then fun i j -> node_valuation_ordering game node_total_ordering_by_position valu.(i) valu.(j)
+			else let mdplike_valu = mdplike_valuation game 7 strategy in
+	  	     compare_mdplike_valuation game mdplike_valu
+		in
+			best_decision_by_ordering game cmp v
+	in
 	let info = strategy_info game strategy in
-	let strat a i b j = if StrategyHelper.is game strategy (a ^ string_of_int i) (b ^ string_of_int j) then 1 else 0 in
+	(*let strat a i b j = if StrategyHelper.is game strategy (a ^ string_of_int i) (b ^ string_of_int j) then 1 else 0 in*)
 	let impr = Array.init (pg_size game) (fun i ->
-    (pg_get_owner game i = plr_Even) && (strategy.(i) != best_decision_by_valuation_ordering game node_total_ordering_by_position valu i)
+    (pg_get_owner game i = plr_Even) && (strategy.(i) != best_decision i)
   ) in
 	let check_impr desc s i assrt =
 		let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
@@ -554,18 +795,21 @@ let test_improving_switches game strategy valu n =
 			print_string ("\n\n" ^ desc ^ " " ^ s ^ string_of_int i ^ " (false " ^ (if assrt then "+ + + + + +" else "- - - - - -") ^ ") -- " ^ "\n\n");
 		)
   in
-	let sgn i = if i > 0 then 1 else 0 in
+  	let rec ex i j f = i <= j && ((f i) || (ex (i+1) j f)) in 
+	(*let sgn i = if i > 0 then 1 else 0 in*)
 	let impr_b = Array.init n (fun i ->
 		   (i = info.mu && info.b.(i) = 0 && info.e.(i) = 1 && info.g.(i) = (if i = n-1 then 0 else info.b.(i+1))) ||
 			 (i = info.mu - 1 && info.b.(i) = 1 && info.b.(i+1) = 1) ||
 		   (i < info.mu - 1 && info.b.(i) = 1 && info.b.(i+1) = 0)
 	) in
 	let impr_s_0 = Array.init n (fun i ->
-		   (i = info.mu - 2 && info.b.(i+2) = 1 && info.sx.(0).(i) = 0) ||
+		     (i = info.mu - 2 && info.b.(i+2) = 1 && info.sx.(0).(i) = 0) ||
 			 (i < info.mu - 2 && info.b.(i+2) = 0 && info.sx.(0).(i) = 0) ||  
-			 (i > info.mu - 2 && i < n-1 && info.sx.(0).(i) = info.b.(i+1) && info.sx.(0).(i) * info.b.(0) = 0)
+			 (i > info.mu - 2 && i < n-1 && info.sx.(0).(i) = 0 && info.b.(i+1) = 0) ||
+			 (i > info.mu - 2 && i < n-1 && info.sx.(0).(i) = 1 && info.b.(i+1) = 1 && info.b.(0) = 0) ||
+			 (mdplike && i = info.mu - 1 && info.sx.(0).(i) = 1 && info.b.(info.mu) = 1 && info.b.(0) = 1 && (info.b.(1) = 0 || i = 0) && ex 0 i (fun j -> info.eb.(j) = 1))			 
   ) in
-	let impr_s_1 = Array.init (n-1) (fun i ->
+	(*let impr_s_1 = Array.init (n-1) (fun i ->
 		   (i = info.mu - 1 && info.e.(i+1) = 1 && info.g.(i+1) = (if i < n-2 then info.b.(i+2) else 0) && info.sx.(1).(i) = 0) ||
 			 (i < info.mu - 1 && info.b.(0) = 0 && info.sx.(1).(i) = 1) ||  
 			 (i > info.mu - 1 && i < n-1 && info.sx.(1).(i) != info.b.(i+1) && info.sx.(1).(i) * info.b.(0) = 0)
@@ -740,11 +984,12 @@ let test_improving_switches game strategy valu n =
 				)
 			)
 		)
-	in
+	in*)
 	for i = 0 to n - 1 do
 		check_impr "b" "m" i impr_b.(i);		
 		check_impr "s0" "g" i impr_s_0.(i);
-		if i < n-1 then check_impr "s1" "s" i impr_s_1.(i);	
+		(*	
+		if i < n-1 then check_impr "s1" "s" i impr_s_1.(i);
 		check_impr "g" "d" i impr_g.(i);
 		check_impr "e" "o" i (impr_e i (strat "o" i "m" 1));
 		check_impr "e" "p" i (impr_e i (strat "p" i "m" 1));
@@ -755,7 +1000,8 @@ let test_improving_switches game strategy valu n =
  		if i < n-1 then
 		check_impr "d" "w" i (impr_d i (strat "w" i "X" i) (strat "v" i "X" i) (strat "q" i "m" 1) (strat "r" i "m" 1) 1);
 		if i < n-1 then
-		check_impr "d" "v" i (impr_d i (strat "v" i "X" i) (strat "w" i "X" i) (strat "r" i "m" 1) (strat "q" i "m" 1) 1); 
+		check_impr "d" "v" i (impr_d i (strat "v" i "X" i) (strat "w" i "X" i) (strat "r" i "m" 1) (strat "q" i "m" 1) 1);
+		*) 
 	done;;
 
 
@@ -1139,8 +1385,8 @@ let switch_zadeh_exp_tie_break_callback n game old_strategy valu occ v w r s =
 (*
 
   	test_occrec_assumptions game old_strategy valu occ n;
-		test_occrec_delta_assumptions game old_strategy valu occ n;
-		test_improving_switches game old_strategy valu n;;*)
+		test_occrec_delta_assumptions game old_strategy valu occ n;*)
+		test_improving_switches game old_strategy valu n;
 		
 		();;
 		
@@ -1168,6 +1414,9 @@ let improvement_policy_optimize_fair tie_break
   	     compare_mdplike_valuation game mdplike_valu
 	in
 	
+
+	
+			
     msg_tagged_nl 4 (fun _ ->
     	"Occ: " ^ 
     	ArrayUtils.formati (fun i a -> desc i ^ ":" ^
@@ -1182,7 +1431,7 @@ let improvement_policy_optimize_fair tie_break
     let strategy = Array.copy old_strategy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
-	pg_iterate (fun i (_, pl, tr, _, _) ->
+	pg_iterate (fun i (_, pl, tr, _, de) ->
 		if pl = plr_Even then
 			Array.iteri (fun j k ->		
 				if cmp strategy.(i) k < 0 then (
@@ -1195,6 +1444,7 @@ let improvement_policy_optimize_fair tie_break
 				)
 			) (Array.of_list (ns_nodes tr))
 	) game;
+	l := List.rev !l;
 	msg_tagged_nl 4 (fun _ -> "Occurrence-Arena: " ^ ListUtils.format (fun (i,_,k) -> desc i ^ "->" ^ desc k) (List.rev !l) ^ "\n");
 	if !l != [] then (
 		let (i,j,k) = tie_break game node_total_ordering occ old_strategy valu !l in 
@@ -1203,6 +1453,9 @@ let improvement_policy_optimize_fair tie_break
 	);
 	(strategy, occ)	
 
+				
+				
+				
 				
 let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy valu l =
 	let desc i = OptionUtils.get_some (pg_get_desc game i) in
@@ -1271,6 +1524,9 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 			incr zeroidx
 		)
 	done;
+	let msg_tagged_nl v = message_autotagged_newline v (fun _ -> "ANALYZE") in
+		msg_tagged_nl 2 (fun _ -> show_info game occ old_strategy valu n);
+
 	
 	let compare_nodes k (soulab0, souidx0) (tarlab0, taridx0) (oldlab0, oldidx0) (soulab1, souidx1) (tarlab1, taridx1) (oldlab1, oldidx1)
 					  state idxmap strat =

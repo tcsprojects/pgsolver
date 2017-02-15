@@ -344,7 +344,7 @@ val attractor_closure_inplace_sol_strat: paritygame -> (node -> bool) -> solutio
  * Dominion Functions                                         *
  **************************************************************)
 
-val pg_set_closed: paritygame -> int TreeSet.t -> int -> bool
+val pg_set_closed: paritygame -> node TreeSet.t -> player -> bool
 
 val pg_set_dominion: (paritygame -> solution * strategy) -> paritygame -> node TreeSet.t -> player -> strategy option
 
@@ -392,7 +392,7 @@ val compute_priority_reach_array': paritygame -> int array array
  * Dynamic Parity Game                                        *
  **************************************************************)
 
-type dynamic_paritygame = (int * int * string option) Tcsgraph.DynamicGraph.dynamic_graph
+type dynamic_paritygame = (priority * player * string option) Tcsgraph.DynamicGraph.dynamic_graph
 
 val paritygame_to_dynamic_paritygame: paritygame -> dynamic_paritygame
 

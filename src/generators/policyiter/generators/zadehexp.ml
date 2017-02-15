@@ -56,9 +56,9 @@ let generator_game_func arguments =
 
 	let add	sy pr pl li = SymbolicParityGame.add_node pg sy pr pl (Array.of_list li) (Some (symb_to_str sy)) in
 	
-	let add1 sy pr li = add sy pr 1 li in
+	let add1 sy pr li = add sy pr plr_Odd li in
 	
-	let add0 sy pr li = add sy pr 0 li in
+	let add0 sy pr li = add sy pr plr_Even li in
 	
 	add1  FinalCycle 1 [FinalCycle];
 	add1  FinalSink (2 * n + 12) [FinalCycle];

@@ -11,7 +11,7 @@ module SymbolicParityGame : sig
 
   val touch_node: 'a symbolic_paritygame -> 'a -> unit
    
-	val add_node: 'a symbolic_paritygame -> 'a -> int -> int -> 'a array -> string option -> unit
+	val add_node: 'a symbolic_paritygame -> 'a -> priority -> player -> 'a array -> string option -> unit
 
 end
 

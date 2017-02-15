@@ -112,49 +112,49 @@ let generator_game_func arguments =
 
 	let add sy pr pl li = 
 		match (!strat, pl) with
-			(Some str, 0) ->
+			(Some str, plr_Even) ->
 				SymbolicParityGame.add_node pg sy pr pl (Array.of_list li) (Some (symb_to_str sy ^ "[" ^ symb_to_str (str n sy) ^ "]"))
 		|	_ ->
 				SymbolicParityGame.add_node pg sy pr pl (Array.of_list li) (Some (symb_to_str sy))
 	in
 	
-	add Sink 1 1 [Sink];
-	add SinkEntry (2 * tt * n + 6 * n + 12) 1 [Sink];
+	add Sink 1 plr_Odd [Sink];
+	add SinkEntry (2 * tt * n + 6 * n + 12) plr_Odd [Sink];
 	
-	add PacerExit (2 * tt * n + 2 * n + 10) 1 [SuccessorLane 0];
+	add PacerExit (2 * tt * n + 2 * n + 10) plr_Odd [SuccessorLane 0];
 	
-	add SelectorHighEntry (2 * tt * n + 2 * n + 8) 1 [SelectorLane 0];
+	add SelectorHighEntry (2 * tt * n + 2 * n + 8) plr_Odd [SelectorLane 0];
 	
 	for i = 0 to n do
-		add (SuccessorLane i) 3 0 (if i = n then [SinkEntry] else [AccessCenter i; SuccessorLane (i+1)]);
-		add (SelectorLane i) 3 0 (if i = n then [SinkEntry] else [CountingEntry i; SelectorLane (i+1)]);
+		add (SuccessorLane i) 3 plr_Even (if i = n then [SinkEntry] else [AccessCenter i; SuccessorLane (i+1)]);
+		add (SelectorLane i) 3 plr_Even (if i = n then [SinkEntry] else [CountingEntry i; SelectorLane (i+1)]);
 	done;
 	
 	for i = 0 to n - 1 do
-		add (SelectorLowEntry i) (2 * tt * n + 2 * i + 8) 1 [SelectorLane 0];
-		add (AccessCenter i) 6 1 [CountingEntry i; AccessNode (i, uu - 1)];
+		add (SelectorLowEntry i) (2 * tt * n + 2 * i + 8) plr_Odd [SelectorLane 0];
+		add (AccessCenter i) 6 plr_Odd [CountingEntry i; AccessNode (i, uu - 1)];
 		
 		for j = 0 to uu - 1 do
-			add (AccessNode (i,j)) 5 0 [SinkEntry; AccessLeaver i; (if j = 0 then AccessCenter i else AccessNode (i,j-1))]
+			add (AccessNode (i,j)) 5 plr_Even [SinkEntry; AccessLeaver i; (if j = 0 then AccessCenter i else AccessNode (i,j-1))]
 		done;
 		
-		add (AccessLeaver i) (2 * tt * n + 2 * n + 4 * i + 11) 1 [SelectorLane 0];
-		add (CountingEntry i) (2 * tt * n + 2 * n + 4 * i + 13) 1 [CountingCenter i];
-		add (CountingCenter i) 6 1 [CountingExit i; CountingHighNode i; PacedNode (i, ss - 1)];
-		add (CountingHighNode i) 5 0 [CountingHighLeaver i; CountingLowNode (i, tt - 1)];
-		add (CountingHighLeaver i) 7 1 (if i = 0 then [SelectorHighEntry] else [SelectorHighEntry; CountingHighLane (i-1)]);
-		add (CountingHighLane i) 3 1 (if i = 0 then [CountingLowNode (i, tt - 1)] else [CountingLowNode (i, tt - 1); CountingHighLane (i-1)]);
+		add (AccessLeaver i) (2 * tt * n + 2 * n + 4 * i + 11) plr_Odd [SelectorLane 0];
+		add (CountingEntry i) (2 * tt * n + 2 * n + 4 * i + 13) plr_Odd [CountingCenter i];
+		add (CountingCenter i) 6 plr_Odd [CountingExit i; CountingHighNode i; PacedNode (i, ss - 1)];
+		add (CountingHighNode i) 5 plr_Even [CountingHighLeaver i; CountingLowNode (i, tt - 1)];
+		add (CountingHighLeaver i) 7 plr_Odd (if i = 0 then [SelectorHighEntry] else [SelectorHighEntry; CountingHighLane (i-1)]);
+		add (CountingHighLane i) 3 plr_Odd (if i = 0 then [CountingLowNode (i, tt - 1)] else [CountingLowNode (i, tt - 1); CountingHighLane (i-1)]);
 		
 		for j = 0 to tt - 1 do
-			add (CountingLowNode (i,j)) 5 0 [SinkEntry; CountingLowLeaver (i,j); (if j = 0 then CountingCenter i else CountingLowNode (i,j-1))];
-			add (CountingLowLeaver (i,j)) (2 * tt - 2 * j + 2 * tt * i + 7) 1 (if i = 0 then [SelectorLowEntry i] else [CountingLowLane (i-1,j); SelectorLowEntry i]);
-			add (CountingLowLane (i,j)) 3 1 (if i = 0 then [CountingLowNode (i,j)] else [CountingLowNode (i,j); CountingLowLane (i-1,j)])
+			add (CountingLowNode (i,j)) 5 plr_Even [SinkEntry; CountingLowLeaver (i,j); (if j = 0 then CountingCenter i else CountingLowNode (i,j-1))];
+			add (CountingLowLeaver (i,j)) (2 * tt - 2 * j + 2 * tt * i + 7) plr_Odd (if i = 0 then [SelectorLowEntry i] else [CountingLowLane (i-1,j); SelectorLowEntry i]);
+			add (CountingLowLane (i,j)) 3 plr_Odd (if i = 0 then [CountingLowNode (i,j)] else [CountingLowNode (i,j); CountingLowLane (i-1,j)])
 		done;
 		
-		add (CountingExit i) (2 * tt * n + 2 * n + 4 * i + 14) 1 [SuccessorLane (i+1)];
+		add (CountingExit i) (2 * tt * n + 2 * n + 4 * i + 14) plr_Odd [SuccessorLane (i+1)];
 		
 		for j = 0 to ss - 1 do
-			add (PacedNode (i,j)) 5 0 [SinkEntry; PacerExit; (if j = 0 then CountingCenter i else PacedNode (i,j-1))]
+			add (PacedNode (i,j)) 5 plr_Even [SinkEntry; PacerExit; (if j = 0 then CountingCenter i else PacedNode (i,j-1))]
 		done;
 	done;
 

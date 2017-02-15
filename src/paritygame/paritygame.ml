@@ -1125,7 +1125,7 @@ let compute_priority_reach_array game player =
  * Dynamic Parity Game                                        *
  **************************************************************)
 
-type dynamic_paritygame = (int * int * string option) DynamicGraph.dynamic_graph
+type dynamic_paritygame = (priority * player * string option) DynamicGraph.dynamic_graph
 
 let paritygame_to_dynamic_paritygame game =
 	let graph = DynamicGraph.make () in

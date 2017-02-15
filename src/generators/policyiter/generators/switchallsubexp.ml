@@ -43,7 +43,7 @@ let generator_game_func arguments =
 	let add sy pr pl li = SymbolicParityGame.add_node pg sy pr pl (Array.of_list li) (Some (symb_to_str sy)) in
 
 	let rec left_exp = function [] -> failwith "imp" | [a] -> a
-	|	a::b::r -> incr helpercnt; add (Helper !helpercnt) 0 0 [a; b]; left_exp ((Helper !helpercnt)::r)
+	|	a::b::r -> incr helpercnt; add (Helper !helpercnt) 0 plr_Even [a; b]; left_exp ((Helper !helpercnt)::r)
 	in
 
 	let left_exp' l =
@@ -55,24 +55,24 @@ let generator_game_func arguments =
 
 	let lexp l = if od2 then left_exp' l else l in
 
-	add FinalCycle 1 1 [FinalCycle];
-	add StartEven (8 * n + 6) 0 (lexp (FinalSink::(mkli n (fun j -> CycleAccess j))));
-	add DecLaneRoot (8 * n + 4) 0 [StartEven; BitSelector];
-	add BitSelector (8 * n + 8) 0 (lexp (FinalSink::(mkli n (fun j -> CycleSelector j))));
-	add FinalSink (12 * n + 10) 1 [FinalCycle];
+	add FinalCycle 1 plr_Odd [FinalCycle];
+	add StartEven (8 * n + 6) plr_Even (lexp (FinalSink::(mkli n (fun j -> CycleAccess j))));
+	add DecLaneRoot (8 * n + 4) plr_Even [StartEven; BitSelector];
+	add BitSelector (8 * n + 8) plr_Even (lexp (FinalSink::(mkli n (fun j -> CycleSelector j))));
+	add FinalSink (12 * n + 10) plr_Odd [FinalCycle];
 
 	for i = 0 to 2 * n - 1 do
-		add (DecLaneEven i) (4 * n + 2 * i + 4) 1 [DecLaneOdd i];
-		add (DecLaneOdd i) (4 * n + 2 * i + 3) 0 (if i = 0 then lexp [DecLaneRoot; BitSelector; StartEven] else lexp [DecLaneOdd (i - 1); BitSelector; StartEven])
+		add (DecLaneEven i) (4 * n + 2 * i + 4) plr_Odd [DecLaneOdd i];
+		add (DecLaneOdd i) (4 * n + 2 * i + 3) plr_Even (if i = 0 then lexp [DecLaneRoot; BitSelector; StartEven] else lexp [DecLaneOdd (i - 1); BitSelector; StartEven])
 	done;
 
 	for i = 0 to n - 1 do
-		add (CycleNode i) (4 * i + 3) 0 (lexp ([StartEven; CycleCenter i] @ (mkli (2 * i + 2) (fun j -> DecLaneEven j)) @ [BitSelector]));
-		add (CycleCenter i) (4 * i + 4) 1 [CycleNode i; CycleLeaver i];
-		add (CycleLeaver i) (8 * n + 4 * i + 12) 1 [UpperSelector i];
-		add (UpperSelector i) (8 * n + 4 * i + 9) 0 (lexp (FinalSink::(mkli (n - i - 1) (fun j -> CycleSelector (n - j - 1)))));
-        add (CycleAccess i) (8 * n + 4 * i + 11) 1 [CycleCenter i];
-        add (CycleSelector i) (4 * i + 6) 0 [CycleAccess i; UpperSelector i];
+		add (CycleNode i) (4 * i + 3) plr_Even (lexp ([StartEven; CycleCenter i] @ (mkli (2 * i + 2) (fun j -> DecLaneEven j)) @ [BitSelector]));
+		add (CycleCenter i) (4 * i + 4) plr_Odd [CycleNode i; CycleLeaver i];
+		add (CycleLeaver i) (8 * n + 4 * i + 12) plr_Odd [UpperSelector i];
+		add (UpperSelector i) (8 * n + 4 * i + 9) plr_Even (lexp (FinalSink::(mkli (n - i - 1) (fun j -> CycleSelector (n - j - 1)))));
+        add (CycleAccess i) (8 * n + 4 * i + 11) plr_Odd [CycleCenter i];
+        add (CycleSelector i) (4 * i + 6) plr_Even [CycleAccess i; UpperSelector i];
 	done;
 
 	SymbolicParityGame.to_paritygame pg;;
