@@ -627,6 +627,7 @@ let subgame_and_subgraph_by_list game tgraph li =
  **************************************************************)
 
 (* result := sol o perm *)
+(*
 let permute_solution perm sol =
 	let n = Array.length sol in
 	let sol' = Array.make n (-1) in
@@ -635,9 +636,10 @@ let permute_solution perm sol =
         sol'.(i) <- sol.(perm.(i))
     done;
     sol'
-
+*)
 
 (* result := perm^-1 o strat o perm *)
+(*
 let permute_strategy perm perm' strat =
 	let n = Array.length strat in
 	let strat' = Array.make n (-1) in
@@ -647,7 +649,7 @@ let permute_strategy perm perm' strat =
 	        strat'.(i) <- if j = -1 then -1 else perm'.(j)
     done;
     strat'
-
+*)
 
 exception Unmergable
 

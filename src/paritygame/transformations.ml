@@ -427,7 +427,7 @@ let partialpg_alternating_transformation (start, delta, data, format) =
 	in
 	let data' v =
 		if v mod 2 = 0 then data (v / 2)
-		else (0, 1 - snd (data (v / 2)))
+		else (0, plr_opponent (snd (data (v / 2))))
 	in
 	let format' v =
 		if v mod 2 = 0 then format (v / 2)

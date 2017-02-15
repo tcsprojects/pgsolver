@@ -57,7 +57,7 @@ val combine_games: paritygame list -> paritygame
 
 val bouncing_node_transformation: paritygame -> paritygame
 
-val compress_nodes: paritygame -> paritygame * int array * int array
+val compress_nodes: paritygame -> paritygame * node array * node array
 
 val normal_form_translation: paritygame -> paritygame
 

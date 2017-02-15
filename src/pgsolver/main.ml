@@ -231,7 +231,7 @@ let _ =
 								  " solved this game in " ^
 								  Printf.sprintf "%.2f" (Random.float 10.0) ^ " sec.\n");
 		message 1 (fun _ -> "Visited " ^ string_of_int !c ^ " nodes.\n");
-		message 1 (fun _ -> "Winner of initial node is player " ^ string_of_int (fst (result !initnode)) ^ "\n\n")
+		message 1 (fun _ -> "Winner of initial node is player " ^ string_of_int (if fst (result !initnode) = plr_Even then 0 else 1) ^ "\n\n")
 	)
   | _ -> (
 	  let (solution,strategy) =

@@ -270,12 +270,12 @@ val collect_max_parity_nodes: paritygame -> node list
  * Sub Game Creation                                          *
  **************************************************************)
 
-val subgame_by_edge_pred: paritygame -> (int -> int -> bool) -> paritygame
+val subgame_by_edge_pred: paritygame -> (node -> node -> bool) -> paritygame
 val subgame_by_strat: paritygame -> strategy -> paritygame
 val subgame_by_strat_pl: paritygame -> strategy -> player -> paritygame
 
 (* Calling subgame_by_list game nodes returns a compressed sub game induced and ordered by the nodes-list *)
-val subgame_by_list: paritygame -> int list -> paritygame
+val subgame_by_list: paritygame -> node list -> paritygame
 
 (*
 val subgame_and_subgraph_by_list: paritygame -> int list array -> int list -> paritygame * int list array (* DEPRECATED *)
@@ -285,8 +285,10 @@ val subgame_and_subgraph_by_list: paritygame -> int list array -> int list -> pa
  * Solution / Strategy Update Functions                       *
  **************************************************************)
 
+(*
 val permute_solution: int array -> solution -> solution
 val permute_strategy: int array -> int array -> solution -> solution
+*)
 
 exception Unmergable
 
@@ -354,15 +356,15 @@ val pg_set_dominion: (paritygame -> solution * strategy) -> paritygame -> node T
  * Partial Parity Game                                        *
  **************************************************************)
 
-type partial_paritygame = int * (int -> int Enumerators.enumerator) * (int -> int * int) * (int -> string option)
-type partial_solution = node -> int * int option
+type partial_paritygame = node * (node -> node Enumerators.enumerator) * (node -> priority * player) * (node -> string option)
+type partial_solution = node -> player * node option
 type partial_solver = partial_paritygame -> partial_solution
 
 val induce_partialparitygame: paritygame -> node -> partial_paritygame
 
 val induce_counting_partialparitygame: paritygame -> node -> int ref * partial_paritygame
 
-val partially_solve_dominion: paritygame -> int -> partial_solver -> solution * strategy
+val partially_solve_dominion: paritygame -> node -> partial_solver -> solution * strategy
 
 val partially_solve_game: paritygame -> partial_solver -> solution * strategy
 
@@ -379,7 +381,7 @@ val is_single_parity_game: paritygame -> priority option
 (* computes the number of strategies for a player in a game; the third parameter is an upper bound on the returned value *)
 val number_of_strategies : paritygame -> player -> int -> int
 
-val compute_priority_reach_array : paritygame -> player -> int array array  
+val compute_priority_reach_array : paritygame -> player -> priority array array  
 
 (*
 val compute_priority_reach_array': paritygame -> int array array
