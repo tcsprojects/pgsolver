@@ -24,3 +24,5 @@ _build
 temp
 SatConfig
 .project
+*.out
+

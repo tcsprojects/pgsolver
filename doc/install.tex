@@ -41,20 +41,21 @@ There are two SAT solver backends that are already supported by
       \pgsolver:
 
 	\begin{itemize}
-      %   	\item the SAT solver \texttt{zChaff} developed in Princeton. It is available from
-      %   \begin{verbatim}
-      % http://www.princeton.edu/~chaff/zchaff.html\end{verbatim}
-      %   We recommend version 2007.3.12. Earlier version will probably not suffice.
+  	\item the SAT solver \texttt{zChaff} developed in Princeton. It is available from
+    \begin{verbatim}
+http://www.princeton.edu/~chaff/zchaff.html\end{verbatim}
+  We recommend version 2007.3.12. Earlier version will probably not suffice.
 
         \item \texttt{MiniSat} developed in G\"oteborg. It is available from
         \begin{verbatim}
-      http://minisat.se\end{verbatim}
-        We recommend the C-version of 1.14. Other version will probably not work with our interface.
+      https://github.com/niklasso/minisat\end{verbatim}
+        We recommend the C-version of 2.2.0. Other version will probably not
+        work with our interface.
 
         \item \texttt{PicoSAT} developed in Linz. It is available from
         \begin{verbatim}
       http://fmv.jku.at/picosat\end{verbatim}
-        We recommend version 632. Earlier version will probably not suffice.
+        We recommend version 965. Earlier version will probably not suffice.
 
     \end{itemize}
 
@@ -150,51 +151,48 @@ You can delete all files that have been created during the compilation process b
 
 \subsection{Integrating SAT solvers}
 
-\pgsolver currently supports two backend SAT solvers, namely \texttt{PicoSAT} and
-\texttt{MiniSat}. It should be also possible to integrate other SAT solvers; see the Developer's Guide for
-more information on that subject. In order to integrate one of them into \pgsolver, you need to follow these
-steps:\TODO{ML: this needs to be updated}
+\pgsolver currently supports three backend SAT solvers, namely \texttt{PicoSAT},
+\texttt{ZChaff} and \texttt{MiniSat}. It should be also possible to integrate
+other SAT solvers; see the Developer's Guide for more information on that subject. In order to integrate one of them into \pgsolver, you need to follow these
+steps:
 \begin{enumerate}
 \item Download and compile the respective SAT solver.
-\item Adjust the \texttt{satsolvers/Config} file s.t.\ the usage of the respective SAT solver is enabled and all required links point to the correct target.
-\item Remove the current compilation of \pgsolver: \verb#make cleanall#.
+\item Adjust the \texttt{./SatConfig} file s.t.\ the usage of the respective
+SAT solver is enabled and all required links point to the correct target.
+\item Remove the current compilation of \pgsolver: \verb#make clean#.
 \item Recompile \pgsolver: \verb#make all#.
 \end{enumerate}
 
 
-% \subsubsection{Compiling \texttt{zChaff}}
+\subsubsection{Compiling \texttt{zChaff}}
 
-% Obtain the source code of \texttt{zChaff} (we recommend at least version 2007.3.12), unpack it and
-% consult the included \texttt{README} file for instructions on how to compile it. If you are lucky
-% then a simple
+Obtain the source code of \texttt{zChaff} (we recommend at least version 2007.3.12), unpack it and
+consult the included \texttt{README} file for instructions on how to compile it. If you are lucky
+then a simple
+\begin{verbatim}
+    ~/zchaff> make
+\end{verbatim}
+will do the job.
+
+% \hide{
+% Check in the included \texttt{Makefile} or via the output produced during compilation which C++ compiler
+% is being used. For example, in \texttt{Makefile} there should be a line of the form
 % \begin{verbatim}
-%     ~/zchaff> make
+%     CC = g++ -Wall
 % \end{verbatim}
-% will do the job.
+% which tells you that the compiler used to build \texttt{zChaff} is \texttt{g++}. You will have to make
+% sure that this is also the value of the variable \texttt{CPP} in \pgsolver's \texttt{Makefile}. Otherwise
+% \texttt{zChaff} cannot be linked with the modules of the \pgsolver library.
+% }
 
-% % \hide{
-% % Check in the included \texttt{Makefile} or via the output produced during compilation which C++ compiler
-% % is being used. For example, in \texttt{Makefile} there should be a line of the form
-% % \begin{verbatim}
-% %     CC = g++ -Wall
-% % \end{verbatim}
-% % which tells you that the compiler used to build \texttt{zChaff} is \texttt{g++}. You will have to make
-% % sure that this is also the value of the variable \texttt{CPP} in \pgsolver's \texttt{Makefile}. Otherwise
-% % \texttt{zChaff} cannot be linked with the modules of the \pgsolver library.
-% % }
-
-% The compilation of \texttt{zChaff} produces an executable \texttt{zchaff}. However, \pgsolver uses the
-% library version which can be linked into the program directly. This is usually called \texttt{libsat.a}
-% and is also produced by \texttt{zChaff}'s compilation process. Make sure that the variable
-% \verb#ZCHAFFLIB# in \pgsolver's \texttt{satsolvers/Config} file points to the directory in which \texttt{libsat.a}
-% can be found, for example
-% \begin{verbatim}
-%     #######
-%     # ZCHAFF
-%     #######
-%     ZCHAFFLIB=/usr/local/lib/zchaff-2007-3-12/libsat.a
-%     WITH_ZCHAFF=YES
-% \end{verbatim}
+The compilation of \texttt{zChaff} produces an executable \texttt{zchaff}. However, \pgsolver uses the
+library version which can be linked into the program directly. This is usually called \texttt{libsat.a}
+and is also produced by \texttt{zChaff}'s compilation process. Make sure that the variable
+\verb#ZCHAFF# in \pgsolver's \texttt{./SatConfig} file points to the
+directory in which \texttt{libsat.a} can be found, for example
+\begin{verbatim}
+    ZCHAFF=/usr/local/lib/zchaff-2007-3-12/libsat.a
+\end{verbatim}
 
 
 \subsubsection{Compiling \texttt{PicoSAT}}
@@ -208,36 +206,29 @@ will do the job.
 
 The compilation of \texttt{PicoSAT} produces an executable \texttt{picosat}. However, \pgsolver uses the
 object files which can be linked into the program directly. Make sure that the variable
-\verb#PICOSATDIR# in \pgsolver's \texttt{satsolvers/Config} file points to the directory in which the object files
-can be found, for example
+\verb#PICOSAT# in \pgsolver's \texttt{./SatConfig} file points to the directory
+in which the object files can be found, for example
 \begin{verbatim}
-    #######
-    # PICOSAT
-    #######
-    PICOSATDIR=/usr/local/lib/picosat-632
-    WITH_PICOSAT=YES
+    PICOSAT=/usr/local/lib/picosat-965/libpicosat.a
 \end{verbatim}
 
 
 \subsubsection{Compiling \texttt{MiniSat}}
 
-Obtain the source code of \texttt{MiniSat} (we recommend the C-version 1.14), unpack it and
-consult the included \texttt{README} file for instructions on how to compile it. Usually,
+Obtain the source code of \texttt{MiniSat} (we recommend the C-version 2.20),
+unpack it and consult the included \texttt{README} file for instructions on how to compile it. Usually,
 \begin{verbatim}
-    ~/minisat/core> make
+    ~/minisat> make
 \end{verbatim}
 will do the job.
 
 The compilation of \texttt{MiniSat} produces an executable \texttt{minisat}. However, \pgsolver uses the
 object files which can be linked into the program directly. Make sure that both
-\verb#MINISAT# variables in \pgsolver's \texttt{satsolvers/Config} file point to the respective directories, for example
+\verb#MINISAT# variables in \pgsolver's \texttt{./SatConfig} file point to the
+respective directories, for example
 \begin{verbatim}
-    #######
-    # MINISAT
-    #######
-    MINISATDIR=/usr/local/lib/minisat/core
-    MINISATMTL=/usr/local/lib/minisat/mtl
-    WITH_MINISAT=YES
+    MINISAT = /usr/local/lib/minisat/build/release/lib/libminisat.a
+    MINISAT_INC = /usr/local/lib/minisat
 \end{verbatim}
 
 
