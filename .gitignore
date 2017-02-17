@@ -26,3 +26,4 @@ SatConfig
 .project
 *.out
 doc/main.pdf
+doc/pgsolver.pdf

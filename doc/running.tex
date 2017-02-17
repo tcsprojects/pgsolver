@@ -23,7 +23,7 @@ argument.
 \end{verbatim}
 
 \subsection{Command-Line Parameters}
-\TODO{ML: this does not seem to be up-to-date}
+
 \pgsolver's behaviour can be changed through command-line parameters. In particular, you can determine
 the algorithm that is used for solving, specify whether or not you want to view the result in text
 mode or graphically, etc. Command-line parameters can be given in any order, although some are
@@ -44,14 +44,14 @@ one algorithm that should be used for solving. The currently understood command-
    SCC structure or priority distribution in the game. Verbosity level 3 is for debugging purposes. Again,
    this very much depends on the solving algorithm.
 
-\item[{\ttfamily --quiet}] \ \\
-   Causes the program to be quiet, same as \texttt{-v 0}.
+%\item[{\ttfamily --quiet}] \ \\
+%   Causes the program to be quiet, same as \texttt{-v 0}.
 
-\item[{\ttfamily --verbose}] \ \\
-   Causes the program to be verbose, same as \texttt{-v 2}.
+%\item[{\ttfamily --verbose}] \ \\
+   %Causes the program to be verbose, same as \texttt{-v 2}.
 
-\item[{\ttfamily --debug}] \ \\
-   Causes the program to be very verbose, same as \texttt{-v 3}.
+%\item[{\ttfamily --debug}] \ \\
+   %Causes the program to be very verbose, same as \texttt{-v 3}.
 
 \item[{\ttfamily -d \nonterminal{filename}}] \ \\
    Tells \texttt{pgsolver} to open the file \nonterminal{filename} for writing and print into it the
@@ -67,20 +67,20 @@ one algorithm that should be used for solving. The currently understood command-
 % \item[{\ttfamily --sanitycheck}]  \enspace or {\ttfamily -sc} \\
 %   Checks whether the given parity game is well-formed, meaning that it particularly does not contain any edge leading to inaccessible nodes.
 
-\item[{\ttfamily -n}] \ \\
-   Tells \texttt{pgsolver} to suppress solving. This can be used to simply draw a parity game in
-   \texttt{dot}-format without the information about winning regions and strategies. This is a default
-   selection, i.e.\ \pgsolver will not solve a game unless you specify explicitly which algorithm it
-   should use. See below for the command-line parameters that let you do so.
+% \item[{\ttfamily -n}] \ \\
+%    Tells \texttt{pgsolver} to suppress solving. This can be used to simply draw a parity game in
+%    \texttt{dot}-format without the information about winning regions and strategies. This is a default
+%    selection, i.e.\ \pgsolver will not solve a game unless you specify explicitly which algorithm it
+%    should use. See below for the command-line parameters that let you do so.
 
 \item[{\ttfamily --disableglobalopt}]  \enspace or {\ttfamily -dgo} \\
    Tells \texttt{pgsolver} to completely disable any global optimisations. Global optimisation is enabled by default.
 
-\item[{\ttfamily --disableuselesscycles}]  \enspace or {\ttfamily -dul} \\
-   Tells \texttt{pgsolver} to disable to automatic deletion of useless self cycles. This is a global optimisation and is enabled by default.
-
-\item[{\ttfamily --disableusefulcycles}]  \enspace or {\ttfamily -duf} \\
-   Tells \texttt{pgsolver} to disablee the automatic utilisation of useful self cycles. This is a global optimisation and is enabled by default.
+% \item[{\ttfamily --disableuselesscycles}]  \enspace or {\ttfamily -dul} \\
+%    Tells \texttt{pgsolver} to disable to automatic deletion of useless self cycles. This is a global optimisation and is enabled by default.
+% 
+% \item[{\ttfamily --disableusefulcycles}]  \enspace or {\ttfamily -duf} \\
+%    Tells \texttt{pgsolver} to disablee the automatic utilisation of useful self cycles. This is a global optimisation and is enabled by default.
 
 \item[{\ttfamily --disablesccdecomposition}]  \enspace or {\ttfamily -dsd} \\
    Tells \texttt{pgsolver} to decompose the game into strongly connected components. This is enabled by default.
@@ -88,33 +88,33 @@ one algorithm that should be used for solving. The currently understood command-
 \item[{\ttfamily --disablelocalopt}]  \enspace or {\ttfamily -dlo} \\
    Tells \texttt{pgsolver} to completely disable any local optimisations. Local optimisation is enabled by default.
 
-\item[{\ttfamily --enableprioprop}]  \enspace or {\ttfamily -pp} \\
-   Tells \texttt{pgsolver} to enable priority propagation. This is a local optimisation and is disabled (!) by default.
-
-\item[{\ttfamily --disablepriocomp}]  \enspace or {\ttfamily -dcp} \\
-   Tells \texttt{pgsolver} to disable priority compression. This is a local optimisation and is enabled by default.
+% \item[{\ttfamily --enableprioprop}]  \enspace or {\ttfamily -pp} \\
+%    Tells \texttt{pgsolver} to enable priority propagation. This is a local optimisation and is disabled (!) by default.
+% 
+% \item[{\ttfamily --disablepriocomp}]  \enspace or {\ttfamily -dcp} \\
+%    Tells \texttt{pgsolver} to disable priority compression. This is a local optimisation and is enabled by default.
 
 \item[{\ttfamily --disablespecialgames}]  \enspace or {\ttfamily -dsg} \\
    Tells \texttt{pgsolver} to completely disable any algorithms solving special instances. This is enabled by default.
 
-\item[{\ttfamily --disablesingleparity}]  \enspace or {\ttfamily -dpa} \\
-   Tells \texttt{pgsolver} to disable the automatic solving of single parity instances. This is a special instance solving optimisation and is enabled by default.
-
-\item[{\ttfamily --disablesingleplayer}]  \enspace or {\ttfamily -dpl} \\
-   Tells \texttt{pgsolver} to disable the automatic solving of single player instances. This is a special instance solving optimisation and is enabled by default.
+% \item[{\ttfamily --disablesingleparity}]  \enspace or {\ttfamily -dpa} \\
+%    Tells \texttt{pgsolver} to disable the automatic solving of single parity instances. This is a special instance solving optimisation and is enabled by default.
+% 
+% \item[{\ttfamily --disablesingleplayer}]  \enspace or {\ttfamily -dpl} \\
+%    Tells \texttt{pgsolver} to disable the automatic solving of single player instances. This is a special instance solving optimisation and is enabled by default.
 
 \item[{\ttfamily --verify}]  \enspace or {\ttfamily -ve} \\
    This causes \texttt{pgsolver} to perform, after solving, an additional check that the reported winning
    strategies are correct; useful for finding bugs in new algorithm implementations.
 
-\item[{\ttfamily --verify2}]  \enspace or {\ttfamily -ve} \\
-   Same as {\ttfamily --verify} but use a different verification method; useful for finding bugs in new
-   algorithm implementations if you have used \texttt{--verify} but want to be really sure.
-
-\item[{\ttfamily --verify3}]  \enspace or {\ttfamily -ve} \\
-   Still the same as {\ttfamily --verify} or {\ttfamily --verify2} but uses yet again a different verification method;
-   useful for finding bugs in new algorithm implementations if you have used \texttt{--verify} and
-   \texttt{--verify2} but generally have issues with trust.
+% \item[{\ttfamily --verify2}]  \enspace or {\ttfamily -ve} \\
+%    Same as {\ttfamily --verify} but use a different verification method; useful for finding bugs in new
+%    algorithm implementations if you have used \texttt{--verify} but want to be really sure.
+% 
+% \item[{\ttfamily --verify3}]  \enspace or {\ttfamily -ve} \\
+%    Still the same as {\ttfamily --verify} or {\ttfamily --verify2} but uses yet again a different verification method;
+%    useful for finding bugs in new algorithm implementations if you have used \texttt{--verify} and
+%    \texttt{--verify2} but generally have issues with trust.
 
 \item[{\ttfamily --justheatCPU}] \enspace or {\ttfamily -jh}  \\
    On large parity games, printing the winning information can take a long time because of the bottleneck
@@ -126,38 +126,77 @@ one algorithm that should be used for solving. The currently understood command-
    depend on SAT solving. If there are less than two SAT solvers linked into \pgsolver, this parameter
    is disabled.
 
-\item[{\ttfamily --viasat}] \enspace or {\ttfamily -vs} \\
-   Use the small progress measure encoding for propositional logic and a reduction to SAT due to Lange.
-   Also see the command-line parameters that select the SAT solver to be used.
-   This parameter is only available if there is at least one SAT solver linked into \pgsolver.
+\item[{\ttfamily --printsolonly}] \enspace ${}$ \\
+	Instead of printing a human readable form of the solution, \pgsolver prints a
+	format that can be directly parsed again by the framework.
 
-\item[{\ttfamily --stratimprove}] \enspace or {\ttfamily -si} \\
-   Use the strategy improvement algorithm due to Jurdzi{\'n}ski and V\"oge.
+\item[{\ttfamily --printsolvedgame}] \enspace or {\ttfamily -pg} \\
+	Prints the solved game in a parseable form. This will be a subgame of the
+	original parity game in which all nodes where the winner of the node is also
+	the owner are restricted to the winning edge.
 
-\item[{\ttfamily  --optstratimprov}] \enspace or {\ttfamily -os} \\
-   Use the strategy improvement algorithm due to Schewe.
+\item[{\ttfamily --parsesolution \nonterminal{file}}] \enspace or
+{\ttfamily -ps \nonterminal{file}}  \\
+	Parses a previously printed solution into \pgsolver. This allows you to, for
+	instance, verify a particular solution.
 
-\item[{\ttfamily --smallprog}] \enspace or {\ttfamily -sp} \\
-   Use the small progress measure algorithm due to Jurdzi{\'n}ski.
+\item[{\ttfamily --solverinfo}] \enspace  ${}$ \\
+	Prints out a list of all available solvers.
 
-\item[{\ttfamily --satsolve}] \enspace or {\ttfamily -ss} \\
-   Tells \texttt{pgsolver} to encode a direct NP predicate that is to be solved due To Friedmann.
-   This parameter is only available if there is at least one SAT solver linked into \pgsolver.
+\item[{\ttfamily --globallysolve \nonterminal{solver}}] \enspace or
+{\ttfamily -global \nonterminal{solver}}  \\
+	Chooses a particular global solver to solve the game at hand.
 
-\item[{\ttfamily --recursive}] \enspace or {\ttfamily -re} \\
-   Use the recursive algorithm due to Zielonka.
+\item[{\ttfamily --locallysolve \nonterminal{solver} \nonterminal{node}}]
+\enspace or {\ttfamily -local \nonterminal{solver} \nonterminal{node}}  \\
+	Chooses a particular local solver to solve the game at hand starting from a
+	specified node.
 
-\item[{\ttfamily --modelchecker}] \enspace or {\ttfamily -mc}  \\
-   Use the $\mu$-calculus model checker due to Stevens and Stirling.
+\item[{\ttfamily --args \nonterminal{arguments}}] \enspace or
+{\ttfamily -x \nonterminal{arguments}}  \\
+	Provides additional arguments to a solvers. You can get the full list of
+	arguments for a particular solver by calling \pgsolver with {\ttfamily -x
+	"help"}.
 
-\item[{\ttfamily --dominiondec}] \enspace or {\ttfamily -dd} \\
-   Use the dominion decomposition algorithm due to Jurdzi{\'n}ski, Paterson, and Zwick.
+\item[{\ttfamily --generator \nonterminal{generator} \nonterminal{arguments}}]
+\enspace or {\ttfamily -gen \nonterminal{generator} \nonterminal{arguments}}  \\
+	Generates a game using one of the included generators directly for \pgsolver to
+	solve.
 
-\item[{\ttfamily --bigstep}] \enspace or {\ttfamily -bs} \\
-   Use the big-step procedure due to Schewe.
 
-\item[{\ttfamily --guessstrategy}] \enspace or {\ttfamily -gs} \\
-   Use the strategy guessing heuristic.
+% 
+% \item[{\ttfamily --viasat}] \enspace or {\ttfamily -vs} \\
+%    Use the small progress measure encoding for propositional logic and a reduction to SAT due to Lange.
+%    Also see the command-line parameters that select the SAT solver to be used.
+%    This parameter is only available if there is at least one SAT solver linked into \pgsolver.
+% 
+% \item[{\ttfamily --stratimprove}] \enspace or {\ttfamily -si} \\
+%    Use the strategy improvement algorithm due to Jurdzi{\'n}ski and V\"oge.
+% 
+% \item[{\ttfamily  --optstratimprov}] \enspace or {\ttfamily -os} \\
+%    Use the strategy improvement algorithm due to Schewe.
+% 
+% \item[{\ttfamily --smallprog}] \enspace or {\ttfamily -sp} \\
+%    Use the small progress measure algorithm due to Jurdzi{\'n}ski.
+% 
+% \item[{\ttfamily --satsolve}] \enspace or {\ttfamily -ss} \\
+%    Tells \texttt{pgsolver} to encode a direct NP predicate that is to be solved due To Friedmann.
+%    This parameter is only available if there is at least one SAT solver linked into \pgsolver.
+% 
+% \item[{\ttfamily --recursive}] \enspace or {\ttfamily -re} \\
+%    Use the recursive algorithm due to Zielonka.
+% 
+% \item[{\ttfamily --modelchecker}] \enspace or {\ttfamily -mc}  \\
+%    Use the $\mu$-calculus model checker due to Stevens and Stirling.
+% 
+% \item[{\ttfamily --dominiondec}] \enspace or {\ttfamily -dd} \\
+%    Use the dominion decomposition algorithm due to Jurdzi{\'n}ski, Paterson, and Zwick.
+% 
+% \item[{\ttfamily --bigstep}] \enspace or {\ttfamily -bs} \\
+%    Use the big-step procedure due to Schewe.
+% 
+% \item[{\ttfamily --guessstrategy}] \enspace or {\ttfamily -gs} \\
+%    Use the strategy guessing heuristic.
 
 \end{description}
 
@@ -167,15 +206,10 @@ one algorithm that should be used for solving. The currently understood command-
 
 An invocation of
 \begin{verbatim}
-    ~/pgsolver> bin/randomgame 10 10 2 4 | bin/pgsolver --recursive
+    ~/pgsolver> bin/randomgame 10 10 2 4 | bin/pgsolver -global recursive
 \end{verbatim}
 will typically create output on \texttt{stdout} like this:
 \begin{verbatim}
-    PGSolver Collection Ver. 3: Parity Game Solver
-    Authors: Oliver Friedmann and Martin Lange, University of Munich, 
-    2008-2010
-    http://www.tcs.ifi.lmu.de/pgsolver
-
     Parsing ..................... 0.00 sec
     Chosen solver `recursive' ..... 0.00 sec
 

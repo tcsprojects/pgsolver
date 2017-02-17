@@ -91,7 +91,7 @@ struct
                    (["--printsolvedgame"; "-pg"], Unit(fun _ -> format_game := true),
                       "\n     outputs the solved (!) game on STDOUT");
                    (["--parsesolution"; "-ps"], String(fun s -> parse_sol := s; solving := false),
-                      "\n     parses the solution to the game from FILE");
+                      "<filename>\n     parses the solution to the game from FILE");
                    (["--justheatCPU"; "-jh"], Unit(fun _ -> print_strategies := false),
                       "\n     suppress the printing of the strategies and the winning regions");
 (*                   (["--sanitycheck"; "-sc"], Unit(fun _ -> perform_sanity_check := true),

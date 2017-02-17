@@ -10,7 +10,7 @@ It is developed and maintained by:
 
 ## Documentation
 
-Please consult [```./doc/pgsolver.pdf```](https://github.com/tcsprojects/pgsolver/blob/master/doc/main.pdf) for a guide to installation, usage and development of this tool.
+Please consult [```./doc/pgsolver.pdf```](https://github.com/tcsprojects/pgsolver/blob/master/doc/pgsolver.pdf) for a guide to installation, usage and development of this tool.
 
 
 ## Installation
