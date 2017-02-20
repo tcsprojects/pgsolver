@@ -388,14 +388,6 @@ simply have to give it four arguments.
 After compilation, called \texttt{bin/pgsolver --help} should result in output containing the following
 lines.
 \begin{verbatim}
-PGSolver Collection Ver. 4.0: Parity Game Solver
-Authors: Oliver Friedmann (University of Munich) and Martin Lange (University of Kassel), 2008-2016
-http://tcsprojects.org
-
-Usage: pgsolver [options] [infile]
-Solves the parity game given in <infile>. If this argument is omitted it
-reads a game from STDIN.
-
 Options are
   ...
   --globallysolve, -global <solver>
@@ -568,7 +560,7 @@ signature
 
       val owner      : gamenode -> player
       val priority   : gamenode -> priority
-      val successors : gamenode -> gamenode list   (* should always return a non-empty list *)
+      val successors : gamenode -> gamenode list 
       val show_node  : gamenode -> string option
 
       val initnodes  : unit -> gamenode list 
@@ -619,7 +611,8 @@ also obviously wasteful to create a paritygame in the correct data type, print i
 This is why \pgsolver provides a way of integrating the benchmark creation into the main program. This means that games only
 need to be created once before they can be solved, without the need to print and parse them. The key to this is the function
 \begin{verbatim}
-   val register_generator: (string array -> paritygame) -> string -> string -> unit
+   val register_generator: (string array -> paritygame) 
+                           -> string -> string -> unit
 \end{verbatim}
 in the \texttt{generators} module in the subdirectory \texttt{paritygame}. It takes as first argument a function which 
 produces a parity game according to an array of strings which are the command-line parameters given to the generator. The
@@ -627,11 +620,16 @@ two other arguments of type \verb#string# are a short (i.e.\ not containing whit
 used to identify this when telling \pgsolver which benchmark to use, and a long description used for instance in the help
 text. 
 
-To integrate your benchmarks fully, create a function \verb#my_generator# of type \verb#string array -> paritygame# that returns a 
-parity game in accordance to a parameter array (for instance conveniently using the functor \verb#Build#), and include
+To integrate your benchmarks fully, create a function \verb#my_generator# of type 
+\begin{verbatim}
+   string array -> paritygame
+\end{verbatim}
+that returns a parity game in accordance to a parameter array (for instance conveniently using the functor \verb#Build#), and include
 code of the form
 \begin{verbatim}
-   let _ = Generators.register_generator my_generator "mygen" "My own benchmark generator"
+   let _ = Generators.register_generator my_generator 
+                                         "mygen" 
+                                         "My own benchmark generator"
 \end{verbatim}
 somewhere, preferably in the same module as the one containing the benchmark generation code. Say its name is \verb#mygenerator#.
 To ensure that this code is included in the main program during compilation, you need to add \verb#mygenerator.gen# in the

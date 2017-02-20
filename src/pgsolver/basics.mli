@@ -7,7 +7,7 @@ val verbosity_level_verbose: verbosity_level
 
 val verbosity_level_default: verbosity_level
 
-(* Calling message v (fun _ -> s) outputs the string s on STDOUT if the verbosity level is greater or equal than v. *)
+(* Calling message v (fun _ -> s) outputs the string s on STDOUT if the verbosity level is greater than or equal to v. *)
 val message : verbosity_level -> (unit -> string) -> unit
 
 val message_depth : verbosity_level -> int -> (unit -> string) -> unit

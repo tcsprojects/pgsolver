@@ -36,35 +36,25 @@ If you intent to contribute to the development of \pgsolver you may want to use 
 \pgsolver consists of many executables; their creation is still guided by \texttt{make}, so you need to make sure that GNU Make
 is installed. We recommend version 3.81 or higher but earlier ones, as well as other implementations may suffice as well.
 
-If you want to use any of the reductions to SAT in order to solve parity games then you need one of more SAT solvers. Note that
-There are two SAT solver backends that are already supported by
-      \pgsolver:
-
-	\begin{itemize}
-  	\item the SAT solver \texttt{zChaff} developed in Princeton. It is available from
-    \begin{verbatim}
-http://www.princeton.edu/~chaff/zchaff.html\end{verbatim}
-  We recommend version 2007.3.12. Earlier version will probably not suffice.
-
+If you want to use any of the reductions to SAT in order to solve parity games then you need one of more SAT solvers. 
+There are two SAT solver backends that are already supported by \pgsolver:
+\begin{itemize}
         \item \texttt{MiniSat} developed in G\"oteborg. It is available from
-        \begin{verbatim}
-      https://github.com/niklasso/minisat\end{verbatim}
+        \begin{quotation}
+      \url{https://github.com/niklasso/minisat}
+        \end{quotation}
         We recommend the C-version of 2.2.0. Other version will probably not
         work with our interface.
 
         \item \texttt{PicoSAT} developed in Linz. It is available from
-        \begin{verbatim}
-      http://fmv.jku.at/picosat\end{verbatim}
+        \begin{quotation}
+      \url{http://fmv.jku.at/picosat}
+        \end{quotation}
         We recommend version 965. Earlier version will probably not suffice.
-
-    \end{itemize}
-
-% \item (optionally) a C++ compiler like \texttt{g++} for example. This is only necessary
-%       to compile \texttt{zChaff} and the parts of \pgsolver that link it. You can get it
-%       from
-%       \begin{verbatim}
-%     http://gcc.gnu.org\end{verbatim}
-%\end{itemize}
+\end{itemize}
+In addition to these two, the (somewhat outdated) SAT solver \texttt{zChaff}, developed in Princeton, is also still supported. 
+It is available from \url{http://www.princeton.edu/~chaff/zchaff.html}. We recommend at least version 2007.3.12. Earlier version 
+will probably not suffice.
 
 
 \subsection{Compiling \pgsolver}
@@ -112,7 +102,7 @@ Now change into the \pgsolver directory.
 % Once you have adjusted both \texttt{Config} files accordingly you can now compile \pgsolver
 % by simply calling the make program.
 
-
+To start the compilation, type 
 \begin{verbatim}
     ~/pgsolver> make
 \end{verbatim}
@@ -164,37 +154,6 @@ SAT solver is enabled and all required links point to the correct target.
 \end{enumerate}
 
 
-\subsubsection{Compiling \texttt{zChaff}}
-
-Obtain the source code of \texttt{zChaff} (we recommend at least version 2007.3.12), unpack it and
-consult the included \texttt{README} file for instructions on how to compile it. If you are lucky
-then a simple
-\begin{verbatim}
-    ~/zchaff> make
-\end{verbatim}
-will do the job.
-
-% \hide{
-% Check in the included \texttt{Makefile} or via the output produced during compilation which C++ compiler
-% is being used. For example, in \texttt{Makefile} there should be a line of the form
-% \begin{verbatim}
-%     CC = g++ -Wall
-% \end{verbatim}
-% which tells you that the compiler used to build \texttt{zChaff} is \texttt{g++}. You will have to make
-% sure that this is also the value of the variable \texttt{CPP} in \pgsolver's \texttt{Makefile}. Otherwise
-% \texttt{zChaff} cannot be linked with the modules of the \pgsolver library.
-% }
-
-The compilation of \texttt{zChaff} produces an executable \texttt{zchaff}. However, \pgsolver uses the
-library version which can be linked into the program directly. This is usually called \texttt{libsat.a}
-and is also produced by \texttt{zChaff}'s compilation process. Make sure that the variable
-\verb#ZCHAFF# in \pgsolver's \texttt{./SatConfig} file points to the
-directory in which \texttt{libsat.a} can be found, for example
-\begin{verbatim}
-    ZCHAFF=/usr/local/lib/zchaff-2007-3-12/libsat.a
-\end{verbatim}
-
-
 \subsubsection{Compiling \texttt{PicoSAT}}
 
 Obtain the source code of \texttt{PicoSAT} (we recommend at least version 632), unpack it and
@@ -229,6 +188,37 @@ respective directories, for example
 \begin{verbatim}
     MINISAT = /usr/local/lib/minisat/build/release/lib/libminisat.a
     MINISAT_INC = /usr/local/lib/minisat
+\end{verbatim}
+
+
+\subsubsection{Compiling \texttt{zChaff}}
+
+Obtain the source code of \texttt{zChaff} (we recommend at least version 2007.3.12), unpack it and
+consult the included \texttt{README} file for instructions on how to compile it. If you are lucky
+then a simple
+\begin{verbatim}
+    ~/zchaff> make
+\end{verbatim}
+will do the job.
+
+% \hide{
+% Check in the included \texttt{Makefile} or via the output produced during compilation which C++ compiler
+% is being used. For example, in \texttt{Makefile} there should be a line of the form
+% \begin{verbatim}
+%     CC = g++ -Wall
+% \end{verbatim}
+% which tells you that the compiler used to build \texttt{zChaff} is \texttt{g++}. You will have to make
+% sure that this is also the value of the variable \texttt{CPP} in \pgsolver's \texttt{Makefile}. Otherwise
+% \texttt{zChaff} cannot be linked with the modules of the \pgsolver library.
+% }
+
+The compilation of \texttt{zChaff} produces an executable \texttt{zchaff}. However, \pgsolver uses the
+library version which can be linked into the program directly. This is usually called \texttt{libsat.a}
+and is also produced by \texttt{zChaff}'s compilation process. Make sure that the variable
+\verb#ZCHAFF# in \pgsolver's \texttt{./SatConfig} file points to the
+directory in which \texttt{libsat.a} can be found, for example
+\begin{verbatim}
+    ZCHAFF=/usr/local/lib/zchaff-2007-3-12/libsat.a
 \end{verbatim}
 
 
