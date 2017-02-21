@@ -20,6 +20,7 @@ doc/main.thm
 doc/main.toc
 .paths
 _build
+.idea
 *.native
 temp
 SatConfig
