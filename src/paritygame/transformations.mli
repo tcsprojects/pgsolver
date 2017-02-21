@@ -7,7 +7,7 @@ open Paritygame;;
  * Global Preprocessing                                       *
  **************************************************************)
 
-val remove_useless_self_cycles_inplace: paritygame -> int list
+val remove_useless_self_cycles_inplace: paritygame -> node list
 
 
 
@@ -15,7 +15,7 @@ val remove_useless_self_cycles_inplace: paritygame -> int list
  * Local Preprocessing                                        *
  **************************************************************)
 
-val compact_prio_inplace: paritygame -> bool -> int array
+val compact_prio_inplace: paritygame -> bool -> priority array
 
 val priority_propagation_inplace: paritygame -> unit
 
@@ -57,11 +57,7 @@ val combine_games: paritygame list -> paritygame
 
 val bouncing_node_transformation: paritygame -> paritygame
 
-val compress_nodes: paritygame -> paritygame * int array * int array
-
-val sort_game_inplace : paritygame -> ((int * int * int array * string option) -> (int * int * int array * string option) -> int) -> (int array * int array)
-
-val sort_game_by_prio_inplace : paritygame -> (int array * int array)
+val compress_nodes: paritygame -> paritygame * node array * node array
 
 val normal_form_translation: paritygame -> paritygame
 
@@ -72,3 +68,12 @@ val uniquize_sorted_prios_inplace: paritygame -> unit
 val uniquize_prios_inplace: paritygame -> unit
 
 val min_max_swap_transformation: paritygame -> paritygame
+
+						 
+(* broken; unfixed; replaced by non-inplace version, specialised to sorting by priority comparison
+val sort_game_inplace         : paritygame -> ((priority * player * nodeset * string option) ->
+					       (priority * player * nodeset * string option) -> int) ->
+				(player array * node array)
+ *)
+						 
+val sort_game_by_prio : paritygame -> (paritygame * node array * node array)

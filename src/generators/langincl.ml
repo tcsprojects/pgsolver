@@ -8,11 +8,13 @@ let even x = (x mod 2) = 0
 
 module LangInclGame = Build( 
   struct
-    type node = int * int
+    type gamenode = int * int
     let compare = compare
 
-    let owner _ = 1
+    let owner _ = plr_Odd
 
+    let initnodes _ = [ (0,0) ]
+		     
     let priority (u,v) = if even v then 2 else if u > 0 then 1 else 0
 
     let dettrans v a = 
@@ -32,7 +34,7 @@ module LangInclGame = Build(
         [(0, dettrans v (u - (!m-2) * !n))]
       else [(u + !n, dettrans v (u mod !n))]
 
-    let name (u,v) = Some ("(" ^ string_of_int u ^ "," ^ string_of_int v ^ ")")
+    let show_node (u,v) = Some ("(" ^ string_of_int u ^ "," ^ string_of_int v ^ ")")
   end);;
 
 let generator_game_func arguments = 
@@ -52,7 +54,7 @@ let generator_game_func arguments =
     m := int_of_string arguments.(1)  
   with Invalid_argument _ -> ());
 
-  LangInclGame.build_from_node (0,0)
+  LangInclGame.build () 
 
 
 

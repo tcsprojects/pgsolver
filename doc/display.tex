@@ -11,9 +11,9 @@ output. The format is the same as the input format described in the previous sec
 
 In order to display parity games graphically one needs the \texttt{graphviz} package, available for
 free from
-\begin{verbatim}
-    http://www.graphviz.org/
-\end{verbatim}
+\begin{quotation}
+    \url{http://www.graphviz.org/}
+\end{quotation}
 \pgsolver can create output in the \texttt{dot}-format which can be displayed using \texttt{dotty} from
 the \texttt{graphviz} package for example. The relevant command-line parameter is \texttt{-d} with
 a filename which tells \pgsolver to write the \texttt{dot} code into that file after solving the game.
@@ -29,7 +29,7 @@ Then, in order to view it, try
 \pgsolver can also display a game together with the winning information. This happens when you tell it
 to create \texttt{dot}-code for the game \emph{and} tell it to solve it.
 \begin{verbatim}
-    ~/proj/pgsolver> bin/pgsolver --recursive -d graph.dot tests/test1.gm
+    ~/proj/pgsolver> bin/pgsolver -global recursive -d graph.dot tests/test1.gm
 \end{verbatim}
 Again, the result can be viewed using
 \begin{verbatim}

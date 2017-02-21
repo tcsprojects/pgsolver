@@ -21,7 +21,7 @@ let _ =
 
   let in_channels = List.map open_in !input_files in
 
-  let games = List.map Paritygame.parse_parity_game in_channels in
+  let games = List.map Parsers.parse_parity_game in_channels in
 
   let game = Transformations.combine_games (List.rev games) in
 

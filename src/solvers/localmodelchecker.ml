@@ -14,44 +14,44 @@ let partially_solve (game: partial_paritygame) =
     let msg_tagged v = message_autotagged v (fun _ -> "MODELCHECKER") in
     (*let msg_plain = message in*)
 
-	let (start, delta, data, fmtnode') = game in
-	let fmtnode n = match fmtnode' n with None -> "[None]" | Some s -> s in
-	let defIndex = TreeSet.empty_def in
-
-	let counter = ref 0 in
-	let invalidSegments = (ref [], ref []) in
-
-	let nodes = Hashtbl.create 10 in
-
-	let getNodeInfo node =
-		if Hashtbl.mem nodes node
-		then Hashtbl.find nodes node
-		else (([], []), [], None)
-	in
-
-	let setNodeInfo node info =
-		if Hashtbl.mem nodes node
-		then Hashtbl.replace nodes node info
-		else Hashtbl.add nodes node info
-	in
-
-    let other p = 1 - p in
-    let prioWinner k = k mod 2 in
+    let (start, delta, data, fmtnode') = game in
+    let fmtnode n = match fmtnode' n with None -> "[None]" | Some s -> s in
+    let defIndex = TreeSet.empty_def in
+    
+    let counter = ref 0 in
+    let invalidSegments = (ref [], ref []) in
+    
+    let nodes = Hashtbl.create 10 in
+    
+    let getNodeInfo node =
+      if Hashtbl.mem nodes node
+      then Hashtbl.find nodes node
+      else (([], []), [], None)
+    in
+    
+    let setNodeInfo node info =
+      if Hashtbl.mem nodes node
+      then Hashtbl.replace nodes node info
+      else Hashtbl.add nodes node info
+    in
+    
+    let other = plr_opponent in
+    let prioWinner = plr_benefits in
 
 	let pairMember first (fir, sec) =
-		if first = 0 then fir else sec
+		if first = plr_Even then fir else sec
 	in
 
 	let addKnowledge ((node, index), b, m) =
 		let ((abDec, elDec), jus, occ) = getNodeInfo node in
 		let newBDecInfo = (!counter, index) in
-		let newDecInfo = if b = 1 then (abDec, newBDecInfo::elDec) else (newBDecInfo::abDec, elDec) in
+		let newDecInfo = if b = plr_Odd then (abDec, newBDecInfo::elDec) else (newBDecInfo::abDec, elDec) in
 			match m with
 			  None -> setNodeInfo node (newDecInfo, jus, occ)
 			| Some next -> setNodeInfo node (newDecInfo, next :: jus, occ)
 	in
 
-	let compatindex newidx oldidx b =
+	let compatindex newidx oldidx (b: player) =
 		if TreeSet.equal newidx oldidx then true
 		else let ((pr, _) as e) = TreeSet.max_elt (TreeSet.sym_diff newidx oldidx) in
 		     if TreeSet.mem e newidx
@@ -111,7 +111,7 @@ let partially_solve (game: partial_paritygame) =
 		ListUtils.format (fun s -> s) !l
 	in
 	
-    let isValid player no =
+    let isValid (player: player) no =
       if no = 0
       then true
       else
@@ -127,7 +127,7 @@ let partially_solve (game: partial_paritygame) =
 			setNodeInfo node (dec, List.tl jus, occ)
 	in
 
-	let rec lookAt ((node, index) as position) p w = function
+	let rec lookAt ((node, index) as position) (p: player) w = function
 		[] -> (false, [])
 	  | (((j,i)::t) as d) ->
 	  		if isValid p j
@@ -146,12 +146,12 @@ let partially_solve (game: partial_paritygame) =
 	let getKnowledge ((node, index) as position) =
 		let (_, chooser) = data node in
 		let ((abDec, elDec), _, _) = getNodeInfo node in
-		let (canUseAb, newAbDec) = lookAt position 0 chooser abDec in
+		let (canUseAb, newAbDec) = lookAt position plr_Even (chooser: player) abDec in
 		let (newDecs, result) =
 			if canUseAb
-			then ((newAbDec, elDec), Some(0))
-			else let (canUseEl, newElDec) = lookAt position 1 chooser elDec in
-				 ((newAbDec, newElDec), if canUseEl then Some(1) else None)
+			then ((newAbDec, elDec), Some(plr_Even))
+			else let (canUseEl, newElDec) = lookAt position plr_Odd chooser elDec in
+				 ((newAbDec, newElDec), if canUseEl then Some(plr_Odd) else None)
 		in (
 			setDecs node newDecs;
 			result
@@ -214,7 +214,7 @@ let partially_solve (game: partial_paritygame) =
 		in
 		let decs = ref [] in
 		Hashtbl.iter (fun node ((abDec, elDec), _, _) ->
-			let dec = process pl (if pl = 0 then abDec else elDec) in
+			let dec = process pl (if pl = plr_Even then abDec else elDec) in
 			if (dec != []) then (
 				decs := (fmtnode node ^ "->" ^ format dec)::!decs
 			)
@@ -241,8 +241,8 @@ let partially_solve (game: partial_paritygame) =
 		if !verbosity <= 2 then	msg_tagged 2 (fun _ -> "Counter #" ^ string_of_int !counter ^ "\r");
         msg_tagged 3 (fun _ -> "Explore " ^ format_position position ^ " at " ^ string_of_int !counter ^ "\n");
         msg_tagged 3 (fun _ -> "  Gamelist = " ^ format_game_list glist ^ "\n");
-        msg_tagged 3 (fun _ -> "  Decisions0 = " ^ format_decisions 0 ^ "\n");
-        msg_tagged 3 (fun _ -> "  Decisions1 = " ^ format_decisions 1 ^ "\n\n");
+        msg_tagged 3 (fun _ -> "  Decisions0 = " ^ format_decisions plr_Even ^ "\n");
+        msg_tagged 3 (fun _ -> "  Decisions1 = " ^ format_decisions plr_Odd ^ "\n\n");
 		(*
 		msg_plain 3 (fun _ -> "\n");
 		msg_tagged 3 (fun _ -> "Exploring " ^ string_of_int node ^ ": ");
@@ -280,10 +280,10 @@ let partially_solve (game: partial_paritygame) =
 			*)
     		chk (glist, node))
     	and chk (gameList, whereWeCameFrom) =
-	    	msg_tagged 3 (fun _ -> "Backtracking " ^ fmtnode whereWeCameFrom ^ " w.r.t. player " ^ string_of_int winner ^ " at " ^ string_of_int !counter^ "\n");
+	    	msg_tagged 3 (fun _ -> "Backtracking " ^ fmtnode whereWeCameFrom ^ " w.r.t. player " ^ string_of_int (if winner = plr_Even then 0 else 1) ^ " at " ^ string_of_int !counter^ "\n");
 	    	msg_tagged 3 (fun _ -> "  Gamelist = " ^ format_game_list gameList ^ "\n");
-	        msg_tagged 3 (fun _ -> "  Decisions0 = " ^ format_decisions 0 ^ "\n");
-	        msg_tagged 3 (fun _ -> "  Decisions1 = " ^ format_decisions 1 ^ "\n\n");
+	        msg_tagged 3 (fun _ -> "  Decisions0 = " ^ format_decisions plr_Even ^ "\n");
+	        msg_tagged 3 (fun _ -> "  Decisions1 = " ^ format_decisions plr_Odd ^ "\n\n");
 	    	match (gameList, whereWeCameFrom) with
     	    ([], whence) -> (
     	    	(*

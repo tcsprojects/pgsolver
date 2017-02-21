@@ -18,7 +18,7 @@ let _ =
 
 	let (in_channel,name) = if !input_file = "" then (stdin,"STDIN") else (open_in !input_file,!input_file) in
 
-	let game = parse_parity_game in_channel in
+	let game = Parsers.parse_parity_game in_channel in
 
 	let number_of_nodes = ref 0 in
 	let number_of_player0_nodes = ref 0 in
@@ -29,11 +29,11 @@ let _ =
 	let number_of_player0_edges = ref 0 in
 	let number_of_player1_edges = ref 0 in
 	
-	pg_iterate (fun _ -> fun (pr, pl, tr, _) ->
-		let trn = Array.length tr in
+	pg_iterate (fun _ -> fun (pr, pl, tr, _, _) ->
+		let trn = ns_size tr in
 		incr number_of_nodes;
 		number_of_edges := !number_of_edges + trn;
-		if pl = 0 then (
+		if pl = plr_Even then (
 			incr number_of_player0_nodes;
 			number_of_player0_edges := !number_of_player0_edges + trn
 		)

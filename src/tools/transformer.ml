@@ -44,7 +44,7 @@ let _ =
 
   let in_channel = if !input_file = "" then stdin else open_in !input_file in
 
-  let game = ref (Paritygame.parse_parity_game in_channel) in
+  let game = ref (Parsers.parse_parity_game in_channel) in
 
   List.iter (fun f ->
   	f game

@@ -13,35 +13,35 @@ module LocalSolver = struct
 	type 'a doubled = 'a * 'a
 	
 	type node_head =
-		(int *                                                (* index *)
-		 int *												  (* priority *)
-		 int)                                                 (* owning player *)
+		(node *                                                (* index *)
+		 priority *												  (* priority *)
+		 player)                                                 (* owning player *)
 
 	type 'a node_body =
-		Winning of 				int *                         (* player *)
-		           				int                           (* strategy *)
+		Winning of 				player *                         (* player *)
+		           				node                           (* strategy *)
 	|	Default of              (bool ref) doubled *          (* expanded w.r.t. players *)
-								(int TreeSet.t) ref *                (* all edges minus winning nodes *)
-	                            (int TreeSet.t) ref *                (* known edges for owning player *)
-	                            (int TreeSet.t) ref *                (* unknown edges for owning player *)
-	                            ((int TreeSet.t) ref) doubled *      (* back edges *)
+								(node TreeSet.t) ref *                (* all edges minus winning nodes *)
+	                            (node TreeSet.t) ref *                (* known edges for owning player *)
+	                            (node TreeSet.t) ref *                (* unknown edges for owning player *)
+	                            ((node TreeSet.t) ref) doubled *      (* back edges *)
 	                            'a doubled                    (* data *)
 	
-	type 'a node =
+	type 'a nodex =
 		node_head *
 		'a node_body
 	                            
 	type 'a state =
 		partial_paritygame *								  (* the game *)
-		((int, 'a node) TreeMap.t) ref *							  (* graph *)
-		((int TreeSet.t) ref) doubled *	     	        		  (* expansion sets *)
-		((int TreeSet.t) ref *                                       (* added nodes *)
-		 (int TreeSet.t) ref *                                       (* removed nodes *)
-		 (int TreeSet.t) ref) doubled *                              (* border nodes *)
-		(int -> int -> 'a)                                    (* init node map: pl -> v -> 'a *)
+		((node, 'a nodex) TreeMap.t) ref *							  (* graph *)
+		((node TreeSet.t) ref) doubled *	     	        		  (* expansion sets *)
+		((node TreeSet.t) ref *                                       (* added nodes *)
+		 (node TreeSet.t) ref *                                       (* removed nodes *)
+		 (node TreeSet.t) ref) doubled *                              (* border nodes *)
+		(player -> node -> 'a)                                    (* init node map: pl -> v -> 'a *)
 		
 	let _by_player player (x,y) =
-		if player = 0 then x else y
+		if player = plr_Even then x else y
 		
 	let format_state ((_,gr,exp,change,_): 'a state) (f: 'a -> string) =
 		let (exp0, exp1) = exp in
@@ -53,7 +53,7 @@ module LocalSolver = struct
 		TreeMap.iter (fun _ x ->
 			match x with
 				((idx,_,_), Winning (pl, str)) -> (
-					let s = if pl = 0 then win0 else win1 in
+					let s = if pl = plr_Even then win0 else win1 in
 					s := (if str < 0 then string_of_int idx else string_of_int idx ^ "->" ^ string_of_int str)::!s
 				)
 			|	((idx,_,_), Default (exp,_,_,_,_,(data0,data1))) -> (
@@ -79,7 +79,7 @@ module LocalSolver = struct
 		then let (pr, pl) = data v in
 		     let node = ((v, pr, pl), Default ((ref false, ref false), ref TreeSet.empty_def,
 		                  ref TreeSet.empty_def, ref TreeSet.empty_def, (ref TreeSet.empty_def, ref TreeSet.empty_def),
-		                  (init_node 0 v, init_node 1 v))) in
+		                  (init_node plr_Even v, init_node plr_Odd v))) in
 		     gr := TreeMap.add v node !gr
 		
 	let init_state ((start, _, _, _) as pg) init_node =
@@ -177,13 +177,13 @@ module LocalSolver = struct
 		let todo = ref TreeSet.empty_def in
 		TreeMap.iter (fun v _ -> todo := TreeSet.add v !todo) nodes_with_strat;
 		if not (TreeSet.is_empty !todo) then (
-			_dbg_msg_tagged 3 (fun _ -> "Winning " ^ TreeSet.format string_of_int !todo ^ " for player " ^ string_of_int player ^ "\n");
+			_dbg_msg_tagged 3 (fun _ -> "Winning " ^ TreeSet.format string_of_int !todo ^ " for player " ^ string_of_int (if player = plr_Even then 0 else 1) ^ "\n");
 			while not (TreeSet.is_empty !todo) do
 				let v = TreeSet.min_elt !todo in
 				todo := TreeSet.remove v !todo;
 				let (exp,all,known,unknown,back,_) = _get_def_node st v in
-				update_global_sets_remove_node v 0 !(fst exp);
-				update_global_sets_remove_node v 1 !(snd exp);
+				update_global_sets_remove_node v plr_Even !(fst exp);
+				update_global_sets_remove_node v plr_Odd !(snd exp);
 				TreeSet.iter (fun w ->
 					let (_,_,_,_,(backw0,backw1),_) = _get_def_node st w in
 					backw0 := TreeSet.remove v !backw0;
@@ -195,21 +195,21 @@ module LocalSolver = struct
 						let ((_,_,pl),(exp,all,known,unknown,_,_)) = _get_def_node_with_info st w in
 						let attractor_predicate =
 							(pl = player) ||
-							(!(_by_player (1-pl) exp) && TreeSet.for_all (fun u -> TreeMap.mem u !processed) !all) ||
+							(!(_by_player (plr_opponent pl) exp) && TreeSet.for_all (fun u -> TreeMap.mem u !processed) !all) ||
 							(!(_by_player pl exp) && TreeSet.for_all (fun u -> TreeMap.mem u !processed) !known && TreeSet.is_empty !unknown)
 						in
 						if attractor_predicate && not (TreeMap.mem w forbidden) then (
 							todo := TreeSet.add w !todo;
 							processed := TreeMap.add w (if pl = player then v else -1) !processed;
-							_dbg_msg_tagged 3 (fun _ -> "Node " ^ string_of_int w ^ " owned by player " ^ string_of_int pl ^ " lies in the attractor.\n")
+							_dbg_msg_tagged 3 (fun _ -> "Node " ^ string_of_int w ^ " owned by player " ^ string_of_int (if pl = plr_Even then 0 else 1) ^ " lies in the attractor.\n")
 						)
 						else (
 							if !(fst exp) then (
-								let (_,_,border) = _by_player 0 changesets in
+								let (_,_,border) = _by_player plr_Even changesets in
 							    border := TreeSet.add w !border
 							);
 							if !(snd exp) then (
-								let (_,_,border) = _by_player 1 changesets in
+								let (_,_,border) = _by_player plr_Odd changesets in
 							    border := TreeSet.add w !border
 							);
 							all := TreeSet.remove v !all;
@@ -233,13 +233,13 @@ module LocalSolver = struct
 		let expset = _by_player player expset in
 		let (addedset,removedset,borderset) = _by_player player changesets in
 		let (_,delta,_,_) = pg in
-		_dbg_msg_tagged 3 (fun _ -> "Expand " ^ TreeSet.format string_of_int nodes ^ " for player " ^ string_of_int player ^ "\n");
+		_dbg_msg_tagged 3 (fun _ -> "Expand " ^ TreeSet.format string_of_int nodes ^ " for player " ^ string_of_int (if player = plr_Even then 0 else 1) ^ "\n");
 		let winning_maps = (ref TreeMap.empty_def, ref TreeMap.empty_def) in
 		let nodes = ref nodes in
 		while not (TreeSet.is_empty !nodes) do
 			let v = TreeSet.min_elt !nodes in
 			nodes := TreeSet.remove v !nodes;
-			_dbg_msg_tagged 3 (fun _ -> "Subexpand " ^ string_of_int v ^ " for player " ^ string_of_int player ^ "\n");
+			_dbg_msg_tagged 3 (fun _ -> "Subexpand " ^ string_of_int v ^ " for player " ^ string_of_int (if player = plr_Even then 0 else 1) ^ "\n");
 			let ((_,_,pl),(exp,all,known,unknown,back,_)) = _get_def_node_with_info st v in
 			let exp = _by_player player exp in
 			if !exp then failwith "already expanded";
@@ -281,27 +281,27 @@ module LocalSolver = struct
 					)
 			) (Enumerators.to_list (delta v));
 			let w = !(_by_player pl winning_node) in
-			let w' = !(_by_player (1-pl) winning_node) in
+			let w' = !(_by_player (plr_opponent pl) winning_node) in
 			if w != -1 then (
 				let win_map = _by_player pl winning_maps in
 			    win_map := TreeMap.add v w !win_map;
-			    _dbg_msg_tagged 3 (fun _ -> "Node " ^ string_of_int v ^ " is won by player " ^ string_of_int pl ^ " by moving to " ^ string_of_int w ^ "\n")
+			    _dbg_msg_tagged 3 (fun _ -> "Node " ^ string_of_int v ^ " is won by player " ^ string_of_int (if pl = plr_Even then 0 else 1) ^ " by moving to " ^ string_of_int w ^ "\n")
 			)
 			else if (w' != -1) &&
 			        ((pl = player && TreeSet.is_empty !known && TreeSet.is_empty !unknown) ||
 				     (pl != player && TreeSet.is_empty !all)) then (
-				let win_map = _by_player (1-pl) winning_maps in
+				let win_map = _by_player (plr_opponent pl) winning_maps in
 			    win_map := TreeMap.add v (-1) !win_map;
-			    _dbg_msg_tagged 3 (fun _ -> "Node " ^ string_of_int v ^ " is won by player " ^ string_of_int (1-pl) ^ " because all successors are won by the same player.\n")
+			    _dbg_msg_tagged 3 (fun _ -> "Node " ^ string_of_int v ^ " is won by player " ^ string_of_int (if pl = plr_Odd then 0 else 1) ^ " because all successors are won by the same player.\n")
 			)
 		done;
 		if not (TreeMap.is_empty !(fst winning_maps)) then (
 			_dbg_msg_tagged 3 (fun _ -> "Performing winning-by-expansion for player 0.\n");
-			winning' st 0 !(fst winning_maps) !(snd winning_maps)
+			winning' st plr_Even !(fst winning_maps) !(snd winning_maps)
 		);
 		if not (TreeMap.is_empty !(snd winning_maps)) then (
 			_dbg_msg_tagged 3 (fun _ -> "Performing winning-by-expansion for player 1.\n");
-			winning st 1 !(snd winning_maps)
+			winning st plr_Odd !(snd winning_maps)
 		)
 		
 	let iterate_nodes (_,gr,_,_,_) pl f =
@@ -324,16 +324,16 @@ module StrategyImprovement = struct
 	|	Bottom of (int TreeSet.t) * (int * int) TreeSet.t
 
 	type node_data =
-		int ref *          						(* Strategy *)
+		node ref *          						(* Strategy *)
 		valuation ref      						(* Valuation *)
 
 	type state =
 		node_data LocalSolver.state *			(* Local Solver State *)
-		((int TreeSet.t) ref) doubled *				(* Nodes to be improved *)
-		((int TreeSet.t) ref) doubled                  (* Nodes to be evaluated *)
+		((node TreeSet.t) ref) doubled *				(* Nodes to be improved *)
+		((node TreeSet.t) ref) doubled                  (* Nodes to be evaluated *)
 		
 	let _by_player player (x,y) =
-		if player = 0 then x else y
+		if player = plr_Even then x else y
 		
 	let _dbg_msg_tagged v = message_autotagged v (fun _ -> "LOCALSTRATIMPR")
 	let _dbg_msg_plain = message
@@ -385,8 +385,8 @@ module StrategyImprovement = struct
 				if TreeSet.equal t t' then 0
 				else let ((pr, _) as e) = TreeSet.max_elt (TreeSet.sym_diff t t') in
 				     if TreeSet.mem e t
-				     then if pr mod 2 = pl then 1 else -1
-				     else if pr mod 2 = pl then -1 else 1
+				     then if plr_benefits pr = pl then 1 else -1
+				     else if plr_benefits pr = pl then -1 else 1
 			)
 	
 	let _equal_valuation valu valu' =
@@ -399,7 +399,7 @@ module StrategyImprovement = struct
 	   - the t-b-e set contain all new nodes, all border nodes and no removed nodes
 	   - the imp set contain no removed nodes *)
 	let process_change_set ((state, imp, eva) as st) pl =
-		_dbg_msg_tagged 3 (fun _ -> "Processing Change Sets for player " ^ string_of_int pl ^ ".\n");
+		_dbg_msg_tagged 3 (fun _ -> "Processing Change Sets for player " ^ string_of_int (if pl = plr_Even then 0 else 1) ^ ".\n");
 		let imp = _by_player pl imp in
 		let eva = _by_player pl eva in
 		let rem = LocalSolver.pop_removed_nodes state pl in
@@ -416,13 +416,13 @@ module StrategyImprovement = struct
 		) bor
 	
 	let process_change_sets state =
-		process_change_set state 0;
-		process_change_set state 1
+		process_change_set state plr_Even;
+		process_change_set state plr_Odd
 
 	(* Sets the improvement edge, removes the node from the set of improvable nodes,
 	   adds the node to the to-be-evaluated set and updates the respective strategy *)
 	let improve (state, imp, eva) pl edges =
-		_dbg_msg_tagged 3 (fun _ -> "Improve edges " ^ TreeSet.format (fun (x,y) -> "(" ^ string_of_int x ^ "," ^ string_of_int y ^ ")") edges ^ " for player " ^ string_of_int pl ^ ".\n");
+		_dbg_msg_tagged 3 (fun _ -> "Improve edges " ^ TreeSet.format (fun (x,y) -> "(" ^ string_of_int x ^ "," ^ string_of_int y ^ ")") edges ^ " for player " ^ string_of_int (if pl = plr_Even then 0 else 1) ^ ".\n");
 		let imp = _by_player pl imp in
 		let eva = _by_player pl eva in
 		TreeSet.iter (fun (i,j) ->
@@ -440,7 +440,7 @@ module StrategyImprovement = struct
 		let todo = ref !eva in
 		eva := TreeSet.empty_def;
 		if not (TreeSet.is_empty !todo) then (
-			_dbg_msg_tagged 3 (fun _ -> "Evalute nodes " ^ TreeSet.format string_of_int !todo ^ " for player " ^ string_of_int pl ^ "\n");
+			_dbg_msg_tagged 3 (fun _ -> "Evalute nodes " ^ TreeSet.format string_of_int !todo ^ " for player " ^ string_of_int (if pl = plr_Even then 0 else 1) ^ "\n");
 			let changedval = ref TreeSet.empty_def in
 			while not (TreeSet.is_empty !todo) do
 				let v = TreeSet.min_elt !todo in
@@ -529,17 +529,17 @@ module StrategyImprovement = struct
 			in
 			mp := TreeMap.add v strat !mp
 		);
-		LocalSolver.winning state (1-pl) !mp
+		LocalSolver.winning state (plr_opponent pl) !mp
 	
 end;;
 
 module StrategyImprovementMain = struct
 
-	type switch_players_policy = StrategyImprovement.state -> int -> int (* data -> current player -> next player *)
+	type switch_players_policy = StrategyImprovement.state -> player -> player (* data -> current player -> next player *)
 	
-	type improvement_policy = StrategyImprovement.state -> int -> (int * int) TreeSet.t (* data -> player -> (node, succ) set *)
+	type improvement_policy = StrategyImprovement.state -> player -> (node * node) TreeSet.t (* data -> player -> (node, succ) set *)
 	
-	type expansion_policy = StrategyImprovement.state -> int -> (int TreeSet.t) (* data -> player -> new nodes *)
+	type expansion_policy = StrategyImprovement.state -> player -> (node TreeSet.t) (* data -> player -> new nodes *)
 	
 	let _dbg_msg_tagged v = message_autotagged v (fun _ -> "LOCALSTRATIMPRMAIN")
 	let _dbg_msg_tagged_nl v = message_autotagged_newline v (fun _ -> "LOCALSTRATIMPRMAIN")
@@ -552,13 +552,13 @@ module StrategyImprovementMain = struct
 	                 
 	    let state = StrategyImprovement.init_state pg in
 	    let state' = StrategyImprovement.get_local_solver_state state in
-	    let current_player = ref (switch_pol state (-1)) in
+	    let current_player = ref (switch_pol state plr_Odd) in
 	    let iteration = ref 0 in
 		let (start,_,_,_) = pg in
 	    
 		while not (LocalSolver.is_solved state' start) do
 			incr iteration;
-			_dbg_msg_tagged 3 (fun _ -> "Iteration " ^ string_of_int !iteration ^ " with current player " ^ string_of_int !current_player ^ "\n");
+			_dbg_msg_tagged 3 (fun _ -> "Iteration " ^ string_of_int !iteration ^ " with current player " ^ string_of_int (if !current_player = plr_Even then 0 else 1) ^ "\n");
 			_dbg_msg_tagged_nl 3 (fun _ -> StrategyImprovement.format_state state);
 			let imp = StrategyImprovement.get_improvement_set state !current_player in
 			let exp = LocalSolver.get_expansion_set state' !current_player in
@@ -582,17 +582,17 @@ module StrategyImprovementMain = struct
 				let changed1 = ref true in
 				while !changed0 || !changed1 do
 					changed0 := false;
-					let win0 = StrategyImprovement.evaluate state 0 in
+					let win0 = StrategyImprovement.evaluate state plr_Even in
 					if not (TreeMap.is_empty win0) then (
 						changed0 := true;
-						LocalSolver.winning state' 0 win0;
+						LocalSolver.winning state' plr_Even win0;
 						StrategyImprovement.process_change_sets state
 					);
 					changed1 := false;
-					let win1 = StrategyImprovement.evaluate state 1 in
+					let win1 = StrategyImprovement.evaluate state plr_Odd in
 					if not (TreeMap.is_empty win1) then (
 						changed1 := true;
-						LocalSolver.winning state' 1 win1;
+						LocalSolver.winning state' plr_Odd win1;
 						StrategyImprovement.process_change_sets state
 					);
 				done;
@@ -605,14 +605,13 @@ module StrategyImprovementMain = struct
 	 		let (win, strat) = LocalSolver.get_solved state' i in
 			if strat = -1 then (win, None) else (win, Some strat)
 	 	with
-	 		Not_found -> (-1, None)
+	 		Not_found -> (plr_Even, None)
 	in
 	
 	sol
 
 
-	let default_switch_players _ pl =
-		if pl < 0 then 0 else 1 - pl
+	let default_switch_players _ = plr_opponent
 	
 	let default_expansion_policy st pl =
 		let st' = StrategyImprovement.get_local_solver_state st in

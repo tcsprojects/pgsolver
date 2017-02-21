@@ -1,13 +1,133 @@
 open Tcsset ;;
 open Paritygame ;;
-
+open Mucalculus ;;
+  
 let rec range i j = if j >= i then i :: (range (i+1) j) else []
 
-type elevator = { position: int;
-                  dooropen: bool;
-                  requests: int list }
+let rec insert x = function []    -> [x]
+                          | y::ys -> if x=y then y::ys else y::(insert x ys)
 
 let storeys = ref 0
+
+(* fair means that any new request will be added to the end of the list (FIFO),
+   whereas unfair means that it will be added to the beginning (LIFO) *)
+let fair = ref true
+
+		
+module ElevatorProblem = 
+  struct
+    type state = { position: int;
+                   dooropen: bool;
+                   requests: int list }
+			   
+    type proposition = IsAt of int
+		     | IsPressed of int
+
+    let show_proposition = function IsAt(i) -> "at_" ^ string_of_int i
+				  | IsPressed(i) -> "pressed_" ^ string_of_int i
+									       
+    type action = Step
+    let actions _ = [ Step ]
+    let show_action = function Step -> "*"
+					 
+    let successors el _ = 
+      (* any button could be pressed or no requests could come in *)
+      let els = el::(List.map (fun i -> { position = el.position; 
+					  dooropen = el.dooropen; 
+					  requests = if !fair 
+                                                     then insert i el.requests
+                                                     else i::(List.filter (fun j -> j<>i) el.requests)}) 
+			      (range 0 (!storeys-1)))
+      in
+      
+      (* for each possibility decide in which direction to go *)
+      TreeSet.remove_list_dups (List.map (fun el -> if el.requests <> [] && not el.dooropen then
+						      begin
+							let r = List.hd el.requests in
+							let delta = compare r el.position in
+							let newposition = el.position + delta in
+							{ position = newposition;
+							  dooropen = (newposition=r);
+							  requests = if newposition=r then List.tl el.requests else el.requests }
+						      end
+						    else
+						      { position = el.position;
+							dooropen = false;
+							requests = el.requests })
+					 els)
+
+    let initstate _ = {position = 0; dooropen = false; requests = []}
+
+
+    let show_state el = "[" ^ (String.make el.position '.') ^ (if el.dooropen then "O" else "X") ^ 
+			  (String.make (!storeys - el.position - 1) '.') ^ "] " ^
+			    String.concat "," (List.map string_of_int el.requests)
+
+    let labels el = function IsAt(i)      -> el.position = i
+			   | IsPressed(i) -> List.mem i el.requests 		   
+
+    (* 
+     CTL* formula:    A(GF isPressed(i) -> GF isAt(i)) == -E(GF isPressed(i) /\ FG -isAT(i))
+     in mu-calculus:  nu X.mu Y.nu Z.[]X /\ (isAt(i) \/ ([]Z /\ (-isPressed(i) \/ []Y)))  
+     *)
+
+    let property _ = Nu("X", Mu("Y", Nu("Z", Conj[ Box(None,Var("X"));
+  					           Disj[ Prop(IsAt(!storeys - 1));
+							 Conj[ Box(None,Var("Z"));
+						               Disj[ Neg(Prop(IsPressed(!storeys - 1))); 
+								     Box(None,Var("Y"))] ] ] ])))
+
+
+		     
+  end;;
+
+module EVGame = Make(ElevatorProblem);;
+		   
+
+let elevator_verification_func arguments = 
+
+  let show_help _ =
+    print_string (Info.get_title "Elevator Verification Game Generator");
+    print_string ("Usage: elevatorverificationgame [-u] n \n\n" ^
+		  "       where n = Number of storeys that the elevator serves (>= 1)\n" ^
+                  "             the optional argument -u causes the elevator to be unfair " ^
+                  "(and thus not have the desired property\n\n")
+  in
+  if (Array.length arguments > 2 || Array.length arguments < 1) then (show_help (); exit 1);
+
+  (try
+    if arguments.(0) = "-u" then
+      begin
+        fair := false;
+        storeys := int_of_string arguments.(1)
+      end
+    else
+      storeys := int_of_string arguments.(0)
+  with _ -> (show_help (); exit 1));
+
+  EVGame.build ()
+
+
+let _ = Generators.register_generator elevator_verification_func "elevatorvergm" "Elevator Verification Game";;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*  
+let rec range i j = if j >= i then i :: (range (i+1) j) else []
 
 let show_state el = "[" ^ (String.make el.position '.') ^ (if el.dooropen then "O" else "X") ^ 
                     (String.make (!storeys - el.position - 1) '.') ^ "] " ^
@@ -51,10 +171,6 @@ let isPressed i el = List.mem i el.requests
 let isAt i el = (i = el.position)
 
 
-type formulaType = FP of int * int             (* fixpoint formula with priority and next subformula *)
-                 | BOOL of int * int * int     (* con-/disjunction with player and left and right subformula *)
-                 | MOD of int * int            (* modality with player and next subformula *)
-                 | PROP of (elevator -> bool)  (* proposition with function that evaluates it in a state *)
 
 
 (* CTL* formula:    AG(EGF isPressed(i) -> EGF isAt(i))
@@ -122,16 +238,16 @@ let formula i = [| FP(0,1);
 *)
 
 let formula i = [| FP(2,1);
-                   BOOL(1,2,3);
-                   MOD(1,0);
-                   BOOL(0,4,5);
+                   BOOL(plr_Odd,2,3);
+                   MOD(plr_Odd,0);
+                   BOOL(plr_Even,4,5);
                    PROP(isAt i);
-                   BOOL(1,6,8);
-                   MOD(1,7);
+                   BOOL(plr_Odd,6,8);
+                   MOD(plr_Odd,7);
                    FP(0,1);
-                   BOOL(0,9,10);
+                   BOOL(plr_Even,9,10);
                    PROP(fun el -> not (isPressed i el));
-                   MOD(1,11);
+                   MOD(plr_Odd,11);
                    FP(1,1) |]
 
 
@@ -212,24 +328,30 @@ let elevator_verification_func arguments =
     begin
       match formula.(f) with
             FP(p,g) -> let v = encode el g in
-                       finished := (i, (p,0,[|v|],show_conf el f)) :: !finished;
+                       finished := (i, (p,plr_Even,[v],show_conf el f)) :: !finished;
                        todo := (el,g,v) :: !todo 
           | BOOL(pl,g,h) -> let v = encode el g in
                             let w = encode el h in
-                            finished := (i, (0,pl,[|v;w|],show_conf el f)) :: !finished;
+                            finished := (i, (0,pl,[v;w],show_conf el f)) :: !finished;
                             todo := (el,g,v) :: (el,h,w) :: !todo
           | MOD(pl,g) -> let nextnodes = List.map (fun el -> (el, g, encode el g)) (successors el) in
-                         let nextnodes_coded = Array.of_list (List.map (fun (_,_,v) -> v) nextnodes) in
+                         let nextnodes_coded = List.map (fun (_,_,v) -> v) nextnodes in
                          finished := (i, (0,pl,nextnodes_coded, show_conf el f)) :: !finished;
                          todo := nextnodes @ !todo
-          | PROP(p) -> finished := (i, ((if p el then 0 else 1), 0, [|i|], show_conf el f)) :: !finished
+          | PROP(p) -> finished := (i, ((if p el then 0 else 1), plr_Even, [i], show_conf el f)) :: !finished
     end;
     visited.(i) <- true
   done;
   
   let game = pg_create !index in
-  List.iter (fun (i, (p,pl,succs,name)) -> pg_set_node game i p pl succs (Some name)) !finished;
+  List.iter (fun (i, (p,pl,succs,name)) -> pg_set_priority game i p;
+					   pg_set_owner game i pl;
+					   pg_set_desc game i (Some name);
+					   List.iter (fun w -> pg_add_edge game i w) succs
+	    )
+	    !finished;
   game
   
 
 let _ = Generators.register_generator elevator_verification_func "elevatorvergm" "Elevator Verification Game";;
+ *)

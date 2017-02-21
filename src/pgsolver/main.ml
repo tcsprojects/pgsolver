@@ -5,22 +5,28 @@ open Arg ;;
 open Tcstiming;;
 open Paritygame ;;
 open Verification ;;
+
+open Generatedsat;;
+
 open Univsolve ;;
 open Solvers ;;
 open Generators ;;
+open Generatorlist ;;
 open Whoiswho ;;
+open Solverlist;;
+
 
 module CommandLine =
 struct
   type solver = NoSolver
               | YesSolver of string * global_solver_factory
-			  | LocalSolver of string * partial_solver_factory
+	      | LocalSolver of string * partial_solver_factory
 
   type generator = NoGenerator
                  | YesGenerator of string * (string array -> paritygame)
 
   type verifier = NoVerifier
-  				| YesVerifier of (paritygame -> solution -> strategy -> (int list * string) option)
+  		| YesVerifier of (paritygame -> solution -> strategy -> (node list * string) option)
 
   let solver = ref NoSolver
   
@@ -85,7 +91,7 @@ struct
                    (["--printsolvedgame"; "-pg"], Unit(fun _ -> format_game := true),
                       "\n     outputs the solved (!) game on STDOUT");
                    (["--parsesolution"; "-ps"], String(fun s -> parse_sol := s; solving := false),
-                      "\n     parses the solution to the game from FILE");
+                      "<filename>\n     parses the solution to the game from FILE");
                    (["--justheatCPU"; "-jh"], Unit(fun _ -> print_strategies := false),
                       "\n     suppress the printing of the strategies and the winning regions");
 (*                   (["--sanitycheck"; "-sc"], Unit(fun _ -> perform_sanity_check := true),
@@ -188,14 +194,13 @@ let _ =
 	  message 1 (fun _ -> "Parsing ............................... ");
 	  let timobj = SimpleTiming.init true in
 (*	  let game = Parserhelper.parse_from_channel in_channel !perform_sanity_check in *)
-	  let game = (
-		match !solver with
-			LocalSolver _ ->
-				let (init, g) = Tcsgameparser.parse_explicit_initpg in_channel in
-				initnode := init;
-				pg_init (Array.length g) (fun i -> let (a,b,c,d) = g.(i) in  (a,b,c,(if d = "" then None else Some d)))
-		|	_ -> parse_parity_game in_channel
-	  )in
+	  let game = (match !solver with
+			LocalSolver _ -> let (init, g) = Parsers.parse_init_parity_game in_channel in
+					 initnode := init;
+					 g
+		      | _             -> Parsers.parse_parity_game in_channel
+		     )
+	  in
 	  SimpleTiming.stop timobj;
 	  message 1 (fun _ -> (SimpleTiming.format timobj) ^ "\n");
 	  game
@@ -226,7 +231,7 @@ let _ =
 								  " solved this game in " ^
 								  Printf.sprintf "%.2f" (Random.float 10.0) ^ " sec.\n");
 		message 1 (fun _ -> "Visited " ^ string_of_int !c ^ " nodes.\n");
-		message 1 (fun _ -> "Winner of initial node is player " ^ string_of_int (fst (result !initnode)) ^ "\n\n")
+		message 1 (fun _ -> "Winner of initial node is player " ^ string_of_int (if fst (result !initnode) = plr_Even then 0 else 1) ^ "\n\n")
 	)
   | _ -> (
 	  let (solution,strategy) =
@@ -236,7 +241,7 @@ let _ =
 										 ([||],[||])
 									 )
 									 else (
-										Tcsgameparser.parse_explicit_parity_solution (open_in !parse_sol)
+										Parsers.parse_solution (open_in !parse_sol)
 									 )
 			| YesSolver(id,solve) -> message 1 (fun _ -> "Chosen solver `" ^ id ^ "' " ^
 												String.make (22 - (String.length id)) '.' ^ " ");
@@ -256,35 +261,33 @@ let _ =
 	  let win1 = ref [] in
 	  let str0 = ref [] in
 	  let str1 = ref [] in
-	  let l = Array.length solution in
-	  for i=1 to l do
-		let j = l-i in
-		let pl = pg_get_pl game j in
-		if solution.(j) = 0
-		then (win0 := j :: !win0;
-			  let k = strategy.(j) in
-			  if pl=0 then str0 := (string_of_int j ^ "->" ^ string_of_int k) :: !str0);
-		if solution.(j) = 1
-		then (win1 := j :: !win1;
-			  let k = strategy.(j) in
-			  if pl=1 then str1 := (string_of_int j ^ "->" ^ string_of_int k) :: !str1)
-	  done;
+	  sol_iter (fun j -> fun pl -> let ow = pg_get_owner game j in
+				       if pl = plr_Even then
+					 (win0 := j :: !win0;
+					  if ow=plr_Even then let k = str_get strategy j in
+							      str0 := (nd_show j ^ "->" ^ nd_show k) :: !str0)
+				       else if pl= plr_Odd then
+					 (win1 := j :: !win1;
+					  if ow=plr_Odd then let k = str_get strategy j in
+							     str1 := (nd_show j ^ "->" ^ nd_show k) :: !str1)
+		   ) solution;
+
 	  if (!print_strategies) then (
 		  let first = ref false in
 		  message 1 (fun _ -> "\nPlayer 0 wins from nodes:\n  ");
 		  message 1 (fun _ -> "{");
 		  first := true;
-		  List.iter (fun i -> message 1 (fun _ -> (if !first then "" else ", ") ^ string_of_int i); first := false) !win0;
+		  List.iter (fun i -> message 1 (fun _ -> (if !first then "" else ", ") ^ nd_show i); first := false) !win0;
 		  message 1 (fun _ -> "}\n");
 		  message 1 (fun _ -> "with strategy\n  ");
-		  message 1 (fun _ -> "[" ^ String.concat "," !str0 ^ "]\n\n");
+		  message 1 (fun _ -> "[" ^ String.concat "," (List.rev !str0) ^ "]\n\n");
 		  message 1 (fun _ -> "Player 1 wins from nodes:\n  ");
 		  message 1 (fun _ -> "{");
 		  first := true;
-		  List.iter (fun i -> message 1 (fun _ -> (if !first then "" else ", ") ^ string_of_int i); first := false) !win1;
+		  List.iter (fun i -> message 1 (fun _ -> (if !first then "" else ", ") ^ nd_show i); first := false) !win1;
 		  message 1 (fun _ -> "}\n");
 		  message 1 (fun _ -> "with strategy\n  ");
-		  message 1 (fun _ -> "[" ^ String.concat "," !str1 ^ "]\n");
+		  message 1 (fun _ -> "[" ^ String.concat "," (List.rev !str1) ^ "]\n");
 	  );
 
 	  if !make_dotty_graph then Paritygame.to_dotty_file game solution strategy !dotty_file;
@@ -307,7 +310,7 @@ let _ =
 					message 1 (fun _ -> (SimpleTiming.format timobj) ^ " - " ^
 					"INVALID solution and/or strategy!\n" ^
 					"Reason: " ^ err ^ "\n" ^
-					"Trace:  " ^ (List.fold_left (fun s i -> s ^ "->" ^ (string_of_int i)) "" trace) ^ "\n\n"
+					"Trace:  " ^ (List.fold_left (fun s i -> s ^ "->" ^ nd_show i) "" trace) ^ "\n\n"
 				);
 				exit 1)
 		)

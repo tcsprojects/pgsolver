@@ -1,6 +1,21 @@
 open Paritygame
 open Mdp
 
+module SymbolicParityGame : sig
+
+	type 'a symbolic_paritygame
+
+	val create_new: 'a -> 'a symbolic_paritygame
+
+	val to_paritygame: 'a symbolic_paritygame -> paritygame
+
+  val touch_node: 'a symbolic_paritygame -> 'a -> unit
+   
+	val add_node: 'a symbolic_paritygame -> 'a -> priority -> player -> 'a array -> string option -> unit
+
+end
+
+
 type strat_impr_gen_args = string array
 
 type strat_impr_gen = {

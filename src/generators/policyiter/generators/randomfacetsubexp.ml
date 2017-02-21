@@ -93,41 +93,41 @@ let generator_game_func arguments =
 	let rec make_tree = function
 		[] -> failwith "impossible"
 	|	[x] -> x
-	|	[x;y] -> addhelper 3 0 [x;y]
+	|	[x;y] -> addhelper 3 plr_Even [x;y]
 	|	li -> let (left, right) = divide li in
-	          addhelper 3 0 [make_tree left; make_tree right]
+	          addhelper 3 plr_Even [make_tree left; make_tree right]
 	in
 	
-	addnode FinalCycle 1 1 [FinalCycle];
-	addnode FinalSink (6 + 2 * n) 1 [FinalCycle];
+	addnode FinalCycle 1 plr_Odd [FinalCycle];
+	addnode FinalSink (6 + 2 * n) plr_Odd [FinalCycle];
 
 	for i = 0 to n - 1 do		
-		addnode (CycleCenter i) 2 1 (UpperNode i::(mkli cd (fun j -> CycleNode (i, j))));
+		addnode (CycleCenter i) 2 plr_Odd (UpperNode i::(mkli cd (fun j -> CycleNode (i, j))));
 		
 		if i = n - 1 then (
-			addnode (UpperNode i) (6 + 2 * i) 0 [FinalSink];
+			addnode (UpperNode i) (6 + 2 * i) plr_Even [FinalSink];
 		) else if not !binary_uplink_nodes then (
-			addnode (UpperNode i) (6 + 2 * i) 0 (List.flatten (mkli m (fun k -> mkli r (fun s -> AccessEntry (i+1,k,s)))));
+			addnode (UpperNode i) (6 + 2 * i) plr_Even (List.flatten (mkli m (fun k -> mkli r (fun s -> AccessEntry (i+1,k,s)))));
 		) else (
-			addnode (UpperNode i) (6 + 2 * i) 0 [make_tree (mkli r (fun s -> make_tree (mkli m (fun k -> AccessEntry (i+1,k,s)))))];
+			addnode (UpperNode i) (6 + 2 * i) plr_Even [make_tree (mkli r (fun s -> make_tree (mkli m (fun k -> AccessEntry (i+1,k,s)))))];
 		);
 		
 		for j = 0 to cd - 1 do
-            addnode (CycleNode (i,j)) 0 0 (FinalSink::CycleCenter i::mkli r_cd (fun s -> LaneEntry (i,s)))
+            addnode (CycleNode (i,j)) 0 plr_Even (FinalSink::CycleCenter i::mkli r_cd (fun s -> LaneEntry (i,s)))
 		done;
 		for k = 0 to m - 1 do
-			addnode (AccessCenter (i,k)) 2 1 (CycleEntry (i,0)::(mkli d (fun j -> AccessNode (i,k,j))));
+			addnode (AccessCenter (i,k)) 2 plr_Odd (CycleEntry (i,0)::(mkli d (fun j -> AccessNode (i,k,j))));
 			for j = 0 to d - 1 do
-	            addnode (AccessNode (i,k,j)) 0 0 (FinalSink::AccessCenter (i,k)::mkli r_d (fun s -> LaneEntryAccess (i,s)))
+	            addnode (AccessNode (i,k,j)) 0 plr_Even (FinalSink::AccessCenter (i,k)::mkli r_d (fun s -> LaneEntryAccess (i,s)))
 			done;
 			for s = 0 to r - 1 do
-				addnode (AccessEntry (i,k,s)) 0 1 [AccessCenter (i,k)]
+				addnode (AccessEntry (i,k,s)) 0 plr_Odd [AccessCenter (i,k)]
 			done
 		done;		
 		for s = 0 to r - 1 do
-			addnode (LaneEntry (i,s)) 0 1 [if i = n - 1 then FinalSink else CycleNode (i+1,0)];
-			addnode (LaneEntryAccess (i,s)) 4 1 [if i = n - 1 then FinalSink else CycleNode (i+1,0)];
-			addnode (CycleEntry (i,s)) 2 1 [CycleCenter i];
+			addnode (LaneEntry (i,s)) 0 plr_Odd [if i = n - 1 then FinalSink else CycleNode (i+1,0)];
+			addnode (LaneEntryAccess (i,s)) 4 plr_Odd [if i = n - 1 then FinalSink else CycleNode (i+1,0)];
+			addnode (CycleEntry (i,s)) 2 plr_Odd [CycleCenter i];
 		done;
 	done;
 
@@ -136,7 +136,7 @@ let generator_game_func arguments =
 
 let generator_mdp_func arguments =
 	let game = generator_game_func arguments in
-	parity_game_to_generalized_mdp game 4 (fun _ j -> pg_get_pr game j >= 2);;
+	parity_game_to_generalized_mdp game 4 (fun _ j -> pg_get_priority game j >= 2);;
 
 
 register_strat_impr_gen {

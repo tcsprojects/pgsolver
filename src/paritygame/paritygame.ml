@@ -5,36 +5,206 @@ open Tcsset;;
 open Tcsgraph;;
 
 
+(**************************************************************
+ * nodes in a parity game                                     *
+ **************************************************************)		    
 
+type node = int
+let nd_undef = -1
+let nd_make v = v
+let nd_reveal v = v		  
+
+let nd_show = string_of_int
+		
+(**************************************************************
+ * access functions for nodes in set-like data structures for *
+ * successors and predecessors in a game                      *
+ *                                                            *
+ * here: sorted lists                                         *
+ **************************************************************)
+
+type nodeset = node list
+  
+let ns_isEmpty ws = ws = []
+let ns_empty = []
+let ns_elem = List.mem
+let ns_fold = List.fold_left
+let ns_iter = List.iter
+let ns_filter = List.filter
+let ns_map f = ns_fold (fun ns v -> let u = f v in if not (ns_elem u ns) then u::ns else ns) [] 
+let ns_size = List.length
+let ns_exists = List.exists
+let ns_forall = List.for_all
+let ns_first = List.hd
+let rec ns_last = function []    -> failwith "Paritygame.ns_last: cannot extract node from empty node set"
+			 | [u]   -> u
+			 | _::us -> ns_last us
+let ns_some ws =
+  let n = List.length ws in
+  let i = Random.int n in
+  List.nth ws i
+	   
+let ns_add v vs =
+  let rec add = function []    -> [v]
+		       | w::ws -> (match compare v w with
+				     -1 -> v::w::ws
+				   | 0  -> w::ws
+				   | 1  -> w::(add ws)
+				   | _  -> failwith "Paritygame.ns_add: unexpected return value of function `compare´")
+  in
+  add vs
+
+let ns_del v vs =
+  let rec del = function []    -> []
+		       | w::ws -> (match compare v w with
+				     -1 -> w::ws
+				   | 0  -> ws
+				   | 1  -> w::(del ws)
+				   | _  -> failwith "Paritygame.ns_del: unexpected return value of function `compare´")
+  in
+  del vs
+
+let ns_make = List.sort compare
+let ns_nodes ws = ws
+
+let ns_find = List.find
+
+let ns_max ns lessf = ns_fold (fun v -> fun w -> if lessf v w then w else v) (ns_some ns) ns
+
+
+
+(**************************************************************
+ * players                                                    *
+ **************************************************************)
+
+type player = int
+
+let plr_Even = 0
+let plr_Odd = 1
+let plr_Zero = plr_Even
+let plr_One = plr_Odd
+let plr_undef = -1
+
+let plr_random _ = Random.int 2
+			      
+let plr_opponent pl = 1 - pl
+let plr_benefits pr = pr mod 2
+			       
+let plr_show = string_of_int
+
+let plr_iterate f =
+  f plr_Even; f plr_Odd
+		
+(**************************************************************
+ * priorities                                                 *
+ **************************************************************)
+
+type priority = int
+
+let prio_good_for_player pr pl = if pl = plr_Even then pr mod 2 = 0 else pr mod 2 = 1
+
+let odd pr = pr mod 2 = 1 
+let even pr = pr mod 2 = 0 
+									   
 (**************************************************************
  * Parity Game Definitions                                    *
  **************************************************************)
 
-type paritygame = (int * int * int array * string option) array
-type solution = int array
-type strategy = int array
+type paritygame = (priority * player * nodeset * nodeset * string option) array
+		    
+type solution = player array
+type strategy = node array
 
 type global_solver = (paritygame -> solution * strategy)
 
-
 (**************************************************************
  * Access Functions                                           *
+ *                                                            *
+ * these depend on the type paritygame                        *
+ * independent functions should be listed below               *
  **************************************************************)
 
-let pg_create n = Array.make n (-1, -1, [||], None);;
-
-let pg_init n f = Array.init n f;;
+let pg_create n = Array.make n (-1, -1, ns_empty, ns_empty, None);;
 
 let pg_sort = Array.sort;;
 
 let pg_size = Array.length;;
 
+let pg_isDefined game v = let (p,_,_,_,_) = game.(v) in
+			  p >= 0;;
+  
+let pg_get_node pg i = pg.(i);;
+let pg_set_node' pg i node = pg.(i) <- node;;
+
+let pg_iterate f game =
+  for i=0 to (pg_size game) - 1 do
+    if pg_isDefined game i then f i (pg_get_node game i)
+  done
+    
+let pg_map = Array.mapi
+let pg_map2 = Array.mapi
+
+let pg_edge_iterate f pg =
+  pg_iterate (fun v -> fun (_,_,succs,_,_) -> ns_iter (fun w -> f v w) succs) pg
+		       
+let pg_find_desc pg desc = ArrayUtils.find (fun (_,_,_,_,desc') -> desc = desc') pg
+
+let pg_add_edge gm v u =
+  let (pr,pl,succs,preds,desc) = pg_get_node gm v in
+  pg_set_node' gm v (pr, pl, ns_add u succs, preds, desc);
+  let (pr,pl,succs,preds,desc) = pg_get_node gm u in
+  pg_set_node' gm u (pr, pl, succs, ns_add v preds, desc)
+	      	    
+let pg_del_edge gm v u =
+  let (pr,pl,succs,preds,desc) = pg_get_node gm v in
+  pg_set_node' gm v (pr, pl, ns_del u succs, preds, desc);
+  let (pr,pl,succs,preds,desc) = pg_get_node gm u in
+  pg_set_node' gm u (pr, pl, succs, ns_del v preds, desc)
+
+
+
+(**********************************************************
+ * access functions for parity games                      *
+ **********************************************************)
+
+(* for internal use only! *)
+let pg_set_node pg i pr pl succs preds desc = pg_set_node' pg i (pr, pl, succs, preds, desc);;
+
+let pg_get_priority pg i = let (pr, _, _, _, _) = pg_get_node pg i in
+		     pr;;
+
+let pg_set_priority pg i pr = let (_, pl, succs, preds, desc) = pg_get_node pg i in
+			pg_set_node pg i pr pl succs preds desc;;
+
+let pg_get_owner pg i = let (_, pl, _, _, _) = pg_get_node pg i in
+		     pl;;
+
+
+let pg_set_owner pg i pl = let (pr, _, succs, preds, desc) = pg_get_node pg i in
+			pg_set_node pg i pr pl succs preds desc;;
+
+let pg_get_desc pg i = let (_, _, _, _, desc) = pg_get_node pg i in
+		       desc;;
+
+let pg_set_desc pg i desc = let (pr, pl, succs, preds, _) = pg_get_node pg i in
+			    pg_set_node pg i pr pl succs preds desc;;
+
+let pg_get_desc' pg i = match pg_get_desc pg i with None -> "" | Some s -> s;;
+
+let pg_set_desc' pg i desc = pg_set_desc pg i (if desc = "" then None else Some desc);;
+
+
+let pg_get_successors pg i = let (_,_,succs,_,_) = pg_get_node pg i in
+			     succs;;
+let pg_get_predecessors pg i = let (_,_,_,preds,_) = pg_get_node pg i in
+			       preds;;
+
+
 let pg_node_count game =
 	let count = ref 0 in
 	let n = pg_size game in
 	for i = 0 to n - 1 do
-		let (pr, _, _, _) = game.(i) in
-		if pr >= 0 then incr count
+		if pg_isDefined game i then incr count
 	done;
 	!count;;
 
@@ -42,116 +212,100 @@ let pg_edge_count game =
 	let count = ref 0 in
 	let n = pg_size game in
 	for i = 0 to n - 1 do
-		let (pr, _, tr, _) = game.(i) in
-		if pr >= 0 then count := !count + Array.length tr
+		if pg_isDefined game i then count := !count + (ns_size (pg_get_successors game i))
 	done;
 	!count;;
 
 let pg_copy pg =
 	let pg' = pg_create (pg_size pg) in
-	Array.iteri (fun i -> fun (pr, pl, delta, desc) ->
-		pg'.(i) <- (pr, pl, Array.copy delta, desc)
-	) pg;
+	pg_iterate (fun i -> fun (pr, pl, succs, preds, desc) -> pg_set_node pg' i pr pl succs preds desc) pg;
 	pg';;
 
-let pg_get_pr pg i = let (pr, _, _, _) = pg.(i) in pr;;
-
-let pg_set_pr pg i pr = let (_, pl, delta, desc) = pg.(i) in pg.(i) <- (pr, pl, delta, desc);;
-
-let pg_get_pl pg i = let (_, pl, _, _) = pg.(i) in pl;;
-
-let pg_set_pl pg i pl = let (pr, _, delta, desc) = pg.(i) in pg.(i) <- (pr, pl, delta, desc);;
-
-let pg_get_tr pg i = let (_, _, tr, _) = pg.(i) in tr;;
-
-let pg_set_tr pg i tr = let (pr, pl, _, desc) = pg.(i) in pg.(i) <- (pr, pl, tr, desc);;
-
-let pg_get_desc pg i = let (_, _, _, desc) = pg.(i) in desc;;
-
-let pg_set_desc pg i desc = let (pr, pl, delta, _) = pg.(i) in pg.(i) <- (pr, pl, delta, desc);;
-
-let pg_get_desc' pg i = match pg_get_desc pg i with None -> "" | Some s -> s;;
-
-let pg_set_desc' pg i desc = pg_set_desc pg i (if desc = "" then None else Some desc);;
-
-let pg_get_node pg i = pg.(i);;
-
-let pg_set_node pg i pr pl delta desc = pg.(i) <- (pr, pl, delta, desc);;
-
-let pg_set_node2 pg i node = pg.(i) <- node;;
-
-let pg_find_desc pg desc = ArrayUtils.find (fun (_,_,_,desc') -> desc = desc') pg
-
-let pg_get_tr_index_of pg i j = ArrayUtils.find (fun k -> k = j) (pg_get_tr pg i)
-
-let pg_get_priority     = pg_get_pr 
-let pg_get_owner        = pg_get_pl
-let pg_get_successors   = pg_get_tr
-
-let pg_iterate = Array.iteri
-let pg_map = Array.mapi
-let pg_map2 = Array.mapi
-			    
-(* naive and inefficent implementation; needs to be changed with data structure! *)
-let pg_get_predecessors game v =
-  let ps = ref [] in
-  for u = 0 to (pg_size game)-1 do
-    if Array.fold_left (fun b -> fun w -> b || v=w) false (pg_get_successors game u) then
-      ps := u::!ps
+let pg_init n f =
+  let game = pg_create n in
+  for i=0 to n-1 do
+    let (pr,pl,succs,name) = f i in
+    pg_set_priority game i pr;
+    pg_set_owner game i pl;
+    pg_set_desc game i name;
+    List.iter (fun w -> pg_add_edge game i w) succs
   done;
-  Array.of_list !ps
+  game;;
 
-let pg_set_priority     = pg_set_pr
-let pg_set_owner        = pg_set_pl
-let pg_set_successors   = pg_set_tr
+  
+let pg_remove_nodes game nodes =
+  List.iter (fun v -> let succs = pg_get_successors game v in
+		      ns_iter (fun u -> pg_del_edge game v u) succs;
+		      let preds = pg_get_predecessors game v in
+		      ns_iter (fun u -> pg_del_edge game u v) preds;
+		      pg_set_priority game v (-1);
+		      pg_set_owner game v (-1);
+		      pg_set_desc game v None
+	    ) nodes
 
-let pg_add_edge gm v u =
-  let succs = pg_get_successors gm v in
-  if not (Array.fold_left (fun b -> fun w -> b || w=u) false succs) then
-    pg_set_successors gm v (Array.of_list (u::(Array.to_list succs)))
-    (* insert code for adding v as predecessor of u when data structure is updated *)
-  else
-    ()
-	    
-let pg_del_edge gm v u =
-  let succs = pg_get_successors gm v in
-  pg_set_successors gm v (Array.of_list (List.filter (fun w -> w<>u) (Array.to_list succs)))
-  (* insert code for deleting v as predecessor of u when data structure is updated *)
+let pg_remove_edges game edges =
+    List.iter (fun (v, w) -> pg_del_edge game v w) edges;;
 
-let pg_set_predecessors gm v ws =
-  Array.iter (fun u -> pg_add_edge gm v u) ws
+  
 
-							      
+ 
+(**************************************************************
+ * Solutions                                                  *
+ **************************************************************)
+
+let sol_create game = Array.make (pg_size game) plr_undef
+let sol_make n = Array.make n plr_undef
+let sol_init game f = Array.init (pg_size game) f			    
+
+let sol_number_solved sol =
+  Array.fold_left (fun c e -> if e = plr_undef then c else c + 1) 0 sol
+
+let sol_get sol v = sol.(v) 
+let sol_set sol v pl = sol.(v) <- pl
+let sol_iter = Array.iteri  
+
+(***************************************************************
+ * Strategies                                                  *
+ ***************************************************************)
+							   
+let str_create game = Array.make (pg_size game) nd_undef
+let str_make n = Array.make n nd_undef 
+let str_init game f = Array.init (pg_size game) f 
+
+let str_get str v = str.(v)
+let str_set str v u = str.(v) <- u 
+let str_iter = Array.iteri 
+
+
+
+
+
 (**************************************************************
  * Formatting Functions                                       *
  **************************************************************)
 
 let game_to_string game =
-	let n = Array.length game in
-	let s = ref ("parity " ^ string_of_int (n-1) ^ ";\n") in
-	for i = 0 to n - 1 do
-	  let (pr, pl, delta, desc) = game.(i) in
-	  if pr >= 0 && pl >= 0 && pl <= 1 then (
-	  		s := !s ^ string_of_int i ^ " " ^ string_of_int pr ^ " " ^ string_of_int pl ^ " ";
-            for j = 0 to (Array.length delta) - 2 do
-              s := !s ^ string_of_int delta.(j) ^ ","
-            done;
-            if (Array.length delta) > 0 then s := !s ^ string_of_int delta.(Array.length delta - 1);
-            (
-             match desc with
-               None -> ()
-             |   Some a -> if a <> "" then s := !s ^ " \"" ^ a ^ "\""
-            );
-            s := !s ^ ";\n"
-           )
-    done;
-    !s;;
-
+	let n = pg_size game in
+	let s = ref "" in
+	for i = n-1 downto 0 do
+	  let (pr, pl, succs, _ , desc) = pg_get_node game i in
+	  if pr >= 0 && pl >= 0 && pl <= 1 then
+	    begin
+	      s := string_of_int i ^ " " ^ string_of_int pr ^ " " ^ string_of_int pl ^ " " ^
+	           (String.concat "," (List.map string_of_int succs) ^ 
+		     (match desc with
+			None   -> ""
+		      | Some a -> if a <> "" then " \"" ^ a ^ "\"" else "")
+		   ) ^ ";\n" ^ !s
+           end
+	done;
+	"parity " ^ string_of_int (n-1) ^ ";\n" ^ !s;;
+ 
 let print_game game =
-	let n = Array.length game in
-	print_string ("parity " ^ string_of_int (n-1) ^ ";\n");
+	let n = pg_size game in
+	print_string ("parity " ^ string_of_int n ^ ";\n");
 	for i = 0 to n - 1 do
-	  let (pr, pl, delta, desc) = game.(i) in
+	  let (pr, pl, succs, _, desc) = pg_get_node game i in
 	  if pr >= 0 && pl >= 0 && pl <= 1 then (
             print_int i;
             print_char ' ';
@@ -159,14 +313,11 @@ let print_game game =
             print_char ' ';
             print_int pl;
             print_char ' ';
-            for j = 0 to (Array.length delta) - 2 do
-              print_string ((string_of_int delta.(j)) ^ ",")
-            done;
-            if (Array.length delta) > 0 then print_int delta.((Array.length delta) - 1) else ();
+            print_string (String.concat "," (List.map string_of_int succs));
             (
              match desc with
                None -> () (* print_string (" \"" ^ string_of_int i ^ "\"") *)
-             |   Some s -> if s <> "" then print_string (" \"" ^ s ^ "\"")
+             | Some s -> if s <> "" then print_string (" \"" ^ s ^ "\"")
             );
             print_char ';';
             print_newline ()
@@ -195,11 +346,11 @@ let to_dotty game solution strategy h =
 
   output_string h "digraph G {\n";
 
-  for i = 0 to (Array.length game)-1 do
-    let (p,pl,succs,ann) = game.(i) in
+  for i = 0 to (pg_size game)-1 do
+    let (p,pl,succs,_,ann) = pg_get_node game i in
 
     if p >= 0 && pl >= 0 && pl <= 1
-   then (let name = encode i in
+    then (let name = encode i in
           let label = (match ann with None -> ""
                                     | Some s -> s ^ ": ") ^ string_of_int p
           in
@@ -213,13 +364,12 @@ let to_dotty game solution strategy h =
           in
           output_string h (name ^ " [ shape=\"" ^ shape ^ "\", label=\"" ^ label ^ "\", color=\"" ^ color ^ "\" ];\n");
 
-          for j=0 to (Array.length succs)-1 do
-            let color2 = try
-                           if pl = 1 - solution.(i) || succs.(j) = strategy.(i) then color else "black"
-                         with _ -> "black"
-            in
-            output_string h (name ^ " -> " ^ encode succs.(j) ^ " [ color=\"" ^ color2 ^ "\" ];\n" )
-          done)
+	  List.iter (fun w -> let color2 = try
+				             if pl = 1 - solution.(i) || w = strategy.(i) then color else "black"
+				           with _ -> "black"
+			      in
+			      output_string h (name ^ " -> " ^ encode w ^ " [ color=\"" ^ color2 ^ "\" ];\n" )) succs
+	 )
   done;
   output_string h "}\n";;
 
@@ -241,11 +391,10 @@ let format_game gm =
   "[" ^
   String.concat ";"
                 (List.filter (fun s -> s <> "")
-                             (Array.to_list (Array.mapi (fun i -> fun (p,pl,ws,_) ->
+                             (Array.to_list (pg_map (fun i -> fun (p,pl,ws,_,_) ->
                                               if p <> -1 then string_of_int i ^ ":" ^ string_of_int p ^ "," ^
                                                               string_of_int pl ^ ",{" ^
-                                                              String.concat "," (List.map string_of_int
-                                                                                          (Array.to_list ws))
+                                                              String.concat "," (List.map string_of_int ws)
                                                               ^ "}"
                                                          else "") gm)))
   ^ "]"
@@ -253,20 +402,11 @@ let format_game gm =
 
 
 (**************************************************************
- * Parsing Functions                                          *
- **************************************************************)
- 
-let parse_parity_game ch =
-	Array.map (fun (a,b,c,d) -> (a,b,c,(if d = "" then None else Some d))) (Tcsgameparser.parse_explicit_pg ch)
-
- 
- 
- 
-(**************************************************************
  * Node Orderings                                             *
  **************************************************************)
 
-type pg_ordering      = int * int * int * int array -> int * int * int * int array -> int
+(* type pg_ordering      = int * int * int * int array -> int * int * int * int array -> int *)
+type pg_ordering      = node * priority * player * nodeset -> node * priority * player * nodeset -> int
 
 let reward player prio =
 	if (not (prio mod 2 = player)) && (prio >= 0) then -prio else prio;;
@@ -285,11 +425,13 @@ let ord_total_by ordering (i, pri, pli, tri) (j, prj, plj, trj) =
 let pg_max pg o =
 	let m = ref 0 in
 	let n = pg_size pg in
+	let (prm,plm,succm,_,_) = pg_get_node pg !m in
+	let vm = ref (!m,prm,plm,succm) in
 	for i = 1 to n - 1 do
-		let (prm, plm, trm, _) = pg.(!m) in
-		let (pri, pli, tri, _) = pg.(i) in
-		if o (!m, prm, plm, trm) (i, pri, pli, tri) < 0
-		then m := i
+	  let (pri,pli,succi,_,_) = pg_get_node pg i in
+	  let vi = (i,pri,pli,succi) in
+	  if o !vm vi < 0
+	  then (m := i; vm := vi)
 	done;
 	!m;;
 
@@ -299,60 +441,29 @@ let pg_max_prio_node pg = pg_max pg ord_prio;;
 
 let pg_max_rew_node_for pg pl = pg_max pg (ord_rew_for pl);;
 
-let pg_max_prio pg = pg_get_pr pg (pg_max_prio_node pg);;
+let pg_max_prio pg = pg_get_priority pg (pg_max_prio_node pg);;
 
-let pg_min_prio pg = pg_get_pr pg (pg_min pg ord_prio);;
+let pg_min_prio pg = pg_get_priority pg (pg_min pg ord_prio);;
 
 let pg_max_prio_for pg player =
-	let pr = pg_get_pr pg (pg_max_rew_node_for pg player) in
+	let pr = pg_get_priority pg (pg_max_rew_node_for pg player) in
 	if pr mod 2 = player then pr else -1;;
 
 let pg_get_index pg = pg_max_prio pg - pg_min_prio pg + 1;;
 
 let pg_prio_nodes pg p =
-	let l = ref [] in
-	Array.iteri (fun i (pr, _, _, _) ->
-		if pr = p then l := i::!l
-	) pg;
-	!l
+  let l = ref [] in
+  for i = (pg_size pg)-1 downto 0 do
+    if pg_get_priority pg i = p then l := i::!l
+  done;
+  !l
 
+let pg_get_selected_priorities game pred =
+  let prios = ref (TreeSet.empty compare) in
+  pg_iterate (fun v -> fun (pr,_,_,_,_) -> if pred pr then prios := TreeSet.add pr !prios) game;
+  TreeSet.elements !prios
 
-(**************************************************************
- * Inplace Modifications                                      *
- **************************************************************)
-
-let pg_add_successor game v w =
-      let (p,pl,succs,ann) = game.(v) in
-      game.(v) <- (p,pl,Array.append [|w|] succs,ann);;
-
-let pg_add_successors game v l =
-       let (p,pl,succs,ann) = game.(v) in
-       game.(v) <- (p,pl,Array.append l succs,ann);;
-
-let pg_remove_nodes game nodes =
-  List.iter (fun v -> game.(v) <- (-1,-1,[||],None)) nodes;
-  for v=0 to (Array.length game)-1 do
-    let (p,pl,ws,ann) = game.(v) in
-    game.(v) <- (p,pl,Array.of_list (List.filter (fun w -> let (p,_,_,_) = game.(w) in
-                                                           p <> -1)
-                                                 (Array.to_list ws)),ann);
-  done
-
-let pg_remove_edges game edges =
-    List.iter (fun (v, w) ->
-        let tr = pg_get_tr game v in
-        let n = Array.length tr in
-        try
-        	let i = ArrayUtils.index_of tr w in
-            let tr' = Array.sub tr 0 (n - 1) in
-            if i < n - 1
-            then tr'.(i) <- tr.(n - 1);
-            pg_set_tr game v tr'
-        with
-        	Not_found -> ()
-    ) edges;;
-
-
+let pg_get_priorities game = pg_get_selected_priorities game (fun _ -> true)
 
 (**************************************************************
  * Node Collect Functions                                     *
@@ -360,14 +471,27 @@ let pg_remove_edges game edges =
 
 let collect_nodes game pred =
     let l = ref [] in
-    for i = 0 to Array.length game - 1 do
-    	let (pr, _, _, _) = game.(i) in
-    	if (pr >= 0) && (pred i game.(i)) then l := i::!l
+    for i = (pg_size game) - 1 downto 0 do
+    	if pg_isDefined game i && (pred i (pg_get_node game i)) then l := i::!l
     done;
     !l;;
 
 let collect_nodes_by_prio game pred =
-	collect_nodes game (fun _ (pr, _, _, _) -> pred pr);;
+	collect_nodes game (fun _ (pr, _, _, _, _) -> pred pr);;
+
+let collect_nodes_by_owner game pred =
+  let ltrue = ref [] in
+  let lfalse = ref [] in
+  for i = pg_size game - 1 downto 0 do
+    if pg_isDefined game i then
+      begin
+	if pred (pg_get_owner game i) then
+	  ltrue := i :: !ltrue
+	else
+	  lfalse := i :: !lfalse
+      end
+  done;
+  (!ltrue, !lfalse)
 
 let collect_max_prio_nodes game =
 	let m = pg_max_prio game in
@@ -385,71 +509,82 @@ let collect_max_parity_nodes game =
  * Sub Game Creation                                          *
  **************************************************************)
 
-let subgame_by_edge_pred game pred =
-	let n = Array.length game in
-	let g = Array.make n (-1, -1, [||], None) in
+let subgame_by_edge_pred (game: paritygame) pred =
+	let n = pg_size game in
+	let g = pg_create n in
 	for i = 0 to n - 1 do
-		let (pr, pl, dl, desc) = game.(i) in
-		g.(i) <- (pr, pl, Array.of_list (List.filter (pred i) (Array.to_list dl)), desc)
+		pg_set_priority g i (pg_get_priority game i);
+		pg_set_owner g i (pg_get_owner game i);
+		pg_set_desc g i (pg_get_desc game i);
+		List.iter (fun j ->
+			if pred i j then pg_add_edge g i j
+		) (pg_get_successors game i)
 	done;
 	g;;
 
 let subgame_by_node_pred game pred =
-	let n = Array.length game in
-	let g = Array.make n (-1, -1, [||], None) in
+	let n = pg_size game in
+	let g = pg_create n in
 	for i = 0 to n - 1 do
-		let (pr, pl, dl, desc) = game.(i) in
-		if (pred i)
-		then g.(i) <- (pr, pl, Array.of_list (List.filter pred (Array.to_list dl)), desc)
+		if (pred i) then (
+			pg_set_priority g i (pg_get_priority game i);
+			pg_set_owner g i (pg_get_owner game i);
+			pg_set_desc g i (pg_get_desc game i);
+			List.iter (fun j ->
+				pg_add_edge g i j
+			) (pg_get_successors game i)
+		)
 	done;
 	g;;
 
 let subgame_by_strat game strat = subgame_by_edge_pred game (fun x y -> strat.(x) < 0 || strat.(x) = y);;
 
 let subgame_by_strat_pl game strat pl =
-	let n = Array.length game in
-	let g = Array.make n (-1, -1, [||], None) in
-	for i = 0 to n - 1 do
-		let (pr, pl', dl, desc) = game.(i) in
-		if pl = pl' then g.(i) <- (pr, pl', [|strat.(i)|], desc)
-		else g.(i) <- game.(i)
-	done;
-	g;;
+	subgame_by_edge_pred game (fun i j ->
+		let pl' = pg_get_owner game i in
+		pl != pl' || strat.(i) = j
+	);;
 
 let subgame_by_list game li =
+  (* Very dirty solution: original game is being destroyed temporarily and restored in the end.
+     Maybe better to use separate data structures to store information about renaming and which nodes have been visited.
+     I am also not sure that it is correct anymore. Does pg_add_edge know the right new names in the subgame to store predecessor information? - ML *) 
     let n = List.length li in
-    let g = Array.make n (-1, -1, [||], None) in
+    let g = pg_create n in
     let i = ref 0 in
     List.iter (fun arri ->
-        let (pr, pl, delta, desc) = game.(arri) in
-        game.(arri) <- (-2, !i, delta, desc);
-        g.(!i) <- (pr, pl, [||], desc);
-        i := !i + 1
+               let (pr, pl, succs, preds, desc) = pg_get_node game arri in
+               pg_set_priority game arri (-2);
+	       pg_set_owner game arri !i; (* dirty code: player int values are used to remember the re-mapping of node names *) 
+               pg_set_priority g !i pr;
+	       pg_set_owner g !i pl;
+	       pg_set_desc g !i desc;
+               incr i
     ) li;
-    let i = ref 0 in
+    i := 0;
     List.iter (fun arri ->
-        let (pr, pl, _, desc) = g.(!i) in
-        let (_, _, delta, _) = game.(arri) in
-        let l = ref [] in
-            for j = 0 to (Array.length delta) - 1 do
-                let (h, k, _, _) = game.(delta.(j)) in
-                    if h = -2 then l := k::!l
-            done;
-        g.(!i) <- (pr, pl, Array.of_list !l, desc);
-        i := !i + 1
+               (* let pr = pg_get_priority g !i in   (* seemingly unused code *)
+	       let pl = pg_get_owner g !i in *)
+               let l = ref [] in
+               ns_iter (fun w -> let h = pg_get_priority game w in (* dirty code: priority int values are used to remember visitation status of a node *)
+				 let k = pg_get_owner game w in (* dirty code: player int value is actually referring to old node name *) 
+				 if h = -2 then l := k::!l
+		       ) (pg_get_successors game arri);
+	       List.iter (fun w -> pg_add_edge g !i w) !l;
+               incr i
     ) li;
-    let i = ref 0 in
+    i := 0;
     List.iter (fun arri ->
-        let (_, _, delta, desc) = game.(arri) in
-        let (pr, pl, _, _) = g.(!i) in
-        game.(arri) <- (pr, pl, delta, desc);
-        i := !i + 1
+	       pg_set_priority game arri (pg_get_priority g !i);
+	       pg_set_owner game arri (pg_get_owner g !i);
+               incr i 
     ) li;
     g;;
 
+(* DEPRECATED: use subgame_by_list instead; it has the graph information built in now
 let subgame_and_subgraph_by_list game tgraph li =
     let n = List.length li in
-    let g = Array.make n (-1, -1, [||], None) in
+    let g = pg_create n in
 	let t = Array.make n [] in
     let i = ref 0 in
     List.iter (fun arri ->
@@ -484,7 +619,7 @@ let subgame_and_subgraph_by_list game tgraph li =
         i := !i + 1
     ) li;
     (g,t);;
-
+ *)
 
 
 (**************************************************************
@@ -492,6 +627,7 @@ let subgame_and_subgraph_by_list game tgraph li =
  **************************************************************)
 
 (* result := sol o perm *)
+(*
 let permute_solution perm sol =
 	let n = Array.length sol in
 	let sol' = Array.make n (-1) in
@@ -500,9 +636,10 @@ let permute_solution perm sol =
         sol'.(i) <- sol.(perm.(i))
     done;
     sol'
-
+*)
 
 (* result := perm^-1 o strat o perm *)
+(*
 let permute_strategy perm perm' strat =
 	let n = Array.length strat in
 	let strat' = Array.make n (-1) in
@@ -512,7 +649,7 @@ let permute_strategy perm perm' strat =
 	        strat'.(i) <- if j = -1 then -1 else perm'.(j)
     done;
     strat'
-
+*)
 
 exception Unmergable
 
@@ -537,92 +674,23 @@ let merge_solutions_inplace sol1 sol2 =
 
 
 (**************************************************************
- * Graph Transformations                                      *
- **************************************************************)
-
-let game_to_transposed_graph game =
-  let l = Array.length game in
-  let g = Array.make l [] in
-  Array.iteri (fun i -> fun (_,_,ws,_) -> Array.iter (fun w -> g.(w) <- i::g.(w)) ws) game;
-  g
-
-
-let transposed_graph_remove_nodes game graph nodes =
-	let affected = ref TreeSet.empty_def in
-	List.iter (fun v ->
-		graph.(v) <- [-1];
-		Array.iter (fun w -> affected := TreeSet.add w !affected) (pg_get_tr game v)
-	) nodes;
-	TreeSet.iter (fun v ->
-		if not (graph.(v) = [-1]) then
-		graph.(v) <- List.filter (fun w -> not (graph.(w) = [-1])) graph.(v)
-	) !affected;
-	List.iter (fun v -> graph.(v) <- []) nodes;;
-
-	
-let pg_with_graph_remove_nodes game graph nodes =
-	let check_succ = ref TreeSet.empty_def in
-	let check_pred = ref TreeSet.empty_def in
-	List.iter (fun v ->
-		let (_, _, tr, _) = game.(v) in
-		Array.iter (fun w -> check_pred := TreeSet.add w !check_pred) tr;
-		game.(v) <- (-1, -1, [||], None);
-		List.iter (fun w -> check_succ := TreeSet.add w !check_succ) graph.(v);
-		graph.(v) <- [];
-	) nodes;
-	TreeSet.iter (fun v ->
-		if pg_get_pr game v >= 0
-		then graph.(v) <- List.filter (fun w -> pg_get_pr game w >= 0) graph.(v)
-	) !check_pred;
-	TreeSet.iter (fun v ->
-		if pg_get_pr game v >= 0
-		then pg_set_tr game v (ArrayUtils.filter (fun w -> pg_get_pr game w >= 0) (pg_get_tr game v))
-	) !check_succ;;
-	
-
-let game_to_graph game =
-  let l = Array.length game in
-  let g = Array.make l [] in
-  Array.iteri (fun i -> fun (_,_,ws,_) -> Array.iter (fun w -> g.(i) <- w::g.(i)) ws) game;
-  g
-
-let transposed_graph_remove_edges graph edges =
-    List.iter (fun (v, w) ->
-        graph.(w) <- List.filter (fun u -> not (u = v)) graph.(w)
-    ) edges;;
-
-
-
-(**************************************************************
  * Decomposition Functions                                    *
  **************************************************************)
 
-let strongly_connected_components' game tgraph =
-  let l = Array.length game in
+type scc = int
+	     
+let strongly_connected_components game (*tgraph*) =
+  let l = pg_size game in
   let dfsnum = Array.make l (-1) in
   let index = Array.make l (-1) in
 
   let todo = ref [] in
-  for i=1 to l do
-    let (p,_,_,_) = game.(l-i) in
-    if p > (-1) then todo := (l-i) :: !todo
+  for i=l-1 downto 0 do
+    if pg_isDefined game i then todo := i :: !todo
   done;
 
   let n = ref 0 in
   let visited = Array.make l false in
-
-  (* Reason for stack overflow in large sccs...*)
-  (*
-  let rec dfs v =
-    if not visited.(v)
-    then (visited.(v) <- true;
-          let (_,_,ws,_) = game.(v) in
-          Array.iter (fun w -> dfs w) ws;
-          dfsnum.(v) <- !n;
-          index.(!n) <- v;
-          incr n)
-  in
-  *)
 
   let dfs v =
   	let st = Stack.create () in
@@ -632,7 +700,7 @@ let strongly_connected_components' game tgraph =
   		let pushed = ref false in
   		if not visited.(u) then (
   			visited.(u) <- true;
-  			Array.iter (fun w ->
+  			List.iter (fun w ->
   				if not visited.(w) then (
   					if not !pushed then (
   						Stack.push u st;
@@ -640,7 +708,7 @@ let strongly_connected_components' game tgraph =
   					);
   					Stack.push w st
   				)
-  			) (pg_get_tr game u)
+  			) (pg_get_successors game u)
   		);
   		if (not !pushed) && (dfsnum.(u) < 0) then (
   			dfsnum.(u) <- !n;
@@ -650,10 +718,8 @@ let strongly_connected_components' game tgraph =
   	done
   in
 
-
   for i=0 to l-1 do
-    let (p,_,_,_) = game.(i) in
-    if not visited.(i) && p >= 0 then dfs i;
+    if not visited.(i) && pg_isDefined game i then dfs i
   done;
 
   decr n;
@@ -682,7 +748,7 @@ let strongly_connected_components' game tgraph =
       if not visited.(v) && dfsnum.(v) >= 0
       then (visited.(v) <- true;
             scc := v :: !scc;
-            let succs = List.sort (fun x -> fun y -> (-1) * (compare dfsnum.(x) dfsnum.(y))) tgraph.(v) in
+            let succs = List.sort (fun x -> fun y -> compare dfsnum.(y) dfsnum.(x)) (pg_get_predecessors game v) in
             todo := succs @ !todo;
             List.iter (fun w -> let c = scc_index.(w) in
                                 if c > -1
@@ -704,10 +770,8 @@ let strongly_connected_components' game tgraph =
    DynArray.to_array (DynArray.map [] (fun s -> TreeSet.fold (fun x -> fun l -> x::l) s []) topology),
    TreeSet.fold (fun x -> fun l -> x::l) !roots []);;
 
-let strongly_connected_components game =
-	strongly_connected_components' game (game_to_transposed_graph game)
-
-let sccs_compute_leafs roots topology =
+  
+let sccs_compute_leaves roots topology =
 	let leafs = ref TreeSet.empty_def in
 	let rec process r =
 		if topology.(r) = []
@@ -735,12 +799,12 @@ let sccs_compute_connectors game (sccs, sccindex, topology, roots) =
 			computed.(r) <- true;
 			let temp = Array.make s [] in
 			List.iter subcompute topology.(r);
-			List.iter (fun v -> let (_, _, delta, _) = game.(v) in
-				Array.iter (fun w ->
-					if sccindex.(w) != r
-					then temp.(sccindex.(w)) <- (v, w)::temp.(sccindex.(w))
-				) delta
-			) sccs.(r);
+			List.iter (fun v -> ns_iter (fun w ->
+							if sccindex.(w) != r
+							then temp.(sccindex.(w)) <- (v, w)::temp.(sccindex.(w))
+						    )
+						    (pg_get_successors game v)
+				  ) sccs.(r);
 			List.iter (fun c ->	Hashtbl.add conn (r, c) temp.(c)) topology.(r)
 		)
 	in
@@ -774,31 +838,32 @@ let show_sccs sccs topology roots =
  * Attractor Closure                                          *
  **************************************************************)
 
-let attr_closure_inplace' game strategy player region include_region tgraph deltafilter overwrite_strat =
+let attr_closure_inplace' game strategy player region include_region includeNode overwrite_strat =
   let message _ _ = () in
-  let l = Array.length game in
+  let l = pg_size game in
   let attr = Array.make l false in
   let todo = Queue.create () in
 
-  let schedule_predecessors v = List.iter (fun w -> if deltafilter w then (
+  let schedule_predecessors v = List.iter (fun w -> if includeNode w then (
                                                     message 3 (fun _ -> "    Scheduling node " ^ string_of_int w ^
                                                                         " for attractor check\n");
                                                     Queue.add w todo)
                                                     )
-                                          tgraph.(v)
+                                          (pg_get_predecessors game v)
   in
 
   let inattr v = attr.(v) || ((not include_region) && TreeSet.mem v region) in
 
   TreeSet.iter (fun v -> if include_region then attr.(v) <- true;
-                      schedule_predecessors v) region;
+			 schedule_predecessors v) region;
 
   while not (Queue.is_empty todo) do
     let v = Queue.take todo in
     if not (attr.(v))
-    then let (_,pl',ws,_) = game.(v) in
+    then let pl' = pg_get_owner game v in
+	 let ws = pg_get_successors game v in
          if pl'=player
-         then let w = Array.fold_left (fun b -> fun w -> if (not (deltafilter w)) || (b > -1 || not (inattr w)) then b else w) (-1) ws in
+         then let w = ns_fold (fun b -> fun w -> if (not (includeNode w)) || (b > -1 || not (inattr w)) then b else w) (-1) ws in
               if w > -1 then (message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is in the attractor because of " ^
                                          string_of_int v ^ "->" ^ string_of_int w ^ "\n");
                               attr.(v) <- true;
@@ -806,27 +871,26 @@ let attr_closure_inplace' game strategy player region include_region tgraph delt
                               then strategy.(v) <- w;
                               schedule_predecessors v)
               else message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is not (yet) found to be in the attractor\n")
-         else if Array.fold_left (fun b -> fun w -> b && (inattr w)) true ws
+         else if ns_fold (fun b -> fun w -> b && (inattr w)) true ws
               then (message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is in the attractor because all successors are so");
                     attr.(v) <- true;
                     schedule_predecessors v)
               else message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is not (yet) found to be in the attractor\n")
   done;
-  let w = ref [] in
+  let a = ref [] in
   for i=1 to l do
-    if attr.(l-i) then w := (l-i) :: !w
+    if attr.(l-i) then a := (l-i) :: !a
   done;
-  !w;;
+  !a;;
 
 
 let attr_closure_inplace game strategy player region =
-	attr_closure_inplace' game strategy player (TreeSet.of_list_def region) true
-	                     (game_to_transposed_graph game) (fun _ -> true) true;;
+	attr_closure_inplace' game strategy player (TreeSet.of_list_def region) true (fun _ -> true) true;;
 
 
-let attractor_closure_inplace_sol_strat game transp deltafilter sol strat pl0 pl1 =
-	let sol0 = attr_closure_inplace' game strat 0 pl0 true transp (fun v -> not (TreeSet.mem v pl1)) true in
-	let sol1 = attr_closure_inplace' game strat 1 pl1 true transp (fun v -> not (TreeSet.mem v pl0)) true in
+let attractor_closure_inplace_sol_strat game deltafilter sol strat pl0 pl1 =
+	let sol0 = attr_closure_inplace' game strat 0 pl0 true (fun v -> not (TreeSet.mem v pl1)) true in
+	let sol1 = attr_closure_inplace' game strat 1 pl1 true (fun v -> not (TreeSet.mem v pl0)) true in
 	List.iter (fun q -> sol.(q) <- 0) sol0;
 	List.iter (fun q -> sol.(q) <- 1) sol1;
 	(sol0, sol1);;
@@ -838,10 +902,12 @@ let attractor_closure_inplace_sol_strat game transp deltafilter sol strat pl0 pl
  **************************************************************)
 
 let pg_set_closed pg nodeset pl =
-    TreeSet.for_all (fun q -> let (_, pl', delta, _) = pg.(q) in
-        if pl = pl'
-        then Array.fold_left (fun r i -> r || TreeSet.mem i nodeset) false delta
-        else Array.fold_left (fun r i -> r && TreeSet.mem i nodeset) true delta
+    TreeSet.for_all (fun q ->
+		     let pl' = pg_get_owner pg q in
+		     let delta = pg_get_successors pg q in                              
+		     if pl = pl'
+		     then ns_fold (fun r i -> r || TreeSet.mem i nodeset) false delta
+		     else ns_fold (fun r i -> r && TreeSet.mem i nodeset) true delta
     ) nodeset;;
 
 let pg_set_dominion solver pg nodeset pl =
@@ -876,47 +942,40 @@ type partial_solver = partial_paritygame -> partial_solution
 
 (* Canonically maps a paritygame to its associated paritygame2 *)
 let induce_partialparitygame (pg: paritygame) start =
-	let delta i = let (_, _, delta, _) = pg.(i) in
-		Enumerators.of_array delta
-	in
-	let data i = let (pr, pl, _, _) = pg.(i) in (pr, pl)
-	in
-	let desc i = let (_, _, _, desc) = pg.(i) in desc
-	in
-		((start, delta, data, desc): partial_paritygame);;
+	let delta i = Enumerators.of_list (pg_get_successors pg i) in
+	let data i = (pg_get_priority pg i, pg_get_owner pg i) in
+	let desc i = pg_get_desc pg i in
+	((start, delta, data, desc): partial_paritygame);;
 
 let induce_counting_partialparitygame (pg: paritygame) start =
 	let counter = ref 0 in
-	let access = Array.make (Array.length pg) false in
+	let access = Array.make (pg_size pg) false in
 	let delta i =
 		if not access.(i) then (
 			access.(i) <- true;
 			incr counter
 		);
-		let (_, _, delta, _) = pg.(i) in
-		Enumerators.of_array delta
+		Enumerators.of_list (pg_get_successors pg i)
 	in
 	let data i =
 		if not access.(i) then (
 			access.(i) <- true;
 			incr counter
 		);
-		let (pr, pl, _, _) = pg.(i) in
-		(pr, pl)
+		(pg_get_priority pg i, pg_get_owner pg i)
 	in
 	let desc i =
 		if not access.(i) then (
 			access.(i) <- true;
 			incr counter
 		);
-		let (_, _, _, desc) = pg.(i) in
-		desc
+		pg_get_desc pg i
 	in
 		(counter, ((start, delta, data, desc): partial_paritygame));;
 
 		
 let partially_solve_dominion (pg: paritygame) (start: int) (partially_solve: partial_solver) =
-	let n = Array.length pg in
+	let n = pg_size pg in
 	let (_, delta, data, desc) = induce_partialparitygame pg start in
 	let solution = Array.make n (-1) in
 	let strategy = Array.make n (-1) in
@@ -924,18 +983,13 @@ let partially_solve_dominion (pg: paritygame) (start: int) (partially_solve: par
 	let rec expand i f =
 		if solution.(i) > -1 then ()
 		else let (winner, strat) = f i in
-			 let (pl, _, delta, desc) = pg.(i) in
 			 	solution.(i) <- winner;
 			 	match strat with
 			 		Some j -> (
 			 			strategy.(i) <- j;
 			 			expand j f
 			 		)
-			 	|   None -> (
-			 			for k = 0 to Array.length delta - 1 do
-							expand delta.(k) f
-			     		done
-			     	)
+			 	|   None -> ns_iter (fun x -> expand x f) (pg_get_successors pg i)
 	in
 
     expand start (partially_solve (start, delta, data, desc));
@@ -952,7 +1006,7 @@ let partially_solve_dominion (pg: paritygame) (start: int) (partially_solve: par
 	returning solution x strategy on the whole game
 *)
 let partially_solve_game (pg: paritygame) partially_solve =
-	let n = Array.length pg in
+	let n = pg_size pg in
 	let (_, delta, data, desc) = induce_partialparitygame pg 0 in
 	let solution = Array.make n (-1) in
 	let strategy = Array.make n (-1) in
@@ -970,24 +1024,18 @@ let partially_solve_game (pg: paritygame) partially_solve =
 	let rec expand i f =
 		if solution.(i) > -1 then ()
 		else let (winner, strat) = f i in
-			 let (pl, _, delta, desc) = pg.(i) in
 			 	solution.(i) <- winner;
 			 	match strat with
 			 		Some j -> (
 			 			strategy.(i) <- j;
 			 			expand j f
 			 		)
-			 	|   None -> (
-			 			for k = 0 to Array.length delta - 1 do
-							expand delta.(k) f
-			     		done
-			     	)
+			 	|   None -> ns_iter (fun x -> expand x f) (pg_get_successors pg i)
 	in
 
     for i = 0 to n - 1 do
-        let (_, pl, _, _) = pg.(i) in
-            if (solution.(i) > -1) || (pl < 0) then ()
-            else expand i (partially_solve (i, delta', data', desc))
+        if (solution.(i) > -1) || (pg_get_owner pg i < 0) then ()
+        else expand i (partially_solve (i, delta', data', desc))
     done;
 
 	(solution, strategy);;
@@ -1004,9 +1052,8 @@ let get_player_decision_info game =
     let n = pg_size game in
     let i = ref 0 in
     while (!i < n) && (not (!hasPl0 && !hasPl1)) do
-        let (_, pl, delta, _) = game.(!i) in
-        if (Array.length delta > 1) (* && (ArrayUtils.exists delta (fun _ el -> delta.(0) != el)) *)
-        then (if pl = 0 then hasPl0 else hasPl1) := true;
+        if (ns_size (pg_get_successors game !i) > 1) (* && (ArrayUtils.exists delta (fun _ el -> delta.(0) != el)) *)
+        then (if pg_get_owner game !i = 0 then hasPl0 else hasPl1) := true;
         incr i
     done;
     (!hasPl0, !hasPl1);;
@@ -1018,7 +1065,7 @@ let is_single_parity_game game =
     let n = pg_size game in
     let i = ref 0 in
     while (!i < n) && (not (!hasPar0 && !hasPar1)) do
-    	let pr = pg_get_pr game !i in
+    	let pr = pg_get_priority game !i in
     	if pr >= 0
     	then (if pr mod 2 = 0 then hasPar0 else hasPar1) := true;
     	incr i
@@ -1030,16 +1077,8 @@ let is_single_parity_game game =
 
 let number_of_strategies game pl m =
   let n = ref 1 in
-  let i = ref 0 in
-  let l = Array.length game in
-
-  while !i < l && !n < m do
-    let (_,pl',ws,_) = game.(!i) in
-    if pl=pl' then n := !n * (Array.length ws);
-    incr i
-  done;
+  pg_iterate (fun v -> fun (_,p,vs,_,_) -> if !n < m && p=pl then n := !n * (ns_size vs)) game;
   min !n m
-
 
 
 let compute_priority_reach_array game player =
@@ -1051,7 +1090,7 @@ let compute_priority_reach_array game player =
         if badPrio >= 0 then (
             let nodes = ref [] in
             if goodPrio > badPrio then
-                Array.iteri (fun i (pr, _, _, _) ->
+                pg_iterate (fun i (pr, _, _, _, _) ->
                     if pr > badPrio then nodes := i::!nodes
                 ) game'
             else (
@@ -1062,12 +1101,12 @@ let compute_priority_reach_array game player =
                         List.iter count_nodes topology.(r);
                         sccentry.(r) <- List.fold_left (fun a i -> a + sccentry.(i)) 0 topology.(r);
                         List.iter (fun v ->
-                        	if pg_get_pr game' v = badPrio then sccentry.(r) <- 1 + sccentry.(r)
+                        	if pg_get_priority game' v = badPrio then sccentry.(r) <- 1 + sccentry.(r)
                         ) sccs.(r)
 					)
                 in
                 List.iter count_nodes roots;
-                Array.iteri (fun i (pr, _ ,_, _) ->
+                pg_iterate (fun i (pr, _, _, _, _) ->
                     if pr >= 0 then (maxvalues.(i)).(badPrio / 2) <- 1 + sccentry.(sccindex.(i));
                     if pr = badPrio then nodes := i::!nodes
                 ) game'
@@ -1081,50 +1120,6 @@ let compute_priority_reach_array game player =
     calc_iter game' maxvalues;
     maxvalues;;
 
-(*
-module Set = Intervaltree.IntSet ;;
-module Set = IntSet ;;
-
-let compute_priority_reach_array' game =
-  let m = Array.length game in
-  let reaches = Array.make m Set.empty in
-
-  let todo = Queue.create () in
-
-  for i=0 to m-1 do
-    reaches.(i) <- Set.singleton i;
-    Queue.add i todo
-  done;
-
-  let tgame = game_to_transposed_graph game in
-
-  while not (Queue.is_empty todo) do
-    let v = Queue.take todo in
-    let (pv,_,_,_) = game.(v) in
-
-    List.iter (fun w -> Set.reset_notice ();
-                        reaches.(w) <- Set.union
-                                       reaches.(w)
-                                       (Set.filter (fun u -> let (pu,_,_,_) = game.(u) in
-                                                             pu >= pv) reaches.(v));
-                        if !Set.insert_notice then (
-                           Queue.add w todo
-                        )
-              )
-              tgame.(v);
-  done;
-
-  let mp = pg_max_prio game in
-  let reach = Array.make_matrix m (1 + mp) 0 in
-  for v = 0 to m-1 do
-    Set.iter (fun w -> let p = pg_get_pr game w in
-                       reach.(v).(p) <- reach.(v).(p) + 1)
-             reaches.(v)
-  done;
-  reach
-
-
-*)
 
 
 
@@ -1132,15 +1127,15 @@ let compute_priority_reach_array' game =
  * Dynamic Parity Game                                        *
  **************************************************************)
 
-type dynamic_paritygame = (int * int * string option) DynamicGraph.dynamic_graph
+type dynamic_paritygame = (priority * player * string option) DynamicGraph.dynamic_graph
 
 let paritygame_to_dynamic_paritygame game =
 	let graph = DynamicGraph.make () in
-	Array.iteri (fun i (pr, pl, _, desc) ->
+	pg_iterate (fun i (pr, pl, _, _, desc) ->
 		DynamicGraph.add_node i (pr, pl, desc) graph
 	) game;
-	Array.iteri (fun i (_, _, tr, _) ->
-		Array.iter (fun j -> DynamicGraph.add_edge i j graph) tr
+	pg_iterate (fun i (_, _, tr, _, _) ->
+		ns_iter (fun j -> DynamicGraph.add_edge i j graph) tr
 	) game;
 	graph
 
@@ -1151,62 +1146,15 @@ let dynamic_subgame_by_strategy graph strat =
 
 let paritygame_to_dynamic_paritygame_by_strategy game strat =
 	let graph = DynamicGraph.make () in
-	Array.iteri (fun i (pr, pl, _, desc) ->
+	pg_iterate (fun i (pr, pl, _, _, desc) ->
 		DynamicGraph.add_node i (pr, pl, desc) graph
 	) game;
-	Array.iteri (fun i (_, _, tr, _) ->
+	pg_iterate (fun i (_, _, tr, _, _) ->
 		if strat.(i) = -1
-		then Array.iter (fun j -> DynamicGraph.add_edge i j graph) tr
+		then ns_iter (fun j -> DynamicGraph.add_edge i j graph) tr
 		else DynamicGraph.add_edge i strat.(i) graph
 	) game;
 	graph
-
-
-
-
-(**************************************************************
- * Symbolic Parity Game                                       *
- **************************************************************)
-
-module SymbolicParityGame = struct
-
-	open Tcsset
-
-	type 'a symbolic_paritygame = ('a, int) Hashtbl.t * dynamic_paritygame
-
-	let create_new x = (Hashtbl.create 10, DynamicGraph.make ())
-
-	let to_paritygame (ht, gr) =
-		let pg = pg_create (Hashtbl.length ht) in
-		Hashtbl.iter (fun _ ind ->
-			let (pr, pl, desc) = DynamicGraph.get_node_data ind gr in
-			let succs = TreeSet.elements (DynamicGraph.get_node_succ ind gr) in
-			pg.(ind) <- (pr, pl, Array.of_list succs, desc)
-		) ht;
-		pg
-
-	let internal_add (ht, gr) symb pr pl desc override =
-		if Hashtbl.mem ht symb
-		then let ind = Hashtbl.find ht symb in
-			 if override then DynamicGraph.set_node_data ind (pr, pl, desc) gr;
-			 ind
-		else let ind = Hashtbl.length ht in
-			 Hashtbl.add ht symb ind;
-			 DynamicGraph.add_node ind (pr, pl, desc) gr;
-			 ind
-   
-    let touch_node (ht, gr) symb =
-   		let _ = internal_add (ht, gr) symb (-1) (-1) None false in ()
-
-	let add_node (ht, gr) symb pr pl tr desc =
-		let ind = internal_add (ht, gr) symb pr pl desc true in
-		Array.iter (fun symb' ->
-			let ind' = internal_add (ht, gr) symb' (-1) (-1) None false in
-			DynamicGraph.add_edge ind ind' gr
-		) tr
-
-end;;
-
 
 
 (********************************************************
@@ -1234,53 +1182,65 @@ end);;
 
 (* return the set of all nodes which have a successors in t *)
 
-let diamond_with_transposed_graph t game tg =
+  
+let diamond game t =
   NodeSet.fold (fun v -> fun s -> 
                  List.fold_left (fun s' -> fun u -> 
-                                   let (pr,_,_,_) = game.(u) in
-                                   if (pr >=0) then 
+                                   if pg_isDefined game u then 
                                      NodeSet.add u s'
                                    else s')  
-                                 s tg.(v)) 
+                                 s (pg_get_predecessors game v)) 
                t NodeSet.empty 
-
-
+  
+  
 (* return the set of all nodes for which all successors are in t *)
 
-let box_with_transposed_graph t game tg =
-  let c = diamond_with_transposed_graph t game tg in      
-  NodeSet.filter (fun v -> let (pr, _, successors, _) = game.(v) in
-                          if pr >= 0 then
-                            Array.fold_left (fun b -> fun w -> b && NodeSet.mem w t) true successors
-                          else
-                            false
+let box game t =
+  let c = diamond game t in      
+  NodeSet.filter (fun v -> if pg_isDefined game v then
+                             ns_fold (fun b -> fun w -> b && NodeSet.mem w t) true (pg_get_successors game v)
+                           else
+                             false
                  ) c 
-
+  
 
 
 (********************************************************
  * Building Parity Games                                *
  ********************************************************)
 
-module type GameNode = 
+module type PGDescription = 
   sig
-    type node
+    type gamenode
 
-    val compare    : node -> node -> int
+    val compare    : gamenode -> gamenode -> int
 
-    val owner      : node -> int
-    val priority   : node -> int
-    val successors : node -> node list
-    val name       : node -> string option
+    val owner      : gamenode -> player
+    val priority   : gamenode -> priority
+    val successors : gamenode -> gamenode list
+    val show_node  : gamenode -> string option
+
+    val initnodes  : unit -> gamenode list
   end;;
 
-module Build = functor (T: GameNode) ->
+module type PGBuilder = 
+  sig
+    type gamenode
+	   
+    val build            : unit -> paritygame
+    val build_from_node  : gamenode -> paritygame
+    val build_from_nodes : gamenode list -> paritygame
+  end
+
+module Build(T: PGDescription) : (PGBuilder with type gamenode = T.gamenode ) =
   struct
 
+    type gamenode = T.gamenode  
+	   
     module Encoding = Map.Make(
       struct 
-        type t = T.node 
-        let compare = T.compare 
+        type t = T.gamenode 
+        let compare = compare 
       end);;
 
     let codes = ref Encoding.empty
@@ -1296,25 +1256,34 @@ module Build = functor (T: GameNode) ->
                                        !next_code - 1
                                      end
 
-    let build_from_node v = 
+    let build_from_nodes vlist = 
       let rec iterate acc visited = 
         function []          -> acc
                | ((v,c)::vs) -> begin
-                                  if NodeSet.mem c visited then
-                                    iterate acc visited vs
-                                  else
-                                    let ws = T.successors v in
-                                    let ds = List.map encode ws in
-                                    iterate ((c, T.owner v, T.priority v, ds, T.name v) :: acc) (NodeSet.add c visited) ((List.combine ws ds) @ vs)
-                                  end
+                                if NodeSet.mem c visited then
+                                  iterate acc visited vs
+                                else
+                                  let ws = T.successors v in
+                                  let ds = List.map encode ws in
+                                  iterate ((c, T.owner v, T.priority v, ds, T.show_node v) :: acc) (NodeSet.add c visited) ((List.combine ws ds) @ vs)
+                              end
       in
-      let nodes = iterate [] NodeSet.empty [(v,encode v)] in
+      let nodes = iterate [] NodeSet.empty (List.map (fun v -> (v,encode v)) vlist) in
       let game = pg_create (List.length nodes) in
       let rec transform = 
         function []                  -> ()
-	       | ((v,o,p,ws,nm)::ns) -> pg_set_node game v p o (Array.of_list ws) nm;
+	       | ((v,o,p,ws,nm)::ns) -> pg_set_priority game v p;
+					pg_set_owner game v o;
+					pg_set_desc game v nm;
+					List.iter (fun w -> pg_add_edge game v w) ws;
                                         transform ns
       in
       transform nodes;
       game
+			
+    let build_from_node v = build_from_nodes [v]
+
+    let build _ = build_from_nodes (T.initnodes ())
   end;;
+
+

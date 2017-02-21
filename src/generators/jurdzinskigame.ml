@@ -1,65 +1,69 @@
 open Paritygame;;
 
+let height = ref 0
+let width = ref 0
+
+let rec range x y = if x > y then [] else x :: (range (x+1) y)
+
+module JGame = Build(
+  struct
+    type gamenode = Left of int * int
+		  | Right of int * int
+		  | Above of int * int
+			       
+    let compare = compare
+
+    let owner = function Left(0,_)  -> plr_Even
+		       | Right(0,_) -> plr_Odd
+		       | Left(_,_)  -> plr_Odd
+		       | Right(_,_) -> plr_Even
+		       | Above(_,_) -> plr_Even
+		       
+    let priority = function Left(0,_)  -> 0
+			  | Right(0,_) -> 1
+			  | Left(h,_)  -> 2*h
+			  | Right(h,_) -> 2*h
+			  | Above(h,_) -> 2*h+1
+
+    let successors = function Left(0,0)  -> [ Right(0,0) ]
+			    | Left(0,w)  -> if w < !width then
+					      [ Right(0,w-1); Right(0,w) ]
+					    else
+					      [ Right(0,w-1) ]
+			    | Right(0,w) -> (Left(0,w))::(Left(0,w+1))::(List.map (fun v -> Right(v,w)) (range 1 (!height-1)))
+			    | Left(h,0)  -> [ Above(h,0); Right(h,0) ]
+			    | Left(h,w)  -> if w < !width then
+					      [ Right(h,w-1); Above(h,w); Right(h,w) ]
+					    else
+					      [ Right(h,w-1) ]
+			    | Above(h,w) -> [ Right(h,w) ]
+			    | Right(h,w) -> [ Left(h,w); Left(h,w+1); Right(0,w) ]
+
+    let show_node = function Left(h,w)  -> Some("L(" ^ string_of_int h ^ "," ^ string_of_int w ^ ")")
+			   | Right(h,w) -> Some("R(" ^ string_of_int h ^ "," ^ string_of_int w ^ ")")
+			   | Above(h,w) -> Some("A(" ^ string_of_int h ^ "," ^ string_of_int w ^ ")")
+
+    let initnodes _ = [ Left(0,0) ]
+
+  end);;
+		    
 let generator_game_func arguments = 
 
-	let show_help _ =
-		print_string (Info.get_title "Jurdzinski Game Generator");
-		print_string ("Usage: jurdzinskigame n m\n\n" ^
-					  "       where (n,m) = (n,m)-th jurdzinski game\n\n")
-	in
-
-	let rec range i j = if i=j then [j] else i::(range (i+1) j) in
-
-  if (Array.length arguments != 2) then (show_help (); exit 1);
-
-  let d = int_of_string arguments.(0) in
-  let w = int_of_string arguments.(1) in
-
-  let name i j = 2*w*i + j in
-  
-  let game = pg_create (1 + name (2*d) (2*w-1)) in
-  
-  let print_node name prio player edges ann =
-	pg_set_node game name prio player (Array.of_list edges) ann
+  let show_help _ =
+    print_string (Info.get_title "Jurdzinski Game Generator");
+    print_string ("Usage: jurdzinskigame h w\n\n" ^
+		    "       generates the Jurdzinski game of height h and width w for h,w >= 0\n" ^
+		      "       as a max-parity game\n\n")
   in
+  
+  (try
+      height := int_of_string arguments.(0);
+      width := int_of_string arguments.(1)					 
+  with _ -> (show_help (); exit 1));
 
-  let m = (2*d+2) in
+  if not (!height >= 0 && !width >= 0) then (show_help(); exit 1);
 
-  for i=0 to d-1 do
-    let i'=2*i in
-    for j=0 to w-1 do
-      let j' = 2*j in
-      print_node (name i' j') (m-i'-1) 0 [name (i'+1) (j'+1)] None
-    done
-  done;
-  for i=0 to d-1 do
-    let i'=2*i+1 in
-    print_node (name i' 0) (m-i'-1) 1 [name i' 1; name (i'-1) 0] None;
-    for j=1 to w-1 do
-      let j' = 2*j in
-      print_node (name i' j') (m-i'-1) 1 [name i' (j'-1); name i' (j'+1); name (i'-1) j'] None
-    done;
-    for j=0 to w-2 do
-      let j' = 2*j+1 in
-      print_node (name i' j') (m-i'-1) 0 [name i' (j'-1); name i' (j'+1); name (2*d) j'] None
-    done;
-    print_node (name i' (2*w-1)) (m-i'-1) 0 [name i' (2*w-1); name i' (2*w-2)] None
-  done;
-
-  print_node (name (2*d) 0) 0 0 [name (2*d) 1] None;
-  for j=1 to w-1 do
-    let j' = 2*j in
-    print_node (name (2*d) j') 0 0 [name (2*d) (j'-1); name (2*d) (j'+1)] None
-  done;
-  for j=0 to w-2 do
-    let j' = 2*j+1 in
-    print_node (name (2*d) j') 1 1 ((name (2*d) (j'-1))::(name (2*d) (j'+1))::
-                                          (List.map (fun i -> name (2*i+1) j') (range 0 (d-1)))) None
-  done;
-  print_node (name (2*d) (2*w-1)) 1 1 ((name (2*d) (2*w-2))::(name (2*d) (2*w-1))::
-                                             (List.map (fun i -> name (2*i+1) (2*w-1)) (range 0 (d-1)))) None;
-  (* letzte Zeile separat *)
-   game;;
+  JGame.build ()
 
 
-Generators.register_generator generator_game_func "jurdzinskigame" "Jurdzinski Game";;
+let _ = Generators.register_generator generator_game_func "jurdzinskigame" "Jurdzinski Game";;

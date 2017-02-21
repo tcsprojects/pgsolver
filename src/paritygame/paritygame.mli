@@ -2,75 +2,207 @@ open Tcsbasedata
 open Tcsset
 
 
+(***************************************************************
+ * Functions for representing sets of nodes,                   *
+ * particularly for successors and predecessors of given nodes *
+ *                                                             *
+ * Warning: the type `node' may become abstract in the future  *
+ ***************************************************************)
+
+type node = int
+val nd_undef  : node
+(*
+val nd_make   : int -> node   (* turns an int into a node; mostly to be used with paritygame generators that like to build a game using ints for nodes *) 
+val nd_reveal : node -> int   (* provides the inverse function to nd_make *)
+ *)
+		  
+val nd_show : node -> string
+			
+type nodeset
+
+(* check for emptiness and membership *)
+val ns_isEmpty : nodeset -> bool
+val ns_elem    : node -> nodeset -> bool
+
+(* constructor functions for node sets *)
+val ns_empty   : nodeset
+val ns_make    : node list -> nodeset
+
+(* returns the number of elements in a node set *)
+val ns_size    : nodeset -> int
+
+(* iterator functions over node sets *)
+val ns_fold    : ('a -> node -> 'a) -> 'a -> nodeset -> 'a
+val ns_iter    : (node -> unit) -> nodeset -> unit
+val ns_map     : (node -> node) -> nodeset -> nodeset
+val ns_filter  : (node -> bool) -> nodeset -> nodeset
+						
+(* finding elements in a node set *)
+val ns_exists  : (node -> bool) -> nodeset -> bool			
+val ns_forall  : (node -> bool) -> nodeset -> bool			
+val ns_find    : (node -> bool) -> nodeset -> node
+val ns_max     : nodeset -> (node -> node -> bool) -> node
+val ns_some    : nodeset -> node (* returns a randomly chosen element from a node set *)
+val ns_first   : nodeset -> node (* return the smallest (by name) node in a node set *)
+val ns_last    : nodeset -> node (* return the greatest (by name) node in a node set *)
+
+(* add a node to, resp. delete a node from a nodeset *) 
+val ns_add     : node -> nodeset -> nodeset
+val ns_del     : node -> nodeset -> nodeset
+
+(* extract a list of nodes from a node set *)
+val ns_nodes   : nodeset -> node list
+
+
+(**************************************************************
+ * Players and priorities                                     *
+ *                                                            *
+ * Warning: the types may become abstract in the future       *
+ **************************************************************)
+
+type player 
+type priority = int
+
+val plr_Even  : player
+val plr_Odd   : player
+val plr_undef : player
+
+val plr_random : unit -> player
+			   
+val plr_opponent : player -> player
+val plr_benefits : priority -> player
+val plr_show : player -> string
+
+(* applies a function to both players *)
+val plr_iterate : (player -> unit) -> unit
+					
+val prio_good_for_player : priority -> player -> bool
+
+val odd: priority -> bool
+val even: priority -> bool
+			
+						 
 (**************************************************************
  * Parity Game Definitions                                    *
  **************************************************************)
 
-(* These definitions are DEPRECATED and will be removed from the interface in the future.*)
-(* Please use the access functions below instead. *)
-
 type paritygame
-type solution = int array
-type strategy = int array
 
-type global_solver = (paritygame -> solution * strategy)
-
-
+		       
 (**************************************************************
  * Access Functions                                           *
  **************************************************************)
 
 val pg_create     : int -> paritygame
-val pg_init       : int -> (int -> (int * int * int array * string option)) -> paritygame
-val pg_sort       : ((int * int * int array * string option) -> (int * int * int array * string option) -> int) -> paritygame -> unit
+val pg_init       : int -> (node -> (priority * player * node list * string option)) -> paritygame
 val pg_size	  : paritygame -> int
 val pg_node_count : paritygame -> int
 val pg_edge_count : paritygame -> int
 val pg_copy       : paritygame -> paritygame
 
-val pg_get_pr     : paritygame -> int -> int
-val pg_set_pr     : paritygame -> int -> int -> unit
-val pg_get_pl     : paritygame -> int -> int
-val pg_set_pl     : paritygame -> int -> int -> unit
-val pg_get_tr     : paritygame -> int -> int array
-val pg_set_tr     : paritygame -> int -> int array -> unit
-val pg_get_desc   : paritygame -> int -> string option
-val pg_set_desc   : paritygame -> int -> string option -> unit
-val pg_get_desc'  : paritygame -> int -> string
-val pg_set_desc'  : paritygame -> int -> string -> unit
 
-val pg_get_priority     : paritygame -> int -> int
-val pg_get_owner        : paritygame -> int -> int
-val pg_get_successors   : paritygame -> int -> int array
-val pg_get_predecessors : paritygame -> int -> int array
+				  
+(**************************************************************
+ * node access and modification functions                     *
+ *                                                            *
+ * modifications are inplace                                  *
+ **************************************************************)
+val pg_get_priority     : paritygame -> node -> priority
+val pg_get_owner        : paritygame -> node -> player
+val pg_get_successors   : paritygame -> node -> nodeset
+val pg_get_predecessors : paritygame -> node -> nodeset
 
-val pg_set_priority     : paritygame -> int -> int -> unit
-val pg_set_owner        : paritygame -> int -> int -> unit
-val pg_add_edge         : paritygame -> int -> int -> unit
-val pg_del_edge         : paritygame -> int -> int -> unit
+val pg_set_priority     : paritygame -> node -> priority -> unit
+val pg_set_owner        : paritygame -> node -> player -> unit
+val pg_add_edge         : paritygame -> node -> node -> unit
+val pg_del_edge         : paritygame -> node -> node -> unit
 
-val pg_iterate : (int -> (int * int * int array * string option) -> unit) -> paritygame -> unit 
-val pg_map : (int -> (int * int * int array * string option) -> (int * int * int array * string option)) -> paritygame -> paritygame 
-val pg_map2 : (int -> (int * int * int array * string option) -> 'a) -> paritygame -> 'a array 
+val pg_get_desc   : paritygame -> node -> string option
+val pg_set_desc   : paritygame -> node -> string option -> unit
+val pg_get_desc'  : paritygame -> node -> string
+val pg_set_desc'  : paritygame -> node -> string -> unit
 
-val pg_get_node   : paritygame -> int -> (int * int * int array * string option)
-val pg_set_node   : paritygame -> int -> int -> int -> int array -> string option -> unit
-val pg_set_node2   : paritygame -> int -> (int * int * int array * string option) -> unit
+val pg_isDefined : paritygame -> node -> bool
+					   
+val pg_iterate      : (node -> (priority * player * nodeset * nodeset * string option) -> unit) -> paritygame -> unit
+val pg_edge_iterate : (node -> node -> unit) -> paritygame -> unit
+val pg_map          : (node -> (priority * player * nodeset * nodeset * string option) -> (priority * player * nodeset * nodeset * string option)) -> paritygame -> paritygame 
+val pg_map2         : (node -> (priority * player * nodeset * nodeset * string option) -> 'a) -> paritygame -> 'a array 
+					    
+val pg_find_desc  : paritygame -> string option -> node
+
+(* `pg_get_index <game>' returns the index of the game <game>*)
+val pg_get_index      : paritygame -> int
+
+(* `pg_prio_nodes <game> <prio>' returns a list of all nodes having priority <prio> *)
+val pg_prio_nodes: paritygame -> priority -> node list
+
+(* returns a list of all the priorities occurring in the game *)
+val pg_get_selected_priorities : paritygame -> (priority -> bool) -> priority list
+val pg_get_priorities : paritygame -> priority list
+						     
+(* `pg_remove_nodes <game> <node_list>' removes all nodes from <game> that are specified in <node_list> *)
+val pg_remove_nodes   : paritygame -> node list -> unit
+
+(* `pg_remove_edges <game> <edge_list>' removes all edges from <game> that are specified in <edge_list> *)
+val pg_remove_edges   : paritygame -> (node * node) list -> unit
 
 
-val pg_find_desc  : paritygame -> string option -> int
+(* sorting *)
+val pg_sort                   : ((priority * player * nodeset * nodeset * string option) ->
+				 (priority * player * nodeset * nodeset * string option) -> int) -> paritygame -> unit
 
-val pg_get_tr_index_of: paritygame -> int -> int -> int
+
+(**************************************************************
+ * Solutions, strategies and solvers                          *
+ *                                                            *
+ * Warning: the types of solution and strategy may become     *
+ * abstract in the future                                     *
+ **************************************************************)
+
+type solution = player array
+type strategy = node array
+
+(* create solution spaces for a parity game *)
+val sol_create : paritygame -> solution                       (* initially, every node is won by player plr_undef *)
+val sol_make   : int -> solution                              (* same as sol_create but only gets to know the size of the game *)
+val sol_init   : paritygame -> (node -> player) -> solution   (* create solution space initially filled with values *)
+
+val sol_get    : solution -> node -> player                   (* get the winner of a node according to a solution *)
+val sol_set    : solution -> node -> player -> unit           (* set the winner of a node in a solution *)
+val sol_iter   : (node -> player -> unit) -> solution -> unit (* iterate over all nodes with their winners in a solution space *) 
+						 
+val sol_number_solved : solution -> int                       (* test solutions *)
+
+(* create positional strategies for a parity game 
+ *
+ * A value of type strategy is essentially a map of type node -> node that represents positional strategies for both players.
+ * The player for whom a decision v -> u is included in the strategy is implicitly given by the owner of node v in the underlying parity game.
+ * Warning: a strategy does not remember its underlying parity game. Hence, a strategy that was created for one game can be used for another game,
+ * but this can not only obviously lead to wrong computations but also to runtime errors.
+ *)
+val str_create : paritygame -> strategy                       (* initially, every node maps to a special undefined node *)
+val str_make   : int -> strategy                              (* same as str_create but only gets to know the size of the game *)
+val str_init   : paritygame -> (node -> node) -> strategy     (* create strategy initially filled with decisions according to its second argument *)
+
+val str_get    : strategy -> node -> node                     (* get the strategy decision at a node *)
+val str_set    : strategy -> node -> node -> unit             (* `str_set <str> <v> <u>´ records the strategy decision <v> -> <u> in <str> *)
+val str_iter   : (node -> node -> unit) -> strategy -> unit   (* iterate over all nodes and their corresponding successors in a strategy *) 
 
 
+(**************************************************************
+ * A type for algorithms that solve a paritygame              *
+ **************************************************************)
+type global_solver = paritygame -> solution * strategy
 
+							 
 (**************************************************************
  * Formatting Functions                                       *
  **************************************************************)
 
 val game_to_string : paritygame -> string
 
-(* Calling print_game game prints game on STDOUT s.t. it could be parsed again. *)
+(* `print_game <game>' prints <game> on STDOUT s.t. it could be parsed again. *)
 val print_game : paritygame -> unit
 
 val print_solution_strategy_parsable : solution -> strategy -> unit
@@ -84,63 +216,36 @@ val format_game : paritygame -> string
 
 
 
-
-(**************************************************************
- * Parsing Functions                                          *
- **************************************************************)
- 
- val parse_parity_game: in_channel -> paritygame
- 
-
- 
  
  (**************************************************************
  * Node Orderings                                             *
  **************************************************************)
 
-type pg_ordering      = int * int * int * int array -> int * int * int * int array -> int
+type pg_ordering      = node * priority * player * nodeset -> node * priority * player * nodeset -> int
 
-val reward            : int -> int -> int
+(* `reward <player> <priority>' returns the reward that <priority> has for player <player> *)
+val reward            : player -> priority -> priority
 
-val ord_rew_for       : int -> pg_ordering
+val ord_rew_for       : player -> pg_ordering
 val ord_prio          : pg_ordering
 val ord_total_by      : pg_ordering -> pg_ordering
 
-val pg_max            : paritygame -> pg_ordering -> int
-val pg_min            : paritygame -> pg_ordering -> int
+val pg_max            : paritygame -> pg_ordering -> node
+val pg_min            : paritygame -> pg_ordering -> node
 
-val pg_max_prio_node  : paritygame -> int
-val pg_max_rew_node_for : paritygame -> int -> int
+val pg_max_prio_node  : paritygame -> node
+val pg_max_rew_node_for : paritygame -> player -> node
 
 
 (* Calling pg_max_prio game returns the greatest priority occurring in the game *)
-val pg_max_prio       : paritygame -> int
+val pg_max_prio       : paritygame -> priority
 
 (* Calling pg_min_prio game returns the least priority occurring in the game *)
-val pg_min_prio       : paritygame -> int
+val pg_min_prio       : paritygame -> priority
 
 (* Calling pg_max_prio_for game player returns the greatest reward for player occurring in the game *)
-val pg_max_prio_for   : paritygame -> int -> int
+val pg_max_prio_for   : paritygame -> player -> priority
 
-(* Calling pg_get_index game returns the index of the game *)
-val pg_get_index      : paritygame -> int
-
-val pg_prio_nodes: paritygame -> int -> int list
-
-
-
-(**************************************************************
- * Inplace Modifications                                      *
- **************************************************************)
-
-val pg_add_successor  : paritygame -> int -> int -> unit
-val pg_add_successors : paritygame -> int -> int array -> unit
-
-(* Calling pg_remove_nodes game node_list removes all nodes specified in node_list *)
-val pg_remove_nodes   : paritygame -> int list -> unit
-
-(* Calling pg_remove_edges game edge_list removes all edges specified in edge_list *)
-val pg_remove_edges   : paritygame -> (int * int) list -> unit
 
 
 
@@ -148,13 +253,16 @@ val pg_remove_edges   : paritygame -> (int * int) list -> unit
  * Node Collect Functions                                     *
  **************************************************************)
 
-val collect_nodes: paritygame -> (int -> int * int * int array * string option -> bool) -> int list
-val collect_nodes_by_prio: paritygame -> (int -> bool) -> int list
+val collect_nodes: paritygame -> (node -> priority * player * nodeset * nodeset * string option -> bool) -> node list
+val collect_nodes_by_prio: paritygame -> (priority -> bool) -> node list
 
-(* Calling collect_max_prio_nodes game returns all nodes with greatest priority *)
-val collect_max_prio_nodes: paritygame -> int list
+(* `collect_nodes_by_owner <game> <f>' returns two lists: the first one contains all nodes v for which f v is true, the other all those for which it is false *)
+val collect_nodes_by_owner: paritygame -> (player -> bool) -> node list * node list
+								  
+(* `collect_max_prio_nodes <game>' returns all nodes with greatest priority *)
+val collect_max_prio_nodes: paritygame -> node list
 
-val collect_max_parity_nodes: paritygame -> int list
+val collect_max_parity_nodes: paritygame -> node list
 
 
 
@@ -162,22 +270,25 @@ val collect_max_parity_nodes: paritygame -> int list
  * Sub Game Creation                                          *
  **************************************************************)
 
-val subgame_by_edge_pred: paritygame -> (int -> int -> bool) -> paritygame
+val subgame_by_edge_pred: paritygame -> (node -> node -> bool) -> paritygame
 val subgame_by_strat: paritygame -> strategy -> paritygame
-val subgame_by_strat_pl: paritygame -> strategy -> int -> paritygame
+val subgame_by_strat_pl: paritygame -> strategy -> player -> paritygame
 
 (* Calling subgame_by_list game nodes returns a compressed sub game induced and ordered by the nodes-list *)
-val subgame_by_list: paritygame -> int list -> paritygame
+val subgame_by_list: paritygame -> node list -> paritygame
 
-val subgame_and_subgraph_by_list: paritygame -> int list array -> int list -> paritygame * int list array
-
+(*
+val subgame_and_subgraph_by_list: paritygame -> int list array -> int list -> paritygame * int list array (* DEPRECATED *)
+*)
 
 (**************************************************************
  * Solution / Strategy Update Functions                       *
  **************************************************************)
 
+(*
 val permute_solution: int array -> solution -> solution
 val permute_strategy: int array -> int array -> solution -> solution
+*)
 
 exception Unmergable
 
@@ -188,41 +299,31 @@ val merge_strategies_inplace : strategy -> strategy -> unit
 val merge_solutions_inplace : solution -> solution -> unit
 
 
-(**************************************************************
- * Graph Transformations                                      *
- **************************************************************)
-
-(* Calling game_to_transposed_graph game returns the transposed graph associated with the game. *)
-val game_to_transposed_graph : paritygame -> int list array
-
-val transposed_graph_remove_nodes : paritygame -> int list array -> int list -> unit
-
-val pg_with_graph_remove_nodes: paritygame -> int list array -> int list -> unit
-
-(* Calling game_to_graph game returns the graph associated with the game. *)
-val game_to_graph : paritygame -> int list array
-
-val transposed_graph_remove_edges : int list array -> (int * int) list -> unit
-
-
 
 (**************************************************************
  * Decomposition Functions                                    *
  **************************************************************)
 
-val strongly_connected_components' : paritygame -> (int list array) -> int list array * int array * int list array * int list
+type scc = int
+	     
+(* `strongly_connected_components <game>' decomposes the game into its SCCs. 
+   It returns a tuple (<sccs>, <sccindex>, <topology>, <roots>) where 
+    - <sccs> is an array mapping each SCC to its list of nodes, 
+    - <sccindex> is an array mapping each node to its SCC, 
+    - <topology> is an array mapping each SCC to the list of its immediate successing SCCs and 
+    - <roots> is the list of SCCs having no predecessing SCC. 
+*)
+val strongly_connected_components : paritygame -> node list array * scc array * scc list array * scc list
 
-(* Calling strongly_connected_components game decomposes the game into its SCCs. It returns a tuple (sccs, sccindex, topology, roots) where sccs is an array mapping each SCC to its list of nodes, sccindex is an array mapping each node to its SCC, topology is an array mapping each SCC to the list of its immediate successing SCCs and roots is the list of SCC having no predecessing SCC. *)
-val strongly_connected_components : paritygame -> int list array * int array * int list array * int list
+(* `sccs_compute_leaves <scc_list> <topology>' returns the leaf SCCs reachable from some SCC in <scc_list> via <topology> *)
+val sccs_compute_leaves: scc list -> scc list array -> scc list
 
-val sccs_compute_leafs: int list -> int list array -> int list
-
-val sccs_compute_transposed_topology: int list array -> int list array
+val sccs_compute_transposed_topology: scc list array -> scc list array
 
 
-val sccs_compute_connectors : paritygame -> int list array * int array * int list array * int list -> (int * int, (int * int) list) Hashtbl.t
+val sccs_compute_connectors : paritygame -> node list array * scc array * scc list array * scc list -> (scc * scc, (scc * scc) list) Hashtbl.t
 
-val show_sccs : int list array -> int list array -> int list -> string
+val show_sccs : node list array -> scc list array -> scc list -> string
 
 
 
@@ -231,12 +332,13 @@ val show_sccs : int list array -> int list array -> int list -> string
  **************************************************************)
 
 (* game strategy player region include_region tgraph deltafilter overwrite_strat *)
-val attr_closure_inplace': paritygame -> strategy -> int -> int TreeSet.t -> bool -> int list array -> (int -> bool) -> bool -> int list
+val attr_closure_inplace': paritygame -> strategy -> player -> node TreeSet.t -> bool -> (node -> bool) -> bool -> node list
 
-(* Calling attr_closure_inplace game strategy player region returns the attractor for the given player and region. Additionally all necessary strategy decisions for player leading into the region are added to strategy. *)
-val attr_closure_inplace : paritygame -> strategy -> int -> int list -> int list
+(* `attr_closure_inplace <game> <strategy> <player> <region>' returns the attractor for the given player and region. 
+   Additionally all necessary strategy decisions for player leading into the region are added to <strategy>. *)
+val attr_closure_inplace : paritygame -> strategy -> player -> node list -> node list
 
-val attractor_closure_inplace_sol_strat: paritygame -> int list array -> (int -> bool) -> solution -> strategy -> int TreeSet.t -> int TreeSet.t -> (int list * int list)
+val attractor_closure_inplace_sol_strat: paritygame -> (node -> bool) -> solution -> strategy -> node TreeSet.t -> node TreeSet.t -> (node list * node list)
 
 
 
@@ -244,9 +346,9 @@ val attractor_closure_inplace_sol_strat: paritygame -> int list array -> (int ->
  * Dominion Functions                                         *
  **************************************************************)
 
-val pg_set_closed: paritygame -> int TreeSet.t -> int -> bool
+val pg_set_closed: paritygame -> node TreeSet.t -> player -> bool
 
-val pg_set_dominion: (paritygame -> solution * strategy) -> paritygame -> int TreeSet.t -> int -> strategy option
+val pg_set_dominion: (paritygame -> solution * strategy) -> paritygame -> node TreeSet.t -> player -> strategy option
 
 
 
@@ -254,15 +356,15 @@ val pg_set_dominion: (paritygame -> solution * strategy) -> paritygame -> int Tr
  * Partial Parity Game                                        *
  **************************************************************)
 
-type partial_paritygame = int * (int -> int Enumerators.enumerator) * (int -> int * int) * (int -> string option)
-type partial_solution = int -> int * int option
+type partial_paritygame = node * (node -> node Enumerators.enumerator) * (node -> priority * player) * (node -> string option)
+type partial_solution = node -> player * node option
 type partial_solver = partial_paritygame -> partial_solution
 
-val induce_partialparitygame: paritygame -> int -> partial_paritygame
+val induce_partialparitygame: paritygame -> node -> partial_paritygame
 
-val induce_counting_partialparitygame: paritygame -> int -> int ref * partial_paritygame
+val induce_counting_partialparitygame: paritygame -> node -> int ref * partial_paritygame
 
-val partially_solve_dominion: paritygame -> int -> partial_solver -> solution * strategy
+val partially_solve_dominion: paritygame -> node -> partial_solver -> solution * strategy
 
 val partially_solve_game: paritygame -> partial_solver -> solution * strategy
 
@@ -274,11 +376,12 @@ val partially_solve_game: paritygame -> partial_solver -> solution * strategy
  **************************************************************)
 
 val get_player_decision_info: paritygame -> bool * bool
-val is_single_parity_game: paritygame -> int option
+val is_single_parity_game: paritygame -> priority option
 
-val number_of_strategies : paritygame -> int -> int -> int
+(* computes the number of strategies for a player in a game; the third parameter is an upper bound on the returned value *)
+val number_of_strategies : paritygame -> player -> int -> int
 
-val compute_priority_reach_array : paritygame -> int -> int array array
+val compute_priority_reach_array : paritygame -> player -> priority array array  
 
 (*
 val compute_priority_reach_array': paritygame -> int array array
@@ -291,7 +394,7 @@ val compute_priority_reach_array': paritygame -> int array array
  * Dynamic Parity Game                                        *
  **************************************************************)
 
-type dynamic_paritygame = (int * int * string option) Tcsgraph.DynamicGraph.dynamic_graph
+type dynamic_paritygame = (priority * player * string option) Tcsgraph.DynamicGraph.dynamic_graph
 
 val paritygame_to_dynamic_paritygame: paritygame -> dynamic_paritygame
 
@@ -299,26 +402,6 @@ val dynamic_subgame_by_strategy: dynamic_paritygame -> strategy -> dynamic_parit
 
 val paritygame_to_dynamic_paritygame_by_strategy: paritygame -> strategy -> dynamic_paritygame
 
-
-
-(**************************************************************
- * Symbolic Parity Game                                       *
- **************************************************************)
-
-
-module SymbolicParityGame : sig
-
-	type 'a symbolic_paritygame
-
-	val create_new: 'a -> 'a symbolic_paritygame
-
-	val to_paritygame: 'a symbolic_paritygame -> paritygame
-
-  val touch_node: 'a symbolic_paritygame -> 'a -> unit
-   
-	val add_node: 'a symbolic_paritygame -> 'a -> int -> int -> 'a array -> string option -> unit
-
-end
 
 
 
@@ -358,32 +441,52 @@ end
 
 (********************************************************
  * Modal logic operations on sets of game nodes.        *
- * takes a set of nodes, a parity game and its          *
- *  transposed graph                                    *
  ********************************************************)
 
-val diamond_with_transposed_graph: NodeSet.t -> paritygame -> int list array -> NodeSet.t
-val box_with_transposed_graph    : NodeSet.t -> paritygame -> int list array -> NodeSet.t
-
+(* `diamond <pg> <ns>' returns the set of all nodes in <pg> that have a successor in <ns>. 
+    Likewise, `box' does so for nodes whose successors are all in <ns>. *)
+val diamond : paritygame -> NodeSet.t -> NodeSet.t
+val box     : paritygame -> NodeSet.t -> NodeSet.t
 
 
 (**************************************************************
  * Building Parity Games                                      *
  **************************************************************)
 
-module type GameNode =
+(* This can be used to build parity games starting from a particular node in an on-the-fly fashion.
+   It is particularly useful when the resulting size is not (easily) known in advance. For an example
+   of its use, see src/generators/langincl.ml . 
+
+   To use it, define a module of the type PGDescription using some type gamenode to represent nodes and
+   giving functions that read off the priority, owner successors, a possible string representation of a 
+   game node, and a list of particular initial nodes.
+   The module obtained by applying the functor Build then gives you a module with a function that
+   builds a parity game containing all the game nodes that are reachable these initial ones. Additionally,
+   you get functions that take nodes as arguments from which to build the parity game. 
+*)
+					   
+module type PGDescription =
   sig
-    type node
+    type gamenode
 
-    val compare    : node -> node -> int
+    val compare    : gamenode -> gamenode -> int
 
-    val owner      : node -> int
-    val priority   : node -> int
-    val successors : node -> node list
-    val name       : node -> string option
+    val owner      : gamenode -> player
+    val priority   : gamenode -> priority
+    val successors : gamenode -> gamenode list   (* should always return a non-empty list *)
+    val show_node  : gamenode -> string option
+
+    val initnodes  : unit -> gamenode list 
   end
 
-module Build: functor (T: GameNode) -> 
+module type PGBuilder = 
   sig
-    val build_from_node : T.node -> paritygame
+    type gamenode
+	   
+    val build            : unit -> paritygame
+    val build_from_node  : gamenode -> paritygame
+    val build_from_nodes : gamenode list -> paritygame
   end
+
+module Build(T: PGDescription) : PGBuilder with type gamenode = T.gamenode 
+

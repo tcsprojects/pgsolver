@@ -5,14 +5,16 @@ open Solvers;;
 open Tcsarray;;
 open Tcsqueue;;
 
+let ns_minarg arr f less = ns_fold (fun m i -> if less (f i) (f m) then i else m) (ns_some arr) arr;;
+let ns_maxarg arr f less = ns_fold (fun m i -> if less (f m) (f i) then i else m) (ns_some arr) arr;;
+
 let arr_minarg arr f less = Array.fold_left (fun m i -> if less (f i) (f m) then i else m) (arr.(0)) arr;;
 let arr_maxarg arr f less = Array.fold_left (fun m i -> if less (f m) (f i) then i else m) (arr.(0)) arr;;
 
 let solve_scc_reach game player spmidx updspm =
 
     let n = pg_size game in
-    let transp = game_to_transposed_graph game in
-    let maxprio = pg_max_prio_for game (1 - player) in
+    let maxprio = pg_max_prio_for game (plr_opponent player) in
 
     let pr2spm pr = (pr / 2) in
 
@@ -53,11 +55,11 @@ let solve_scc_reach game player spmidx updspm =
         ) else (
             for i = 0 to maxprio do
                 if (i < pr) then (
-                    if (i mod 2 != player) then spmz.(pr2spm i) <- (0, snd spmz.(pr2spm i))
+                    if (plr_benefits i != player) then spmz.(pr2spm i) <- (0, snd spmz.(pr2spm i))
                 ) else if (i = pr) then (
-                    if (i mod 2 != player)
+                    if (plr_benefits i != player)
                     then spmz.(pr2spm i) <- (1 + fst spmy.(pr2spm i), snd spmz.(pr2spm i))
-                ) else if (i > pr) && (i mod 2 != player)
+                ) else if (i > pr) && (plr_benefits i != player)
                        then spmz.(pr2spm i) <- (fst spmy.(pr2spm i), snd spmz.(pr2spm i))
             done;
             updspm spmz pr
@@ -71,25 +73,27 @@ let solve_scc_reach game player spmidx updspm =
         let lesscmp i = (x i < y i) || ((x i < snd spmx.(i)) && (y i = snd spmy.(i))) in
         let rec less' pr' =
             if pr' > pr then (
-                if (pr' mod 2 = player) || (x (pr2spm pr') = y (pr2spm pr'))
+                if (plr_benefits pr' = player) || (x (pr2spm pr') = y (pr2spm pr'))
                 then less' (pr' - 1)
                 else lesscmp (pr2spm pr')
-            ) else (pr' mod 2 = player) || (lesscmp (pr2spm pr'))
+            ) else (plr_benefits pr' = player) || (lesscmp (pr2spm pr'))
         in (less' maxprio) && (not (isTop spmx))
     in
 
     let update queue i =
         if not (isTop spmidx.(i)) then (
-            let (pr, pl, delta, _) = pg_get_node game i in
-            let j = (if pl = player then arr_minarg else arr_maxarg)
+          let pr = pg_get_priority game i in
+	  let pl = pg_get_owner game i in
+	  let delta = pg_get_successors game i in
+            let j = (if pl = player then ns_minarg else ns_maxarg)
                      delta (fun q -> prog pr spmidx.(i) spmidx.(q)) (less 0) in
             let y = prog pr spmidx.(i) spmidx.(j) in
             let x = spmidx.(i) in
             if (less 0 x y) && not (x = y) then (
-                message 3 (fun _ -> "Enqueuing predecessors of " ^ string_of_int i ^ " for " ^ string_of_int player ^ "\n");
-                List.iter (fun j -> SingleOccQueue.add j queue) transp.(i);
+                message 3 (fun _ -> "Enqueuing predecessors of " ^ string_of_int i ^ " for " ^ plr_show player ^ "\n");
+                ns_iter (fun j -> SingleOccQueue.add j queue) (pg_get_predecessors game i);
                 spmidx.(i) <- y;
-                message 3 (fun _ -> "Updating small progress measure for " ^ string_of_int player ^ ": \n" ^ format_spmidx spmidx ^ "\n");
+                message 3 (fun _ -> "Updating small progress measure for " ^ plr_show player ^ ": \n" ^ format_spmidx spmidx ^ "\n");
             )
         )
     in
@@ -97,7 +101,7 @@ let solve_scc_reach game player spmidx updspm =
     let work queue =
         if not (SingleOccQueue.is_empty queue) then (
             let i = SingleOccQueue.take queue in
-            message 3 (fun _ -> "Dequeuing " ^ string_of_int i ^ " for " ^ string_of_int player ^ "\n");
+            message 3 (fun _ -> "Dequeuing " ^ string_of_int i ^ " for " ^ plr_show player ^ "\n");
             update queue i
         )
     in
@@ -113,15 +117,13 @@ let solve_scc_reach game player spmidx updspm =
         work queue;
     done;
 
-    let sol = Array.make n (-1) in
+    let sol = sol_create game in
     let strat = Array.make n (-1) in
 
-    for i = 0 to n - 1 do
-        message 3 (fun _ -> "Checking " ^ string_of_int i ^ "\n");
-        sol.(i) <- if isTop spmidx.(i) then 1 - player else player;
-        if (pg_get_pl game i = player) && (player = sol.(i))
-        then strat.(i) <- arr_minarg (pg_get_tr game i) (fun q -> spmidx.(q)) (less 0)
-    done;
+    pg_iterate (fun i -> fun (_,ow,succs,_,_) -> message 3 (fun _ -> "Checking " ^ string_of_int i ^ "\n");
+						 sol.(i) <- if isTop spmidx.(i) then plr_opponent player else player;
+						 if (ow = player) && (player = sol.(i))
+						 then strat.(i) <- ns_minarg succs (fun q -> spmidx.(q)) (less 0)) game;
 
     (sol, strat);;
 
@@ -156,7 +158,6 @@ let solve' game =
 	(* let msg_plain = message in *)
 
 	let n = pg_size game in
-    let transp = game_to_transposed_graph game in
     let maxprio = pg_max_prio game in
 	
 	let max_values = Array.make (maxprio + 1) (n + 1) in
@@ -188,7 +189,7 @@ let solve' game =
 		let res = ref true in
 		let i = ref 0 in
 		while !res && (!i <= maxprio) do
-			if !i mod 2 != player then res := spm.(!i) = max_values.(!i);
+			if plr_benefits !i != player then res := spm.(!i) = max_values.(!i);
 			incr i
 		done;
 		!res
@@ -196,7 +197,7 @@ let solve' game =
 	
 	let make_top spm player =
 		for i = 0 to maxprio do
-			if i mod 2 != player then spm.(i) <- max_values.(i)
+			if plr_benefits i != player then spm.(i) <- max_values.(i)
 		done
 	in
 
@@ -207,12 +208,12 @@ let solve' game =
 	   value, the spm is set to top w.r.t. player *)
 	let updspm spm player =
         for i = 0 to maxprio do
-            if (i mod 2 != player) && (spm.(i) > max_values.(i)) then (
+            if (plr_benefits i != player) && (spm.(i) > max_values.(i)) then (
                 spm.(i) <- 0;
                 if (i + 2 <= maxprio)
                 then spm.(i + 2) <- 2 + spm.(i + 2)
                 else for j = 0 to maxprio do
-						if j mod 2 != player then spm.(j) <- max_values.(j)
+						if plr_benefits j != player then spm.(j) <- max_values.(j)
                      done
             )
         done
@@ -226,11 +227,11 @@ let solve' game =
         else (
             for i = 0 to maxprio do
                 if (i < pr) then (
-                    if (i mod 2 != player) then spmz.(i) <- 0
+                    if (plr_benefits i != player) then spmz.(i) <- 0
                 ) else if (i = pr) then (
-                    if (i mod 2 != player)
+                    if (plr_benefits i != player)
                     then spmz.(i) <- 1 + spmy.(i)
-                ) else if (i > pr) && (i mod 2 != player)
+                ) else if (i > pr) && (plr_benefits i != player)
                        then spmz.(i) <- spmy.(i)
             done;
             updspm spmz player
@@ -238,31 +239,33 @@ let solve' game =
         spmz
     in
 
-	(* Returns true iff x <_pr y w.r.t. player *)
+    (* Returns true iff x <_pr y w.r.t. player *)
     let less player pr x y =
         let rec less' pr' =
             if pr' > pr then (
-                if (pr' mod 2 = player) || (x.(pr') = y.(pr'))
+                if (plr_benefits pr' = player) || (x.(pr') = y.(pr'))
                 then less' (pr' - 1)
                 else x.(pr') < y.(pr')
-            ) else (pr' mod 2 != player) && (x.(pr') < y.(pr'))
+            ) else (plr_benefits pr' != player) && (x.(pr') < y.(pr'))
         in (less' maxprio) && (not (is_top x player))
     in
 	
 	(* Calculates the progress measure update for both players at node vi *)
 	let calc_prog_for i =
-		let (pr, pl, tr, _) = pg_get_node game i in
+          let pr = pg_get_priority game i in
+	  let pl = pg_get_owner game i in
+	  let tr = pg_get_successors game i in
 		
 		let tr_calc = Array.map (fun j ->
-			let prog0 = prog 0 pr spmidx.(i) spmidx.(j) in
-			let prog1 = prog 1 pr spmidx.(i) spmidx.(j) in
+			let prog0 = prog plr_Even pr spmidx.(i) spmidx.(j) in
+			let prog1 = prog plr_Odd pr spmidx.(i) spmidx.(j) in
 			Array.init (maxprio + 1) (fun k -> if k mod 2 = 0 then prog1.(k) else prog0.(k))
-		) tr in
+		) (Array.of_list (ns_nodes tr)) in
 		
 		let get_succ player = (if pl = player then arr_minarg else arr_maxarg) tr_calc (fun q -> q) (less player 0) in
 		
-		let succ0 = get_succ 0 in
-		let succ1 = get_succ 1 in
+		let succ0 = get_succ plr_Even in
+		let succ1 = get_succ plr_Odd in
 		
 		Array.init (maxprio + 1) (fun k -> if k mod 2 = 0 then succ1.(k) else succ0.(k))
 	in
@@ -284,27 +287,29 @@ let solve' game =
 			let i = SingleOccQueue.take temp_queue in
 			if temp.(i) then (
 				if is_top spmidx.(i) player then temp.(i) <- false
-				else (
-					let (pr, pl, tr, _) = pg_get_node game i in
+				else (let pr = pg_get_priority game i in
+				      let pl = pg_get_owner game i in
+				      let tr = pg_get_successors game i in
 					if pl = player then (
-						let tr = Array.of_list (List.filter (fun j -> temp.(j)) (Array.to_list tr)) in
+						let tr = Array.of_list (List.filter (fun j -> temp.(j)) (ns_nodes tr)) in
 						let tr_calc = Array.map (fun j -> prog player pr spmidx.(i) spmidx.(j)) tr in
 						if (Array.length tr_calc = 0) ||
 						   (less player 0 spmidx.(i) (arr_minarg tr_calc (fun q -> q) (less player 0))) then temp.(i) <- false
 					)
-					else if ArrayUtils.exists tr (fun _ j -> not temp.(j)) then temp.(i) <- false
-					else let tr_calc = Array.map (fun j -> prog player pr spmidx.(i) spmidx.(j)) tr in
+					else if ns_exists (fun j -> not temp.(j)) tr then temp.(i) <- false
+					else let tr_calc = Array.map (fun j -> prog player pr spmidx.(i) spmidx.(j)) (Array.of_list (ns_nodes tr)) in
 						 let upd = arr_maxarg tr_calc (fun q -> q) (less player 0) in
 						 if (less player 0 spmidx.(i) upd) then temp.(i) <- false
 				);
-				if not temp.(i) then List.iter (fun j -> if temp.(j) then SingleOccQueue.add j temp_queue) transp.(i)
+				if not temp.(i) then ns_iter (fun j -> if temp.(j) then SingleOccQueue.add j temp_queue) (pg_get_predecessors game i)
 			)
 		done;
 		
 		for i = 0 to n - 1 do
-			if temp.(i) && (not (is_top spmidx.(i) (1 - player))) then (
-				make_top spmidx.(i) (1 - player);
-				List.iter (fun j -> SingleOccQueue.add j queue) transp.(i)
+		  let op = plr_opponent player in
+			if temp.(i) && (not (is_top spmidx.(i) op)) then (
+				make_top spmidx.(i) op;
+				ns_iter (fun j -> SingleOccQueue.add j queue) (pg_get_predecessors game i)
 			)
 		done
 
@@ -325,35 +330,37 @@ let solve' game =
 		   w.r.t. to both (!) players. *)
 
 		let upd = calc_prog_for i in
-		let less0 = less 0 0 spmidx.(i) upd in
-		let less1 = less 1 0 spmidx.(i) upd in
+		let less0 = less plr_Even 0 spmidx.(i) upd in
+		let less1 = less plr_Odd 0 spmidx.(i) upd in
 		if less0 || less1 then (
 			msg_tagged 3 (fun _ -> "Enqueuing predecessors of " ^ string_of_int i ^ "\n");
-			List.iter (fun j -> SingleOccQueue.add j queue) transp.(i);
+			ns_iter (fun j -> SingleOccQueue.add j queue) (pg_get_predecessors game i);
 			spmidx.(i) <- upd;
 			msg_tagged 3 (fun _ -> "Updating small progress measure: \n" ^ format_spmidx spmidx ^ "\n");
 		);
 		incr counter;
 		
 		if !counter mod n = 0 then (
-			update_valid_for 0;
-			update_valid_for 1
+			update_valid_for plr_Even;
+			update_valid_for plr_Odd
 		)
 	done;
 
-    let sol = Array.make n (-1) in
+    let sol = sol_create game in
     let strat = Array.make n (-1) in
 
     for i = 0 to n - 1 do
         msg_tagged 3 (fun _ -> "Checking " ^ string_of_int i ^ "\n");
-        sol.(i) <- if is_top spmidx.(i) 0 then 1
-		           else if is_top spmidx.(i) 1 then 0
-				   else failwith "impossible: no top value";
+        sol.(i) <- if is_top spmidx.(i) plr_Even then plr_Odd
+		           else if is_top spmidx.(i) plr_Odd then plr_Even
+				   else failwith "[Smallprogress.solve'] impossible: no top value";
     done;
     for i = 0 to n - 1 do
-        let (_, pl, delta, _) = pg_get_node game i in
-        if (pl = sol.(i))
-        then strat.(i) <- arr_minarg delta (fun q -> spmidx.(q)) (less pl 0)
+      let pl = pg_get_owner game i in
+      let delta = pg_get_successors game i in
+
+      if (pl = sol.(i))
+      then strat.(i) <- ns_minarg delta (fun q -> spmidx.(q)) (less pl 0)
     done;
 
     (sol, strat);;

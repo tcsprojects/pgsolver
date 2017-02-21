@@ -53,9 +53,9 @@ let generator_game_func arguments =
   done;
 
   pg_init size (fun i -> (i,
-			  Random.int 2,
-			  Array.of_list pg.(i),
-			  Some (string_of_int i))
+			  plr_random (),
+			  pg.(i),
+			  Some (nd_show i))
 	       );;
 
 Generators.register_generator generator_game_func "steadygame" "Steady Game";;

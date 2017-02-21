@@ -21,7 +21,7 @@ let _ =
 
 	let (in_channel,name) = (stdin,"STDIN") in
 
-	let game = parse_parity_game in_channel in
+	let game = Parsers.parse_parity_game in_channel in
 	
 	let number_of_nodes = ref 0 in
 	let number_of_player0_nodes = ref 0 in
@@ -32,21 +32,20 @@ let _ =
 	let number_of_player0_edges = ref 0 in
 	let number_of_player1_edges = ref 0 in
 	
-	pg_iter (fun (pr, pl, tr, _) ->
-		let trn = Array.length tr in
-		incr number_of_nodes;
-		number_of_edges := !number_of_edges + trn;
-		if pl = 0 then (
-			incr number_of_player0_nodes;
-			number_of_player0_edges := !number_of_player0_edges + trn
-		)
-		else (
-			incr number_of_player1_nodes;
-			number_of_player1_edges := !number_of_player1_edges + trn
-		);
-		if (!min_priority < 0) || (pr < !min_priority) then min_priority := pr;
-		if (!max_priority < 0) || (pr > !max_priority) then max_priority := pr;
-	) game;
+	pg_iterate (fun i -> fun (pr,pl,tr,_,_) -> let trn = ns_size tr in
+						   incr number_of_nodes;
+						   number_of_edges := !number_of_edges + trn;
+						   if pl = plr_Even then (
+						     incr number_of_player0_nodes;
+						     number_of_player0_edges := !number_of_player0_edges + trn
+						   )
+						   else (
+						     incr number_of_player1_nodes;
+						     number_of_player1_edges := !number_of_player1_edges + trn
+						   );
+						   if (!min_priority < 0) || (pr < !min_priority) then min_priority := pr;
+						   if (!max_priority < 0) || (pr > !max_priority) then max_priority := pr
+		   ) game;
 	
 	out ("Number of Nodes    : " ^ string_of_int !number_of_nodes ^ "\n");
 	out ("Number of P0 Nodes : " ^ string_of_int !number_of_player0_nodes ^ "\n");
@@ -88,8 +87,12 @@ let _ =
 					let sub = pg_copy game in
 					let subnodes = TreeSet.of_list_def nodes in
 					List.iter (fun v ->
-						if (pg_get_pl game v = 1) && (not (TreeSet.mem tau.(v) subnodes))
-						then pg_set_tr sub v [|tau.(v)|];
+						if (pg_get_owner game v = plr_Odd) && (not (TreeSet.mem tau.(v) subnodes))
+						then
+						  begin
+						    ns_iter (fun w -> pg_del_edge sub v w) (pg_get_successors sub v);
+						    pg_add_edge sub v tau.(v)
+						  end
 					) nodes;
 					helper sub (indent ^ "  ") (fun scc -> TreeSet.mem (List.hd scc) subnodes);
 				)

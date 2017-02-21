@@ -56,9 +56,9 @@ let generator_game_func arguments =
 
 	let add	sy pr pl li = SymbolicParityGame.add_node pg sy pr pl (Array.of_list li) (Some (symb_to_str sy)) in
 	
-	let add1 sy pr li = add sy pr 1 li in
+	let add1 sy pr li = add sy pr plr_Odd li in
 	
-	let add0 sy pr li = add sy pr 0 li in
+	let add0 sy pr li = add sy pr plr_Even li in
 	
 	add1  FinalCycle 1 [FinalCycle];
 	add1  FinalSink (2 * n + 12) [FinalCycle];
@@ -92,7 +92,7 @@ let generator_game_func arguments =
 
 let generator_mdp_func arguments =
 	let game = generator_game_func arguments in
-	parity_game_to_generalized_mdp game 8 (fun _ j -> pg_get_pr game j >= 8);;
+	parity_game_to_generalized_mdp game 8 (fun _ j -> pg_get_priority game j >= 8);;
 
 register_strat_impr_gen {
 	ident = "zadehexp";

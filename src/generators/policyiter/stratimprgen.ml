@@ -6,6 +6,7 @@ open Paritygame;;
 open Mdp;;
 open Tcsstrings ;;
 open Stratimprgenerators;;
+open Stratimprgenlist;;
 
 module CommandLine =
 struct

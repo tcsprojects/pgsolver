@@ -42,26 +42,26 @@ let generator_game_func arguments =
 
 	let addnode sy pr pl li = SymbolicParityGame.add_node pg sy pr pl (Array.of_list li) (Some (symb_to_str sy)) in
 	
-	addnode FinalCycle 1 1 [FinalCycle];
-	addnode FinalSink (2 * n + 10) 1 [FinalCycle];
-	addnode (UpperSelector n) 3 0 [FinalSink];
-	addnode (CycleSelector n) 3 0 [FinalSink];
-	addnode LowSel 8 1 [CycleEntry 0];
+	addnode FinalCycle 1 plr_Odd [FinalCycle];
+	addnode FinalSink (2 * n + 10) plr_Odd [FinalCycle];
+	addnode (UpperSelector n) 3 plr_Even [FinalSink];
+	addnode (CycleSelector n) 3 plr_Even [FinalSink];
+	addnode LowSel 8 plr_Odd [CycleEntry 0];
 	
 	for i = 0 to n - 1 do
-		addnode (CycleExit i) (2 * i + 10) 1 [UpperSelector (i + 1)];
-		addnode (CycleEntry i) (2 * i + 9) 1 [CycleCenter i];
-		addnode (CycleCenter i) 6 1 [CycleNode (i,0); CycleExit i];
-		addnode (UpperSelector i) 3 0 [UpperSelector (i+1); CycleEntry i];
-		addnode (CycleSelector i) 3 0 [CycleSelector (i+1); CycleEntry i];
+		addnode (CycleExit i) (2 * i + 10) plr_Odd [UpperSelector (i + 1)];
+		addnode (CycleEntry i) (2 * i + 9) plr_Odd [CycleCenter i];
+		addnode (CycleCenter i) 6 plr_Odd [CycleNode (i,0); CycleExit i];
+		addnode (UpperSelector i) 3 plr_Even [UpperSelector (i+1); CycleEntry i];
+		addnode (CycleSelector i) 3 plr_Even [CycleSelector (i+1); CycleEntry i];
 		if binary then
 			for j = 0 to 2 * i + 1 do
-				addnode (CycleNode (i,j)) 5 0 [FinalSink; (if j mod 2 = 0 then LowSel else CycleSelector 0);
+				addnode (CycleNode (i,j)) 5 plr_Even [FinalSink; (if j mod 2 = 0 then LowSel else CycleSelector 0);
 				                                          (if j < 2 * i + 1 then CycleNode (i,j+1) else CycleCenter i)]
 			done
 		else
 			for j = 0 to i do
-				addnode (CycleNode (i,j)) 5 0 [CycleSelector 0; FinalSink; LowSel; (if j < i then CycleNode (i,j+1) else CycleCenter i)]
+				addnode (CycleNode (i,j)) 5 plr_Even [CycleSelector 0; FinalSink; LowSel; (if j < i then CycleNode (i,j+1) else CycleCenter i)]
 			done;
 	done;
 
@@ -69,7 +69,7 @@ let generator_game_func arguments =
 
 let generator_mdp_func arguments =
 	let game = generator_game_func arguments in
-	parity_game_to_generalized_mdp game 8 (fun _ j -> pg_get_pr game j >= 8);;
+	parity_game_to_generalized_mdp game 8 (fun _ j -> pg_get_priority game j >= 8);;
 
 register_strat_impr_gen {
 	ident = "cunninghamsubexp";

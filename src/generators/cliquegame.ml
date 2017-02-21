@@ -1,37 +1,52 @@
 open Paritygame;;
 
+let n = ref 0
+let with_self_cycles = ref true
+			   
+module Clique =
+  struct
+    type gamenode = int
+
+    let compare = compare
+
+    let owner i = plr_benefits i
+
+    let priority i = i
+
+    let successors i = 
+      let rec succs acc j =
+	if j=i
+	then (if !with_self_cycles
+	      then succs (j::acc) (j-1)
+	      else succs acc (j-1))
+	else (if j<0
+	      then acc
+	      else succs (j::acc) (j-1))
+      in
+      succs [] !n
+
+    let show_node i = Some (string_of_int i)
+
+    let initnodes _ = [0]
+  end;;
+
+module CliqueGame = Build(Clique);;
+  
 let generator_game_func arguments = 
 
-	let show_help _ =
-		print_string (Info.get_title "Clique Game Generator");
-		print_string ("Usage: cliquegame n <cycles>\n\n" ^
-					  "       where n = Number of nodes\n" ^
-						  "             <cycles> is either the string > self < or absent\n\n")
-	in
-						  
-	let successors n i s =
-	  let rec succs acc j =
-		if j=i
-		then (if s
-			  then succs (j::acc) (j-1)
-			  else succs acc (j-1))
-		else (if j<0
-			  then acc
-			  else succs (j::acc) (j-1))
-	  in
-	  succs [] n
-	in
-	
-  let (size,with_self_cycles) =
-    try
-      (int_of_string arguments.(0), Array.length arguments = 2 && arguments.(1) = "self")
-    with _ -> (show_help (); exit 1)
+  let show_help _ =
+    print_string (Info.get_title "Clique Game Generator");
+    print_string ("Usage: cliquegame n <cycles>\n\n" ^
+		    "       where n = Number of nodes\n" ^
+		      "             <cycles> is either the string > self < or absent\n\n")
   in
 
-  let game = pg_create size in
-  for i=0 to size-1 do
-    pg_set_node game i i (i mod 2) (Array.of_list (successors (size-1) i with_self_cycles)) (Some (string_of_int i))
-  done;
-  game;;
+  (try
+    n := int_of_string arguments.(0);
+    with_self_cycles := Array.length arguments = 2 && arguments.(1) = "self"
+  with _ -> (show_help (); exit 1));
 
-Generators.register_generator generator_game_func "cliquegame" "Clique Game";;
+  CliqueGame.build ()
+
+
+let _ = Generators.register_generator generator_game_func "cliquegame" "Clique Game";;

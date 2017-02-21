@@ -8,6 +8,7 @@ open Univsolve;;
 open Solvers ;;
 open Str ;;
 open Stratimpralgs ;;
+open Solverlist;;
 
 module CommandLine =
 struct
@@ -61,7 +62,7 @@ let _ =
 	localopt_compact_priorities = false ;
   });
 
-  let game = parse_parity_game stdin in
+  let game = Parsers.parse_parity_game stdin in
 
 	let before_iteration i =
 		out ("beginfig(" ^ string_of_int (i + !add_iteration) ^ ");\n")
@@ -108,7 +109,7 @@ let _ =
 		let less i j = node_valuation_ordering game node_compare valu.(i) valu.(j) < 0 in
 		let counter_strat =
 			Array.init (Array.length valu) (fun i ->
-				if pg_get_pl game i = 1
+				if pg_get_owner game i = plr_Odd
 				then best_decision_by_valuation_ordering game node_compare valu i
 				else -1
 			)
@@ -116,12 +117,15 @@ let _ =
 
 		if counter >= !start_iteration && (match !end_iteration with None -> true | Some end_idx -> counter <= end_idx) then (
 			before_iteration counter;
-    		pg_iterate (fun i -> fun (_, pl, tr, _) ->
+			let n = pg_size game in
+			for i = 0 to n - 1 do
+			let pl = pg_get_owner game i in
+			let tr = pg_get_successors game i in
 				let from_node = get_ident i in
-				Array.iter (fun j ->
+				ns_iter (fun j ->
 					    let to_node = get_ident j in
 					    let kind =
-					      if pl = 0 then
+					      if pl = plr_Even then
 						if strat.(i) = j
 						then Even_player_strategy
 						else if less j strat.(i)
@@ -134,7 +138,7 @@ let _ =
 					    in
 					    set_edge_iteration from_node to_node kind
 					   ) tr
-    			   ) game;			
+    			   done;		
 		after_iteration counter;
 		);
 	);

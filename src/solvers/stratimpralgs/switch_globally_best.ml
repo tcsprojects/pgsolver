@@ -14,9 +14,10 @@ let improvement_policy_optimize_all_globally game' node_total_ordering old_strat
 	let game = pg_copy game' in
 	let n = pg_size game in
 	let valu_ord = node_valuation_ordering game' node_total_ordering in
-	pg_iterate (fun i (pr, pl, tr, _) ->
-		if pl = 0
-		then pg_set_tr game i (Array.of_list (List.filter (fun j -> valu_ord valu.(j) valu.(old_strategy.(i)) >= 0) (Array.to_list tr)))
+	pg_iterate (fun i (pr, pl, tr, _, _) ->
+		if pl = plr_Even
+		then
+		  ns_iter (fun w -> pg_del_edge game i w) (ns_filter (fun j -> not (valu_ord valu.(j) valu.(old_strategy.(i)) >= 0)) tr) 
 	) game;
 
 	let strategy = Array.copy old_strategy in
@@ -30,7 +31,7 @@ let improvement_policy_optimize_all_globally game' node_total_ordering old_strat
 	let check = ref (TreeSet.empty compare) in
 	for v = 0 to n - 1 do
 		let edges = DynamicGraph.get_node_succ v graph in
-		if pg_get_pl game v = 1 then (
+		if pg_get_owner game v = plr_Odd then (
 			let reference = valu.(best_decision_by_valuation_ordering game node_total_ordering valu v) in
 			TreeSet.iter (fun u ->
 				if valu_ord valu.(u) reference > 0 then DynamicGraph.del_edge v u graph'
@@ -62,8 +63,8 @@ let improvement_policy_optimize_all_globally game' node_total_ordering old_strat
 	let compute_update' v u = let (a, b, c) = valu2.(u) in (a, TreeSet.add v b, c + 1) in
 	let compute_update v =
 		let p = TreeSet.filter (fun u -> valued.(u)) (DynamicGraph.get_node_succ v graph) in
-		let pl = pg_get_pl game v in
-		let cmp x y = if pl = 0 then valu_ord valu2.(x) valu2.(y) else valu_ord valu2.(y) valu2.(x) in
+		let pl = pg_get_owner game v in
+		let cmp x y = if pl = plr_Even then valu_ord valu2.(x) valu2.(y) else valu_ord valu2.(y) valu2.(x) in
 		TreeSet.fold (fun u mx -> if cmp u mx > 0 then u else mx) p (TreeSet.min_elt p)
 	in
 
@@ -77,9 +78,9 @@ let improvement_policy_optimize_all_globally game' node_total_ordering old_strat
 					valued.(v) <- true;
 					let u = compute_update v in
 					valu2.(v) <- compute_update' v u;
-					if pg_get_pl game v = 0 then strategy.(v) <- u
+					if pg_get_owner game v = plr_Even then strategy.(v) <- u
 				)
-				else if (pg_get_pl game v = 1) &&
+				else if (pg_get_owner game v = plr_Odd) &&
 				        (TreeSet.exists (fun u -> valued.(u) &&
 				                                   (valu_ord (compute_update' v u) valu2.(v) = 0)) succs)
 				then (valued.(v) <- true; failwith "impossible");
@@ -90,7 +91,7 @@ let improvement_policy_optimize_all_globally game' node_total_ordering old_strat
 			)
 		done;
 		if not (TreeSet.is_empty !rest) then (
-            let temp = TreeSet.filter (fun v -> (pg_get_pl game v = 1) && (TreeSet.exists (fun u -> valued.(u)) (DynamicGraph.get_node_succ v graph))) !rest in
+            let temp = TreeSet.filter (fun v -> (pg_get_owner game v = plr_Odd) && (TreeSet.exists (fun u -> valued.(u)) (DynamicGraph.get_node_succ v graph))) !rest in
             if TreeSet.is_empty temp
             then failwith "crap"
             else let l = TreeSet.fold (fun v l -> let u = compute_update v in (v, compute_update' v u)::l) temp [] in

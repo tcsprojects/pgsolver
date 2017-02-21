@@ -21,7 +21,7 @@ let message u s = if !verbosity >= u then (output_string !message_ch (s ()); flu
 let message_depth u depth s = message u (fun x -> (String.make (depth * 2) ' ') ^ s x)
 
 let message_depth_tagged u depth tag s =
-	message_depth u depth (fun x -> "[" ^ String.capitalize (tag x) ^ "]  " ^ s x)
+	message_depth u depth (fun x -> "[" ^ String.capitalize_ascii (tag x) ^ "]  " ^ s x)
 
 let message_depth_counter = ref 0
 let message_incrdepth _ = incr message_depth_counter

@@ -1,4 +1,4 @@
-let pgsolver_collection_version = "3.4"
+let pgsolver_collection_version = "4.0"
 let authors = "Oliver Friedmann (University of Munich) and Martin Lange (University of Kassel)"
 let timeperiod = "2008-2016"
 let url = "http://tcsprojects.org"

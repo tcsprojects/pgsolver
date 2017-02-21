@@ -12,54 +12,54 @@ type generalized_mdp = generalized_mdp_node array
 let parity_game_to_generalized_mdp pg min_even_prio is_epsilon =
 	let n = pg_size pg in
 	let real_n = ref 0 in
-	let s = ref (-1) in
 	let p = ref 0 in
 	let mp = ref 0 in
-	for i = 0 to n - 1 do
-		let pr = pg_get_pr pg i in
-		let tr = pg_get_tr pg i in
-		mp := max !mp pr;
-		if pr >= min_even_prio then incr real_n;
-		if pr = 1 then s := i
-		else if Array.length tr > 1 && pr >= min_even_prio
-		then p := !p + Array.length tr;
-	done;
+	pg_iterate (fun i -> fun (pr,_,succs,_,_) -> let trsize = ns_size succs in
+						     mp := max !mp pr;
+						     if pr >= min_even_prio then incr real_n;
+						     if pr = 1 then ()
+						     else if trsize > 1 && pr >= min_even_prio
+						     then p := !p + trsize)
+		   pg;
 	let epsilon = BigFloat.of_big_ints BigInt.one (BigInt.int_power_int !real_n (!mp-min_even_prio+2+1)) in
 	let mdp = Array.make (n + !p) Sink in
 	let q = ref n in
-	for i = 0 to n - 1 do
-		let pr = pg_get_pr pg i in
-		let pl = pg_get_pl pg i in
-		let tr = pg_get_tr pg i in
-		let desc = pg_get_desc pg i in
-		if pr = 1 then (
-			mdp.(i) <- Sink;
-		)
-		else if Array.length tr = 1 then
-			mdp.(i) <- if pr >= min_even_prio
-			           then Reward (BigFloat.of_big_int (BigInt.int_power_int (- !real_n) (pr - min_even_prio + 2)), tr.(0))
-			           else Reward (BigFloat.of_int 0, tr.(0))
-		else (
-			let b = if pr >= min_even_prio then !q else 0 in
-			if pr >= min_even_prio then (
-				Array.iter (fun j ->
-					mdp.(!q) <- Reward (BigFloat.of_big_int (BigInt.int_power_int (- !real_n) (pr - min_even_prio + 2)), j);
-					incr q
-				) tr
-			);
-			if pl = 0 then (
-				mdp.(i) <- Controller (Array.mapi (fun l j -> (if b=0 then j else l + b)) tr, desc)
-			)
-			else (
-				mdp.(i) <- Randomizer (Array.mapi (fun l j ->
-					if is_epsilon i j then (epsilon, (if b=0 then j else l + b))
-					else (BigFloat.div (BigFloat.sub BigFloat.one epsilon) (BigFloat.of_int (Array.length tr - 1)), (if b=0 then j else l + b))
-				) tr)
-			)
-		)
-	done;
+	pg_iterate (fun i -> fun (pr,pl,tr,_,desc) ->
+			     let trsize = ns_size tr in
+			     if pr = 1 then (
+			       mdp.(i) <- Sink;
+			     )
+			     else if trsize = 1 then
+			       mdp.(i) <- if pr >= min_even_prio
+					  then Reward (BigFloat.of_big_int (BigInt.int_power_int (- !real_n) (pr - min_even_prio + 2)), ns_some tr)
+					  else Reward (BigFloat.of_int 0, ns_some tr)
+			     else (
+			       let b = if pr >= min_even_prio then !q else 0 in
+			       if pr >= min_even_prio then (
+				 ns_iter (fun j ->
+					  mdp.(!q) <- Reward (BigFloat.of_big_int (BigInt.int_power_int (- !real_n) (pr - min_even_prio + 2)), j);
+					  incr q
+					 ) tr
+			       );
+			       let mapi f =
+				 let i = ref 0 in
+				 let a = ref [] in
+				 ns_iter (fun j -> a := (f !i j)::!a; incr i) tr;
+				 Array.of_list (List.rev !a)
+			       in
+			       if pl = plr_Even then (
+                                 mdp.(i) <- Controller (mapi (fun l j -> (if b=0 then j else l + b)), desc)
+			       )
+			       else (
+				 mdp.(i) <- Randomizer (mapi (fun l j ->
+							      if is_epsilon i j then (epsilon, (if b=0 then j else l + b))
+							      else (BigFloat.div (BigFloat.sub BigFloat.one epsilon) (BigFloat.of_int (trsize - 1)), (if b=0 then j else l + b))
+							     ))
+			       )
+			     )
+		   ) pg;
 	mdp
-
+	  
 
 
 

@@ -33,8 +33,6 @@ let solve' game =
                                if odd (max_prio - min_prio) then (a,a) 
                                else if even min_prio then (a+1,a) else (a,a+1)
   in
-  let tg = game_to_transposed_graph game in
-
 
   let strategy = Array.make n (-1) in
   let evt_pos_strategy = Array.make n [] in
@@ -48,11 +46,11 @@ let solve' game =
   let boxes  = Array.make prios all_nodes in           (* B(i) = [](-Pr(i) or X(i)) *)
   let isects = Array.make (prios+1) all_nodes in       (* I(i) = B(i) and I(i+1) *)
 
-  let pr = Array.init prios (fun i -> list_to_set (collect_nodes game (fun _ -> fun (p,_,_,_) -> i+min_prio=p))) in
+  let pr = Array.init prios (fun i -> list_to_set (collect_nodes_by_prio game (fun p -> i+min_prio=p))) in
   let npr = Array.init prios (fun i -> NodeSet.cardinal pr.(i)) in
   let pr_complement = Array.init prios (fun i -> NodeSet.diff all_nodes pr.(i)) in
-  let v0 = list_to_set (collect_nodes game (fun _ -> fun (_,o,_,_) -> o=0)) in
-  let v1 = list_to_set (collect_nodes game (fun _ -> fun (_,o,_,_) -> o=1)) in 
+  let (v0',v1') = collect_nodes_by_owner game (fun o -> o = plr_Even) in
+  let (v0,v1) = (list_to_set v0', list_to_set v1') in 
 
   (* variable used to hold the current winning positions *)  
   let x = Array.make prios NodeSet.empty in
@@ -111,9 +109,9 @@ let solve' game =
   in
 
   let rec update_modal_terms p =
-    set diams  p (NodeSet.inter v0 (diamond_with_transposed_graph (get x p) game tg));
+    set diams  p (NodeSet.inter v0 (diamond game (get x p)));
     set unions p (NodeSet.union (get diams p) (get unions (p+1)));
-    set boxes  p (NodeSet.inter v1 (box_with_transposed_graph (NodeSet.union (get pr_complement p) (get x p)) game tg));
+    set boxes  p (NodeSet.inter v1 (box game (NodeSet.union (get pr_complement p) (get x p))));
     set isects p (NodeSet.inter (get boxes p) (get isects (p+1)));
     msg_tagged 4 (fun _ -> "  Current value: X(" ^ string_of_int p ^ ") = " ^ show_nodeSet (get x p) ^ "\n");
     msg_tagged 4 (fun _ -> "  Current value: D(" ^ string_of_int p ^ ") = " ^ show_nodeSet (get diams p) ^ "\n");
@@ -126,35 +124,35 @@ let solve' game =
   (* returns a node in the list ws of some priority p which also belongs to x.(p) *)
 
   let rec find_witness = function []    -> failwith "Solvers.Fpiter.find_witness: no witness found!"
-                                | w::ws -> let pr = pg_get_pr game w in
+                                | w::ws -> let pr = pg_get_priority game w in
                                            if NodeSet.mem w (get x pr) then w else find_witness ws
   in
 
   (* returns a node in the list ws of some priority p which does not belong to x.(p) *)
 
   let rec find_cntexmpl = function []    -> failwith "Solvers.Fpiter.find_cntexmpl: no counterexample found!"
-                                 | w::ws -> let pr = pg_get_pr game w in
+                                 | w::ws -> let pr = pg_get_priority game w in
                                             if not (NodeSet.mem w (get x pr)) then w else find_cntexmpl ws
   in
 
   let record_decision owner v w =
-    let moment = if owner=0 then odd_moment else even_moment in 
+    let moment = if owner = plr_Even then odd_moment else even_moment in 
     match evt_pos_strategy.(v) with
        [] -> evt_pos_strategy.(v) <- [ (w, Array.copy moment) ];
              msg_tagged 3 (fun _ -> "  Recording strategy decision " ^ string_of_int v ^ " -> " ^ 
-                                    string_of_int w ^ " for player " ^ string_of_int owner ^ " at moment " ^ show_moment () ^ "\n")
+                                    string_of_int w ^ " for player " ^ plr_show owner ^ " at moment " ^ show_moment () ^ "\n")
      | (w', mnt')::str -> 
              if mnt' <> moment then
                begin 
                  evt_pos_strategy.(v) <- (w, Array.copy moment) :: evt_pos_strategy.(v);
                  msg_tagged 3 (fun _ -> "  Recording strategy decision " ^ string_of_int v ^ " -> " ^ 
-                                      string_of_int w ^ " for player " ^ string_of_int owner ^ " at moment " ^ show_moment () ^ "\n")
+                                      string_of_int w ^ " for player " ^ plr_show owner ^ " at moment " ^ show_moment () ^ "\n")
                end
              else
                begin
                  evt_pos_strategy.(v) <- (w, mnt') :: str;
                  msg_tagged 3 (fun _ -> "  Changing strategy decision to " ^ string_of_int v ^ " -> " ^ 
-                                        string_of_int w ^ " for player " ^ string_of_int owner ^ " at moment " ^ show_moment () ^ "\n")
+                                        string_of_int w ^ " for player " ^ plr_show owner ^ " at moment " ^ show_moment () ^ "\n")
                end
   in
 
@@ -181,10 +179,10 @@ let solve' game =
             begin 
               msg_tagged 3 (fun _ -> show_moment () ^ " Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
                                      show_nodeSet win_mod_prio ^ "\n"); 
-              NodeSet.iter (fun v -> if pg_get_pl game v = 0 then
+              NodeSet.iter (fun v -> if pg_get_owner game v = plr_Even then
                                        begin
-                                         let w = find_witness (Array.to_list (pg_get_successors game v)) in
-                                         record_decision 0 v w 
+                                         let w = find_witness (ns_nodes (pg_get_successors game v)) in
+                                         record_decision plr_Even v w 
                                        end)
                            win_mod_prio; 
               reset_moment !curr_prio;
@@ -195,10 +193,10 @@ let solve' game =
               let old = get x !curr_prio in
               let now_out = NodeSet.diff old win_mod_prio in
 
-              NodeSet.iter (fun v -> if pg_get_pl game v = 1 then
+              NodeSet.iter (fun v -> if pg_get_owner game v = plr_Odd then
                                        begin
-                                         let w = find_cntexmpl (Array.to_list (pg_get_successors game v)) in
-                                         record_decision 1 v w 
+                                         let w = find_cntexmpl (ns_nodes (pg_get_successors game v)) in
+                                         record_decision plr_Odd v w 
                                        end)
                            now_out;
               set x !curr_prio win_mod_prio;
@@ -216,10 +214,10 @@ let solve' game =
             begin
               msg_tagged 3 (fun _ -> show_moment () ^ " Fixpoint reached: X(" ^ string_of_int !curr_prio ^ ") = " ^ 
                                      show_nodeSet win_mod_prio ^ "\n");
-              NodeSet.iter (fun v -> if pg_get_pl game v = 1 then
+              NodeSet.iter (fun v -> if pg_get_owner game v = plr_Odd then
                                        begin
-                                         let w = find_cntexmpl (Array.to_list (pg_get_successors game v)) in
-                                         record_decision 1 v w
+                                         let w = find_cntexmpl (ns_nodes (pg_get_successors game v)) in
+                                         record_decision plr_Odd v w
                                        end)
                            (NodeSet.diff (get pr !curr_prio) win_mod_prio); 
               reset_moment !curr_prio;
@@ -230,10 +228,10 @@ let solve' game =
               let old = get x !curr_prio in
               let now_in = NodeSet.diff win_mod_prio old in
 
-              NodeSet.iter (fun v -> if pg_get_pl game v = 0 then
+              NodeSet.iter (fun v -> if pg_get_owner game v = plr_Even then
                                        begin
-                                         let w = find_witness (Array.to_list (pg_get_successors game v)) in
-                                         record_decision 0 v w
+                                         let w = find_witness (ns_nodes (pg_get_successors game v)) in
+                                         record_decision plr_Even v w
                                        end)
                            now_in;
               set x !curr_prio win_mod_prio;
@@ -248,15 +246,15 @@ let solve' game =
     done
   done;
 
-  let solution = Array.make n (1) in
-  NodeSet.iter (fun v -> solution.(v) <- 0) !win;
+  let solution = sol_init game (fun v -> plr_Odd) in
+  NodeSet.iter (fun v -> solution.(v) <- plr_Even) !win;
 
   (* now turn eventually positional strategy into a positional strategy *)
 
   let even_top_moment = Array.init even_prios (fun i -> let (p,_) = decode i in 2 + npr.(p - min_prio)) in
   let odd_top_moment  = Array.init odd_prios  (fun i -> let (_,p) = decode i in 2 + npr.(p - min_prio)) in
 
-  let relevant_parity winner = if winner = 0 then odd else even in
+  let relevant_parity winner = if winner = plr_Even then odd else even in
 
   let compare winner prio ts1 ts2 =
     let rec cmp p =
@@ -310,13 +308,15 @@ let solve' game =
   let last_visit = Array.make n None in
 
   while !next_node < n do
-    let top_moment = if solution.(!next_node) = 1 then even_top_moment else odd_top_moment
+    let top_moment = if solution.(!next_node) = plr_Odd then even_top_moment else odd_top_moment
     in
     todo := [ (!next_node, top_moment) ];
     while !todo <> [] do
       let (v, bound) = List.hd !todo in
       todo := List.tl !todo;
-      let (prio,owner,ws,_) = pg_get_node game v in
+      let prio = pg_get_priority game v in
+      let owner = pg_get_owner game v in
+      let ws = pg_get_successors game v in 
       let winner = solution.(v) in
       msg_tagged 3 (fun _ -> "  Processing node " ^ string_of_int v ^ " at time " ^ show_timestamp bound ^ "\n");
       if last_visit.(v) = None || 
@@ -336,7 +336,7 @@ let solve' game =
           else
             begin
               let ns = next_smallest winner prio bound in
-              Array.iter (fun w -> todo := (w, ns) :: !todo) ws
+              ns_iter (fun w -> todo := (w, ns) :: !todo) ws
             end;
           last_visit.(v) <- Some bound
         end
@@ -344,7 +344,7 @@ let solve' game =
         message 3 (fun _ -> " greater or equal!\n") *)
     done;
     msg_tagged 3 (fun _ -> "Searching for next node to visit after " ^ string_of_int !next_node ^ " ");
-    while !next_node < n && (strategy.(!next_node) > -1 || let o = pg_get_pl game !next_node in solution.(!next_node) <> o) do
+    while !next_node < n && (strategy.(!next_node) > -1 || let o = pg_get_owner game !next_node in solution.(!next_node) <> o) do
       incr next_node;
       message 3 (fun _ -> ".")
     done;

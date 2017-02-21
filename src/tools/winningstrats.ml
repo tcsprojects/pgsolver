@@ -6,9 +6,9 @@ module CommandLine =
 struct
   let input_file = ref ""
 
-  let player = ref 0
+  let player = ref plr_Even
 
-  let speclist =  [(["--player"; "-p"], Int(fun i -> player := i),
+  let speclist =  [(["--player"; "-p"], Int(fun i -> if i = 1 then player := plr_Odd),
                       "\n     winning strategy for player (default: 0)") ]
                    
   let header = Info.get_title "Winning Strategies "
@@ -23,7 +23,7 @@ let _ =
 
   let in_channel = if !input_file = "" then stdin else open_in !input_file in
 
-  let game = Paritygame.parse_parity_game in_channel in
+  let game = Parsers.parse_parity_game in_channel in
 	
 	let solve = let (solve, _, _) = Solvers.find_solver "recursive" in solve [||] in
 	
@@ -31,7 +31,7 @@ let _ =
 	
   print_string ("\nWinning Set:\n " ^ Paritygame.format_solution sol ^ "\n");
 	
-	print_string ("\nWinning Strategies for Player " ^ string_of_int !player ^ "\n");
+	print_string ("\nWinning Strategies for Player " ^ string_of_int (if !player = plr_Even then 0 else 1) ^ "\n");
 
 	let number = ref 0 in
 	
@@ -50,16 +50,14 @@ let _ =
 					if (sol.(j) != !player) then
 						strat2.(j) <- -1;
 				done;
-			  print_string ("\n" ^ Paritygame.format_strategy strat2 ^ "\n");
+			  print_string ("\n" ^ format_strategy strat2 ^ "\n");
 				number := !number + 1
 			);
 		) else (
 			if (sol.(i) == !player && strat.(i) != -1) then (
-				let edges = Paritygame.pg_get_tr game i in
-				for j = 0 to Array.length edges - 1 do
-					strat.(i) <- edges.(j);
-					work (i + 1);
-				done;
+			  ns_iter (fun w -> strat.(i) <- w;
+					    work (i + 1))
+				  (pg_get_successors game i)
 			) else (
 				work (i+1);
 			)

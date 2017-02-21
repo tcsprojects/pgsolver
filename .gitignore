@@ -1,3 +1,4 @@
+temp*.ml
 *.cache
 *.annot
 *.cmo
@@ -18,3 +19,11 @@ doc/main.dvi
 doc/main.thm
 doc/main.toc
 .paths
+_build
+*.native
+temp
+SatConfig
+.project
+*.out
+doc/main.pdf
+doc/pgsolver.pdf

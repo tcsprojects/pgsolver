@@ -14,10 +14,10 @@ struct
 
   let speclist =  [(["--disablenodeobfuscation"; "-dn"], Unit(fun _ -> obfuscate_nodes := false),
                       "\n     keep ordering of nodes") ;
-                   (["--disableedgeobfuscation"; "-de"], Unit(fun _ -> obfuscate_edges := false),
-                      "\n     keep ordering of edges");
+                   (["--disableedgeobfuscation"; "-de"], Unit(fun _ -> obfuscate_edges := false), 
+                    "\n     keep ordering of edges"); (* TODO: does not make sense anymore. There is no explicit ordering visible to the outside. Option should probably be removed. *)
                    (["--justreverseedges"; "-rv"], Unit(fun _ -> obfuscate_edges := false; reverse_edges := true),
-                      "\n     reverse edges (disables a previous `-de')")]
+                    "\n     reverse edges (disables a previous `-de')")] (* TODO: same as above. `reverse' is also misleading. *)
                    
   let header = Info.get_title "Obfuscator Tool"
 end ;;
@@ -31,7 +31,7 @@ let _ =
 
   let in_channel = if !input_file = "" then stdin else open_in !input_file in
 
-  let game = Paritygame.parse_parity_game in_channel in
+  let game = Parsers.parse_parity_game in_channel in
 
   let m = pg_size game in
   let swap = Array.make m 0 in
@@ -59,29 +59,14 @@ let _ =
   print_string "Swapping table:\n";
   Array.iteri (fun i -> fun j -> print_string ("  " ^ string_of_int i ^ " -> " ^ string_of_int j ^ "\n")) swap;
 *)
-  let game' = pg_init m (fun _ -> (0,0,[||],None)) in
+  let game' = pg_init m (fun _ -> (0,plr_Even,[],None)) in
 
-  for i=0 to m-1 do
-    let (p,pl,succs,name) = pg_get_node game i in
-
-    let n = Array.length succs in
-    let succs' = Array.copy succs in
-    if !obfuscate_edges then (
-        for k=1 to 10*(n-1) do
-          let j = Random.int n in
-          let j' = Random.int n in
-
-          let x = succs'.(j) in
-          succs'.(j) <- succs'.(j');
-          succs'.(j') <- x
-        done
-    );
-    let succs' = if !reverse_edges then
-                    Array.init n (fun i -> succs'.(n-i-1))
-                 else succs' 
-    in
-    pg_set_node game' (swap.(i)) p pl (Array.map (fun v -> swap.(v)) succs') name
-  done;
+  pg_iterate (fun i -> fun (p,pl,succs,_,name) -> let i' = swap.(i) in
+						  pg_set_priority game' i' p;
+						  pg_set_owner game' i' pl;
+						  pg_set_desc game' i' name;
+						  ns_iter (fun w -> pg_add_edge game' i' swap.(w)) succs)
+	     game;
 
 (*  print_string "Obfuscated game:\n"; *)
   Paritygame.print_game game'

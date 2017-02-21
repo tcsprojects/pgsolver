@@ -13,9 +13,9 @@ open Basics;;
 (* Unoptimized implementation *)
 
 type node_data = {
-	index: int;
-	priority: int;
-	owner: int;
+	index: node;
+	priority: priority;
+	owner: player;
 	mutable strategy: node_data Digraph.node;
 	mutable unexpanded: (int TreeSet.t);
 	mutable valuation: valuation_type;
@@ -25,27 +25,27 @@ and valuation_type = (node_data Digraph.node) * (node_data Digraph.nodes)
 type global_data = {
 	game:                   partial_paritygame;
 	graph:                  node_data Digraph.digraph;
-	mutable exp_back_edges: (int, node_data Digraph.nodes) TreeMap.t;
-	mutable index_to_node:  (int, node_data Digraph.node) TreeMap.t;
+	mutable exp_back_edges: (node, node_data Digraph.nodes) TreeMap.t;
+	mutable index_to_node:  (node, node_data Digraph.node) TreeMap.t;
 	mutable improvable0:    node_data Digraph.nodes;
 	mutable improvable1:    node_data Digraph.nodes;
 	mutable expandable0:    node_data Digraph.nodes;
 	mutable expandable1:    node_data Digraph.nodes;
 	mutable inconsistent:   node_data Digraph.nodes;
 	mutable relevantset:    node_data Digraph.nodes;
-	mutable relevantplayer: int;
+	mutable relevantplayer: player;
 }
 
 type improve_policy = global_data -> node_data Digraph.nodes -> (node_data Digraph.node * node_data Digraph.node) list
 
-type expand_policy = global_data -> node_data Digraph.nodes -> int list
+type expand_policy = global_data -> node_data Digraph.nodes -> node list
 
 let format_node node =
 	let idx_fmt node = string_of_int (Digraph.get_content node).index in
 	let content = Digraph.get_content node in
 	string_of_int content.index ^ " " ^
 	string_of_int content.priority ^ " " ^
-	string_of_int content.owner ^ " " ^
+	plr_show content.owner ^ " " ^
 	idx_fmt content.strategy ^ " " ^
 	TreeSet.format string_of_int content.unexpanded ^ " " ^
 	idx_fmt (fst content.valuation) ^ " " ^
@@ -64,7 +64,7 @@ let format_global_state gd =
 	"Expandable1  = " ^ TreeSet.format idx_fmt gd.expandable1 ^ "\n" ^
 	"Inconsistent = " ^ TreeSet.format idx_fmt gd.inconsistent ^ "\n" ^
 	"RelevantSet  = " ^ TreeSet.format idx_fmt gd.relevantset ^ "\n" ^
-	"RelevantPlay = " ^ string_of_int gd.relevantplayer ^ "\n\n";;
+	"RelevantPlay = " ^ plr_show gd.relevantplayer ^ "\n\n";;
 
 let dbg_msg_tagged v = message_autotagged v (fun _ -> "LOCALSOLVER2")
 let dbg_msg_plain = message
@@ -72,11 +72,11 @@ let dbg_msg_plain = message
 let compare_node_reward player v w =
 	let vcont = Digraph.get_content v in
 	let wcont = Digraph.get_content w in
-	let rewv = if vcont.priority mod 2 = player then vcont.priority else -vcont.priority in
-	let reww = if wcont.priority mod 2 = player then wcont.priority else -wcont.priority in
+	let rewv = if plr_benefits vcont.priority = player then vcont.priority else -vcont.priority in
+	let reww = if plr_benefits wcont.priority = player then wcont.priority else -wcont.priority in
 	let c = compare rewv reww in
 	if c != 0 then c
-	else if vcont.priority mod 2 = player
+	else if plr_benefits vcont.priority = player
 	then compare vcont.index wcont.index
 	else compare wcont.index vcont.index
 
@@ -94,18 +94,18 @@ let compare_valuation player v w =
 	let (cyclew, pathw) = contw.valuation in
 	let prcv = (Digraph.get_content cyclev).priority in
 	let prcw = (Digraph.get_content cyclew).priority in
-	if (prcv mod 2 = player) && (prcw mod 2 = player) && (player = 0) then 0
+	if (plr_benefits prcv = player) && (plr_benefits prcw = player) && (player = plr_Even) then 0
 	else
 	let c = compare_node_reward player cyclev cyclew in
 	if c != 0 then c else (
-		let cycleplayer = (Digraph.get_content cyclev).priority mod 2 in
+		let cycleplayer = plr_benefits (Digraph.get_content cyclev).priority in
 		let best = ref cyclev in
 		TreeSet.iter (fun node ->
 			if compare_node_relevance node !best > 0 then best := node
 		) (TreeSet.sym_diff pathv pathw);
 		if compare_node_relevance !best cyclev > 0
 		then (if TreeSet.mem !best pathv then 1 else -1) *
-			 (if (Digraph.get_content !best).priority mod 2 = player then 1 else -1)
+			 (if plr_benefits (Digraph.get_content !best).priority = player then 1 else -1)
 		else let c = compare (TreeSet.cardinal pathv) (TreeSet.cardinal pathw) in
 			 if cycleplayer = player then -c else c
 	)
@@ -185,12 +185,12 @@ let evaluate (gd: global_data) =
 	TreeSet.iter (fun node ->
 		let content = Digraph.get_content node in
 		if TreeSet.exists (fun node' -> compare_valuation content.owner node' content.strategy > 0) (Digraph.get_fwd_edges node) then (
-			if content.owner = 0
+			if content.owner = plr_Even
 			then gd.improvable0 <- TreeSet.add node gd.improvable0
 			else gd.improvable1 <- TreeSet.add node gd.improvable1;
 		)
 		else (
-			if content.owner = 0
+			if content.owner = plr_Even
 			then gd.improvable0 <- TreeSet.remove node gd.improvable0
 			else gd.improvable1 <- TreeSet.remove node gd.improvable1;
 		) 
@@ -199,7 +199,7 @@ let evaluate (gd: global_data) =
 	let (start, _, _, _) = gd.game in
 	let start_node = TreeMap.find start gd.index_to_node in
 	let start_content = Digraph.get_content start_node in
-	gd.relevantplayer <- 1 - (Digraph.get_content (fst start_content.valuation)).priority mod 2;
+	gd.relevantplayer <- plr_opponent (plr_benefits (Digraph.get_content (fst start_content.valuation)).priority);
 	(* Update Relevant Set *)
 	gd.relevantset <- Digraph.empty_nodes ();
 	let todo = ref [start_node] in
@@ -247,7 +247,7 @@ let expand (gd: global_data) nodes expand_policy =
 				let content' = Digraph.get_content node' in
 				content'.unexpanded <- TreeSet.remove idx content'.unexpanded;
 				if TreeSet.is_empty content'.unexpanded then (
-					if content'.owner = 0
+					if content'.owner = plr_Even
 					then gd.expandable0 <- TreeSet.remove node' gd.expandable0
 					else gd.expandable1 <- TreeSet.remove node' gd.expandable1
 				)
@@ -265,7 +265,7 @@ let expand (gd: global_data) nodes expand_policy =
 				gd.exp_back_edges <- TreeMap.add node' (TreeSet.add node back) gd.exp_back_edges
 			) unknown;
 			if unknown != [] then (
-				if pl = 0
+				if pl = plr_Even
 				then gd.expandable0 <- TreeSet.add node gd.expandable0
 				else gd.expandable1 <- TreeSet.add node gd.expandable1
 			);
@@ -310,16 +310,16 @@ let init_global_data pg =
 	expandable1 = Digraph.empty_nodes ();
 	inconsistent = Digraph.empty_nodes ();
 	relevantset = Digraph.empty_nodes ();
-	relevantplayer = 0;
+	relevantplayer = plr_Even;
 }
 
 let assemble_solution gd i =
 	try
 		let node = TreeMap.find i gd.index_to_node in
 		let content = Digraph.get_content node in
-		(1 - gd.relevantplayer, (if 1 - gd.relevantplayer = content.owner then Some (Digraph.get_content content.strategy).index else None))
+		(plr_opponent gd.relevantplayer, (if plr_opponent gd.relevantplayer = content.owner then Some (Digraph.get_content content.strategy).index else None))
 	with
-		Not_found -> (-1, None)
+		Not_found -> (plr_Even, None)
 
 let solve_locally (pg: partial_paritygame)
                   (impr: improve_policy)
@@ -340,7 +340,7 @@ let solve_locally (pg: partial_paritygame)
 		else let rel_impr0 = (*TreeSet.inter gd.relevantset*) gd.improvable0 in
 		     if not (TreeSet.is_empty rel_impr0)
 		     then improve gd (impr gd rel_impr0)
-		     else let expset = if gd.relevantplayer = 0 then gd.expandable0 else gd.expandable1 in
+		     else let expset = if gd.relevantplayer = plr_Even then gd.expandable0 else gd.expandable1 in
 		          let rel_exp = TreeSet.inter gd.relevantset expset in
 		          if not (TreeSet.is_empty rel_exp)
 		          then expand gd (exp gd rel_exp) exp

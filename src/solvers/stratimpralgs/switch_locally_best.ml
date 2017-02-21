@@ -12,7 +12,11 @@ let list_max a less = ListUtils.max_elt (fun x y -> if less x y then -1 else 1) 
 
 
 let evaluate_player1_strategy game node_compare strategy =
-	let game' = pg_map (fun _ (pr, pl, tr, de) -> (1 + pr, 1 - pl, tr, de)) game in
+	let game' = pg_copy game in
+	for i = 0 to pg_size game' - 1 do
+		pg_set_priority game' i (1 + pg_get_priority game' i);
+		pg_set_owner game' i (plr_opponent (pg_get_owner game' i))
+	done;
 	evaluate_strategy game' node_compare strategy
 
 let improvement_policy_by_counterstrategy game node_compare old_strategy valu =
@@ -22,9 +26,9 @@ let improvement_policy_by_counterstrategy game node_compare old_strategy valu =
 	let find i =
 		let ordering_valu x y = node_valuation_total_ordering game node_compare valu x y >= 0 in
 		let ordering_valutau x y = node_valuation_total_ordering game node_compare valutau x y >= 0 in
-		let tr = pg_get_tr game i in
-		let a = ArrayUtils.filter (fun j -> ordering_valu j old_strategy.(i)) tr in
-		array_max a (fun x y -> ordering_valutau y x)
+		let tr = pg_get_successors game i in
+		let a = ns_filter (fun j -> ordering_valu j old_strategy.(i)) tr in
+		ns_max a (fun x y -> ordering_valutau y x)
 	in
 	let strategy = Array.mapi (fun i j ->
 		if j = -1 then -1
