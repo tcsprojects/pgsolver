@@ -23,4 +23,8 @@ include Stratimprdisc;;
 include Viasat;;
 include Satsolve;;
 include Stratimprsat;;
+include Prioprom;;
+include Priopromplus;;
+include Priopromdelay;;
+include Priopromrecovery;;
 (*include Smtsolve;;*)
