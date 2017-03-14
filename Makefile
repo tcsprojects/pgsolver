@@ -8,11 +8,11 @@ all: pgsolver generators tools test
 include satsolversforocaml/SatCompile
 
 pgsolver: generatesat
-	ocamlbuild $(SATFLAGS) -libs $(LIBS) main.native
+	ocamlbuild $(SATFLAGS) -libs $(LIBS) -package extlib main.native
 	mv main.native bin/pgsolver
 
 test: generatesat
-	ocamlbuild $(SATFLAGS) -libs $(LIBS) -package oUnit solverstest.native
+	ocamlbuild $(SATFLAGS) -libs $(LIBS) -package oUnit -package extlib solverstest.native
 	mv solverstest.native bin/ounit
 
 
@@ -35,7 +35,7 @@ generators: randomgame.gen laddergame.gen clusteredrandomgame.gen cliquegame.gen
 tools: auso.tool benchmark.tool benchstratimpr.tool combine.tool complexdecomp.tool compressor.tool fullimprarena.tool imprarena.tool infotool.tool obfuscator.tool policyitervis.tool transformer.tool winningstrats.tool itersat.tool
 
 %.tool: generatesat
-	ocamlbuild $(SATFLAGS) -libs $(LIBS) $*.native
+	ocamlbuild $(SATFLAGS) -libs $(LIBS) -package extlib $*.native
 	mv $*.native bin/$*
 
 
