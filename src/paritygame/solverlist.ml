@@ -7,6 +7,7 @@ include Localmodelchecker;;
 include Optstratimprov;;
 include Recursive;;
 include Smallprogress;;
+include Succinctsmallprogress;;
 include Stratimpralgs;;
 include Stratimprlocal;;
 include Stratimprlocal2;;
