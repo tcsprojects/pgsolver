@@ -7,6 +7,7 @@ include Localmodelchecker;;
 include Optstratimprov;;
 include Recursive;;
 include Smallprogress;;
+include Succinctsmallprogress;;
 include Stratimpralgs;;
 include Stratimprlocal;;
 include Stratimprlocal2;;
@@ -23,4 +24,8 @@ include Stratimprdisc;;
 include Viasat;;
 include Satsolve;;
 include Stratimprsat;;
+include Prioprom;;
+include Priopromplus;;
+include Priopromdelay;;
+include Priopromrecovery;;
 (*include Smtsolve;;*)
