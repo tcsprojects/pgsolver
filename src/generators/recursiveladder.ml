@@ -1,5 +1,6 @@
+open Pgtypes;;
 open Paritygame;;
-
+  
 let generator_game_func arguments =
 
 	let show_help _ =
@@ -14,7 +15,7 @@ let generator_game_func arguments =
 
   let w = 5 in
 
-  let game = Paritygame.pg_create (5 * height - 5) in
+  let game = pg_create (5 * height - 5) in
 
   for i = 0 to height-1 do
   	let start_idx = i * w - 2 in

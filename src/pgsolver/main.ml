@@ -5,16 +5,14 @@ open Arg ;;
 open Tcstiming;;
 open Paritygame ;;
 open Verification ;;
-
 open Generatedsat;;
-
 open Univsolve ;;
 open Solvers ;;
 open Generators ;;
 open Generatorlist ;;
 open Whoiswho ;;
 open Solverlist;;
-
+open Pgprofiling;;
 
 module CommandLine =
 struct
@@ -316,4 +314,5 @@ let _ =
 		)
 		| NoVerifier -> ()
 	)
-  );;
+  );
+  prof_print_results ()
