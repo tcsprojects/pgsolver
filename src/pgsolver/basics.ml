@@ -12,16 +12,24 @@ let verbosity_level_verbose = 2
 
 let verbosity_level_default = 3
 
+let last_time = ref 0.0
+		       
+let init_message_timing _ = last_time := Sys.time ()
 
-
-let message u s = if !verbosity >= u then (output_string !message_ch (s ()); flush !message_ch)
+let message u s = if !verbosity >= u then
+		    begin
+		      output_string !message_ch (s ());
+		      flush !message_ch
+		    end
 
 
 
 let message_depth u depth s = message u (fun x -> (String.make (depth * 2) ' ') ^ s x)
 
 let message_depth_tagged u depth tag s =
-	message_depth u depth (fun x -> "[" ^ String.capitalize_ascii (tag x) ^ "]  " ^ s x)
+  let now = Sys.time () in
+  message_depth u depth (fun x -> "[" ^ String.capitalize_ascii (tag x) ^ ": " ^ Printf.sprintf "%.2f msec" (1000.0 *. (now -. !last_time)) ^ "]  " ^ s x);
+  last_time := now
 
 let message_depth_counter = ref 0
 let message_incrdepth _ = incr message_depth_counter

@@ -221,7 +221,7 @@ let ppsolve game =
   prof_declare_originator "Prioprom.ppsolve";
   let msg_tagged v = message_autotagged v (fun _ -> "PP") in
   let (solution,strategy,queries,proms,maxq,maxp,wr) = search game in
-  msg_tagged 2 (fun _ -> "\n");
+  (* msg_tagged 2 (fun _ -> "\n"); *)
   msg_tagged 2 (fun _ -> "Total number of queries: " ^ string_of_int queries ^ "\n");
   msg_tagged 2 (fun _ -> "Total number of promotions: " ^ string_of_int proms ^ "\n");
   msg_tagged 2 (fun _ -> "Maximum number of queries: " ^ string_of_int maxq ^ "\n");

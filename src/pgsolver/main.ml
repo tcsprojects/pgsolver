@@ -150,9 +150,9 @@ end ;;
 
 open CommandLine ;;
 
-let _ = Random.self_init ()
-
 let _ =
+  Random.self_init ();
+  init_message_timing ();
   SimpleArgs.parsedef speclist (fun f -> set_input_file f) (header ^ "Usage: pgsolver [options] [infile]\n" ^
                                               "Solves the parity game given in <infile>. If this argument is omitted it reads a game from STDIN.\n\nOptions are");
 
@@ -314,5 +314,5 @@ let _ =
 		)
 		| NoVerifier -> ()
 	)
-  );
-  prof_print_results ()
+  )
+  (*  prof_print_results () *)

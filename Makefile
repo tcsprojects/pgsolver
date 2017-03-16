@@ -1,6 +1,6 @@
 # TODO: SMTMODULES=-ccopt "-I$(Z3DIR)/ocaml -L$(Z3DIR)/ocaml -L$(Z3DIR)/lib" -cclib -lz3 $(OCAML_DIR)/libcamlidl.a $(Z3DIR)/ocaml/z3.$(COMPILELIBEXT)
 
-WITH_PROFILING = YES
+# WITH_PROFILING = YES
 
 ifdef WITH_PROFILING
 	BUILDEXT = p.native

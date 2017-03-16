@@ -3,6 +3,8 @@ val verbosity : int ref
 
 type verbosity_level = int
 
+val init_message_timing : unit -> unit
+				    
 val verbosity_level_verbose: verbosity_level
 
 val verbosity_level_default: verbosity_level
