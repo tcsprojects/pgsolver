@@ -1,4 +1,4 @@
-open Pgtypes;;
+open Paritygame;;
   
 type prof_function = int
 		       

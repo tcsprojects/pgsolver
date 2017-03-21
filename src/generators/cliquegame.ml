@@ -46,7 +46,23 @@ let generator_game_func arguments =
     with_self_cycles := Array.length arguments = 2 && arguments.(1) = "self"
   with _ -> (show_help (); exit 1));
 
-  CliqueGame.build ()
+  let successors i = 
+    let rec succs acc j =
+      if j=i
+      then (if !with_self_cycles
+	    then succs (j::acc) (j-1)
+	    else succs acc (j-1))
+      else (if j<0
+	    then acc
+	    else succs (j::acc) (j-1))
+    in
+    succs [] (!n-1)
+  in
+  pg_init !n (fun v -> (v, plr_benefits v, successors v, Some (nd_show v)))
+
+
+		     
+(* CliqueGame.build () *)
 
 
 let _ = Generators.register_generator generator_game_func "cliquegame" "Clique Game";;

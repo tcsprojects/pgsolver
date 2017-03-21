@@ -12,7 +12,6 @@ open Paritygame ;;
 open Univsolve;;
 open Solvers;;
 open Tcsbasedata;;
-open Pgprofiling;;
 
 let even i = (i mod 2 = 0)
 let odd i = (i mod 2 = 1)
@@ -21,7 +20,6 @@ let odd i = (i mod 2 = 1)
 let list_to_set = List.fold_left (fun s -> fun v -> NodeSet.add v s) NodeSet.empty
  
 let solve' game =
-  prof_declare_originator "Fpiter.solve'";
   let msg_tagged v = message_autotagged v (fun _ -> "FPITER") in
   
   let show_nodeSet s = "{" ^ String.concat "," (List.map string_of_int (NodeSet.elements s)) ^ "}" in
@@ -353,7 +351,6 @@ let solve' game =
   done;
   
   msg_tagged 2 (fun _ -> "Fixpoint iteration algorithm finished.\n");
-  prof_undeclare_originator ();
 
   (solution, strategy)
 

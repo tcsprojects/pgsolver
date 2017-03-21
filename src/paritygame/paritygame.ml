@@ -3,7 +3,7 @@ open Tcsbasedata;;
 open Tcsarray;;
 open Tcsset;;
 open Tcsgraph;;
-open Pgprofiling;;
+(* open Pgprofiling;; *)
 
 (**************************************************************
  * nodes in a parity game                                     *
@@ -131,7 +131,7 @@ let pg_sort = Array.sort
 let pg_size = Array.length
 
 let pg_isDefined game v =
-  prof_access v prof_definedcheck;
+  (* prof_access v prof_definedcheck; *)
   let (p,_,_,_,_) = game.(v) in p >= 0
   
 let pg_get_node pg i = pg.(i)
@@ -151,16 +151,16 @@ let pg_edge_iterate f pg =
 let pg_find_desc pg desc = ArrayUtils.find (fun (_,_,_,_,desc') -> desc = desc') pg
 
 let pg_add_edge gm v u =
-  prof_access v prof_successors;
-  prof_access u prof_predecessors;
+  (* prof_access v prof_successors; *)
+  (* prof_access u prof_predecessors; *)
   let (pr,pl,succs,preds,desc) = pg_get_node gm v in
   pg_set_node' gm v (pr, pl, ns_add u succs, preds, desc);
   let (pr,pl,succs,preds,desc) = pg_get_node gm u in
   pg_set_node' gm u (pr, pl, succs, ns_add v preds, desc)
 	      	    
 let pg_del_edge gm v u =
-  prof_access v prof_successors;
-  prof_access u prof_predecessors;
+  (* prof_access v prof_successors; *)
+  (* prof_access u prof_predecessors; *)
   let (pr,pl,succs,preds,desc) = pg_get_node gm v in
   pg_set_node' gm v (pr, pl, ns_del u succs, preds, desc);
   let (pr,pl,succs,preds,desc) = pg_get_node gm u in
@@ -176,20 +176,20 @@ let pg_del_edge gm v u =
 let pg_set_node pg i pr pl succs preds desc = pg_set_node' pg i (pr, pl, succs, preds, desc);;
 
 let pg_get_priority pg i =
-  prof_access i prof_priority;
+  (* prof_access i prof_priority; *)
   let (pr, _, _, _, _) = pg_get_node pg i in pr
 
 let pg_set_priority pg i pr =
-    prof_access i prof_priority;
-    let (_, pl, succs, preds, desc) = pg_get_node pg i in
-    pg_set_node pg i pr pl succs preds desc
+  (* prof_access i prof_priority; *)
+  let (_, pl, succs, preds, desc) = pg_get_node pg i in
+  pg_set_node pg i pr pl succs preds desc
 
 let pg_get_owner pg i =
-  prof_access i prof_owner;
+  (* prof_access i prof_owner; *)
   let (_, pl, _, _, _) = pg_get_node pg i in pl
 
 let pg_set_owner pg i pl =
-  prof_access i prof_owner;
+  (* prof_access i prof_owner; *)
   let (pr, _, succs, preds, desc) = pg_get_node pg i in
   pg_set_node pg i pr pl succs preds desc
 
@@ -203,11 +203,11 @@ let pg_get_desc' pg i = match pg_get_desc pg i with None -> "" | Some s -> s
 let pg_set_desc' pg i desc = pg_set_desc pg i (if desc = "" then None else Some desc)
 
 let pg_get_successors pg i =
-    prof_access i prof_successors;
+  (* prof_access i prof_successors; *)
     let (_,_,succs,_,_) = pg_get_node pg i in succs
 						
 let pg_get_predecessors pg i =
-  prof_access i prof_predecessors;
+  (* prof_access i prof_predecessors; *)
   let (_,_,_,preds,_) = pg_get_node pg i in preds
 
 
@@ -691,7 +691,6 @@ let merge_solutions_inplace sol1 sol2 =
 type scc = int
 	     
 let strongly_connected_components game (*tgraph*) =
-  prof_declare_originator "Paritygame.strongly_connected_components";
   let l = pg_size game in
   let dfsnum = Array.make l (-1) in
   let index = Array.make l (-1) in
@@ -777,7 +776,6 @@ let strongly_connected_components game (*tgraph*) =
       decr n
     done
   done;
-  prof_undeclare_originator ();
   (DynArray.to_array sccs,
    scc_index,
    DynArray.to_array (DynArray.map [] (fun s -> TreeSet.fold (fun x -> fun l -> x::l) s []) topology),

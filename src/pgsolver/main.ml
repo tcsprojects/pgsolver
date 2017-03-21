@@ -12,7 +12,7 @@ open Generators ;;
 open Generatorlist ;;
 open Whoiswho ;;
 open Solverlist;;
-open Pgprofiling;;
+(* open Pgprofiling;; *)
 
 module CommandLine =
 struct

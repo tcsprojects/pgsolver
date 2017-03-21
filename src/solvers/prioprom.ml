@@ -15,7 +15,6 @@ open Paritygame;;
 open Univsolve;;
 open Paritygamebitset;;
 open Solvers;;
-open Pgprofiling;;
   
 let query game region r p player was_open att_qP att_qO subgame_vr reg_strategy vr l =
   let r_dom = bit_dom_array_bound r l p in
@@ -218,7 +217,6 @@ let search game =
   (solution,str_out,!tot_query,!tot_promo,!max_query,!max_promo,!wr_count)
 
 let ppsolve game =
-  prof_declare_originator "Prioprom.ppsolve";
   let msg_tagged v = message_autotagged v (fun _ -> "PP") in
   let (solution,strategy,queries,proms,maxq,maxp,wr) = search game in
   (* msg_tagged 2 (fun _ -> "\n"); *)
@@ -227,7 +225,6 @@ let ppsolve game =
   msg_tagged 2 (fun _ -> "Maximum number of queries: " ^ string_of_int maxq ^ "\n");
   msg_tagged 2 (fun _ -> "Maximum number of promotions: " ^ string_of_int maxp ^ "\n");
   msg_tagged 2 (fun _ -> "Number of dominions: " ^ string_of_int wr ^ "\n");
-  prof_undeclare_originator ();
   (solution,strategy)
 
 let solve = ppsolve

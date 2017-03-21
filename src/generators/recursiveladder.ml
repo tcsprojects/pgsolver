@@ -1,4 +1,3 @@
-open Pgtypes;;
 open Paritygame;;
   
 let generator_game_func arguments =
