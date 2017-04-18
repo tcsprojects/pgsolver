@@ -19,6 +19,7 @@ Install the OCaml Package Manager [OPAM](https://opam.ocaml.org).
 
 Then:
 ```bash	
+opam update
 opam switch 4.03.0
 eval 'opam config env'
 opam install ocamlbuild ocamlfind ounit TCSLib
