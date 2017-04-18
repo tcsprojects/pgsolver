@@ -14,7 +14,7 @@ let sccs_perform_inplace game performer =
 		let subgame = subgame_by_list game sccs.(r) in
 		performer subgame;
 		let i = ref 0 in
-		List.iter (fun j ->
+		ns_iter (fun j ->
 			   pg_set_priority game j (pg_get_priority subgame !i);
 			   pg_set_owner game j (pg_get_owner subgame !i);
 			   incr i

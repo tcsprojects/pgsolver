@@ -77,24 +77,24 @@ let _ =
 	
 	let rec helper game indent sccfilter =
 		let (sccs', _, topology', _) = strongly_connected_components game in
-		let sccs = Array.map (fun scc -> if sccfilter scc then scc else []) sccs' in
-		let topology = Array.mapi (fun i -> List.filter (fun j -> sccs.(j) != [])) topology' in
+		let sccs = Array.map (fun scc -> if sccfilter scc then scc else ns_empty) sccs' in
+		let topology = Array.mapi (fun i -> List.filter (fun j -> not (ns_isEmpty sccs.(j)))) topology' in
 		
 		Array.iteri (fun i nodes -> 
-			if nodes != [] then (
-				out (indent ^ "SCC #" ^ string_of_int i ^ " -> " ^ ListUtils.format string_of_int topology.(i) ^ " : " ^ ListUtils.format string_of_int nodes ^ "\n");
-				if (List.length nodes > 1) then (
+			if not (ns_isEmpty nodes) then (
+				out (indent ^ "SCC #" ^ string_of_int i ^ " -> " ^ ListUtils.format string_of_int topology.(i) ^ " : " ^ ListUtils.format string_of_int (ns_nodes nodes) ^ "\n");
+				if (ns_size nodes > 1) then (
 					let sub = pg_copy game in
-					let subnodes = TreeSet.of_list_def nodes in
-					List.iter (fun v ->
-						if (pg_get_owner game v = plr_Odd) && (not (TreeSet.mem tau.(v) subnodes))
+					let subnodes = nodes in
+					ns_iter (fun v ->
+						if (pg_get_owner game v = plr_Odd) && (not (ns_elem tau.(v) subnodes))
 						then
 						  begin
 						    ns_iter (fun w -> pg_del_edge sub v w) (pg_get_successors sub v);
 						    pg_add_edge sub v tau.(v)
 						  end
 					) nodes;
-					helper sub (indent ^ "  ") (fun scc -> TreeSet.mem (List.hd scc) subnodes);
+					helper sub (indent ^ "  ") (fun scc -> ns_elem (ns_first scc) subnodes);
 				)
 			)
 		) sccs

@@ -24,6 +24,9 @@ type nodeset
 val ns_isEmpty : nodeset -> bool
 val ns_elem    : node -> nodeset -> bool
 
+val ns_nodeCompare : node -> node -> int
+val ns_compare : nodeset -> nodeset -> int
+
 (* constructor functions for node sets *)
 val ns_empty   : nodeset
 val ns_make    : node list -> nodeset
@@ -49,6 +52,8 @@ val ns_last    : nodeset -> node (* return the greatest (by name) node in a node
 (* add a node to, resp. delete a node from a nodeset *) 
 val ns_add     : node -> nodeset -> nodeset
 val ns_del     : node -> nodeset -> nodeset
+
+val ns_union   : nodeset -> nodeset -> nodeset
 
 (* extract a list of nodes from a node set *)
 val ns_nodes   : nodeset -> node list
@@ -135,14 +140,14 @@ val pg_find_desc  : paritygame -> string option -> node
 val pg_get_index      : paritygame -> int
 
 (* `pg_prio_nodes <game> <prio>' returns a list of all nodes having priority <prio> *)
-val pg_prio_nodes: paritygame -> priority -> node list
+val pg_prio_nodes: paritygame -> priority -> nodeset
 
 (* returns a list of all the priorities occurring in the game *)
 val pg_get_selected_priorities : paritygame -> (priority -> bool) -> priority list
 val pg_get_priorities : paritygame -> priority list
 						     
 (* `pg_remove_nodes <game> <node_list>' removes all nodes from <game> that are specified in <node_list> *)
-val pg_remove_nodes   : paritygame -> node list -> unit
+val pg_remove_nodes   : paritygame -> nodeset -> unit
 
 (* `pg_remove_edges <game> <edge_list>' removes all edges from <game> that are specified in <edge_list> *)
 val pg_remove_edges   : paritygame -> (node * node) list -> unit
@@ -253,16 +258,16 @@ val pg_max_prio_for   : paritygame -> player -> priority
  * Node Collect Functions                                     *
  **************************************************************)
 
-val collect_nodes: paritygame -> (node -> priority * player * nodeset * nodeset * string option -> bool) -> node list
-val collect_nodes_by_prio: paritygame -> (priority -> bool) -> node list
+val collect_nodes: paritygame -> (node -> priority * player * nodeset * nodeset * string option -> bool) -> nodeset
+val collect_nodes_by_prio: paritygame -> (priority -> bool) -> nodeset
 
 (* `collect_nodes_by_owner <game> <f>' returns two lists: the first one contains all nodes v for which f v is true, the other all those for which it is false *)
-val collect_nodes_by_owner: paritygame -> (player -> bool) -> node list * node list
+val collect_nodes_by_owner: paritygame -> (player -> bool) -> nodeset * nodeset
 								  
 (* `collect_max_prio_nodes <game>' returns all nodes with greatest priority *)
-val collect_max_prio_nodes: paritygame -> node list
+val collect_max_prio_nodes: paritygame -> nodeset
 
-val collect_max_parity_nodes: paritygame -> node list
+val collect_max_parity_nodes: paritygame -> nodeset
 
 
 
@@ -275,7 +280,9 @@ val subgame_by_strat: paritygame -> strategy -> paritygame
 val subgame_by_strat_pl: paritygame -> strategy -> player -> paritygame
 
 (* Calling subgame_by_list game nodes returns a compressed sub game induced and ordered by the nodes-list *)
-val subgame_by_list: paritygame -> node list -> paritygame
+val subgame_by_list: paritygame -> nodeset -> paritygame
+
+val subgame_by_node_filter: paritygame -> (node -> bool) -> paritygame * (node -> node) * (node -> node)
 
 (*
 val subgame_and_subgraph_by_list: paritygame -> int list array -> int list -> paritygame * int list array (* DEPRECATED *)
@@ -313,7 +320,7 @@ type scc = int
     - <topology> is an array mapping each SCC to the list of its immediate successing SCCs and 
     - <roots> is the list of SCCs having no predecessing SCC. 
 *)
-val strongly_connected_components : paritygame -> node list array * scc array * scc list array * scc list
+val strongly_connected_components : paritygame -> nodeset array * scc array * scc list array * scc list
 
 (* `sccs_compute_leaves <scc_list> <topology>' returns the leaf SCCs reachable from some SCC in <scc_list> via <topology> *)
 val sccs_compute_leaves: scc list -> scc list array -> scc list
@@ -321,9 +328,9 @@ val sccs_compute_leaves: scc list -> scc list array -> scc list
 val sccs_compute_transposed_topology: scc list array -> scc list array
 
 
-val sccs_compute_connectors : paritygame -> node list array * scc array * scc list array * scc list -> (scc * scc, (scc * scc) list) Hashtbl.t
+val sccs_compute_connectors : paritygame -> nodeset array * scc array * scc list array * scc list -> (scc * scc, (scc * scc) list) Hashtbl.t
 
-val show_sccs : node list array -> scc list array -> scc list -> string
+val show_sccs : nodeset array -> scc list array -> scc list -> string
 
 
 
@@ -332,13 +339,13 @@ val show_sccs : node list array -> scc list array -> scc list -> string
  **************************************************************)
 
 (* game strategy player region include_region tgraph deltafilter overwrite_strat *)
-val attr_closure_inplace': paritygame -> strategy -> player -> node TreeSet.t -> bool -> (node -> bool) -> bool -> node list
+val attr_closure_inplace': paritygame -> strategy -> player -> nodeset -> bool -> (node -> bool) -> bool -> nodeset
 
 (* `attr_closure_inplace <game> <strategy> <player> <region>' returns the attractor for the given player and region. 
    Additionally all necessary strategy decisions for player leading into the region are added to <strategy>. *)
-val attr_closure_inplace : paritygame -> strategy -> player -> node list -> node list
+val attr_closure_inplace : paritygame -> strategy -> player -> nodeset -> nodeset
 
-val attractor_closure_inplace_sol_strat: paritygame -> (node -> bool) -> solution -> strategy -> node TreeSet.t -> node TreeSet.t -> (node list * node list)
+val attractor_closure_inplace_sol_strat: paritygame -> (node -> bool) -> solution -> strategy -> nodeset -> nodeset -> (nodeset * nodeset)
 
 
 
@@ -346,9 +353,9 @@ val attractor_closure_inplace_sol_strat: paritygame -> (node -> bool) -> solutio
  * Dominion Functions                                         *
  **************************************************************)
 
-val pg_set_closed: paritygame -> node TreeSet.t -> player -> bool
+val pg_set_closed: paritygame -> nodeset -> player -> bool
 
-val pg_set_dominion: (paritygame -> solution * strategy) -> paritygame -> node TreeSet.t -> player -> strategy option
+val pg_set_dominion: (paritygame -> solution * strategy) -> paritygame -> nodeset -> player -> strategy option
 
 
 

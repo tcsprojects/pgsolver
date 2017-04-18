@@ -139,7 +139,7 @@ let _ =
 	game_index := !game_index + pg_get_index g;
 	let (sccs, _, _, _) = Paritygame.strongly_connected_components g in
 	let larg = ref 0 in
-	Array.iter (fun s -> larg := max !larg (List.length s)) sccs;
+	Array.iter (fun s -> larg := max !larg (ns_size s)) sccs;
 	largest_scc := !largest_scc + !larg;
 	scc_count := !scc_count + Array.length sccs
   ) games;

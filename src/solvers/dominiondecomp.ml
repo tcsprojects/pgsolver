@@ -26,7 +26,7 @@ let newwin options game =
 		match (pg_set_dominion recsolve game nodeset pl) with
 			None -> false
 		|   Some strat' -> (
-            TreeSet.iter (fun q ->
+            ns_iter (fun q ->
                 sol.(q) <- pl;
                 if strat'.(q) != -1
                 then strat.(q) <- strat'.(q)
@@ -47,10 +47,10 @@ let newwin options game =
 				let i = ref idx in
 				while (is_none !found) && (!i <= n - size) do
 					if (pg_get_priority game !i >= 0) then (
-                        nodeset := TreeSet.add !i !nodeset;
+                        nodeset := ns_add !i !nodeset;
                         found := iter_subsets' (size - 1) (!i + 1) nodeset;
                         if (is_none !found)
-                        then nodeset := TreeSet.remove !i !nodeset
+                        then nodeset := ns_del !i !nodeset
                     );
 					i := !i + 1
 				done;
@@ -66,7 +66,7 @@ let newwin options game =
 		let i = ref 1 in
 		let nodeset = ref None in
 		while (is_none !nodeset) && (!i <= size) do
-			nodeset := iter_subsets' !i 0 (ref TreeSet.empty_def);
+			nodeset := iter_subsets' !i 0 (ref ns_empty);
 			i := !i + 1
 		done;
 		!nodeset

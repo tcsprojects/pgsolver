@@ -17,7 +17,7 @@ let even i = (i mod 2 = 0)
 let odd i = (i mod 2 = 1)
 
 (* convert a list to a set of nodes *)
-let list_to_set = List.fold_left (fun s -> fun v -> NodeSet.add v s) NodeSet.empty
+let list_to_set = ns_fold (fun s -> fun v -> NodeSet.add v s) NodeSet.empty
  
 let solve' game =
   let msg_tagged v = message_autotagged v (fun _ -> "FPITER") in

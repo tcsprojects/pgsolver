@@ -9,17 +9,18 @@ else
 endif
 
 LIBS = nums,str
+PACKAGES = -package extlib -package TCSLib
 
 all: pgsolver generators tools test
 
 include satsolversforocaml/SatCompile
 
 pgsolver: generatesat
-	ocamlbuild $(SATFLAGS) -libs $(LIBS) -package extlib main.$(BUILDEXT)
+	ocamlbuild $(SATFLAGS) -libs $(LIBS) $(PACKAGES) main.$(BUILDEXT)
 	mv main.$(BUILDEXT) bin/pgsolver
 
 test: generatesat
-	ocamlbuild $(SATFLAGS) -libs $(LIBS) -package oUnit -package extlib solverstest.$(BUILDEXT)
+	ocamlbuild $(SATFLAGS) -libs $(LIBS) -package oUnit $(PACKAGES) solverstest.$(BUILDEXT)
 	mv solverstest.$(BUILDEXT) bin/ounit
 
 
@@ -30,7 +31,7 @@ test: generatesat
 generators: randomgame.gen laddergame.gen clusteredrandomgame.gen cliquegame.gen modelcheckerladder.gen recursiveladder.gen steadygame.gen jurdzinskigame.gen elevators.gen towersofhanoi.gen langincl.gen stratimprgen.gen recursivedullgame.gen
 
 %.gen:
-	ocamlbuild -libs $(LIBS) $*_aux.$(BUILDEXT)
+	ocamlbuild -libs $(LIBS) $(PACKAGES) $*_aux.$(BUILDEXT)
 	mv $*_aux.$(BUILDEXT) bin/$*
 
 
@@ -42,7 +43,7 @@ generators: randomgame.gen laddergame.gen clusteredrandomgame.gen cliquegame.gen
 tools: auso.tool benchmark.tool benchstratimpr.tool combine.tool complexdecomp.tool compressor.tool fullimprarena.tool imprarena.tool infotool.tool obfuscator.tool policyitervis.tool transformer.tool winningstrats.tool itersat.tool
 
 %.tool: generatesat
-	ocamlbuild $(SATFLAGS) -libs $(LIBS) -package extlib $*.$(BUILDEXT)
+	ocamlbuild $(SATFLAGS) -libs $(LIBS) $(PACKAGES) $*.$(BUILDEXT)
 	mv $*.$(BUILDEXT) bin/$*
 
 

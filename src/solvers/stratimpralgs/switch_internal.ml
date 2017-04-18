@@ -105,19 +105,19 @@ let improvement_policy_learn_cycles sub_policy game node_total_ordering (cycles,
     let (sccs, sccindex, topology, roots) = strongly_connected_components game' in
     let cycles = ref cycles in
     let normalize l =
-    	list_upfront l (list_max l (fun x y -> pg_get_priority game x < pg_get_priority game y))
+    	ns_make (list_upfront (ns_nodes l) (list_max (ns_nodes l) (fun x y -> pg_get_priority game x < pg_get_priority game y)))
     in
     Array.iteri (fun i scc ->
-    	if (List.length scc > 1) && (topology.(i) = []) then (
+    	if (ns_size scc > 1) && (topology.(i) = []) then (
     		let c = normalize scc in
-    		if (pg_get_priority game (List.hd c) mod 2 = 0) && (not (TreeSet.mem c !cycles)) then (
+    		if (pg_get_priority game (ns_first c) mod 2 = 0) && (not (TreeSet.mem c !cycles)) then (
     			cycles := TreeSet.add c !cycles;
     			let fmt k =
 					match (pg_get_desc game k) with
 		                None -> string_of_int k
 		            |   Some t -> t
 		        in    			
-    			message 2 (fun _ -> "\nLearned cycle #" ^ string_of_int (TreeSet.cardinal !cycles) ^ " : " ^ ListUtils.format fmt c ^ "\n")
+    			message 2 (fun _ -> "\nLearned cycle #" ^ string_of_int (TreeSet.cardinal !cycles) ^ " : " ^ ListUtils.format fmt (ns_nodes c) ^ "\n")
     		)
     	)
     ) sccs;
@@ -321,8 +321,8 @@ type ('a, 'b) ab = A of 'a | B of 'b
 
 
 let cycle_enforce_cycles_compare (node0, node1, edge0, edge1) (node0', node1', edge0', edge1') =
-	let c0 = TreeSet.compare node0 node0' in
-	let c1 = TreeSet.compare node1 node1' in
+	let c0 = ns_compare node0 node0' in
+	let c1 = ns_compare node1 node1' in
 	let c2 = TreeMap.compare compare edge0 edge0' in
 	let c3 = TreeMap.compare compare edge1 edge1' in
 	if c0 != 0 then c0
@@ -345,18 +345,18 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 		let game' = subgame_by_edge_pred game (fun i j -> combined_strategy.(i) = j) in
 		let (sccs, sccindex, topology, roots) = strongly_connected_components game' in
 		Array.iteri (fun i scc ->
-			if (List.length scc > 1) && (topology.(i) = []) then (
-				let node0 = ref TreeSet.empty_def in
-				let node1 = ref TreeSet.empty_def in
+			if (ns_size scc > 1) && (topology.(i) = []) then (
+				let node0 = ref ns_empty in
+				let node1 = ref ns_empty in
 				let edge0 = ref TreeMap.empty_def in
 				let edge1 = ref TreeMap.empty_def in
-				List.iter (fun v ->
+				ns_iter (fun v ->
 					if pg_get_owner game v = plr_Even then (
-						node0 := TreeSet.add v !node0;
+						node0 := ns_add v !node0;
 						edge0 := TreeMap.add v combined_strategy.(v) !edge0;
 					)
 					else (
-						node1 := TreeSet.add v !node1;
+						node1 := ns_add v !node1;
 						edge1 := TreeMap.add v combined_strategy.(v) !edge1;
 					)
 				) scc;
@@ -369,7 +369,7 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 	let cyc_value v (node0, node1, edge0, edge1) =
 		let valworst = ref None in
 		let valcur = ref (empty_descending_relevance_ordered_set game node_total_ordering) in
-		let m = ref (TreeSet.cardinal node1) in
+		let m = ref (ns_size node1) in
 		let nodecur = ref v in
 		while !m > 0 do
 			while (pg_get_owner game !nodecur = plr_Even) do
@@ -409,13 +409,13 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 				new_strategy.(!i) <- old_strategy.(!i);
 			) (pg_get_successors game !i);
 			TreeSet.iter (fun ((node0, node1, edge0, edge1) as cyc) ->
-				if (TreeSet.mem !i node0) then (
+				if (ns_elem !i node0) then (
 					TreeMap.iter (fun v w ->
 						new_strategy.(v) <- w;
 					) edge0;
 					if TreeSet.subset (get_cycles new_strategy) cycles
 					then pots := (B cyc, cyc_value !i cyc)::!pots;
-					TreeSet.iter (fun v ->
+					ns_iter (fun v ->
 						new_strategy.(v) <- old_strategy.(v);
 					) node0;
 				);

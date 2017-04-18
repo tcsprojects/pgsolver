@@ -72,10 +72,10 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 
 	let sophisticated_check pl =
 		let strat' = Array.make n (-1) in
-		let badnodes = ref [] in
+		let badnodes = ref ns_empty in
 		for i = 0 to n - 1 do
 			if pg_get_owner game i = pl	then strat'.(i) <- strat.(i);
-			if sol.(i) != pl then badnodes := i::!badnodes
+			if sol.(i) != pl then badnodes := ns_add i !badnodes
 		done;
 		let game' = subgame_by_strat game strat' in
 		pg_remove_nodes game' !badnodes;

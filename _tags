@@ -9,10 +9,6 @@
 "src/tools": include
 "temp": include
 "tests": include
-"tcslib/src/utils": include
-"tcslib/src/data": include
-"tcslib/src/automata/parser": include
-"tcslib/src/automata": include
 "satsolversforocaml/src": include
 "satsolversforocaml/src/pseudosat": include
 "satsolversforocaml/src/externalsat": include

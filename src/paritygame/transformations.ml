@@ -160,7 +160,7 @@ let single_scc_transformation pg =
 	let (sccs, sccindex, topology, roots) = strongly_connected_components pg in
 	if Array.length sccs <= 1 then pg else (
 		let leaves = sccs_compute_leaves roots topology in
-		let (has0, has1) = List.fold_left (fun (h0, h1) i -> if pg_get_owner pg (List.hd sccs.(i)) = plr_Even then (true, h1) else (h0, true))
+		let (has0, has1) = List.fold_left (fun (h0, h1) i -> if pg_get_owner pg (ns_first sccs.(i)) = plr_Even then (true, h1) else (h0, true))
 						  (false, false)
 						  leaves
 		in
@@ -178,7 +178,7 @@ let single_scc_transformation pg =
 		let prio1 = !maxpr + 1 + !maxpr mod 2 in
 		let ptr0 = ref n in
 		let ptr1 = ref (if has0 then n + 2 else n) in
-		let roots = List.filter (fun v -> pg_get_priority pg v >= 0) (List.map (fun i -> List.hd sccs.(i)) roots) in
+		let roots = List.filter (fun v -> pg_get_priority pg v >= 0) (List.map (fun i -> ns_first sccs.(i)) roots) in
 		if has0 then (
 		  let v = !ptr0 in
 		  let v' = v + 1 in
@@ -208,7 +208,7 @@ let single_scc_transformation pg =
 		  pg_set_desc pg' v' None
 		);
 		List.iter (fun i ->
-			let v = List.hd sccs.(i) in
+			let v = ns_first sccs.(i) in
 			let pl = pg_get_owner pg' v in
 			pg_add_edge pg' v (if pl = plr_Even then !ptr0 else !ptr1) 
 		) leaves;

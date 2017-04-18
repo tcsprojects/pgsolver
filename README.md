@@ -15,10 +15,13 @@ Please consult [```./doc/pgsolver.pdf```](https://github.com/tcsprojects/pgsolve
 
 ## Installation
 
-Install OCaml, OUnit, OPAM, Ocamlbuild.
+Install the OCaml Package Manager [OPAM](https://opam.ocaml.org).
 
 Then:
 ```bash	
+opam switch 4.03.0
+eval 'opam config env'
+opam install ocamlbuild ocamlfind ounit TCSLib
 git clone https://github.com/tcsprojects/pgsolver.git
 cd pgsolver
 git submodule update --init

@@ -1,6 +1,3 @@
-[submodule "tcslib"]
-	path = tcslib
-	url = https://github.com/oliverfriedmann/tcslib.git
 [submodule "satsolversforocaml"]
 	path = satsolversforocaml
 	url = https://github.com/oliverfriedmann/satsolversforocaml
