@@ -28,3 +28,4 @@ SatConfig
 *.out
 doc/main.pdf
 doc/pgsolver.pdf
+scripts/policyitervis/metapostgraphs

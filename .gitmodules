@@ -1,6 +1,3 @@
 [submodule "satsolversforocaml"]
 	path = satsolversforocaml
 	url = https://github.com/oliverfriedmann/satsolversforocaml
-[submodule "scripts/policyitervis/metapostgraphs"]
-	path = scripts/policyitervis/metapostgraphs
-	url = https://github.com/oliverfriedmann/metapostgraphs.git
