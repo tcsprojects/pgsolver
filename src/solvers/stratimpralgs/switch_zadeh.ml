@@ -467,7 +467,9 @@ let test_assumptions game strategy valu =
 		  assert_ifthen "(Abg4)" "sigma(eb_i,j) && sigma(eg_i,j) && !sigma(g_1) && sigma(b_2)" "mu <= 2" (info.e1b.(i) = 1 && info.e1g.(i) = 1 && info.g.(0) = 0 && info.b.(1) = 1) (info.mu <= 1);
 		  assert_ifthen "(Abg5)" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) && !sigma(b_2)" "mu != 2" (info.e0b.(i) = 1 && info.e0g.(i) = 1 && info.g.(0) = 1 && info.b.(1) = 0) (info.mu != 1);
 		  assert_ifthen "(Abg5)" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) && !sigma(b_2)" "mu != 2" (info.e1b.(i) = 1 && info.e1g.(i) = 1 && info.g.(0) = 1 && info.b.(1) = 0) (info.mu != 1);
-		 		
+
+		  assert_ifthen "test" "test" "test" (info.e.(i) = 0 && i < info.mu && i > 0) (info.b.(1) = 0);
+
 		  if (not mdplike) then (
 					assert_ifthen "1" "sigma(d_i,j)" "F_i,j->s_i,j" (info.ex.(0).(i) = 1) (counter.(0).(i) = 1);
 					if i < info.len - 1 then assert_ifthen "1" "sigma(d_i,j)" "F_i,j->s_i,j" (info.ex.(1).(i) = 1) (counter.(1).(i) = 1);

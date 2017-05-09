@@ -14,7 +14,7 @@ open Basics;;
 open Paritygame;;
 open Univsolve;;
 open Solvers;;
-open Priopromlib;;
+open Paritygamebitset;;
 open FSet;;
 open FMap;;
 
