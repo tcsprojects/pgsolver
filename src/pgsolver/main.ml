@@ -5,7 +5,6 @@ open Arg ;;
 open Tcstiming;;
 open Paritygame ;;
 open Verification ;;
-open Generatedsat;;
 open Univsolve ;;
 open Solvers ;;
 open Generators ;;

@@ -7,12 +7,4 @@
 "src/generators/policyiter/generators": include
 "src/generators/modelchecking": include
 "src/tools": include
-"temp": include
 "tests": include
-"satsolversforocaml/src": include
-"satsolversforocaml/src/pseudosat": include
-"satsolversforocaml/src/externalsat": include
-"satsolversforocaml/src/preprocessor": include
-"satsolversforocaml/src/picosat": include
-"satsolversforocaml/src/zchaff": include
-"satsolversforocaml/src/minisat": include

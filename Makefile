@@ -1,5 +1,3 @@
-# TODO: SMTMODULES=-ccopt "-I$(Z3DIR)/ocaml -L$(Z3DIR)/ocaml -L$(Z3DIR)/lib" -cclib -lz3 $(OCAML_DIR)/libcamlidl.a $(Z3DIR)/ocaml/z3.$(COMPILELIBEXT)
-
 # WITH_PROFILING = YES
 
 ifdef WITH_PROFILING
@@ -9,18 +7,16 @@ else
 endif
 
 LIBS = nums,str
-PACKAGES = -package extlib -package TCSLib
+PACKAGES = -package extlib -package TCSLib -package ocaml-sat-solvers
 
 all: pgsolver generators tools test
 
-include satsolversforocaml/SatCompile
-
-pgsolver: generatesat
-	ocamlbuild $(SATFLAGS) -libs $(LIBS) $(PACKAGES) main.$(BUILDEXT)
+pgsolver:
+	ocamlbuild -libs $(LIBS) $(PACKAGES) main.$(BUILDEXT)
 	mv main.$(BUILDEXT) bin/pgsolver
 
-test: generatesat
-	ocamlbuild $(SATFLAGS) -libs $(LIBS) -package oUnit $(PACKAGES) solverstest.$(BUILDEXT)
+test:
+	ocamlbuild -libs $(LIBS) -package oUnit $(PACKAGES) solverstest.$(BUILDEXT)
 	mv solverstest.$(BUILDEXT) bin/ounit
 
 
@@ -42,8 +38,8 @@ generators: randomgame.gen laddergame.gen clusteredrandomgame.gen cliquegame.gen
 
 tools: auso.tool benchmark.tool benchstratimpr.tool combine.tool complexdecomp.tool compressor.tool fullimprarena.tool imprarena.tool infotool.tool obfuscator.tool policyitervis.tool transformer.tool winningstrats.tool itersat.tool
 
-%.tool: generatesat
-	ocamlbuild $(SATFLAGS) -libs $(LIBS) $(PACKAGES) $*.$(BUILDEXT)
+%.tool:
+	ocamlbuild -libs $(LIBS) $(PACKAGES) $*.$(BUILDEXT)
 	mv $*.$(BUILDEXT) bin/$*
 
 

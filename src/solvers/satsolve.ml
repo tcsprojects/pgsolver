@@ -90,7 +90,5 @@ let solve' game =
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
 
 
-let _ =
-  if (List.length (Satsolvers.get_list ()) > 0)
-	then register_solver solve "satsolve" "ss" "directly solve the game by an NP predicate";;
+let _ = register_solver solve "satsolve" "ss" "directly solve the game by an NP predicate";;
 
