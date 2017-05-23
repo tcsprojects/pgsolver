@@ -23,43 +23,43 @@ let not_none = function
   |	_ -> true;;
 
 let query game region r p player was_open att_qP att_qO subgame_vr reg_strategy vr l =
-	let r_dom = bit_dom_array_bound r l p in
-	if was_open = 1
-	then BitSet.differentiate subgame_vr !region
-	else (
-	  for i = 0 to l - 1 do
-	    if (BitSet.is_set vr i) && not (BitSet.is_set r_dom i)
-	    then BitSet.set subgame_vr i
-	    else BitSet.unset subgame_vr i
-	  done;
-	);
-	player := plr_benefits p;
-	let target = BitSet.create l in
-	for i = 0 to l - 1 do
-	  reg_strategy.(i) <- -1;
-	  if r.(i) = p
-	  then BitSet.set target i
-	done;
-	let reg_en = BitSet.enum target in
-	region := attr_bit game subgame_vr att_qP att_qO reg_strategy !player target (Enum.clone reg_en);
-	(target,reg_en,BitSet.enum r_dom);;
+  let r_dom = bit_dom_array_bound r l p in
+  if was_open = 1
+  then BitSet.differentiate subgame_vr !region
+  else (
+    for i = 0 to l - 1 do
+      if (BitSet.is_set vr i) && not (BitSet.is_set r_dom i)
+      then BitSet.set subgame_vr i
+      else BitSet.unset subgame_vr i
+    done;
+  );
+  player := plr_benefits p;
+  let target = BitSet.create l in
+  for i = 0 to l - 1 do
+    reg_strategy.(i) <- -1;
+    if r.(i) = p
+    then BitSet.set target i
+  done;
+  let reg_en = BitSet.enum target in
+  region := attr_bit game subgame_vr att_qP att_qO reg_strategy !player target (Enum.clone reg_en);
+  (target,reg_en,BitSet.enum r_dom);;
 
 let dispatcher game region r p player f max_f delay_even delay_odd even_set odd_set pre r_enum target target_enum max_col r_strategy subgame_vr reg_strategy vr l =
   let pre_set = BitSet.diff vr region in
   Enum.iter (fun v -> BitSet.unset pre_set v) (Enum.clone r_enum);
   Enum.iter (fun i ->
-              let pl = pg_get_owner game i in
-              let ws = pg_get_successors game i in
-              if pl = player
-              then (
-                if r_strategy.(i) = -1
-                then (
-                  let w = ns_fold (fun b -> fun w -> if (b > -1 || not (BitSet.is_set vr w) || not (BitSet.is_set region w)) then b else w) (-1) ws in
-                  if w > -1 then reg_strategy.(i) <- w;
-                )
-                else reg_strategy.(i) <- r_strategy.(i);
-              )
-            ) target_enum;
+      let pl = pg_get_owner game i in
+      let ws = pg_get_successors game i in
+      if pl = player
+      then (
+        if r_strategy.(i) = -1
+        then (
+          let w = ns_fold (fun b -> fun w -> if (b > -1 || not (BitSet.is_set vr w) || not (BitSet.is_set region w)) then b else w) (-1) ws in
+          if w > -1 then reg_strategy.(i) <- w;
+        )
+        else reg_strategy.(i) <- r_strategy.(i);
+      )
+    ) target_enum;
   pre_bit game pre subgame_vr (plr_opponent player) pre_set l;
   if not (is_empty_bset (BitSet.inter pre target) l)
   then (
@@ -73,13 +73,13 @@ let dispatcher game region r p player f max_f delay_even delay_odd even_set odd_
     else Enum.iter (fun i -> if r.(i) mod 2 = 1 then BitSet.set r_pl i) r_enum;
     let min = ref (max_col) in
     Enum.iter (fun v ->
-                let ws = pg_get_successors game v in
-                ns_iter (fun w -> if BitSet.is_set vr w && BitSet.is_set r_pl w
-                          then (
-                            if f.(w) < !min
-                            then min := f.(w);
-                          )
-                        ) ws;
+        let ws = pg_get_successors game v in
+        ns_iter (fun w -> if BitSet.is_set vr w && BitSet.is_set r_pl w
+                  then (
+                    if f.(w) < !min
+                    then min := f.(w);
+                  )
+                ) ws;
       ) (BitSet.enum region);
     if !min <> (max_col)
     then (
@@ -146,8 +146,8 @@ let successor game region r p player action f max_f delay_even delay_odd even_se
         if reg_strategy.(i) <> -1
         then r_strategy.(i) <- reg_strategy.(i);
       done;
-	    odd_set := FSet.empty;
-	    even_set := FSet.empty;
+      even_set := FSet.empty;
+      odd_set := FSet.empty;
       delay_odd := FMap.empty;
       delay_even := FMap.empty;
       max_f := 0;
@@ -303,12 +303,23 @@ let search game =
   done;
   (solution,str_out,!tot_query,!tot_promo,!max_query,!max_promo,!wr_count);;
 
-let solve game =
+let ppdelaysolve game =
   let msg_tagged v = message_autotagged v (fun _ -> "DP") in
   let (solution,strategy,queries,proms,maxq,maxp,wr) = search game in
   msg_tagged 2 (fun _ -> "\n");
-  msg_tagged 2 (fun _ -> "Number of queries: " ^ string_of_int queries ^ "\n");
-  msg_tagged 2 (fun _ -> "Number of promotions: " ^ string_of_int proms ^ "\n");
+  msg_tagged 2 (fun _ -> "Total number of queries: " ^ string_of_int queries ^ "\n");
+  msg_tagged 2 (fun _ -> "Total number of promotions: " ^ string_of_int proms ^ "\n");
+  msg_tagged 2 (fun _ -> "Maximum number of queries: " ^ string_of_int maxq ^ "\n");
+  msg_tagged 2 (fun _ -> "Maximum number of promotions: " ^ string_of_int maxp ^ "\n");
+  msg_tagged 2 (fun _ -> "Number of dominions: " ^ string_of_int wr ^ "\n");
   (solution,strategy);;
 
-register_solver solve "dp" "priopromdelay" "use the Delayed Promotion procedure";;
+let solve game = ppdelaysolve game;;
+
+register_solver solve "priopromdel" "dp" "use the Delayed Promotion procedure";;
+
+let solveuniv game =
+  let opt = (universal_solve_init_options_verbose !universal_solve_global_options) in
+  universal_solve opt ppdelaysolve game;;
+
+register_solver solveuniv "priopromdeluniv" "dpuniv" "use the Delayed Promotion procedure integrated with the universal solver";;
