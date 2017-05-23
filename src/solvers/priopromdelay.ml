@@ -146,8 +146,8 @@ let successor game region r p player action f max_f delay_even delay_odd even_se
         if reg_strategy.(i) <> -1
         then r_strategy.(i) <- reg_strategy.(i);
       done;
-      even_set := FMap.empty;
-      odd_set := FMap.empty;
+      even_set := FSet.empty;
+      odd_set := FSet.empty;
       delay_odd := FMap.empty;
       delay_even := FMap.empty;
       max_f := 0;
