@@ -71,9 +71,10 @@ let generator_mdp_func arguments =
 	let game = generator_game_func arguments in
 	parity_game_to_generalized_mdp game 8 (fun _ j -> pg_get_priority game j >= 8);;
 
-register_strat_impr_gen {
-	ident = "cunninghamsubexp";
-	description = "Binary Subexponential Lower Bound for Cunningham's rule";
-	parity_game = Some generator_game_func;
-	generalized_mdp = Some generator_mdp_func;
-}
+let register _ =
+    register_strat_impr_gen {
+        ident = "cunninghamsubexp";
+        description = "Binary Subexponential Lower Bound for Cunningham's rule";
+        parity_game = Some generator_game_func;
+        generalized_mdp = Some generator_mdp_func;
+    }

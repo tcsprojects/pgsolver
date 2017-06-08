@@ -10,7 +10,6 @@ open Tcsset;;
 open Tcsbasedata.OptionUtils;;
 open Paritygame ;;
 open Univsolve;;
-open Solvers;;
 
 
 let newwin options game =
@@ -81,7 +80,8 @@ let solve game =
 	let opt = (universal_solve_init_options_verbose !universal_solve_global_options) in
 	Recursive.fallback_solve game (newwin opt) opt;;
 
-register_solver solve "dominiondec" "dd" "use the dominion decomposition alg. due to Jurdzinski / Paterson / Zwick";;
+let register _ =
+    Solverregistry.register_solver solve "dominiondec" "dd" "use the dominion decomposition alg. due to Jurdzinski / Paterson / Zwick";;
 
 (*
 let rec newwin oldwin game =

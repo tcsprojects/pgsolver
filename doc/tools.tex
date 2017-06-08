@@ -49,8 +49,6 @@ index 4 would be the following.
 \end{verbatim}
 \end{example}
 
-Obfuscator is automatically built through \verb#make obfuscator#,
-\verb#make tools#, or \verb#make all#.
 It takes a parity game on \texttt{stdin} in the specification format described above
 and returns the permuted game on \texttt{stdout}. The currently understood command-line
 parameters are:
@@ -120,8 +118,7 @@ It is also possible to compress the original game's identifier space eliminating
 Note that the original game does not possess a node called $1$ for instance.
 \end{example}
 
-Compressor is automatically built through \verb#make compressor#,
-\verb#make tools#, or \verb#make all#. It takes a parity game in the specification format described above
+It takes a parity game in the specification format described above
 on \texttt{stdin} or from a given file, and returns the compressed game on \texttt{stdout}. The currently
 understood command-line parameters are:
 \begin{description}
@@ -209,8 +206,6 @@ A combination of both games can be achieved as follows:
 \end{verbatim}
 \end{example}
 
-Combine is automatically built through \verb#make combine#,
-\verb#make tools#, or \verb#make all#.
 It takes arbitrarly many parity games as command-line parameters and returns the
 combined game on \texttt{stdout}. There are no other command-line parameters.
 
@@ -259,8 +254,6 @@ with both of them belonging to player $0$. A choice-alternation version of this 
 \end{verbatim}
 \end{example}
 
-Transformer is automatically built through \verb#make transformer#,
-\verb#make tools#, or \verb#make all#.
 It takes a parity game in the specification format described above on \texttt{stdin} or from a file,
 and returns the transformed game on \texttt{stdout}. The currently understood command-line parameters are:
 
@@ -350,7 +343,6 @@ random game with 1000 nodes. To smooth multitasking interference factors, each t
 \end{verbatim}
 \end{example}
 
-Benchmark is automatically built through \verb#make benchmark#, \verb#make tools#, or \verb#make all#.
 It takes one ore more parity games in the specification format described above on \texttt{stdin} or
 from files, and carries out the benchmark. The currently understood command-line parameters are:
 

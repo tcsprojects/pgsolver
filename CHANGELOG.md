@@ -1,3 +1,6 @@
+Jun 3 2017      Oliver Friedmann
+ - Use OASIS and OPAM instead of submodules and make
+
 Aug 5 2016		Oliver Friedmann
  - Change Makefile to use Ocamlbuild instead
 

@@ -1,5 +1,5 @@
 open OUnit;;
-open Solverlist;;
+open Solvers;;
 open Paritygame;;
 
 let random_game (size, max_prio, outdegmin, outdegmax, self_cycles, seed) =

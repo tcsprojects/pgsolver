@@ -1,14 +1,14 @@
-
-open Zadehexp;;
-open Cunninghamexp;;
-open Zadehsubexp;;
-open Cunninghamsubexp;;
-open Fearnleysubexp;;
-open Friedmannsubexp;;
-open Switchallsubexp;;
-open Switchbestsubexp;;
-open Switchallexp;;
-open Switchbestexp;;
-open Randomfacetsubexp;;
-open Randomedgesubexp;;
-open Randomedgeexptest;;
+let register _ =
+    Zadehexp.register();
+    Cunninghamexp.register();
+    Zadehsubexp.register();
+    Cunninghamsubexp.register();
+    Fearnleysubexp.register();
+    Friedmannsubexp.register();
+    Switchallsubexp.register();
+    Switchbestsubexp.register();
+    Switchallexp.register();
+    Switchbestexp.register();
+    Randomfacetsubexp.register();
+    Randomedgesubexp.register();
+    Randomedgeexptest.register();;

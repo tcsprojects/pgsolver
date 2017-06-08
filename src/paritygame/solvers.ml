@@ -1,41 +1,55 @@
-open Paritygame;;
-open Tcsset;;
+let register_solver_factory = Solverregistry.register_solver_factory
 
-type global_solver_factory = string array -> global_solver
+let register_solver = Solverregistry.register_solver
 
-let solvermap = ref TreeMap.empty_def;;
+let mem_solver = Solverregistry.mem_solver
 
-let register_solver_factory solver_func identifier abbreviation description =
-	if TreeMap.mem identifier !solvermap
-	then failwith ("Solver `" ^ identifier ^ "' already registered!\n")
-	else solvermap := TreeMap.add identifier (solver_func, abbreviation, description) !solvermap;;
-	
-let register_solver solver_func = register_solver_factory (fun _ -> solver_func);;
+let find_solver = Solverregistry.find_solver
 
-let mem_solver identifier = TreeMap.mem identifier !solvermap;;
+let enum_solvers = Solverregistry.enum_solvers
 
-let find_solver identifier = TreeMap.find identifier !solvermap;;
+let fold_solvers = Solverregistry.fold_solvers
 
-let enum_solvers it = TreeMap.iter (fun i (f, a, d) -> it f i a d) !solvermap;;
+let register_partial_solver_factory = Solverregistry.register_partial_solver_factory
 
-let fold_solvers fo b = TreeMap.fold (fun i (f, a, d) x -> fo f i a d x) !solvermap b;;
+let register_partial_solver = Solverregistry.register_partial_solver
 
+let mem_partial_solver = Solverregistry.mem_partial_solver
 
-type partial_solver_factory = string array -> partial_solver
+let find_partial_solver = Solverregistry.find_partial_solver
 
-let partialsolvermap = ref TreeMap.empty_def;;
+let enum_partial_solvers = Solverregistry.enum_partial_solvers
 
-let register_partial_solver_factory solver_func identifier abbreviation description =
-	if TreeMap.mem identifier !partialsolvermap
-	then failwith ("Partial Solver `" ^ identifier ^ "' already registered!\n")
-	else partialsolvermap := TreeMap.add identifier (solver_func, abbreviation, description) !partialsolvermap;;
-	
-let register_partial_solver solver_func = register_partial_solver_factory (fun _ -> solver_func);;
+let fold_partial_solvers = Solverregistry.fold_partial_solvers
 
-let mem_partial_solver identifier = TreeMap.mem identifier !partialsolvermap;;
-
-let find_partial_solver identifier = TreeMap.find identifier !partialsolvermap;;
-
-let enum_partial_solvers it = TreeMap.iter (fun i (f, a, d) -> it f i a d) !partialsolvermap;;
-
-let fold_partial_solvers fo b = TreeMap.fold (fun i (f, a, d) x -> fo f i a d x) !partialsolvermap b;;
+let _ =
+    Bigstep.register ();
+    Dominiondecomp.register ();
+    Fpiter.register ();
+    Genetic.register ();
+    Guessstrategy.register ();
+    Localmodelchecker.register ();
+    Optstratimprov.register ();
+    Prioprom.register ();
+    Priopromplus.register ();
+    Priopromdelay.register ();
+    Priopromrecovery.register ();
+    Recursive.register ();
+    Satsolve.register ();
+    Smallprogress.register ();
+    (*Smtsolve.register ();*)
+    Stratimprdisc.register ();
+    Stratimprlocal.register ();
+    Stratimprlocal2.register ();
+    Stratimprovement.register ();
+    Stratimprsat.register ();
+    Viasat.register ();
+    Stratimpralgs.register ();
+    Switch_cunningham.register ();
+    Switch_globally_best.register ();
+    Switch_history.register ();
+    Switch_internal.register ();
+    Switch_locally_best.register ();
+    Switch_random.register ();
+    Switch_snare.register ();
+    Switch_zadeh.register ();;

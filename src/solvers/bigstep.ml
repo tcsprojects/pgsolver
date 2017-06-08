@@ -7,7 +7,6 @@
 open Basics ;;
 open Paritygame ;;
 open Univsolve;;
-open Solvers;;
 open Tcsarray;;
 open Smallprogress;;
 
@@ -66,4 +65,5 @@ let solve_scc game =
 
 let solve game = Recursive.fallback_solve game solve_scc (universal_solve_init_options_verbose !universal_solve_global_options);;
 
-register_solver solve "bigstep" "bs" "use the big step procedure due to Schewe";;
+let register _ =
+    Solverregistry.register_solver solve "bigstep" "bs" "use the big step procedure due to Schewe";;

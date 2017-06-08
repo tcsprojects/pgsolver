@@ -184,11 +184,12 @@ let strategy_improvement_optimize_roundrobin_policy_lower_bound game =
 
 
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_roundrobin_policy g)
-	"switchroundrob" "sirr" "Round Robin policy iteration";;
+let register _ =
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_roundrobin_policy g)
+        "switchroundrob" "sirr" "Round Robin policy iteration";
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_roundrobin_policy_lower_bound g)
-	"switchroundrobse" "sirrse" "Round Robin policy iteration with lower bound ordering";;
-	
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_roundrobin_policy_lower_bound g)
+        "switchroundrobse" "sirrse" "Round Robin policy iteration with lower bound ordering";;
+

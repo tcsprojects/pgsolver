@@ -29,3 +29,6 @@ SatConfig
 doc/main.pdf
 doc/pgsolver.pdf
 scripts/policyitervis/metapostgraphs
+setup.data
+*.byte
+*.cache

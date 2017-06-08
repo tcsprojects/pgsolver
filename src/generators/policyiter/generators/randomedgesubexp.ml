@@ -85,9 +85,10 @@ let generator_game_func arguments =
 	SymbolicParityGame.to_paritygame pg;;
 
 
-register_strat_impr_gen {
-	ident = "randomedgesubexp";
-	description = "Subexponential Lower Bound for the random-edge rule";
-	parity_game = Some generator_game_func;
-	generalized_mdp = None;
-}
+let register _ =
+    register_strat_impr_gen {
+        ident = "randomedgesubexp";
+        description = "Subexponential Lower Bound for the random-edge rule";
+        parity_game = Some generator_game_func;
+        generalized_mdp = None;
+    }

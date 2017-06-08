@@ -45,4 +45,4 @@ let generator_game_func arguments =
   done;
   game;;
 
-Generators.register_generator generator_game_func "recursiveladder" "Recursive Ladder Game";;
+let register _ = Generatorregistry.register_generator generator_game_func "recursiveladder" "Recursive Ladder Game";;

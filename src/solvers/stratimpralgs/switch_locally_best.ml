@@ -113,15 +113,11 @@ let strategy_improvement_optimize_worst_locally_policy game =
 	 
 	
 	 
-	
-(*
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_best_locally_policy g)
-	"strimprlocbest" "sibe" "use strategy improvement w. single best local optimization";;
-*)
-(*
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_worst_locally_policy g)
-	"strimprlocwrst" "siwo" "use strategy improvement w. single worst local optimization";;
-*)
-			
+let register _ =
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_best_locally_policy g)
+        "strimprlocbest" "sibe" "use strategy improvement w. single best local optimization";
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_worst_locally_policy g)
+        "strimprlocwrst" "siwo" "use strategy improvement w. single worst local optimization";;
+

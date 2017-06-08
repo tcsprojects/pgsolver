@@ -1,6 +1,5 @@
 open Basics;;
 open Paritygame;;
-open Solvers;;
 open Univsolve;;
 open Transformations;;
 open Tcsset;;
@@ -670,9 +669,6 @@ let strategy_improvement_optimize_all_locally_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position (improvement_policy_no_user_data improvement_policy_optimize_all_locally) () false "STRIMPR_LOCOPT";;
 
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_all_locally_policy g)
-	"switchall" "sa" "standard switch all policy iteration";;
 
 
 
@@ -694,7 +690,11 @@ open CommandLine ;;
 
 
 
-let _ = register_solver_factory (fun s -> parse s) "policyiter" "pi" "use policy iteration (see additional args)";;
+let register _ =
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_all_locally_policy g)
+        "switchall" "sa" "standard switch all policy iteration";
+    Solverregistry.register_solver_factory (fun s -> parse s) "policyiter" "pi" "use policy iteration (see additional args)";;
 
 
 

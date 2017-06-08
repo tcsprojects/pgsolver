@@ -495,11 +495,12 @@ register_sub_solver
 
 
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_cycle_avoid g)
-	"switchint" "swint" "switch internal #1";;
+let register _ =
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_cycle_avoid g)
+        "switchint" "swint" "switch internal #1";
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_cycle_enforce g)
-	"switchintx" "swintx" "switch internal #2";;
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_cycle_enforce g)
+        "switchintx" "swintx" "switch internal #2";;
 

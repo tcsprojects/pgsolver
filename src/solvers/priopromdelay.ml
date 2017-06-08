@@ -13,7 +13,6 @@
 open Basics;;
 open Paritygame;;
 open Univsolve;;
-open Solvers;;
 open Paritygamebitset;;
 open FSet;;
 open FMap;;
@@ -316,10 +315,12 @@ let ppdelaysolve game =
 
 let solve game = ppdelaysolve game;;
 
-register_solver solve "priopromdel" "dp" "use the Delayed Promotion procedure";;
+
 
 let solveuniv game =
   let opt = (universal_solve_init_options_verbose !universal_solve_global_options) in
   universal_solve opt ppdelaysolve game;;
 
-register_solver solveuniv "priopromdeluniv" "dpuniv" "use the Delayed Promotion procedure integrated with the universal solver";;
+let register _ =
+    Solverregistry.register_solver solve "priopromdel" "dp" "use the Delayed Promotion procedure";
+    Solverregistry.register_solver solveuniv "priopromdeluniv" "dpuniv" "use the Delayed Promotion procedure integrated with the universal solver";;

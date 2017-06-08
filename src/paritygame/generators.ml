@@ -1,17 +1,29 @@
-open Paritygame;;
-open Tcsset;;
+let register_generator = Generatorregistry.register_generator;;
 
-let generatormap = ref TreeMap.empty_def;;
+let mem_generator = Generatorregistry.mem_generator;;
 
-let register_generator generator_func identifier description =
-	if TreeMap.mem identifier !generatormap
-	then failwith ("generator `" ^ identifier ^ "' already registered!\n")
-	else generatormap := TreeMap.add identifier (generator_func, description) !generatormap;;
-	
-let mem_generator identifier = TreeMap.mem identifier !generatormap;;
+let find_generator = Generatorregistry.find_generator;;
 
-let find_generator identifier = TreeMap.find identifier !generatormap;;
+let enum_generators = Generatorregistry.enum_generators;;
 
-let enum_generators it = TreeMap.iter (fun i (f, d) -> it f i d) !generatormap;;
+let fold_generators = Generatorregistry.fold_generators;;
 
-let fold_generators fo b = TreeMap.fold (fun i (f, d) x -> fo f i d x) !generatormap b;;
+let run_command_line_generator generator =
+    let (gen, _) = find_generator generator in
+    let args = Array.sub Sys.argv 1 (Array.length Sys.argv - 1) in
+    let pg = gen args in
+    Paritygame.print_game pg;;
+
+let _ =
+    Randomgame.register ();
+    Laddergame.register ();
+    Clusteredrandomgame.register ();
+    Cliquegame.register ();
+    Modelcheckerladder.register ();
+    Recursiveladder.register ();
+    Steadygame.register ();
+    Jurdzinskigame.register ();
+    Elevators.register ();
+    Towersofhanoi.register ();
+    Langincl.register ();
+    Recursivedullgame.register ();;

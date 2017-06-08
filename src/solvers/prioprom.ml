@@ -14,8 +14,7 @@ open Basics;;
 open Paritygame;;
 open Univsolve;;
 open Paritygamebitset;;
-open Solvers;;
-  
+
 let query game region r p player was_open att_qP att_qO subgame_vr reg_strategy vr l =
   let r_dom = bit_dom_array_bound r l p in
   if was_open = 1
@@ -229,10 +228,10 @@ let ppsolve game =
 
 let solve = ppsolve
 	      
-let _ = register_solver ppsolve "prioprom" "pp" "use the original Priority Promotion procedure"
-
 let solveuniv game =
   let opt = (universal_solve_init_options_verbose !universal_solve_global_options) in
   universal_solve opt ppsolve game
 
-let _ = register_solver solveuniv "priopromuniv" "ppuniv" "use the original Priority Promotion procedure integrated with the universal solver"
+let register _ =
+    Solverregistry.register_solver ppsolve "prioprom" "pp" "use the original Priority Promotion procedure";
+    Solverregistry.register_solver solveuniv "priopromuniv" "ppuniv" "use the original Priority Promotion procedure integrated with the universal solver";;

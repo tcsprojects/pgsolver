@@ -53,4 +53,4 @@ let generator_game_func arguments =
   ModelcheckerLadderGame.build () ;;
 
 
-Generators.register_generator generator_game_func "modelcheckerladder" "Model Checker Ladder";;
+let register _ = Generatorregistry.register_generator generator_game_func "modelcheckerladder" "Model Checker Ladder";;

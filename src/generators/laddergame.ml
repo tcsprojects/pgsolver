@@ -16,4 +16,4 @@ let generator_game_func arguments =
 
   pg_init m (fun v -> (v mod 2, plr_benefits v, [ ((v+1) mod m); ((v+2) mod m) ], Some (nd_show v)));;
   
-Generators.register_generator generator_game_func "laddergame" "Ladder Game";;
+let register _ = Generatorregistry.register_generator generator_game_func "laddergame" "Ladder Game";;

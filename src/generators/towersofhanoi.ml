@@ -72,7 +72,7 @@ let towers_of_hanoi_func arguments =
   ToHGame.build ()
 
 
-let _ = Generators.register_generator towers_of_hanoi_func "towersofhanoi" "Towers of Hanoi Reachability Game";;
+let register _ = Generatorregistry.register_generator towers_of_hanoi_func "towersofhanoi" "Towers of Hanoi Reachability Game";;
 
 
 

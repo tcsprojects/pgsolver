@@ -1,1 +1,1 @@
-open Cliquegame;; open Rungenerator;;
+Generators.run_command_line_generator "cliquegame";;

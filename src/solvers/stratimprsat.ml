@@ -1,7 +1,6 @@
 open Paritygame ;;
 open Basics ;;
 open Univsolve ;;
-open Solvers;;
 open Tcstiming;;
 open Satwrapper;;
 open Transformations;;
@@ -140,8 +139,7 @@ let solve''' game =
 let solve game =
   universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve''' game
 		  
-let _ =
-  if (List.length (Satsolvers.get_list ()) > 0)
-	then register_solver solve "stratimprsat" "is" "solve the game by a strategy improvement reduction to SAT";;
+let register _ =
+  Solverregistry.register_solver solve "stratimprsat" "is" "solve the game by a strategy improvement reduction to SAT";;
   
   

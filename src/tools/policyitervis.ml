@@ -8,7 +8,6 @@ open Univsolve;;
 open Solvers ;;
 open Str ;;
 open Stratimpralgs ;;
-open Solverlist;;
 
 module CommandLine =
 struct

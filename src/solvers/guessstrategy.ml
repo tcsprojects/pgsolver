@@ -13,7 +13,6 @@
 open Basics ;;
 open Paritygame ;;
 open Univsolve;;
-open Solvers;;
 
 let solve game =
     let solve' game =
@@ -58,4 +57,5 @@ let solve game =
 	universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
 
 
-register_solver solve "guessstrategy" "gs" "use the strategy guessing heuristic";;
+let register _ =
+    Solverregistry.register_solver solve "guessstrategy" "gs" "use the strategy guessing heuristic";;

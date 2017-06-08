@@ -126,15 +126,16 @@ let strategy_improvement_optimize_least_recently_entered_policy game =
 	) false "STRIMPR_LRE";;
 
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_least_basic_iterations_policy g)
-	"switchlbi" "slbi" "Least basic iterations policy iteration";;
+let register _ =
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_least_basic_iterations_policy g)
+        "switchlbi" "slbi" "Least basic iterations policy iteration";
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_least_recently_basic_policy g)
-	"switchlrb" "slrb" "Least recently basic policy iteration";;
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_least_recently_basic_policy g)
+        "switchlrb" "slrb" "Least recently basic policy iteration";
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_least_recently_entered_policy g)
-	"switchlre" "slre" "Least recently entered policy iteration";;
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_least_recently_entered_policy g)
+        "switchlre" "slre" "Least recently entered policy iteration";;
 

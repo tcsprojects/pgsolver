@@ -66,4 +66,4 @@ let generator_game_func arguments =
   JGame.build ()
 
 
-let _ = Generators.register_generator generator_game_func "jurdzinskigame" "Jurdzinski Game";;
+let register _ = Generatorregistry.register_generator generator_game_func "jurdzinskigame" "Jurdzinski Game";;

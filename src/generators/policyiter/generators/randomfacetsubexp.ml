@@ -139,9 +139,10 @@ let generator_mdp_func arguments =
 	parity_game_to_generalized_mdp game 4 (fun _ j -> pg_get_priority game j >= 2);;
 
 
-register_strat_impr_gen {
-	ident = "randomfacetsubexp";
-	description = "Subexponential Lower Bound for the Random Facet rule";
-	parity_game = Some generator_game_func;
-	generalized_mdp = Some generator_mdp_func;
-}
+let register _ =
+    register_strat_impr_gen {
+        ident = "randomfacetsubexp";
+        description = "Subexponential Lower Bound for the Random Facet rule";
+        parity_game = Some generator_game_func;
+        generalized_mdp = Some generator_mdp_func;
+    }

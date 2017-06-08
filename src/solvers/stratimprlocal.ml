@@ -4,7 +4,6 @@ open Tcslist;;
 open Tcsbasedata;;
 open Paritygame;;
 open Univsolve;;
-open Solvers;;
 open Transformations;;
 open Basics;;
 
@@ -663,11 +662,13 @@ end;;
 let partially_solve pg =
 	partialpg_alternating_revertive_restriction (StrategyImprovementMain.default_solve (partialpg_alternating_transformation pg));;
 	
-register_partial_solver partially_solve "stratimprlocal" "sl" "use the local strategy improvement method [experimental]";;
+
 
 let solve' game =
 	partially_solve_dominion game 0 partially_solve;;	
 	
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
 
-register_solver solve "stratimprlocal" "sl" "use the local strategy improvement method [experimental]";;
+let register _ =
+    Solverregistry.register_partial_solver partially_solve "stratimprlocal" "sl" "use the local strategy improvement method [experimental]";
+    Solverregistry.register_solver solve "stratimprlocal" "sl" "use the local strategy improvement method [experimental]";;

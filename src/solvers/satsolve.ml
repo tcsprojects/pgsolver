@@ -1,7 +1,6 @@
 open Paritygame ;;
 open Basics ;;
 open Univsolve ;;
-open Solvers;;
 open Tcstiming;;
 open Satwrapper;;
 
@@ -90,5 +89,5 @@ let solve' game =
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
 
 
-let _ = register_solver solve "satsolve" "ss" "directly solve the game by an NP predicate";;
+let register _ = Solverregistry.register_solver solve "satsolve" "ss" "directly solve the game by an NP predicate";;
 

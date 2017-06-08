@@ -108,7 +108,7 @@ let elevator_verification_func arguments =
   EVGame.build ()
 
 
-let _ = Generators.register_generator elevator_verification_func "elevatorvergm" "Elevator Verification Game";;
+let register _ = Generatorregistry.register_generator elevator_verification_func "elevatorvergm" "Elevator Verification Game";;
 
 
 
@@ -353,5 +353,5 @@ let elevator_verification_func arguments =
   game
   
 
-let _ = Generators.register_generator elevator_verification_func "elevatorvergm" "Elevator Verification Game";;
+let register _ = Generatorregistry.register_generator elevator_verification_func "elevatorvergm" "Elevator Verification Game";;
  *)

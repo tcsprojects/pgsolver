@@ -27,7 +27,7 @@ Get the OCaml compiler and Ocamlfind.
     ~> opam install ocamlbuild ocamlfind
 \end{verbatim}
 
-Install the following requires packages:
+Install the following required additional packages:
 \begin{verbatim}
     ~> opam install TCSLib extlib ocaml-sat-solvers minisat
 \end{verbatim}
@@ -37,8 +37,6 @@ If you intent to contribute to the development of \pgsolver you may want to use 
     ~> opam install ounit
 \end{verbatim}
 
-\pgsolver consists of many executables; their creation is still guided by \texttt{make}, so you need to make sure that GNU Make
-is installed. We recommend version 3.81 or higher but earlier ones, as well as other implementations may suffice as well.
 
 
 \subsection{Compiling \pgsolver}
@@ -50,24 +48,26 @@ Now change into the \pgsolver directory.
 
 To start the compilation, type 
 \begin{verbatim}
-    ~/pgsolver> make
-\end{verbatim}
-This is the same as
-\begin{verbatim}
-    ~/pgsolver> make all
-\end{verbatim}
-which is an abbreviation for \verb# make pgsolver generators tools#. If you only want the executable \pgsolver then 
-\begin{verbatim}
-    ~/pgsolver> make pgsolver
-\end{verbatim}
-suffices. The same holds for the executables containing benchmark generators and some tools to manipulate parity games.
-After successful compilation, the executables can be found in the
-subdirectory \texttt{bin}.
+    ~/pgsolver> ocaml setup.ml -configure
+    ~/pgsolver> ocaml setup.ml -build
 
-You can delete all files that have been created during the compilation process by running
-\begin{verbatim}
-    ~/pgsolver> make clean
 \end{verbatim}
+%This is the same as
+%\begin{verbatim}
+%    ~/pgsolver> make all
+%\end{verbatim}
+%which is an abbreviation for \verb# make pgsolver generators tools#. If you only want the executable \pgsolver then
+%\begin{verbatim}
+%    ~/pgsolver> make pgsolver
+%\end{verbatim}
+%suffices. The same holds for the executables containing benchmark generators and some tools to manipulate parity games.
+%After successful compilation, the executables can be found in the
+%subdirectory \texttt{bin}.
+%
+%You can delete all files that have been created during the compilation process by running
+%\begin{verbatim}
+%    ~/pgsolver> make clean
+%\end{verbatim}
 
 % If you also want to have executable programs that create the benchmarks described in the next
 % chapter as well as some possibly useful tools that massage parity games then run

@@ -8,16 +8,14 @@ open Verification ;;
 open Univsolve ;;
 open Solvers ;;
 open Generators ;;
-open Generatorlist ;;
 open Whoiswho ;;
-open Solverlist;;
 (* open Pgprofiling;; *)
 
 module CommandLine =
 struct
   type solver = NoSolver
-              | YesSolver of string * global_solver_factory
-	      | LocalSolver of string * partial_solver_factory
+              | YesSolver of string * Solverregistry.global_solver_factory
+	      | LocalSolver of string * Solverregistry.partial_solver_factory
 
   type generator = NoGenerator
                  | YesGenerator of string * (string array -> paritygame)

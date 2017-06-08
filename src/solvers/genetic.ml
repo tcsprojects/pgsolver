@@ -8,7 +8,6 @@
 
 open Paritygame ;;
 open Univsolve ;;
-open Solvers ;;
 open Tcsarray ;;
 open Basics ;;
 open Arg;;
@@ -454,5 +453,5 @@ let solve game = universal_solve (universal_solve_init_options_verbose !universa
 
 
 
-let _ = register_solver_factory (fun s -> parse s; solve) "genetic" "gn" "use a genetic algorithm (aka heuristic)";;
+let register _ = Solverregistry.register_solver_factory (fun s -> parse s; solve) "genetic" "gn" "use a genetic algorithm (aka heuristic)";;
 

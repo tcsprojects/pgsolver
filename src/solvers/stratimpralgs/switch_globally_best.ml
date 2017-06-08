@@ -113,7 +113,8 @@ let strategy_improvement_optimize_all_globally_policy game =
 	strategy_improvement_by_policy game (improvement_policy_no_user_data improvement_policy_optimize_all_globally) () false "STRIMPR_GLOOPT";;
 
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_all_globally_policy g)
-	"switchbest" "sb" "best combination of switches policy iteration";;
+let register _ =
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_all_globally_policy g)
+        "switchbest" "sb" "best combination of switches policy iteration";;
 

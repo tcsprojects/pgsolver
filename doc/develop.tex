@@ -345,32 +345,19 @@ Continuing with the example of the previous section we assume that you have impl
 \texttt{Paritygame.paritygame -> Paritygame.solution * Paritygame.strategy} which is declared in
 \texttt{src/solvers/detpoly.mli}.
 
-You will have to ensure that your file does automatically get compiled when \pgsolver is being built using
-the \texttt{make} command. In \texttt{SolverList} you will find a variable declaration listing all the modules
-that make up the entire program. It should look like this.
-\begin{verbatim}
-PGSOLVERSLIST=
-	obj/recursive.cmx \
-	obj/stratimprovement.cmx \
-	...
-	obj/stratimprlocal.cmx \
-	obj/stratimprdisc.cmx 
-\end{verbatim}
-Append to this list \texttt{obj/detpoly.cmx}. It need not be at the end of this list but you have to make
-sure that it occurs behind any other module that contains code which is used by your solver. This could
-be the \texttt{paritygame} and \texttt{univsolve} part for example and will most certainly be the
-\texttt{solvers} part. Now running \texttt{make} should compile the \texttt{detpoly}-module as well.
-
 At last, you have to integrate your algorithm into the program so that it can be used through the
-\texttt{pgsolver} program when given a certain command-line option. This could not be an easier. Add to
-your file \texttt{detpoly.ml} the following code after your \texttt{solve} function.
+\texttt{pgsolver} program when given a certain command-line option. This could not be an easier.
+
+Add to your file \texttt{detpoly.ml} the following code after your \texttt{solve} function.
 \begin{verbatim}
-let _ = Solvers.register_solver
+let register _ =
+    Solverregistry.register_solver
           solve
           "detpoly"
           "dp"
           "use the brand-new deterministic polytime algorithm"
 \end{verbatim}
+
 The function \texttt{register\_solver} from the module \texttt{solvers.ml} does everything for you. You
 simply have to give it four arguments.
 \begin{itemize}
@@ -385,6 +372,17 @@ simply have to give it four arguments.
 \item The fourth argument is again a string which contains a description of what \pgsolver does
       when given any of the the command-line parameters derived from the second or third argument.
 \end{itemize}
+
+Also, add to your file \texttt{detpoly.mli} the following code:
+\begin{verbatim}
+val register: unit -> unit
+\end{verbatim}
+
+Finally, add to file \texttt{src/paritygame/solvers.ml}:
+\begin{verbatim}
+    Detpoly.register ();
+\end{verbatim}
+
 After compilation, called \texttt{bin/pgsolver --help} should result in output containing the following
 lines.
 \begin{verbatim}
@@ -624,16 +622,16 @@ To integrate your benchmarks fully, create a function \verb#my_generator# of typ
 \begin{verbatim}
    string array -> paritygame
 \end{verbatim}
-that returns a parity game in accordance to a parameter array (for instance conveniently using the functor \verb#Build#), and include
+that returns a parity game in accordance to a parameter array (for instance conveniently using the functor \verb#Build#).
+
+Also, register your generator in \texttt{src/paritygame/generators.ml} by including
 code of the form
 \begin{verbatim}
    let _ = Generators.register_generator my_generator 
                                          "mygen" 
                                          "My own benchmark generator"
 \end{verbatim}
-somewhere, preferably in the same module as the one containing the benchmark generation code. Say its name is \verb#mygenerator#.
-To ensure that this code is included in the main program during compilation, you need to add \verb#mygenerator.gen# in the
-list of generators in \verb#Makefile#.
+Say its name is \verb#mygenerator#.
 
 
 

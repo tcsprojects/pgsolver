@@ -85,7 +85,8 @@ let strategy_improvement_snare_policy game =
 
 
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_snare_policy g)
-	"snarememo" "sm" "Snare memorization policy iteration";;
+let register _ =
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_snare_policy g)
+        "snarememo" "sm" "Snare memorization policy iteration";;
 

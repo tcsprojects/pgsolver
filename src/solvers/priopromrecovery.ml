@@ -14,7 +14,6 @@ open Basics;;
 open Paritygame;;
 open Univsolve;;
 open Paritygamebitset;;
-open Solvers;;
 
 
 let query game region r p player was_open att_qP att_qO subgame_vr reg_strategy vr l =
@@ -265,10 +264,12 @@ let pprecoverysolve game =
 
 let solve game = pprecoverysolve game;;
 
-register_solver solve "priopromrec" "rr" "use the Region Recovery procedure";;
 
 let solveuniv game =
   let opt = (universal_solve_init_options_verbose !universal_solve_global_options) in
   universal_solve opt pprecoverysolve game;;
 
-register_solver solveuniv "priopromrecuniv" "rruniv" "use the Region Recovery procedure integrated with the universal solver";;
+
+let register _ =
+    Solverregistry.register_solver solve "priopromrec" "rr" "use the Region Recovery procedure";
+    Solverregistry.register_solver solveuniv "priopromrecuniv" "rruniv" "use the Region Recovery procedure integrated with the universal solver";;

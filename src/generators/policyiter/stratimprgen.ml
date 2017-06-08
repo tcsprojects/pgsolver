@@ -8,6 +8,8 @@ open Tcsstrings ;;
 open Stratimprgenerators;;
 open Stratimprgenlist;;
 
+Stratimprgenlist.register();;
+
 module CommandLine =
 struct
 

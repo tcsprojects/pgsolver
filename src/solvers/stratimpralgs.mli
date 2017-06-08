@@ -1,6 +1,8 @@
 open Paritygame
 open Tcsset
 
+val register: unit -> unit
+
 val enable_exp_bit_count: bool ref
 
 val get_last_exp_bit_count: unit -> int

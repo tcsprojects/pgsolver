@@ -1,7 +1,6 @@
 open Basics ;;
 open Paritygame ;;
 open Univsolve;;
-open Solvers;;
 open Tcsarray;;
 open Tcsqueue;;
 
@@ -368,4 +367,5 @@ let solve' game =
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
 
 
-register_solver solve "smallprog" "sp" "use the small progress measure algorithm due to Jurdzinski";;
+let register _ =
+    Solverregistry.register_solver solve "smallprog" "sp" "use the small progress measure algorithm due to Jurdzinski";;

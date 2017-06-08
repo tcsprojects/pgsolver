@@ -29,5 +29,6 @@ let random_game_func arguments =
 													    0
 													    (size-1 - (if self_cycles then 0 else 1)))),
 			    Some (nd_show i)));;
-	
-Generators.register_generator random_game_func "randomgame" "Random Game";;
+
+let register _ =
+    Generatorregistry.register_generator random_game_func "randomgame" "Random Game";;

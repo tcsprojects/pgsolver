@@ -6,7 +6,6 @@ open Tcsbasedata;;
 open Tcstiming;;
 open Paritygame;;
 open Univsolve;;
-open Solvers;;
 open Transformations;;
 open Basics;;
 
@@ -369,11 +368,13 @@ let partially_solve pg =
 	solve_locally pg default_improvement_policy default_expansion_policy;;
 	
 	
-register_partial_solver partially_solve "stratimprloc2" "sl2" "use the local strategy improvement method 2 [experimental]";;
+
 
 let solve_globally game =
 	partially_solve_dominion game 0 partially_solve;;	
 	
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve_globally game;;
 
-register_solver solve "stratimprloc2" "sl2" "use the local strategy improvement method 2 [experimental]";;
+let register _ =
+    Solverregistry.register_partial_solver partially_solve "stratimprloc2" "sl2" "use the local strategy improvement method 2 [experimental]";
+    Solverregistry.register_solver solve "stratimprloc2" "sl2" "use the local strategy improvement method 2 [experimental]";;

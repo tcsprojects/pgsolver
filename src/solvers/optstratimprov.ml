@@ -1,7 +1,6 @@
 open Basics ;;
 open Paritygame ;;
 open Univsolve;;
-open Solvers;;
 open Transformations;;
 open Tcsarray;;
 open Tcslist;;
@@ -265,4 +264,5 @@ let solve_scc game' =
 
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve_scc game;;
 
-register_solver solve "optstratimprov" "os" "use the optimal strategy impr. algorithm due to Schewe";;
+let register _ =
+    Solverregistry.register_solver solve "optstratimprov" "os" "use the optimal strategy impr. algorithm due to Schewe";;

@@ -444,26 +444,27 @@ register_sub_solver
 
 
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_vorobyov_policy g)
-	"randomfacet" "rf" "random facet policy iteration";;
+let register _ =
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_vorobyov_policy g)
+        "randomfacet" "rf" "random facet policy iteration";
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_vorobyovordered_policy g)
-	"randomfacetord" "rfo" "random facet ordered policy iteration";;
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_vorobyovordered_policy g)
+        "randomfacetord" "rfo" "random facet ordered policy iteration";
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_vorobyov2_policy g)
-	"dualrandomfacet" "drf" "dual random facet policy iteration";;
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_vorobyov2_policy g)
+        "dualrandomfacet" "drf" "dual random facet policy iteration";
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_randomizedbland_policy g)
-	"randombland" "rb" "randomized blands rule policy iteration";;
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_randomizedbland_policy g)
+        "randombland" "rb" "randomized blands rule policy iteration";
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_all_randomly_policy g)
-	"switchhalf" "sh" "switch every edge with probabiliby 0.5 policy iteration";;
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_all_randomly_policy g)
+        "switchhalf" "sh" "switch every edge with probabiliby 0.5 policy iteration";
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_single_randomly_policy g)
-	"randomedge" "re" "random edge strategy iteration";;
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_single_randomly_policy g)
+        "randomedge" "re" "random edge strategy iteration";;

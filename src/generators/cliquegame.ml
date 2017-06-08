@@ -65,4 +65,4 @@ let generator_game_func arguments =
 (* CliqueGame.build () *)
 
 
-let _ = Generators.register_generator generator_game_func "cliquegame" "Clique Game";;
+let register _ = Generatorregistry.register_generator generator_game_func "cliquegame" "Clique Game";;

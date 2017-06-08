@@ -58,4 +58,4 @@ let generator_game_func arguments =
 			  Some (nd_show i))
 	       );;
 
-Generators.register_generator generator_game_func "steadygame" "Steady Game";;
+let register _ = Generatorregistry.register_generator generator_game_func "steadygame" "Steady Game";;

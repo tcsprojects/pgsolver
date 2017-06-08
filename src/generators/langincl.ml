@@ -58,4 +58,4 @@ let generator_game_func arguments =
 
 
 
-let _ = Generators.register_generator generator_game_func "langincl" "Language Inclusion Problem Game";;
+let register _ = Generatorregistry.register_generator generator_game_func "langincl" "Language Inclusion Problem Game";;

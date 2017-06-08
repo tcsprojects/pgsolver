@@ -1,1 +1,1 @@
-open Recursivedullgame;; open Rungenerator;;
+Generators.run_command_line_generator "recursivedullgame";;

@@ -67,4 +67,4 @@ let generator_game_func arguments =
 			  Some (nd_show v))
   );;
 
-Generators.register_generator generator_game_func "clusteredrg" "Clustered Random Game";;
+let register _ = Generatorregistry.register_generator generator_game_func "clusteredrg" "Clustered Random Game";;

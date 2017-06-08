@@ -5,7 +5,6 @@ open Tcsgraph;;
 open Tcsbasedata;;
 open Paritygame ;;
 open Univsolve;;
-open Solvers;;
 open Transformations;;
 
 
@@ -333,6 +332,7 @@ let solve game =
 	universal_solve opt solve' game;;
 
 
-register_solver solve "stratimprove" "si" "use the strategy improvement algorithm due to Jurdzinski / Voege";;
+let register _ =
+    Solverregistry.register_solver solve "stratimprove" "si" "use the strategy improvement algorithm due to Jurdzinski / Voege";;
 
 

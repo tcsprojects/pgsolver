@@ -1671,11 +1671,12 @@ let strategy_improvement_optimize_fair_worstcase_policy game =
 	if (find "p0" != None) then strategy_improvement_optimize_fair_exp_policy game else strategy_improvement_optimize_fair_sub_exp_policy game;;
 
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_fair_policy g)
-	"switchfair" "sf" "Zadeh's fair policy iteration";;
+let register _ =
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_fair_policy g)
+        "switchfair" "sf" "Zadeh's fair policy iteration";
 
-register_sub_solver
-	(fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_fair_worstcase_policy g)
-	"switchfairse" "sfse" "Zadeh's fair policy iteration with lower bound breaking ties";;
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_fair_worstcase_policy g)
+        "switchfairse" "sfse" "Zadeh's fair policy iteration with lower bound breaking ties";;
 

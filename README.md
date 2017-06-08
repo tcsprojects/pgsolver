@@ -1,7 +1,9 @@
 PGSolver
 ========
 
-Version 4.0, Copyright (c) 2008-2017
+A collection of tools for generating, manipulating and - most of all - solving parity games.
+
+Version 4.1, Copyright (c) 2008-2017
 
 It is developed and maintained by:
 - (c) Oliver Friedmann, University of Munich (http://oliverfriedmann.com)
@@ -26,5 +28,6 @@ eval 'opam config env'
 opam install ocamlbuild ocamlfind ounit TCSLib extlib ocaml-sat-solvers minisat
 git clone https://github.com/tcsprojects/pgsolver.git
 cd pgsolver
-make
+ocaml setup.ml -configure
+ocaml setup.ml -build
 ```

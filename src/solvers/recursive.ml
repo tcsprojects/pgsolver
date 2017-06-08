@@ -8,7 +8,6 @@
 open Basics ;;
 open Paritygame ;;
 open Univsolve;;
-open Solvers;;
 
 
 
@@ -158,4 +157,4 @@ let fallback_solve game backend options =
 
 
 
-let _ = register_solver solve "recursive" "re" "use the recursive algorithm due to McNaughton / Zielonka";;
+let register _ = Solverregistry.register_solver solve "recursive" "re" "use the recursive algorithm due to McNaughton / Zielonka";;

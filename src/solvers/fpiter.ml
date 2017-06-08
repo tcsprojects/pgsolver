@@ -10,7 +10,6 @@
 open Basics ;;
 open Paritygame ;;
 open Univsolve;;
-open Solvers;;
 open Tcsbasedata;;
 
 let even i = (i mod 2 = 0)
@@ -359,4 +358,5 @@ let solve' game =
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
  
 
-register_solver solve "fpiter" "fi" "use the (optimised) iterative fixpoint iteration algorithm";;
+let register _ =
+    Solverregistry.register_solver solve "fpiter" "fi" "use the (optimised) iterative fixpoint iteration algorithm";;

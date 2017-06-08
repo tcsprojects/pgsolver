@@ -1,1 +1,1 @@
-open Langincl;; open Rungenerator;;
+Generators.run_command_line_generator "langincl";;

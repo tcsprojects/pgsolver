@@ -1,7 +1,6 @@
 open Paritygame ;;
 open Basics ;;
 open Univsolve ;;
-open Solvers;;
 open Tcstiming;;
 open Satwrapper;;
 open Tcsarray;;
@@ -359,5 +358,5 @@ let solve' game =
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
   
 
-let _ = register_solver solve "viasat" "vs" "use the small progress measure enc. for prop. logic and a reduction to SAT";;
+let register _ = Solverregistry.register_solver solve "viasat" "vs" "use the small progress measure enc. for prop. logic and a reduction to SAT";;
 

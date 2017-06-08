@@ -33,4 +33,4 @@ let generator_game_func arguments =
   RecursiveDullGame.build () ;;
 
   
-Generators.register_generator generator_game_func "recursivedullgame" "Recursive Dull Game";;
+let register _ = Generatorregistry.register_generator generator_game_func "recursivedullgame" "Recursive Dull Game";;

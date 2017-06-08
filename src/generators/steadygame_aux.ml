@@ -1,1 +1,1 @@
-open Steadygame;; open Rungenerator;;
+Generators.run_command_line_generator "steadygame";;

@@ -1,6 +1,5 @@
 open Paritygame
-
-type global_solver_factory = string array -> global_solver
+open Solverregistry
 
 val register_solver_factory: global_solver_factory -> string -> string -> string -> unit
 
@@ -14,8 +13,6 @@ val enum_solvers: (global_solver_factory -> string -> string -> string -> unit) 
 
 val fold_solvers: (global_solver_factory -> string -> string -> string -> 'a -> 'a) -> 'a -> 'a
 
-
-type partial_solver_factory = string array -> partial_solver
 
 val register_partial_solver_factory: partial_solver_factory -> string -> string -> string -> unit
 

@@ -7,7 +7,6 @@ open Solvers ;;
 open Paritygame ;;
 open Tcstiming ;;
 open Tcsstrings;;
-open Solverlist;;
 
 module CommandLine =
 struct

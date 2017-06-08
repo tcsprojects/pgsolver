@@ -3,6 +3,7 @@ open Basics ;;
 open Univsolve;;
 
 val solve : paritygame -> solution * strategy
+val register : unit -> unit
 
 val solve2 : (paritygame -> solution * strategy) ref -> paritygame -> solution * strategy
 
