@@ -24,7 +24,7 @@ Then:
 opam update
 opam upgrade
 opam switch 4.03.0
-eval 'opam config env'
+eval `opam config env`
 opam install ocamlbuild ocamlfind ounit TCSLib extlib ocaml-sat-solvers minisat
 git clone https://github.com/tcsprojects/pgsolver.git
 cd pgsolver
