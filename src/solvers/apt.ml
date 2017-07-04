@@ -38,7 +38,7 @@ let check game node visiting avoiding i =
        		acc:=true;
 
        )   
-   	)
+    )
     else
     (  
       let test = fold_until (fun x -> (NodesSet.mem (Node x) avoiding)) nodes_suc in
@@ -56,10 +56,10 @@ let check game node visiting avoiding i =
 
 let force game visiting avoiding i =
 
-	let ris = ref(NodesSet.empty) in 
-	let l = pg_size game in
+    let ris = ref(NodesSet.empty) in 
+    let l = pg_size game in
 
-	for j=0 to l-1 do
+    for j=0 to l-1 do
     (  
     	let acc = check game j visiting avoiding i in
         if(acc = true)then
@@ -101,7 +101,7 @@ and min_fixed_point game nodes alpha visiting avoiding pl =
   (     	
     y1 := !y2 ; 
 
-		v' := NodesSet.union visiting (NodesSet.inter ( List.hd alpha) !y1);(* V U F_i intersect Y*)
+	  v' := NodesSet.union visiting (NodesSet.inter ( List.hd alpha) !y1);(* V U F_i intersect Y*)
 	  a' := NodesSet.union avoiding (NodesSet.diff (List.hd alpha) !y1);(* A U (F_i \ Y)*)
 
 	    
@@ -111,12 +111,10 @@ and min_fixed_point game nodes alpha visiting avoiding pl =
 	   	y2:=!y1;
 
 	  app:=!v';
-
-	 )
-	 done;	
-
-	 (!y2) 
-	;;	
+    )
+    done;	
+    (!y2) 
+;;	
 
 (* ----------------- M A I N -----------------*)
 let solver_apt_vardi game  =
