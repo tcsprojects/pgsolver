@@ -1,3 +1,12 @@
+(*
+	APT: Algorithm presented in "Solving Parity Games Using An Automata-Based Algorithm"  by
+	Antonio Di Stasio, Aniello Murano, Giuseppe Perelli and Moshe Vardi, 
+	based on an idea of Moshe Vardi and Orna Kupferman presented some years ago in 
+	"Weak alternating automata and tree automata emptiness".
+
+*)
+
+
 open Basics ;;
 open Paritygame;;
 open Solvers;;
