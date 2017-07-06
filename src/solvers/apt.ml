@@ -6,15 +6,12 @@
 
 *)
 
-
 open Basics ;;
 open Paritygame;;
+open Solvers;;
 open Set;;
 open Univsolve ;;
 
-
-(*----------------------------------------APT ---------------------------------------------*)
- 
 let rec fold_until p = function
 	| x :: xs when p x -> true
  	| x :: xs -> fold_until p xs
@@ -30,7 +27,7 @@ module NodesSet = Set.Make(
   end )             
     
  
-let check game node visiting avoiding i =
+let check game node visiting avoiding i strategy=
 
     let pl = pg_get_owner game node in
     let suc = pg_get_successors game node in
@@ -40,36 +37,59 @@ let check game node visiting avoiding i =
 
     if(pl = i)then             
     (    
-       let test = fold_until (fun x -> (NodesSet.mem (Node x) visiting)) nodes_suc in 
-       if ( test = true)then 
+       let test = fold_until (fun x -> 
+                                          if (NodesSet.mem (Node x) visiting) then (
+                                             strategy.(node) <- x;
+                                              true)
+                                          else
+                                              false
+                    ) nodes_suc in 
+       if (test = true)then 
        (
        		acc:=true;
-
        )   
-    )
+       else (
+          if( strategy.(node) > -1 )then
+            strategy.(node) <- -1;
+
+       )
+
+   	)
     else
     (  
-      let test = fold_until (fun x -> (NodesSet.mem (Node x) avoiding)) nodes_suc in
+      let test = fold_until (fun x -> 
+                                      if (NodesSet.mem (Node x) avoiding) then(
+                                          strategy.(node) <- x;
+                                          true
+                                      )
+                                      else
+                                          false
+              ) nodes_suc in
+
      	if(test = true)then
      	(
      		acc:=false;
      	)
-     	else
-     		acc:= true;
-     );         
+     	else(
+        if( strategy.(node) > -1 )then
+            strategy.(node) <- -1;
+        acc:= true;
+
+      )
+    );         
 
      (!acc)
 ;;
 
 
-let force game visiting avoiding i =
+let force game visiting avoiding i strategy=
 
-    let ris = ref(NodesSet.empty) in 
-    let l = pg_size game in
+	let ris = ref(NodesSet.empty) in 
+	let l = pg_size game in
 
-    for j=0 to l-1 do
+	for j=0 to l-1 do
     (  
-    	let acc = check game j visiting avoiding i in
+    	let acc = check game j visiting avoiding i strategy in
         if(acc = true)then
         	ris:= NodesSet.add (Node j) !ris        
     )
@@ -78,19 +98,19 @@ let force game visiting avoiding i =
 	(!ris)
 ;; 
  
-let rec win game nodes alpha visiting avoiding pl =
+let rec win game nodes alpha visiting avoiding pl strategy=
 
 	let w = ref(NodesSet.empty) in
 
 	if((List.length alpha) >0) then
-		w := NodesSet.diff nodes (min_fixed_point game nodes alpha avoiding visiting (plr_opponent pl))
+		w := NodesSet.diff nodes (min_fixed_point game nodes alpha avoiding visiting (plr_opponent pl) strategy)
 	else(
-		w:=force game visiting avoiding pl;	
+		w:=force game visiting avoiding pl strategy ;	
 	);
 
 	(!w)
 
-and min_fixed_point game nodes alpha visiting avoiding pl =
+and min_fixed_point game nodes alpha visiting avoiding pl strategy=
 
   let y1 = ref(NodesSet.empty) in
 	let y2 = ref(NodesSet.empty) in
@@ -101,7 +121,7 @@ and min_fixed_point game nodes alpha visiting avoiding pl =
 	    
 	let alpha' = ref(List.tl alpha) in   
     	    	    
-  y2 := win game nodes !alpha' !v' !a' pl;
+  y2 := win game nodes !alpha' !v' !a' pl strategy;
 
 	app:=!v';       
 
@@ -109,20 +129,22 @@ and min_fixed_point game nodes alpha visiting avoiding pl =
   (     	
     y1 := !y2 ; 
 
-	  v' := NodesSet.union visiting (NodesSet.inter ( List.hd alpha) !y1);(* V U F_i intersect Y*)
+		v' := NodesSet.union visiting (NodesSet.inter ( List.hd alpha) !y1);(* V U F_i intersect Y*)
 	  a' := NodesSet.union avoiding (NodesSet.diff (List.hd alpha) !y1);(* A U (F_i \ Y)*)
 
 	    
 	  if(not (NodesSet.equal !app !v'))then
-	   	y2:= win game nodes !alpha' !v' !a' pl
+	   	y2:= win game nodes !alpha' !v' !a' pl strategy
 	  else
 	   	y2:=!y1;
 
 	  app:=!v';
-    )
-    done;	
-    (!y2) 
-;;	
+
+	 )
+	 done;	
+
+	 (!y2) 
+	;;	
 
 (* ----------------- M A I N -----------------*)
 let solver_apt_vardi game  =
@@ -139,28 +161,35 @@ let solver_apt_vardi game  =
     
       
     let app=Array.make (max_prio+1) NodesSet.empty in   
-  	
+    
     for i=0 to l-1 do 
         nodes := NodesSet.add (Node i) !nodes;
         let pr = pg_get_priority game i in
         app.(pr) <- NodesSet.add (Node i) app.(pr); 
     done;
-    	
+      
     let b' = ref([]) in
-    for i= max_prio downto 0 do
+    for i= 0 to max_prio do
        b':= app.(i) :: !b'
-    done;    	
+    done;     
     
     let v = ref(NodesSet.empty) in
     let a = ref(NodesSet.empty) in  
-    
-    let acc = win game !nodes !b' !v !a (plr_Odd) in
 
+    let pl = ref(plr_undef) in
+
+    if(max_prio mod 2 = 0) then
+      pl:=plr_Odd
+    else
+      pl:=plr_Even;
+    
+    let acc = win game !nodes !b' !v !a !pl strategy in
+    
     for i=0 to l-1 do
        if (NodesSet.mem (Node i) acc) then 
-          solution.(i)<- plr_Odd
+          solution.(i)<- !pl
        else    
-          solution.(i)<- plr_Even
+          solution.(i)<- plr_opponent !pl
     done;           
      
       (solution,strategy);;
