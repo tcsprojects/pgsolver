@@ -53,3 +53,4 @@ let _ =
     Switch_random.register ();
     Switch_snare.register ();
     Switch_zadeh.register ();;
+    Apt.register ();;

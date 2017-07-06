@@ -9,7 +9,6 @@
 
 open Basics ;;
 open Paritygame;;
-open Solvers;;
 open Set;;
 open Univsolve ;;
 
@@ -166,7 +165,7 @@ let solver_apt_vardi game  =
      
       (solution,strategy);;
 
-let solve_vardi game =    
+let solve game =
 
     let (solution,strategy) = (*universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) *)solver_apt_vardi game in
     (solution,strategy)   
@@ -174,4 +173,5 @@ let solve_vardi game =
 
      ;; 
     
-Solvers.register_solver solve_vardi "apt" "apt" "use the algorithm due to Vardi / Kupferman";;
+let register _ =
+    Solverregistry.register_solver solve "apt" "apt" "use the algorithm due to Vardi / Kupferman";;

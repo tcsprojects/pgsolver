@@ -78,6 +78,8 @@ let solvers = [|
 	("policyiter", [|"-re"|], 50, true);
 	("policyiter", [|"-drf"|], 50, false);
 	("policyiter", [|"-drf"|], 50, true);
+	("apt", [||], 30, false);
+	("apt", [||], 30, true);
 |]
 
 
