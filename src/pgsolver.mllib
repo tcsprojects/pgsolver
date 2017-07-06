@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 1b1a6a0a1599ad9829fcde1fe05b72f1)
+# DO NOT EDIT (digest: 586af6762c044e3dd0e2cd618d089b56)
 pgsolver/Basics
 pgsolver/Info
 paritygame/Paritygame
@@ -41,6 +41,7 @@ solvers/stratimpralgs/Switch_locally_best
 solvers/stratimpralgs/Switch_random
 solvers/stratimpralgs/Switch_snare
 solvers/stratimpralgs/Switch_zadeh
+solvers/Succinctsmallprogress
 paritygame/Generatorregistry
 paritygame/Generators
 generators/Randomgame
