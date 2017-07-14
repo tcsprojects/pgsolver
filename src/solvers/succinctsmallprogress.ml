@@ -15,7 +15,7 @@ open Tcsqueue;;
 (* define local logging functions *)
 let log_debug msg = message_autotagged 3 (fun _ -> "SSMP") (fun _ -> msg ^ "\n") ;;
 let log_verb msg = message_autotagged 2 (fun _ -> "SSMP") (fun _ -> msg ^ "\n") ;;
-let log_info msg = message_autotagged 1 (fun _ -> "SSMP") (fun _ -> msg ^ "\n") ;;
+let log_info msg = message_autotagged 2 (fun _ -> "SSMP") (fun _ -> msg ^ "\n") ;;
 
 
 (* define logarithm base 2. Thanks for nothing ocaml. *)
@@ -33,7 +33,7 @@ let rec find_lastindex_with a pred start =
 
 (* This renders a Paritygame.nodeset as e.g. as "{1,2,3,4}".
  * We'll use it when logging the successors of a node. *)
-let ns_format nodeset = 
+let ns_format nodeset =
     let commajoin l r = match l with
     | "" -> r
     | _ -> l ^ "," ^ r in
@@ -56,7 +56,7 @@ let eps = [||];;
 
 
 (* format a bitstring as a normal string for logging *)
-let bitstring_format bs = 
+let bitstring_format bs =
     if bs = eps
       then "ε"
       else
@@ -69,10 +69,10 @@ let bitstring_format bs =
  *
  * For every but b and bitstrings s,s' we have
  * 1) 0s < eps
- * 2) eps < 1s 
+ * 2) eps < 1s
  * 3) bs < bs' <=> s < s'
  *)
-let rec bitstring_compare x y = 
+let rec bitstring_compare x y =
   let length_x = Array.length x in
   let length_y = Array.length y in
   (* recursively traverse x and y from left to right, starting at index i *)
@@ -111,7 +111,7 @@ type adaptivecounter = Top | AC of bitstring array;;
 
 
 (* format adaptive counters in tuple notation for human consumption *)
-let ac_format ac = 
+let ac_format ac =
     let commajoin l r = match l with
     | "" -> r
     | _ -> l ^ "," ^ r in
@@ -132,7 +132,7 @@ let ac_format ac =
  * The comparison is only for the components corresponding to priorities >= p.
  * This means that we compare only prefixes of length h-(p/2).
  *)
-let ac_compare h p x y = 
+let ac_compare h p x y =
     match (x,y) with
     | (Top, Top) -> 0  (* hardcode results for artificial top element *)
     | (Top, _) -> 1
@@ -180,7 +180,7 @@ let ac_bitstring_length h p ac =
 
 (* truncate adaptive h-counter for priority p.
  * This means replacing the last (p/2) components by eps *)
-let ac_truncate h p ac = 
+let ac_truncate h p ac =
     match ac with
     | Top -> Top
     | AC bitstrings ->
@@ -199,11 +199,11 @@ let ac_min l h = AC (Array.append
 
 
 (* compute the least l-bounded adaptive h-counter p-above a given counter ac. *)
-let ac_least_above l h p ac = 
+let ac_least_above l h p ac =
     match ac with
     | Top -> Top      (* If the given ac is Top, just return Top. *)
     | AC original ->  (* do some work otherwise *)
-    
+
     (* identify the largest array index after truncation. *)
     (* if p-truncation yields the empty tuple the next p-larger counter is Top. *)
     let pindex = h - (p/2)-1 in
@@ -215,7 +215,7 @@ let ac_least_above l h p ac =
         (* define some arbitrary h-counter below Top to write to. *)
         let resultarr = Array.copy original in
         let result = ref Top in  (* this is the default return value *)
-        
+
 
         (* There are three cases, depending on the total length of the bitstrings,
          * and on the last non-empty component of the counter *)
@@ -269,7 +269,7 @@ let ac_least_above l h p ac =
                 (* CASE 3: the total length is l and the least non-empty component has NO zeros. *)
                 (* lne is of the form 111..1 *)
                 if lne_index = 0
-                then 
+                then
                     (* we have l 1's on the first position, the next higher up is Top *)
                     result := Top
                 else
@@ -305,7 +305,7 @@ type progressmeasure = adaptivecounter array;;
 
 
 (* format progress measures for logging *)
-let pm_format mu = 
+let pm_format mu =
     let stringtuple = Array.mapi (fun i v -> (string_of_int i) ^ " -> " ^ (ac_format v) ^ "\n") mu in
     Array.fold_left (^) "" stringtuple
 ;;
@@ -323,7 +323,7 @@ let solve' game =
     let maxprio = pg_max_prio game in     (* number of priorities *)
     let d = maxprio + (maxprio mod 2) in  (* largest even number >= maxprio *)
     let l = ld n in                       (* maximal length of bitstrings *)
-    let h = (d/2) in                      (* length of the adaptive counters *)
+    let h = (d/2) in                      (* length of the counters *)
 
     log_info ("The game has "
       ^ (string_of_int n) ^ " states with maximal priority "
@@ -335,13 +335,15 @@ let solve' game =
 
     (* compute lift(mu,v,w): the least s >= v progressive in mu[v->s] *)
     (* here, mu is a progress measure, and v and w are nodes (integers) *)
-    let lift mu v w = 
+    let lift mu v w =
         let vprio = pg_get_priority game v in
         log_debug ("computing lift for nodes "
               ^ (nd_show v) ^ " with measure " ^ (ac_format mu.(v))
               ^" and node "
               ^ (nd_show w) ^ " with measure " ^ (ac_format mu.(w))
               );
+        log_debug ("mu(v) : " ^ (ac_format mu.(v)) ^ " truncated is " ^(ac_format (ac_truncate h vprio mu.(v))) ^
+                    "mu(w) : " ^ (ac_format mu.(w)) ^ " truncated is " ^(ac_format (ac_truncate h vprio mu.(w))));
 
         let res = ref Top in
         if even vprio
@@ -352,14 +354,27 @@ let solve' game =
                 res := if mu.(w) = Top then Top else (ac_truncate h vprio mu.(w));
                 log_debug ("truncate for prio " ^ (string_of_int vprio));
             )
-            else res := mu.(v)
+            else (
+                res := mu.(v);
+                log_debug ("priority was even, v's AC was >= w's AC
+                            mu(v): " ^ (ac_format mu.(v)) ^ "
+                            mu(w): " ^ (ac_format mu.(w)));
+            )
         )
-        else 
+        else (
             (* v has odd prio *)
             if (ac_greater h vprio mu.(v) mu.(w))
-            then res := mu.(v)
-            else res := (ac_least_above l h vprio mu.(w));
-        
+            then (
+                res := mu.(v);
+                log_debug ("priority was odd, v's AC was > w's AC
+                            mu(v): " ^ (ac_format mu.(v)) ^ "
+                            mu(w): " ^ (ac_format mu.(w)));
+            )
+            else (
+                res := (ac_least_above l h vprio mu.(w));
+                log_debug ("priority was odd, mu(v) <= mu(w) :. least AC above mu(w) returned");
+            )
+        );
         log_debug ("lift of "
         ^ (ac_format mu.(v))
         ^ " and "
@@ -375,18 +390,18 @@ let solve' game =
      * among all successors of v.
      *)
     let best_successor_lift mu v =
-	let vplayer = pg_get_owner game v in
-	let succs = pg_get_successors game v in
-        
+        let vplayer = pg_get_owner game v in
+        let succs = pg_get_successors game v in
+
         (* define order on pairs (node, lift(mu,v,node)) based on the
          * players preference for the second component: Odd wants to maximize. *)
         let better (a, lift_a) (b,lift_b) =
             (if vplayer = plr_Odd then ac_greater else ac_less) h 0 lift_a lift_b in
-       
+        let first_elem = if vplayer = plr_Odd then (v,mu.(v)) else (v,Top) in
         (* map list of successors to list of pairs (node, lift(mu,v node)) and
-         * reduce to best pair, starting with the current measure for state v. *) 
+         * reduce to best pair, starting with the current measure for state v. *)
         List.fold_left (fun a b -> if better a b then a else b)
-                       (v,mu.(v))
+                       first_elem
                        (List.map (fun w -> (w, (lift mu v w))) (ns_nodes succs))
     in
 
@@ -407,13 +422,13 @@ let solve' game =
     log_info ("refining..");
     while not (SingleOccQueue.is_empty queue) do
         let v = SingleOccQueue.take queue in
-	let vplayer = pg_get_owner game v in
-	let succs = pg_get_successors game v in
+        let vplayer = pg_get_owner game v in
+        let succs = pg_get_successors game v in
         log_verb ("Dequeued state: " ^ (string_of_int v)
                    ^ ". Owner: " ^ (plr_show vplayer)
                    ^ " successors: " ^ ns_format succs
         );
-        
+
         if ns_size succs > 0  (* only change mu if v has successors *)
         then (
             let candidate, candidate_lift = best_successor_lift mu v in
@@ -425,10 +440,10 @@ let solve' game =
             if (candidate_lift != mu.(v))
             then (
                 mu.(v) <- candidate_lift;
-		log_verb ("Updating progress measure.");
-		log_debug (pm_format mu);
+                log_verb ("Updating progress measure.");
+                log_debug (pm_format mu);
                 let predecessors = (pg_get_predecessors game v) in
-		log_verb ("Enqueuing predecessors of "
+                log_verb ("Enqueuing predecessors of "
                   ^ (string_of_int v)
                   ^ " : " ^ (ns_format predecessors)
                 );
@@ -483,8 +498,31 @@ let solve' game =
 (* -------------- END OF MAIN SOLVER ----------------------------------- *)
 
 
+
+let invert_game game =
+    pg_init (pg_size game) (fun i ->
+        1 + pg_get_priority game i,
+        plr_opponent (pg_get_owner game i),
+        ns_nodes (pg_get_successors game i),
+        pg_get_desc game i
+    )
+
+let solve_for_player player solver game =
+    let (sol, strat) = solver game in
+    let (subgame_other_player, map_to_sub, map_to_game) = subgame_by_node_filter game (fun i -> sol.(i) != player) in
+    if (pg_size subgame_other_player > 0) then (
+        let subgame_other_player = invert_game subgame_other_player in
+        let (_, strat') = solver subgame_other_player in
+        Array.iteri (fun i j ->
+            if (pg_get_owner subgame_other_player i = player)
+            then strat.(map_to_game i) <- map_to_game j
+        ) strat'
+    );
+    (sol, strat)
+
+
 (* wrap a universal solver around our implementation *)
-let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
+let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) (solve_for_player plr_Even solve') game;;
 (* register with pgsolver *)
 
 let register _ = Solverregistry.register_solver solve "succinctsmallprog" "sspm" "use the succinct small progress measure algorithm of Jurdzinski/Lazic";;
