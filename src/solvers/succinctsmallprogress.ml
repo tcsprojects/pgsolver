@@ -324,7 +324,7 @@ let solve' game =
     let maxprio = pg_max_prio game in     (* number of priorities *)
     let d = maxprio + (maxprio mod 2) in  (* largest even number >= maxprio *)
     let l = ld n in                       (* maximal length of bitstrings *)
-    let h = (d/2) in                      (* length of the adaptive counters *)
+    let h = (d/2) in                      (* length of the counters *)
 
     log_info ("The game has "
       ^ (string_of_int n) ^ " states with maximal priority "
@@ -343,6 +343,8 @@ let solve' game =
               ^" and node "
               ^ (nd_show w) ^ " with measure " ^ (ac_format mu.(w))
               );
+        log_debug ("mu(v) : " ^ (ac_format mu.(v)) ^ " truncated is " ^(ac_format (ac_truncate h vprio mu.(v))) ^
+                    "mu(w) : " ^ (ac_format mu.(w)) ^ " truncated is " ^(ac_format (ac_truncate h vprio mu.(w))));
 
         let res = ref Top in
         if even vprio
@@ -353,14 +355,27 @@ let solve' game =
                 res := if mu.(w) = Top then Top else (ac_truncate h vprio mu.(w));
                 log_debug ("truncate for prio " ^ (string_of_int vprio));
             )
-            else res := mu.(v)
+            else (
+                res := mu.(v);
+                log_debug ("priority was even, v's AC was >= w's AC
+                            mu(v): " ^ (ac_format mu.(v)) ^ "
+                            mu(w): " ^ (ac_format mu.(w)));
+            )
         )
-        else
+        else (
             (* v has odd prio *)
             if (ac_greater h vprio mu.(v) mu.(w))
-            then res := mu.(v)
-            else res := (ac_least_above l h vprio mu.(w));
-
+            then (
+                res := mu.(v);
+                log_debug ("priority was odd, v's AC was > w's AC
+                            mu(v): " ^ (ac_format mu.(v)) ^ "
+                            mu(w): " ^ (ac_format mu.(w)));
+            )
+            else (
+                res := (ac_least_above l h vprio mu.(w));
+                log_debug ("priority was odd, mu(v) <= mu(w) :. least AC above mu(w) returned");
+            )
+        );
         log_debug ("lift of "
         ^ (ac_format mu.(v))
         ^ " and "
@@ -383,11 +398,11 @@ let solve' game =
          * players preference for the second component: Odd wants to maximize. *)
         let better (a, lift_a) (b,lift_b) =
             (if vplayer = plr_Odd then ac_greater else ac_less) h 0 lift_a lift_b in
-
+        let first_elem = if vplayer = plr_Odd then (v,mu.(v)) else (v,Top) in
         (* map list of successors to list of pairs (node, lift(mu,v node)) and
          * reduce to best pair, starting with the current measure for state v. *)
         List.fold_left (fun a b -> if better a b then a else b)
-                       (v,mu.(v))
+                       first_elem
                        (List.map (fun w -> (w, (lift mu v w))) (ns_nodes succs))
     in
 
