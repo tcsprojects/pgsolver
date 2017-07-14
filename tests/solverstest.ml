@@ -78,6 +78,8 @@ let solvers = [|
 	("policyiter", [|"-re"|], 50, true);
 	("policyiter", [|"-drf"|], 50, false);
 	("policyiter", [|"-drf"|], 50, true);
+	("succinctsmallprog", [||], 15, false);
+	("succinctsmallprog", [||], 15, true);
 |]
 
 

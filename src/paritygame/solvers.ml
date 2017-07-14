@@ -52,4 +52,5 @@ let _ =
     Switch_locally_best.register ();
     Switch_random.register ();
     Switch_snare.register ();
-    Switch_zadeh.register ();;
+    Switch_zadeh.register ();
+    Succinctsmallprogress.register ();;
