@@ -11,7 +11,6 @@ open Paritygame;;
 open Solvers;;
 open Set;;
 open Univsolve ;;
-
 let rec fold_until p = function
 	| x :: xs when p x -> true
  	| x :: xs -> fold_until p xs
@@ -27,7 +26,7 @@ module NodesSet = Set.Make(
   end )             
     
  
-let check game node visiting avoiding i strategy=
+let check game node visiting avoiding i =
 
     let pl = pg_get_owner game node in
     let suc = pg_get_successors game node in
@@ -37,59 +36,36 @@ let check game node visiting avoiding i strategy=
 
     if(pl = i)then             
     (    
-       let test = fold_until (fun x -> 
-                                          if (NodesSet.mem (Node x) visiting) then (
-                                             strategy.(node) <- x;
-                                              true)
-                                          else
-                                              false
-                    ) nodes_suc in 
-       if (test = true)then 
+       let test = fold_until (fun x -> (NodesSet.mem (Node x) visiting)) nodes_suc in 
+       if ( test = true)then 
        (
        		acc:=true;
+
        )   
-       else (
-          if( strategy.(node) > -1 )then
-            strategy.(node) <- -1;
-
-       )
-
    	)
     else
     (  
-      let test = fold_until (fun x -> 
-                                      if (NodesSet.mem (Node x) avoiding) then(
-                                          strategy.(node) <- x;
-                                          true
-                                      )
-                                      else
-                                          false
-              ) nodes_suc in
-
+      let test = fold_until (fun x -> (NodesSet.mem (Node x) avoiding)) nodes_suc in
      	if(test = true)then
      	(
      		acc:=false;
      	)
-     	else(
-        if( strategy.(node) > -1 )then
-            strategy.(node) <- -1;
-        acc:= true;
-
-      )
-    );         
+     	else
+     		acc:= true;
+     );         
 
      (!acc)
 ;;
 
 
-let force game visiting avoiding i strategy=
+let force game visiting avoiding i =
 
 	let ris = ref(NodesSet.empty) in 
 	let l = pg_size game in
 
 	for j=0 to l-1 do
     (  
-    	let acc = check game j visiting avoiding i strategy in
+    	let acc = check game j visiting avoiding i in
         if(acc = true)then
         	ris:= NodesSet.add (Node j) !ris        
     )
@@ -98,19 +74,19 @@ let force game visiting avoiding i strategy=
 	(!ris)
 ;; 
  
-let rec win game nodes alpha visiting avoiding pl strategy=
+let rec win game nodes alpha visiting avoiding pl =
 
 	let w = ref(NodesSet.empty) in
 
 	if((List.length alpha) >0) then
-		w := NodesSet.diff nodes (min_fixed_point game nodes alpha avoiding visiting (plr_opponent pl) strategy)
+		w := NodesSet.diff nodes (min_fixed_point game nodes alpha avoiding visiting (plr_opponent pl))
 	else(
-		w:=force game visiting avoiding pl strategy ;	
+		w:=force game visiting avoiding pl;	
 	);
 
 	(!w)
 
-and min_fixed_point game nodes alpha visiting avoiding pl strategy=
+and min_fixed_point game nodes alpha visiting avoiding pl =
 
   let y1 = ref(NodesSet.empty) in
 	let y2 = ref(NodesSet.empty) in
@@ -121,7 +97,7 @@ and min_fixed_point game nodes alpha visiting avoiding pl strategy=
 	    
 	let alpha' = ref(List.tl alpha) in   
     	    	    
-  y2 := win game nodes !alpha' !v' !a' pl strategy;
+  y2 := win game nodes !alpha' !v' !a' pl;
 
 	app:=!v';       
 
@@ -134,7 +110,7 @@ and min_fixed_point game nodes alpha visiting avoiding pl strategy=
 
 	    
 	  if(not (NodesSet.equal !app !v'))then
-	   	y2:= win game nodes !alpha' !v' !a' pl strategy
+	   	y2:= win game nodes !alpha' !v' !a' pl
 	  else
 	   	y2:=!y1;
 
@@ -146,6 +122,10 @@ and min_fixed_point game nodes alpha visiting avoiding pl strategy=
 	 (!y2) 
 	;;	
 
+
+
+
+;; 
 (* ----------------- M A I N -----------------*)
 let solver_apt_vardi game  =
 
@@ -183,7 +163,9 @@ let solver_apt_vardi game  =
     else
       pl:=plr_Even;
     
-    let acc = win game !nodes !b' !v !a !pl strategy in
+    let acc = win game !nodes !b' !v !a !pl in
+
+
     
     for i=0 to l-1 do
        if (NodesSet.mem (Node i) acc) then 
