@@ -672,7 +672,7 @@ let universal_solve_run options stats backend game' =
 	msg_tagged MAIN 0 (fun _ -> "Considering game...\n");
 	msg_tagged MAIN 0 (fun _ -> "  Nodes = " ^ string_of_int m ^ "\n");
 	msg_tagged MAIN 0 (fun _ -> "  Edges = " ^ string_of_int (pg_edge_count game') ^ "\n");
-	msg_tagged MAIN 0 (fun _ -> "  Index = " ^ string_of_int (pg_get_index game') ^ "\n");
+	if (m > 0) then msg_tagged MAIN 0 (fun _ -> "  Index = " ^ string_of_int (pg_get_index game') ^ "\n");
 	
 	if m > 0 then (
 
