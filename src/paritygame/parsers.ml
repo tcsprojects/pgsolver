@@ -1,13 +1,14 @@
 open Paritygame;;
+open Arrayparitygame;;
 open Bytes;;
   
 let parse_init_parity_game in_channel = 
-	let game = ref (pg_create 0) in
+	let game = ref (new array_pg 0) in
 	let add v pr pl succs desc =
-	  pg_set_priority !game v pr;
-	  pg_set_owner !game v (if pl = 0 then plr_Even else plr_Odd);
-	  pg_set_desc !game v (if desc = "" then None else Some desc);
-	  List.iter (fun w -> pg_add_edge !game v w) succs
+	  !game#set_priority v pr;
+	  !game#set_owner v (if pl = 0 then plr_Even else plr_Odd);
+	  !game#set_desc v (if desc = "" then None else Some desc);
+	  List.iter (fun w -> !game#add_edge v w) succs
 	in
 	let queue = ref [] in
 	let max_node = ref (-1) in
@@ -17,11 +18,11 @@ let parse_init_parity_game in_channel =
 	) in
 	let init_value = ref 0 in
 	Tcsgameparser.parse_parity_game (fun n ->
-		game := pg_create n;
+		game := new array_pg n;
 		adder := add
 	) (fun i -> init_value := i) !adder (fun _ -> ()) in_channel;
 	if !queue != [] then (
-		game := pg_create (!max_node + 1);
+		game := new array_pg (!max_node + 1);
 		List.iter (fun (v, pr, pl, succs, desc) -> add v pr pl succs desc) !queue
 	);
 	(!init_value, !game)

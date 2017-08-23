@@ -343,11 +343,11 @@ let elevator_verification_func arguments =
     visited.(i) <- true
   done;
   
-  let game = pg_create !index in
-  List.iter (fun (i, (p,pl,succs,name)) -> pg_set_priority game i p;
-					   pg_set_owner game i pl;
-					   pg_set_desc game i (Some name);
-					   List.iter (fun w -> pg_add_edge game i w) succs
+  let game = new array_pg !index in
+  List.iter (fun (i, (p,pl,succs,name)) -> pg#set_priority i p;
+					   pg#set_owner i pl;
+					   pg#set_desc i (Some name);
+					   List.iter (fun w -> pg#add_edge i w) succs
 	    )
 	    !finished;
   game

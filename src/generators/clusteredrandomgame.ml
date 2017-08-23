@@ -1,6 +1,7 @@
 open Tcsmaths.RandomUtils;;
 open Tcsset;;
 open Paritygame;;
+open Arrayparitygame;;
   
 let generator_game_func arguments = 
 
@@ -61,7 +62,7 @@ let generator_game_func arguments =
 
   generate recdepth 0 (size - 1);
   
-  pg_init size (fun v -> (Random.int max_prio,
+  new array_pg size ~initFunc:(fun v -> (Random.int max_prio,
 			  plr_random (),
 			  TreeSet.remove_list_dups pg.(v),
 			  Some (nd_show v))

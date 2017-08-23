@@ -1,5 +1,6 @@
 open Paritygame;;
-
+open Arrayparitygame;;
+  
 let n = ref 0
 let with_self_cycles = ref true
 			   
@@ -58,7 +59,7 @@ let generator_game_func arguments =
     in
     succs [] (!n-1)
   in
-  pg_init !n (fun v -> (v, plr_benefits v, successors v, Some (nd_show v)))
+  new array_pg !n ~initFunc:(fun v -> (v, plr_benefits v, successors v, Some (nd_show v)))
 
 
 		     
