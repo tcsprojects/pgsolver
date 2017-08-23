@@ -344,10 +344,10 @@ let elevator_verification_func arguments =
   done;
   
   let game = new array_pg !index in
-  List.iter (fun (i, (p,pl,succs,name)) -> pg#set_priority i p;
-					   pg#set_owner i pl;
-					   pg#set_desc i (Some name);
-					   List.iter (fun w -> pg#add_edge i w) succs
+  List.iter (fun (i, (p,pl,succs,name)) -> game#set_priority i p;
+					   game#set_owner i pl;
+					   game#set_desc i (Some name);
+					   List.iter (fun w -> game#add_edge i w) succs
 	    )
 	    !finished;
   game

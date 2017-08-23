@@ -136,7 +136,7 @@ let generator_game_func arguments =
 
 let generator_mdp_func arguments =
 	let game = generator_game_func arguments in
-	parity_game_to_generalized_mdp game 4 (fun _ j -> pg#get_priority j >= 2);;
+	parity_game_to_generalized_mdp game 4 (fun _ j -> game#get_priority j >= 2);;
 
 
 let register _ =

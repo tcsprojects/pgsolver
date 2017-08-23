@@ -92,7 +92,7 @@ let generator_game_func arguments =
 
 let generator_mdp_func arguments =
 	let game = generator_game_func arguments in
-	parity_game_to_generalized_mdp game 8 (fun _ j -> pg#get_priority j >= 8);;
+	parity_game_to_generalized_mdp game 8 (fun _ j -> game#get_priority j >= 8);;
 
 let register _ =
     register_strat_impr_gen {
