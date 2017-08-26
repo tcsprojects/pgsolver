@@ -42,8 +42,8 @@ let dispatcher game region r player pre r_enum target target_enum max_col r_stra
   let pre_set = BitSet.diff vr region in
   Enum.iter (fun v -> BitSet.unset pre_set v) (Enum.clone r_enum);
   Enum.iter (fun i ->
-      let pl = pg_get_owner game i in
-      let ws = pg_get_successors game i in
+      let pl = game#get_owner i in
+      let ws = game#get_successors i in
       if pl = player
       then (
         if r_strategy.(i) = -1
@@ -64,7 +64,7 @@ let dispatcher game region r player pre r_enum target target_enum max_col r_stra
     else Enum.iter (fun i -> if r.(i) mod 2 = 1 then BitSet.set r_pl i) r_enum;
     let min = ref (max_col) in
     Enum.iter (fun v ->
-        let ws = pg_get_successors game v in
+        let ws = game#get_successors v in
         let color = ref (max_col) in
         ns_iter (fun w -> if BitSet.is_set vr w && BitSet.is_set r_pl w
                   then (
@@ -102,9 +102,9 @@ let successor game region r p action r_strategy reg_strategy l =
       while !j < l && !reg_check do
         if r.(!j) = !p
         then (
-          let pr = pg_get_priority game !j in
-          let pl = pg_get_owner game !j in
-          let ws = pg_get_successors game !j in
+          let pr = game#get_priority !j in
+          let pl = game#get_owner !j in
+          let ws = game#get_successors !j in
           if pl = plr_benefits !p
           then (
             if r_strategy.(!j) > -1 && r.(r_strategy.(!j)) <> !p
@@ -126,7 +126,7 @@ let successor game region r p action r_strategy reg_strategy l =
         for i = 0 to l - 1 do
           if r.(i) = !p
           then (
-            let pr = pg_get_priority game i in
+            let pr = game#get_priority i in
             r.(i) <- pr;
             r_strategy.(i) <- -1;
           );
@@ -157,7 +157,7 @@ let search game =
   let max_query = ref 0 in
   let max_promo = ref 0 in
   let wr_count = ref 0 in
-  let l = pg_size game in
+  let l = game#size in
   let reg_strategy = Array.make l (-1) in
   let r_strategy = Array.make l (-1) in
   let solution = sol_create game in
@@ -178,7 +178,7 @@ let search game =
     if BitSet.is_set vr i
     then (
       incr node_count;
-      let pr = pg_get_priority game i in
+      let pr = game#get_priority i in
       r.(i) <- pr;
       if pr > !p then p := pr;
     );
@@ -232,7 +232,7 @@ let search game =
         then (
           incr node_count;
           empty := false;
-          let pr = pg_get_priority game i in
+          let pr = game#get_priority i in
           r.(i) <- pr;
           if pr > !p then p := pr;
           BitSet.set subgame_vr i;

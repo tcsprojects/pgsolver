@@ -1,4 +1,5 @@
 open Paritygame;;
+open Arrayparitygame;;
 open Arg;;
 
 let n = ref 0

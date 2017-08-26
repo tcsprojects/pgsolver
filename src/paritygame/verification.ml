@@ -78,7 +78,7 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 			if sol.(i) != pl then badnodes := ns_add i !badnodes
 		done;
 		let game' = game#subgame_by_strat strat' in
-		game'remove_nodes game' !badnodes;
+		game'#remove_nodes !badnodes;
 		let op = plr_opponent pl in
 		let (sol', strat'') = compute_winning_n game' op in
 		match (arrf (fun entry -> entry = op) sol') with
@@ -223,7 +223,7 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 		else if table.(i) = 3
 		then testnext (i + 1)
 		else
-				if not (pg#is_defined i) || (sol.(i) = plr_undef)
+				if not (game#is_defined i) || (sol.(i) = plr_undef)
 				then testnext (i + 1)
 				else match (test sol.(i) i []) with
                    None -> (expand sol.(i) i;

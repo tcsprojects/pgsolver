@@ -37,7 +37,7 @@ let solve_cycle_scc game =
 
     if game#get_owner max_pr_node = max_pr_pl
     then str_set strategy (max_pr_node) (ns_some (game#get_successors max_pr_node));
-    let _ = attr_closure_inplace game strategy max_pr_pl (ns_make [max_pr_node]) in
+    let _ = game#attr_closure_inplace strategy max_pr_pl (ns_make [max_pr_node]) in
     (solution, strategy)
 
 
@@ -72,7 +72,7 @@ let solve_single_player_scc game player =
 				     end
 				   else
 				     begin
-				       ns_iter (fun x -> SingleOccQueue.add (x,w) queue) (game#get_predecessors game w);
+				       ns_iter (fun x -> SingleOccQueue.add (x,w) queue) (game#get_predecessors w);
 				       can_reach ()
 				     end
 				 end
@@ -103,7 +103,7 @@ let solve_single_player_scc game player =
     let pr = List.hd !good_prios in
     good_prios := List.tl !good_prios;
 
-    let vs = game#prio_nodes pr in
+    let vs = game#get_prio_nodes pr in
     found := ns_fold (fun b -> fun v -> b || can_reach_itself v pr) false vs;
   done;
   (if !found then
@@ -239,7 +239,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
 	  q
 	in
 	
-	let (sccs, sccindex, topology, roots) = strongly_connected_components game in
+	let (sccs, sccindex, topology, roots) = game#strongly_connected_components in
 	let marked = Array.make (Array.length sccs) plr_undef in
 	
 	let max_prio_for l pl =

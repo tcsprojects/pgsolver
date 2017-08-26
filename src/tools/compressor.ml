@@ -7,16 +7,16 @@ open Transformations;;
 
 
 let sccs_perform_inplace game performer =
-	let (sccs, sccindex, topology, roots) = strongly_connected_components game in
+	let (sccs, sccindex, topology, roots) = game#strongly_connected_components in
 	let visited = Array.make (Array.length sccs) false in
 
 	let handlescc r =
-		let subgame = subgame_by_list game sccs.(r) in
+		let subgame = game#subgame_by_list sccs.(r) in
 		performer subgame;
 		let i = ref 0 in
 		ns_iter (fun j ->
-			   pg_set_priority game j (pg_get_priority subgame !i);
-			   pg_set_owner game j (pg_get_owner subgame !i);
+			   game#set_priority j (subgame#get_priority !i);
+			   game#set_owner j (subgame#get_owner !i);
 			   incr i
 		) sccs.(r);
 	in
@@ -88,4 +88,4 @@ let _ =
   	game := game'
   );
 
-  Paritygame.print_game !game
+  !game#print

@@ -1,6 +1,7 @@
 open Arg;;
 open Tcsargs;;
 open Paritygame;;
+open Arrayparitygame;;
   
 module CommandLine =
 struct
@@ -33,7 +34,7 @@ let _ =
 
   let game = Parsers.parse_parity_game in_channel in
 
-  let m = pg_size game in
+  let m = game#size  in
   let swap = Array.make m 0 in
 
   for i=0 to m-1 do
@@ -54,19 +55,18 @@ let _ =
   );
 
 (*  print_string "Original game:\n";
-  Paritygame.print_game game;
+  game#print;
 
   print_string "Swapping table:\n";
   Array.iteri (fun i -> fun j -> print_string ("  " ^ string_of_int i ^ " -> " ^ string_of_int j ^ "\n")) swap;
 *)
-  let game' = pg_init m (fun _ -> (0,plr_Even,[],None)) in
+  let game' = new array_pg m ~initFunc:(fun _ -> (0,plr_Even,[],None)) in
 
-  pg_iterate (fun i -> fun (p,pl,succs,_,name) -> let i' = swap.(i) in
-						  pg_set_priority game' i' p;
-						  pg_set_owner game' i' pl;
-						  pg_set_desc game' i' name;
-						  ns_iter (fun w -> pg_add_edge game' i' swap.(w)) succs)
-	     game;
+  game#iterate (fun i -> fun (p,pl,succs,_,name) -> let i' = swap.(i) in
+						  game'#set_priority i' p;
+						  game'#set_owner i' pl;
+						  game'#set_desc i' name;
+						  ns_iter (fun w -> game'#add_edge i' swap.(w)) succs);
 
 (*  print_string "Obfuscated game:\n"; *)
-  Paritygame.print_game game'
+  game'#print

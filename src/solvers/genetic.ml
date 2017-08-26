@@ -160,9 +160,9 @@ struct
   (* create a new random strategy *)
 
   let give_birth game =
-    let l = pg_size game in
+    let l = game#size in
     let str = Array.make l (0,0) in
-    pg_iterate (fun v -> fun (_,_,ws,_,_) -> str.(v) <- (ns_some ws, 0)) game;
+    game#iterate (fun v -> fun (_,_,ws,_,_) -> str.(v) <- (ns_some ws, 0));
     (str,0,0)
 
 
@@ -175,7 +175,7 @@ struct
     let l = Array.length str in
 
     let v = Random.int l in
-    let ws = Array.of_list (ns_nodes (pg_get_successors game v)) in
+    let ws = Array.of_list (ns_nodes (game#get_successors v)) in
     
     let (o,_) = str.(v) in
     let n = ws.(Random.int (Array.length ws)) in
@@ -250,11 +250,11 @@ struct
         else if passed.(!node) = -1 then
           (* play has formed a loop, remember: !node is now the looping node in this play *)
           begin
-            max_prio := pg_get_priority game !node;
+            max_prio := game#get_priority !node;
             while not !found do
               let v = List.hd !history in
               history := List.tl !history;
-              max_prio := max !max_prio (pg_get_priority game v);
+              max_prio := max !max_prio (game#get_priority v);
               found := (v = !node)
             done;
             winner := plr_benefits !max_prio;
@@ -265,7 +265,7 @@ struct
           begin
             passed.(!node) <- -1;
             history := !node :: !history;
-            let p = pg_get_owner game !node in
+            let p = game#get_owner !node in
 	    let choices = if p = plr_Even then choices0 else choices1 in
             choices := !node :: !choices;
             let str = if p = plr_Even then str0 else str1 in

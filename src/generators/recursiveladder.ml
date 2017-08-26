@@ -1,4 +1,5 @@
 open Paritygame;;
+open Arrayparitygame;;
   
 let generator_game_func arguments =
 
@@ -30,7 +31,7 @@ let generator_game_func arguments =
 	  game#set_priority j' pr;
 	  game#set_owner j' (plr_benefits (start_pl + pl));
 	  game#set_desc j' (Some (nd_show (start_idx + j)));
-	  List.iter (fun w -> pg#add_edge j' (w+start_idx)) succs
+	  List.iter (fun w -> game#add_edge j' (w+start_idx)) succs
 	in
 
 	if not mn then (

@@ -1,6 +1,7 @@
 open Tcsset;;
 open Tcsarray;;
 open Paritygame;;
+open Arrayparitygame;;
   
 type ('p,'a) mucalc = Prop of 'p
 		    | Var of string

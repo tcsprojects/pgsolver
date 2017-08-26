@@ -47,8 +47,8 @@ let dispatcher game region r p player f max_f delay_even delay_odd even_set odd_
   let pre_set = BitSet.diff vr region in
   Enum.iter (fun v -> BitSet.unset pre_set v) (Enum.clone r_enum);
   Enum.iter (fun i ->
-      let pl = pg_get_owner game i in
-      let ws = pg_get_successors game i in
+      let pl = game#get_owner i in
+      let ws = game#get_successors i in
       if pl = player
       then (
         if r_strategy.(i) = -1
@@ -72,7 +72,7 @@ let dispatcher game region r p player f max_f delay_even delay_odd even_set odd_
     else Enum.iter (fun i -> if r.(i) mod 2 = 1 then BitSet.set r_pl i) r_enum;
     let min = ref (max_col) in
     Enum.iter (fun v ->
-        let ws = pg_get_successors game v in
+        let ws = game#get_successors v in
         ns_iter (fun w -> if BitSet.is_set vr w && BitSet.is_set r_pl w
                   then (
                     if f.(w) < !min
@@ -136,7 +136,7 @@ let successor game region r p player action f max_f delay_even delay_odd even_se
       for i = 0 to l - 1 do
         if BitSet.is_set vr i && f.(i) < !p && f.(i) mod 2 <> !p mod 2
         then (
-          let pr = pg_get_priority game i in
+          let pr = game#get_priority i in
           r_strategy.(i) <- -1;
           r.(i) <- pr;
           f.(i) <- pr;
@@ -163,7 +163,7 @@ let successor game region r p player action f max_f delay_even delay_odd even_se
         else (
           if BitSet.is_set vr i && r.(i) < !p && plr_benefits r.(i) <> player
           then (
-            let pr = pg_get_priority game i in
+            let pr = game#get_priority i in
             r.(i) <- pr;
             f.(i) <- pr;
             r_strategy.(i) <- -1;
@@ -194,7 +194,7 @@ let search game =
   let max_query = ref 0 in
   let max_promo = ref 0 in
   let wr_count = ref 0 in
-  let l = pg_size game in
+  let l = game#size in
   let reg_strategy = Array.make l (-1) in
   let r_strategy = Array.make l (-1) in
   let solution = sol_create game in
@@ -221,7 +221,7 @@ let search game =
     if BitSet.is_set vr i
     then (
       incr node_count;
-      let pr = pg_get_priority game i in
+      let pr = game#get_priority i in
       r.(i) <- pr;
       f.(i) <- pr;
       if pr > !p then p := pr;
@@ -276,7 +276,7 @@ let search game =
         then (
           incr node_count;
           empty := false;
-          let pr = pg_get_priority game i in
+          let pr = game#get_priority i in
           r.(i) <- pr;
           f.(i) <- pr;
           if pr > !p then p := pr;

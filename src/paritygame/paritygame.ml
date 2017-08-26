@@ -22,6 +22,8 @@ let nd_show = string_of_int
 
 
 let ns_nodeCompare = compare
+
+                       
 (*type nodeset = node list
    
 let ns_compare = ListUtils.compare_lists ns_nodeCompare

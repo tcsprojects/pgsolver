@@ -25,4 +25,4 @@ let _ =
 
   let game = Transformations.combine_games (List.rev games) in
 
-  Paritygame.print_game game
+  game#print

@@ -352,7 +352,7 @@ let universal_solve_run options stats backend game' =
 
 	let strongly_connected_components' game =
 		if options.decompose_sccs then (
-            let (sccs, sccindex, topology, roots) = strongly_connected_components game in
+            let (sccs, sccindex, topology, roots) = game#strongly_connected_components in
             if Array.length sccs = 1
             then dummy_decomposition game
             else (sccs, sccindex, topology, roots)
@@ -412,7 +412,7 @@ let universal_solve_run options stats backend game' =
         		if (!result = None) && options.solvespec_single_parity then (
         			timer_start stats.solvespec_single_parity_timing;
         			(
-                        match (is_single_parity_game game) with None -> () |
+                        match (game#is_single_parity_game) with None -> () |
                             Some prio -> (
 			        			msg_tagged SPECIAL 0 (fun _ -> "Solving this single parity SCC...");
                                 result := Some (solve_single_parity_scc game (if prio=0 then plr_Even else plr_Odd));
@@ -428,7 +428,7 @@ let universal_solve_run options stats backend game' =
         		if (!result = None) && options.solvespec_single_player then (
         			timer_start stats.solvespec_single_player_timing;
         			(
-                        match (get_player_decision_info game) with (true, true) -> () |
+                        match (game#get_player_decision_info) with (true, true) -> () |
                             (false, false) -> (
                             	msg_tagged SPECIAL 0 (fun _ -> "Solving this cycle SCC...");
                                 result := Some (solve_cycle_scc game);
@@ -517,7 +517,7 @@ let universal_solve_run options stats backend game' =
                 		  timer_stop stats.logistics_timing;
                 		  timer_start stats.attractor_timing;
                 		  msg_tagged ATTRACTOR 0 (fun _ -> "Building attractor... ");
-                		  let (sol0, sol1) = attractor_closure_inplace_sol_strat game (fun _ -> true) sol strat !w0 !w1 in
+                		  let (sol0, sol1) = game#attractor_closure_inplace_sol_strat (fun _ -> true) sol strat !w0 !w1 in
 				  
                 		  msg_plain ATTRACTOR 0 (fun _ -> "investigated " ^ (string_of_int (ns_size sol0 + ns_size sol1)) ^ ", adding "  ^ (string_of_int (ns_size (ns_union sol0 sol1) - !counter)) ^ "!\n");
 				  stat_addint [stats.attractor_investigated_nodes] (fun _ -> ns_size sol0 + ns_size sol1);
@@ -724,7 +724,7 @@ let universal_solve_run options stats backend game' =
                     timer_start stats.attractor_timing;
                     
                 	msg_tagged ATTRACTOR 0 (fun _ -> "Building attractor... ");
-                    let (sol0, sol1) = attractor_closure_inplace_sol_strat game (fun _ -> true)
+                    let (sol0, sol1) = game#attractor_closure_inplace_sol_strat (fun _ -> true)
                                                                            solution strategy !w0 !w1 in
                                                                            
                     let solcount = ns_size sol0 + ns_size sol1 in
@@ -781,7 +781,7 @@ let universal_solve_run options stats backend game' =
                     timer_stop stats.global_timing_without_attractor;
                     timer_start stats.attractor_timing;
                 	msg_tagged ATTRACTOR 0 (fun _ -> "Building attractor... ");
-                    let (sol0, sol1) = attractor_closure_inplace_sol_strat game (fun _ -> true)
+                    let (sol0, sol1) = game#attractor_closure_inplace_sol_strat (fun _ -> true)
                                                                            solution strategy !w0 !w1 in
                		msg_plain ATTRACTOR 0 (fun _ -> "investigated " ^ (string_of_int (ns_size sol0 + ns_size sol1)) ^ ", removing "  ^ (string_of_int (ns_size (ns_union sol0 sol1))) ^ "!\n");
 

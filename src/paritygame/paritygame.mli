@@ -157,7 +157,7 @@ val ns_forall  : (node -> bool) -> nodeset -> bool
     @param nodeset nodeset to be searched
     @return if found Some node if not None
  *)
-(*val ns_find    : (node -> bool) -> nodeset -> node*)
+val ns_find    : (node -> bool) -> nodeset -> node
                                                 
 (** Returns maximum node.
     The maximum is defined via given comparator function.
@@ -166,14 +166,14 @@ val ns_forall  : (node -> bool) -> nodeset -> bool
     @param (node -> node -> bool) comparator function ( true node one is smaller, false node one is bigger ).
     @return maximum node for comparator
  *)
-(*val ns_max     : nodeset -> (node -> node -> bool) -> node*)
+val ns_max     : nodeset -> (node -> node -> bool) -> node
 
 (** Returns a randomly chosen element from a node set.
     
     @param nodeset nodeset to get random node from
     @return random node
  *)
-(*val ns_some    : nodeset -> node*)
+val ns_some    : nodeset -> node
 
 (** Returns the smallest (by name) node in a nodeset.
 

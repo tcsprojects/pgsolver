@@ -158,7 +158,7 @@ let anti_propagation_inplace pg =
  **************************************************************)
 
 let single_scc_transformation pg =
-	let (sccs, sccindex, topology, roots) = strongly_connected_components pg in
+	let (sccs, sccindex, topology, roots) = pg#strongly_connected_components in
 	if Array.length sccs <= 1 then pg else (
 		let leaves = sccs_compute_leaves roots topology in
 		let (has0, has1) = List.fold_left (fun (h0, h1) i -> if pg#get_owner (ns_first sccs.(i)) = plr_Even then (true, h1) else (h0, true))
@@ -569,7 +569,7 @@ let compress_nodes game =
 	let n = game#size in
 	let m = ref 0 in
 	for i = 0 to n - 1 do
-	  if game#isDefined i then incr m
+	  if game#is_defined i then incr m
 	done;
 	let game' = new array_pg !m in
 	let newToOld = Array.make !m (-1) in
@@ -660,7 +660,7 @@ let uniquize_prios_inplace game =
 	      
 (* turns a min-parity into a max-parity game and vice versa *)
 let min_max_swap_transformation g =
-  let m = g#max_prio in
+  let m = g#get_max_prio in
   let m = m + (m mod 2) in
   let g' = g#copy in
   g#iterate (fun i -> fun (pr,_,_,_,_) -> g'#set_priority i (m - (g#get_priority i)));

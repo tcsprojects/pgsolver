@@ -50,4 +50,4 @@ let _ =
   	f game
   ) (List.rev !todo);
 
-  Paritygame.print_game !game
+  !game#print

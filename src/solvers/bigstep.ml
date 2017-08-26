@@ -12,7 +12,7 @@ open Smallprogress;;
 
 
 let solve_scc_restr game player u =
-    let spmidx = Array.map (Array.map (fun m -> (0, min m u))) (compute_priority_reach_array game player) in
+    let spmidx = Array.map (Array.map (fun m -> (0, min m u))) (game#compute_priority_reach_array player) in
 
     let spmupd spmz _ =
       let l = Array.length spmz in
@@ -37,8 +37,8 @@ let solve_scc_restr game player u =
 
 let solve_scc game =
 
-	let n = pg_size game in
-	let m = pg_max_prio game in
+	let n = game#size in
+	let m = game#get_max_prio in
 	let sqrt3 x = x ** (1.0 /. 3.0) in
 	let u = int_of_float (ceil (sqrt3 (float (n * n * m)))) in
 

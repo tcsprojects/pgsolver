@@ -12,7 +12,7 @@ let run_command_line_generator generator =
     let (gen, _) = find_generator generator in
     let args = Array.sub Sys.argv 1 (Array.length Sys.argv - 1) in
     let pg = gen args in
-    Paritygame.print_game pg;;
+    pg#print;;
 
 let _ =
     Randomgame.register ();

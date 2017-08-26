@@ -4,7 +4,7 @@
 *)
 
 open Paritygame;;
-
+open Arrayparitygame;;
 let n = ref 0
 
 module ModelcheckerLadderGame = Build( 

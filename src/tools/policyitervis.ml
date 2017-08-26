@@ -91,7 +91,7 @@ let _ =
 	
 	
 	let get_ident i =
-		match pg_get_desc game i with
+		match game#get_desc  i with
 			None -> ('!', [||])
 		|	Some s -> 
 				if String.length s = 1
@@ -108,7 +108,7 @@ let _ =
 		let less i j = node_valuation_ordering game node_compare valu.(i) valu.(j) < 0 in
 		let counter_strat =
 			Array.init (Array.length valu) (fun i ->
-				if pg_get_owner game i = plr_Odd
+				if game#get_owner  i = plr_Odd
 				then best_decision_by_valuation_ordering game node_compare valu i
 				else -1
 			)
@@ -116,10 +116,10 @@ let _ =
 
 		if counter >= !start_iteration && (match !end_iteration with None -> true | Some end_idx -> counter <= end_idx) then (
 			before_iteration counter;
-			let n = pg_size game in
+			let n = game#size  in
 			for i = 0 to n - 1 do
-			let pl = pg_get_owner game i in
-			let tr = pg_get_successors game i in
+			let pl = game#get_owner  i in
+			let tr = game#get_successors  i in
 				let from_node = get_ident i in
 				ns_iter (fun j ->
 					    let to_node = get_ident j in

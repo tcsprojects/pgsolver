@@ -23,12 +23,12 @@ let solve' game sink0 sink1 =
 	msg_tagged 2 (fun _ -> "Using backend sat solver: " ^ (Satsolvers.get_default ())#identifier ^ "\n");
 	msg_tagged 2 (fun _ -> "Building constraints...\n");
 
-	let n = pg_size game in
-	let par a = (pg_get_priority game a) mod 2 in
+	let n = game#size in
+	let par a = (game#get_priority a) mod 2 in
 
 	for i = 0 to n - 1 do
-	  let pl = pg_get_owner game i in
-	  let tr = Array.of_list (ns_nodes (pg_get_successors game i)) in
+	  let pl = game#get_owner i in
+	  let tr = Array.of_list (ns_nodes (game#get_successors i)) in
 	  (* Strategy *)
 	  solver#add_helper_exactlyone 0 (Array.length tr - 1) [||] (fun j -> Po (Strategy (i, tr.(j))));
 	  (* Path Sets *)
@@ -108,8 +108,8 @@ let solve' game sink0 sink1 =
 	if not satis then failwith "impossible: unsatisfiable";
 	
 	let sol = Array.init n (fun i -> if solver#get_variable (Winning i) = 0 then plr_Even else plr_Odd) in
-	let strat = Array.init n (fun i -> if sol.(i) = pg_get_owner game i
-	                                   then let delta = Array.of_list (ns_nodes (pg_get_successors game i)) in
+	let strat = Array.init n (fun i -> if sol.(i) = game#get_owner i
+	                                   then let delta = Array.of_list (ns_nodes (game#get_successors i)) in
 	                                        delta.(solver#get_variable_first (Array.map (fun j -> Strategy (i, j)) delta)) else -1) in
 	
 	solver#dispose;
@@ -117,7 +117,7 @@ let solve' game sink0 sink1 =
   
   
 let solve'' game =
-  let n = pg_size game in
+  let n = game#size in
   let game_cheap = cheap_escape_cycles_transformation game false in
   let (game_cheap, a, b) = sort_game_by_prio game_cheap in
   let (sink0, sink1) = (b.(Array.length b - 4), b.(Array.length b - 3)) in
@@ -130,8 +130,8 @@ let solve''' game =
   let game' = alternating_transformation game true in
   let (sol, strat) = solve'' game' in
   let (sol', strat') = alternating_revertive_restriction game game' sol strat in
-  for i = 0 to pg_size game - 1 do
-    if sol'.(i) != pg_get_owner game i then strat'.(i) <- -1
+  for i = 0 to game#size - 1 do
+    if sol'.(i) != game#get_owner i then strat'.(i) <- -1
   done;
   (sol', strat');;
   

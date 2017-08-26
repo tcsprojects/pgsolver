@@ -14,7 +14,7 @@ open Univsolve;;
 
 let newwin options game =
 
-	let n = pg_size game in
+	let n = game#size in
 	let l = int_of_float (ceil (sqrt (float (2 * n)))) in
 	let sol = sol_create game in
 	let strat = Array.make n (-1) in
@@ -22,7 +22,7 @@ let newwin options game =
 
 	let is_dominion nodeset pl =
 		let recsolve = fun g -> Recursive.mcnaughton_zielonka g options' in
-		match (pg_set_dominion recsolve game nodeset pl) with
+		match (game#set_dominion recsolve nodeset pl) with
 			None -> false
 		|   Some strat' -> (
             ns_iter (fun q ->
@@ -36,7 +36,7 @@ let newwin options game =
 	in
 
 	let iter_subsets size =
-		let n = pg_size game in
+		let n = game#size in
 
 		let rec iter_subsets' size idx nodeset =
 			if size > n - idx
@@ -45,7 +45,7 @@ let newwin options game =
 				let found = ref None in
 				let i = ref idx in
 				while (is_none !found) && (!i <= n - size) do
-					if (pg_get_priority game !i >= 0) then (
+					if (game#get_priority !i >= 0) then (
                         nodeset := ns_add !i !nodeset;
                         found := iter_subsets' (size - 1) (!i + 1) nodeset;
                         if (is_none !found)
@@ -92,7 +92,7 @@ let rec newwin oldwin game =
 	let strat = Array.make n (-1) in
 
 	let is_dominion nodeset pl =
-		match (pg_set_dominion Recursive.solve game nodeset pl) with
+		match (game#set_dominion Recursive.solve nodeset pl) with
 			None -> false
 		|   Some strat' -> (
             IntSet.iter (fun q ->
@@ -144,10 +144,10 @@ let rec newwin oldwin game =
 	if n = 0 then (sol, strat)
 	else match (iter_subsets l) with
         Some (pl, dominion) -> (
-        	let dom' = attr_closure_inplace game strat pl (IntSet.elements dominion) in
+        	let dom' = game#attr_closure_inplace strat pl (IntSet.elements dominion) in
         	List.iter (fun q -> sol.(q) <- pl) dom';
-        	let game' = pg_copy game in
-        	pg_remove_nodes game' dom';
+        	let game' = game#copy in
+        	game'#remove_nodes dom';
         	let (sol', strat') = newwin oldwin game' in
             for v=0 to n-1 do
               let (p',pl',_,_) = game'.(v) in

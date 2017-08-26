@@ -1,5 +1,6 @@
 open Paritygame;;
-
+open Arrayparitygame;;
+  
 let n = ref 0
 let m = ref 2
 

@@ -13,20 +13,20 @@ let list_max a less = ListUtils.max_elt (fun x y -> if less x y then -1 else 1) 
 type 'a payoffgame = ('a * player * node array * string option) array
 
 let paritygame_to_payoffgame (game: paritygame) (fld: 'a field) =
-	let n = pg_size game in
+	let n = game#size in
 	let (_, _, _, neg, _, _, _, _, pow, _, int_to) = fld in
 	Array.init n (fun i ->
-		      let pr = pg_get_priority game i in
-		      let pl = pg_get_owner game i in
-		      let tr = pg_get_successors game i in
-		      let de = pg_get_desc game i in
+		      let pr = game#get_priority i in
+		      let pl = game#get_owner i in
+		      let tr = game#get_successors i in
+		      let de = game#get_desc i in
 		      (pow (neg (int_to n 1)) pr, pl, Array.of_list (ns_nodes tr), de)
 	)
 	
 let get_paritygame_discount_factor (game: paritygame) (fld: 'a field) = 
 	let (_, one, _, _, sub, mul, inv, _, pow, _, int_to) = fld in
-	let n = int_to (pg_size game) 1 in
-	let pr = pg_max_prio game in
+	let n = int_to (game#size) 1 in
+	let pr = game#get_max_prio in
 	let num = mul (mul (int_to 4 1) (pow n 3)) (pow n pr) in
 	let v = sub one (inv num) in
 	v;;

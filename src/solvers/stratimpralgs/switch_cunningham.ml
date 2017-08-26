@@ -25,15 +25,15 @@ let improvement_policy_optimize_roundrobin game node_total_ordering (e, next) ol
 	(strategy, (!e, next))
 	
 let improvement_policy_optimize_roundrobin_default_first_edge game v =
-	let n = pg_size game in
+	let n = game#size in
 	let i = ref ((v+1) mod n) in
-	while (pg_get_owner game !i = plr_Odd) do
+	while (game#get_owner !i = plr_Odd) do
 		i := (!i + 1) mod n
 	done;
-	(!i, ns_some (pg_get_successors game !i))
+	(!i, ns_some (game#get_successors !i))
 
 let improvement_policy_optimize_roundrobin_default_next game (v,w) =
-	let tr = Array.of_list (ns_nodes (pg_get_successors game v)) in
+	let tr = Array.of_list (ns_nodes (game#get_successors v)) in
 	let idx = ref 0 in
 	while (tr.(!idx) <> w) do
 		incr idx
@@ -49,12 +49,12 @@ let improvement_policy_optimize_roundrobin_ordering_first game (ordering, backtr
 
 let improvement_policy_optimize_roundrobin_ordering_build game cmp =
 	let l = ref [] in
-	pg_iterate (fun v (_, pl, tr, _, _) ->
+	game#iterate (fun v (_, pl, tr, _, _) ->
 		if (pl = plr_Even) then
 			ns_iter (fun w ->
 				l := (v,w)::!l
 			) tr
-	) game;
+	) ;
 	let a = Array.of_list !l in
 	Array.sort cmp a;
 	let m = ref (TreeMap.empty compare) in
@@ -65,7 +65,7 @@ let improvement_policy_optimize_roundrobin_ordering_build game cmp =
 
 let lower_bound_construction_round_robin_compare game (v,w) (v',w') =
 	let f i =
-		match pg_get_desc game i with
+		match game#get_desc i with
 			None -> ('!', 0, 0)
 		|	Some s -> 
 				if String.length s = 1
@@ -103,7 +103,7 @@ let lower_bound_construction_round_robin_compare game (v,w) (v',w') =
 
 let lower_bound_construction_round_robin_compare_exp game (v,w) (v',w') =
 	let f i =
-		match pg_get_desc game i with
+		match game#get_desc i with
 			None -> ('!', 0, 0)
 		|	Some s -> 
 				if String.length s = 1
@@ -160,12 +160,12 @@ let strategy_improvement_optimize_roundrobin_policy game =
 let strategy_improvement_optimize_roundrobin_policy_lower_bound game =
 	let lookup_node s =
         let check i =
-            match (pg_get_desc game i) with
+            match (game#get_desc i) with
                 None -> false
             |   Some t -> s=t
         in
         let i = ref 0 in
-        let n = pg_size game in
+        let n = game#size  in
         while (!i < n) && (not (check !i)) do
             incr i
         done;

@@ -5,8 +5,9 @@
  * Succinct small progress measure algorithm: https://arxiv.org/abs/1702.05051 .
  *)
 
-open Basics ;;
-open Paritygame ;;
+open Basics;;
+open Paritygame;;
+open Arrayparitygame;;
 open Univsolve;;
 open Tcsqueue;;
 
@@ -316,11 +317,11 @@ let pm_format mu =
 (* -------------- MAIN SOLVER ----------------------------------------- *)
 let solve' game =
     log_debug "Now solving the following subgame:";
-    log_debug (format_game game);
+    log_debug (game#format_game);
 
     (* compute some constants from the game *)
-    let n = pg_size game in               (* number of vertices *)
-    let maxprio = pg_max_prio game in     (* number of priorities *)
+    let n = game#size in                  (* number of vertices *)
+    let maxprio = game#get_max_prio in        (* number of priorities *)
     let d = maxprio + (maxprio mod 2) in  (* largest even number >= maxprio *)
     let l = ld n in                       (* maximal length of bitstrings *)
     let h = (d/2) in                      (* length of the counters *)
@@ -336,7 +337,7 @@ let solve' game =
     (* compute lift(mu,v,w): the least s >= v progressive in mu[v->s] *)
     (* here, mu is a progress measure, and v and w are nodes (integers) *)
     let lift mu v w =
-        let vprio = pg_get_priority game v in
+        let vprio = game#get_priority v in
         log_debug ("computing lift for nodes "
               ^ (nd_show v) ^ " with measure " ^ (ac_format mu.(v))
               ^" and node "
@@ -390,8 +391,8 @@ let solve' game =
      * among all successors of v.
      *)
     let best_successor_lift mu v =
-        let vplayer = pg_get_owner game v in
-        let succs = pg_get_successors game v in
+        let vplayer = game#get_owner v in
+        let succs = game#get_successors v in
 
         (* define order on pairs (node, lift(mu,v,node)) based on the
          * players preference for the second component: Odd wants to maximize. *)
@@ -422,8 +423,8 @@ let solve' game =
     log_info ("refining..");
     while not (SingleOccQueue.is_empty queue) do
         let v = SingleOccQueue.take queue in
-        let vplayer = pg_get_owner game v in
-        let succs = pg_get_successors game v in
+        let vplayer = game#get_owner v in
+        let succs = game#get_successors v in
         log_verb ("Dequeued state: " ^ (string_of_int v)
                    ^ ". Owner: " ^ (plr_show vplayer)
                    ^ " successors: " ^ ns_format succs
@@ -442,7 +443,7 @@ let solve' game =
                 mu.(v) <- candidate_lift;
                 log_verb ("Updating progress measure.");
                 log_debug (pm_format mu);
-                let predecessors = (pg_get_predecessors game v) in
+                let predecessors = (game#get_predecessors v) in
                 log_verb ("Enqueuing predecessors of "
                   ^ (string_of_int v)
                   ^ " : " ^ (ns_format predecessors)
@@ -479,7 +480,7 @@ let solve' game =
     log_info ("extract player 0 strategy..");
     let strat = Array.make n nd_undef in
     for i = 0 to n - 1 do
-        if ((pg_get_owner game i) = plr_Even)
+        if ((game#get_owner i) = plr_Even)
         then
             (* Even picks a successor with minimal measure.
              * We re-use function "best_successor_lift", which recomputes
@@ -500,21 +501,21 @@ let solve' game =
 
 
 let invert_game game =
-    pg_init (pg_size game) (fun i ->
-        1 + pg_get_priority game i,
-        plr_opponent (pg_get_owner game i),
-        ns_nodes (pg_get_successors game i),
-        pg_get_desc game i
+    new array_pg (game#size) ~initFunc:(fun i ->
+        1 + game#get_priority i,
+        plr_opponent (game#get_owner i),
+        ns_nodes (game#get_successors i),
+        game#get_desc i
     )
 
 let solve_for_player player solver game =
     let (sol, strat) = solver game in
-    let (subgame_other_player, map_to_sub, map_to_game) = subgame_by_node_filter game (fun i -> sol.(i) != player) in
-    if (pg_size subgame_other_player > 0) then (
+    let (subgame_other_player, map_to_sub, map_to_game) = game#subgame_by_node_filter (fun i -> sol.(i) != player) in
+    if (subgame_other_player#size > 0) then (
         let subgame_other_player = invert_game subgame_other_player in
         let (_, strat') = solver subgame_other_player in
         Array.iteri (fun i j ->
-            if (pg_get_owner subgame_other_player i = player)
+            if (subgame_other_player#get_owner i = player)
             then strat.(map_to_game i) <- map_to_game j
         ) strat'
     );
