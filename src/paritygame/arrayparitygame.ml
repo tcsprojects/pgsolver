@@ -9,12 +9,6 @@ open Tcsgraph;;
 (**************************************************************
  *                          TOOLS                             *
  **************************************************************)
-(** Method for adding an edge between two nodes in an (priority * player * successors * predecessors * description) array.
-    
-    @param array array to set edge (v,u) in
-    @param predecessor v
-    @param successor u
-*)
 let add_edge_in_node_array array predecessor successor =
   let (prioPred, ownerPred, successorsPred, predecessorsPred, descPred) = Array.get array predecessor in
   Array.set array predecessor (prioPred, ownerPred, (ns_add successor successorsPred), predecessorsPred, descPred);
@@ -27,10 +21,7 @@ let add_edge_in_node_array array predecessor successor =
 (**************************************************************
  *                       ARRAY PARITYGAME                     *
  **************************************************************)
-(** Array-Paritygame class. 
-    This class inherits from the general paritygame class and replaces the former paritygame type.
-    The structure behind this class is an (priority * player * nodeset * nodeset * string option) array. 
-*)
+
 class array_pg ?initFunc (initSize : int) =
 object (self : 'self)
   inherit paritygame
@@ -56,7 +47,8 @@ object (self : 'self)
     Array.length nodes
 
   method copy =
-   {<  >}
+    let new_nodes = Array.copy nodes in
+    {< nodes = new_nodes >}
 
   method sort f =
     Array.sort f nodes
@@ -73,7 +65,8 @@ object (self : 'self)
     let newNodes = Array.mapi f nodes in
     {<nodes = newNodes>}
 
-  method map2 : 'a. (node -> (priority * player * nodeset * nodeset * string option) -> 'a) -> 'a array =
+  (*see interface declaration *)
+  method map2 =
     fun f -> Array.mapi f nodes
 
                         
@@ -237,7 +230,7 @@ object (self : 'self)
       let (pr, pl, succs, name) = initFunc i in
       let (_,_,currSucc,currPred,_) = Array.get newNodes i in
       Array.set newNodes i (pr, pl, currSucc, currPred, name);
-           List.iter (fun w -> add_edge_in_node_array newNodes i w) succs
+      List.iter (fun w -> add_edge_in_node_array newNodes i w) succs
     done;
     ({<nodes = newNodes>}, (fun i -> TreeMap.find i !map_to_sub), (fun i -> TreeMap.find i !map_to_game))      
 end;;

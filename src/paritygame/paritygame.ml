@@ -1,7 +1,7 @@
 (** Paritygame module.
     For detailed information about each component see interface "paritygame.mli" 
 *)
-(*open Basics;;*)
+open Basics;;
 open Tcsbasedata;;
 open Tcsarray;;
 open Tcsset;;
@@ -22,46 +22,6 @@ let nd_show = string_of_int
 
 
 let ns_nodeCompare = compare
-
-                       
-(*type nodeset = node list
-   
-let ns_compare = ListUtils.compare_lists ns_nodeCompare
-let ns_isEmpty ws = ws = []
-let ns_empty = []
-let ns_elem = List.mem
-let ns_fold = List.fold_left
-let ns_iter = List.iter
-let ns_filter = List.filter
-let ns_map f = ns_fold (fun ns v -> let u = f v in if not (ns_elem u ns) then u::ns else ns) [] 
-let ns_size = List.length
-let ns_exists = List.exists
-let ns_forall = List.for_all
-let ns_first = List.hd
-let rec ns_last = function []    -> failwith "Paritygame.ns_last: cannot extract node from empty node set"
-                        | [u]   -> u
-                        | _::us -> ns_last us
-let ns_add v vs =
-  let rec add = function []    -> [v]
-                      | w::ws -> (match ns_nodeCompare v w with
-                                    -1 -> v::w::ws
-                                  | 0  -> w::ws
-                                  | 1  -> w::(add ws)
-                                  | _  -> failwith "Paritygame.ns_add: unexpected return value of function `compare´")
-  in
-  add vs
-let ns_del v vs =
-  let rec del = function []    -> []
-                      | w::ws -> (match ns_nodeCompare v w with
-                                    -1 -> w::ws
-                                  | 0  -> ws
-                                  | 1  -> w::(del ws)
-                                  | _  -> failwith "Paritygame.ns_del: unexpected return value of function `compare´")
-  in
-  del vs
-let ns_make = List.sort compare
-let ns_nodes ws = ws
-let ns_union a b = TreeSet.elements (TreeSet.union (TreeSet.of_list_def a) (TreeSet.of_list_def b))*)
 
 
 (**************************************************************
@@ -870,14 +830,14 @@ method number_of_strategies pl m =
 method compute_priority_reach_array player =
     let maxprspm = (self#get_max_prio_for (1 - player)) / 2 in
     (* Dumb version (!)  *)
-    let rec calc_iter game maxvalues =
+    let rec calc_iter game  maxvalues =
         let badPrio = game#get_max_prio_for (1 - player) in
         let goodPrio = game#get_max_prio_for player in
         if badPrio >= 0 then (
-            let nodes = ref ns_empty in
+            let tmp_nodes = ref ns_empty in
             if goodPrio > badPrio then
                 game#iterate (fun i (pr, _, _, _, _) ->
-                    if pr > badPrio then nodes := ns_add i !nodes
+                    if pr > badPrio then tmp_nodes := ns_add i !tmp_nodes
                 )
             else (
                 let (sccs, sccindex, topology, roots): nodeset array * scc array * scc list array * scc list = game#strongly_connected_components in
@@ -895,10 +855,10 @@ method compute_priority_reach_array player =
                 List.iter count_nodes roots;
                 game#iterate (fun i (pr, _, _, _, _) ->
                     if pr >= 0 then (maxvalues.(i)).(badPrio / 2) <- 1 + sccentry.(sccindex.(i));
-                    if pr = badPrio then nodes := ns_add i !nodes
+                    if pr = badPrio then tmp_nodes := ns_add i !tmp_nodes
                 )
             );
-            game#remove_nodes !nodes;
+            game#remove_nodes !tmp_nodes;
             calc_iter game maxvalues
         )
     in

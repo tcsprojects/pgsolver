@@ -13,7 +13,6 @@ open Smallprogress;;
 
 let solve_scc_restr game player u =
     let spmidx = Array.map (Array.map (fun m -> (0, min m u))) (game#compute_priority_reach_array player) in
-
     let spmupd spmz _ =
       let l = Array.length spmz in
       let c = ref (Array.fold_left (fun r (v, _) -> r + v) 0 spmz) in
@@ -50,7 +49,6 @@ let solve_scc game =
 			)
 		done
 	in
-
 	let (sol, strat) = solve_scc_restr game plr_Even u in
 	correct (sol, strat) plr_Even;
 

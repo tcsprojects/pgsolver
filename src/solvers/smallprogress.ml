@@ -5,7 +5,8 @@ open Tcsarray;;
 open Tcsqueue;;
 
 let ns_minarg arr f less = ns_fold (fun m i -> if less (f i) (f m) then i else m) (ns_some arr) arr;;
-let ns_maxarg arr f less = ns_fold (fun m i -> if less (f m) (f i) then i else m) (ns_some arr) arr;;
+let ns_maxarg arr f less =
+  ns_fold (fun m i -> if less (f m) (f i) then i else m) (ns_some arr) arr;;
 
 let arr_minarg arr f less = Array.fold_left (fun m i -> if less (f i) (f m) then i else m) (arr.(0)) arr;;
 let arr_maxarg arr f less = Array.fold_left (fun m i -> if less (f m) (f i) then i else m) (arr.(0)) arr;;
@@ -14,7 +15,6 @@ let solve_scc_reach game player spmidx updspm =
 
     let n = game#size in
     let maxprio = game#get_max_prio_for (plr_opponent player) in
-
     let pr2spm pr = (pr / 2) in
 
     let maxprspm = pr2spm maxprio in
@@ -80,7 +80,7 @@ let solve_scc_reach game player spmidx updspm =
     in
 
     let update queue i =
-        if not (isTop spmidx.(i)) then (
+      if not (isTop spmidx.(i)) then (
           let pr = game#get_priority i in
 	  let pl = game#get_owner i in
 	  let delta = game#get_successors i in
