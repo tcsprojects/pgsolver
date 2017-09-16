@@ -1,4 +1,5 @@
 open Tcsset
+open Arrayparitygame
 open Paritygame
 open Mdp
 
@@ -14,13 +15,13 @@ module SymbolicParityGame = struct
 	let create_new x = (Hashtbl.create 10, DynamicGraph.make ())
 
 	let to_paritygame (ht, gr) =
-		let pg = pg_create (Hashtbl.length ht) in
+		let pg = new array_pg (Hashtbl.length ht) in
 		Hashtbl.iter (fun _ ind -> 
 			let (pr, pl, desc) = DynamicGraph.get_node_data ind gr in
-			pg_set_priority pg ind pr;
-			pg_set_owner pg ind pl;
-			pg_set_desc pg ind desc;
-			TreeSet.iter (fun w -> pg_add_edge pg ind w) (DynamicGraph.get_node_succ ind gr)
+			pg#set_priority ind pr;
+			pg#set_owner ind pl;
+			pg#set_desc ind desc;
+			TreeSet.iter (fun w -> pg#add_edge ind w) (DynamicGraph.get_node_succ ind gr)
 		) ht;
 		pg
 

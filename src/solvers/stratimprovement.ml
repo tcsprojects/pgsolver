@@ -11,15 +11,15 @@ open Transformations;;
 let solve' (game: paritygame) =
     (* let array_max a less = ArrayUtils.max_elt (fun x y -> if less x y then -1 else 1) a in *)
 
-    let n = pg_size game in
+    let n = game#size in
 
     let msg_tagged v = message_autotagged v (fun _ -> "STRATIMPROV") in
     let msg_plain = message in
 
 
-    let prio i = pg_get_priority game i in
-    let pl i = pg_get_owner game i in
-    let tra i = pg_get_successors game i in
+    let prio i = game#get_priority i in
+    let pl i = game#get_owner i in
+    let tra i = game#get_successors i in
     let isEven i = (prio i) mod 2 = 0 in
     let isOdd i = (prio i) mod 2 = 1 in
     let isP0 i = (pl i) = plr_Even in
@@ -249,7 +249,7 @@ let solve' (game: paritygame) =
     msg_tagged 2 (fun _ -> "Starting strategy improvement algorithm\n");
     if !verbosity > 2 then (
 	    msg_tagged 3 (fun _ -> "Considering game: \n");
-	    print_game game
+	    game#print
 	);
 
     let valu = Array.make n (-1, DescRelSet.empty, 0) in
@@ -285,12 +285,12 @@ let solve' (game: paritygame) =
     		Array.fill valu 0 n (-1, DescRelSet.empty, 0);
     		valuation valu (Graph.subGraphByEdgePred ggraph selPred);
     		if !verbosity > 2 then (
-    			let g = subgame_by_edge_pred game selPred in
+    			let g = game#subgame_by_edge_pred selPred in
     			for i = 0 to n - 1 do
-    				pg_set_desc g i (Some ((string_of_int i) ^ " : " ^ formatvaluentry valu.(i)))
+    				g#set_desc i (Some ((string_of_int i) ^ " : " ^ formatvaluentry valu.(i)))
     			done;
     			msg_tagged 3 (fun _ -> "Made valuation:\n");
-    			print_game g
+    			g#print
     		);
     		let stratUpd x =
     			let w = ns_max (tra x) (lessValu valu) in

@@ -324,11 +324,11 @@ let universal_solve_run options stats backend game' =
 	 ************************************************************)
 
 	let rec universal_solve_decompose game recdepth =
-        let n = pg_size game in
+        let n = game#size in
 
 		msg_incrdepth ();
         msg_tagged DECOMP 0 (fun _ -> "Entering decomposition phase at recursion level " ^ string_of_int recdepth ^ "\n");
-        msg_tagged DECOMP 0 (fun _ -> "Considering game of size " ^ string_of_int (pg_node_count game) ^ "\n");
+        msg_tagged DECOMP 0 (fun _ -> "Considering game of size " ^ string_of_int (game#node_count) ^ "\n");
 
         stats.max_recursion_depth := max recdepth !(stats.max_recursion_depth);
         stats.recursive_calls := !(stats.recursive_calls) + 1;
@@ -341,23 +341,23 @@ let universal_solve_run options stats backend game' =
         timer_start stats.decomposition_timing;
 
 	let dummy_decomposition game =
-		let n = pg_size game in
+		let n = game#size in
 		let l = ref ns_empty in
 		let a = Array.make n (-1) in
-		pg_iterate (fun i _ -> l := ns_add i !l;
+		game#iterate (fun i _ -> l := ns_add i !l;
 				       a.(i) <- 0
-			   ) game;
+			   );
 		([|!l|], a, [|[]|], [0])
 	in
 
 	let strongly_connected_components' game =
 		if options.decompose_sccs then (
-            let (sccs, sccindex, topology, roots) = strongly_connected_components game in
+            let (sccs, sccindex, topology, roots) = game#strongly_connected_components in
             if Array.length sccs = 1
             then dummy_decomposition game
             else (sccs, sccindex, topology, roots)
         )
-        else if pg_node_count game > 0
+        else if game#node_count > 0
         then dummy_decomposition game
         else ([|ns_empty|], [||], [||], [])
 	in
@@ -378,7 +378,7 @@ let universal_solve_run options stats backend game' =
         let subgame_solve nodes solver =
            	timer_start stats.logistics_timing;
         	let solved = ref ns_empty in
-            let sg = subgame_by_list game nodes in
+            let sg = game#subgame_by_list nodes in
            	timer_stop stats.logistics_timing;
             let (sol', strat') = solver sg in
            	timer_start stats.logistics_timing;
@@ -412,14 +412,14 @@ let universal_solve_run options stats backend game' =
         		if (!result = None) && options.solvespec_single_parity then (
         			timer_start stats.solvespec_single_parity_timing;
         			(
-                        match (is_single_parity_game game) with None -> () |
+                        match (game#is_single_parity_game) with None -> () |
                             Some prio -> (
 			        			msg_tagged SPECIAL 0 (fun _ -> "Solving this single parity SCC...");
                                 result := Some (solve_single_parity_scc game (if prio=0 then plr_Even else plr_Odd));
                                 stat_addint [stats.solvespec_single_parity_nodes;
                                              stats.special_nodes;
                                              stats.universal_solved_nodes;
-                                             stats.overall_solved_nodes] (fun _ -> pg_size game);
+                                             stats.overall_solved_nodes] (fun _ -> game#size);
 			        			msg_plain SPECIAL 0 (fun _ -> "done!\n")
                             )
                     );
@@ -428,14 +428,14 @@ let universal_solve_run options stats backend game' =
         		if (!result = None) && options.solvespec_single_player then (
         			timer_start stats.solvespec_single_player_timing;
         			(
-                        match (get_player_decision_info game) with (true, true) -> () |
+                        match (game#get_player_decision_info) with (true, true) -> () |
                             (false, false) -> (
                             	msg_tagged SPECIAL 0 (fun _ -> "Solving this cycle SCC...");
                                 result := Some (solve_cycle_scc game);
                                 stat_addint [stats.solvespec_single_player_nodes;
                                              stats.special_nodes;
                                              stats.universal_solved_nodes;
-                                             stats.overall_solved_nodes] (fun _ -> pg_size game);
+                                             stats.overall_solved_nodes] (fun _ -> game#size);
 			        			msg_plain SPECIAL 0 (fun _ -> "done!\n")
                             )
                         |   (pl0, _) -> (
@@ -445,7 +445,7 @@ let universal_solve_run options stats backend game' =
                                 stat_addint [stats.solvespec_single_player_nodes;
                                              stats.special_nodes;
                                              stats.universal_solved_nodes;
-                                             stats.overall_solved_nodes] (fun _ -> pg_size game);
+                                             stats.overall_solved_nodes] (fun _ -> game#size);
 			        msg_plain SPECIAL 0 (fun _ -> "done!\n")
                             )
                     );
@@ -462,8 +462,8 @@ let universal_solve_run options stats backend game' =
 
 				if options.local_optimization then (
 					timer_start stats.local_timing;
-				   	stat_addint [stats.index_sum] (fun _ -> pg_get_index game);
-				   	msg_tagged LOCAL 0 (fun _ -> "Reducing index " ^ string_of_int (pg_get_index game) ^ " down to... ");
+				   	stat_addint [stats.index_sum] (fun _ -> game#get_index);
+				   	msg_tagged LOCAL 0 (fun _ -> "Reducing index " ^ string_of_int (game#get_index) ^ " down to... ");
 					if options.localopt_priority_propagation then (
 						timer_start stats.localopt_priority_propagation_timing;
 						priority_propagation_inplace game;
@@ -474,9 +474,9 @@ let universal_solve_run options stats backend game' =
 						let _ = compact_prio_inplace game true in
 						timer_stop stats.localopt_compact_priorities_timing;
 					);
-				   	stat_addint [stats.index_reduced_sum] (fun _ -> pg_get_index game);
+				   	stat_addint [stats.index_reduced_sum] (fun _ -> game#get_index);
 				   	stat_addint [stats.index_count] (fun _ -> 1);
-				   	msg_plain LOCAL 0 (fun _ -> string_of_int (pg_get_index game) ^ "!\n");
+				   	msg_plain LOCAL 0 (fun _ -> string_of_int (game#get_index) ^ "!\n");
 					timer_stop stats.local_timing;
 				);
 
@@ -494,14 +494,14 @@ let universal_solve_run options stats backend game' =
 				timer_stop stats.backend_timing;
 				timer_start stats.universal_timing;
 				timer_start stats.logistics_timing;
-				let n = pg_size game in
+				let n = game#size in
 				let (w0, w1) = (ref ns_empty, ref ns_empty) in
 				let counter = ref 0 in
 				for i = 0 to n - 1 do
 				  if (sol.(i) = plr_Even) then w0 := ns_add i !w0;
 				  if (sol.(i) = plr_Odd) then w1 := ns_add i !w1;
 				  if sol.(i) != plr_undef then incr counter;
-				  if not (pg_isDefined game i) || (pg_get_owner game i != sol.(i))
+				  if not (game#is_defined i) || (game#get_owner i != sol.(i))
 				  then strat.(i) <- -1;
 				done;
 				msg_plain BACKEND 0 (fun _ -> string_of_int !counter ^ " out of " ^ string_of_int n ^ "\n");
@@ -517,7 +517,7 @@ let universal_solve_run options stats backend game' =
                 		  timer_stop stats.logistics_timing;
                 		  timer_start stats.attractor_timing;
                 		  msg_tagged ATTRACTOR 0 (fun _ -> "Building attractor... ");
-                		  let (sol0, sol1) = attractor_closure_inplace_sol_strat game (fun _ -> true) sol strat !w0 !w1 in
+                		  let (sol0, sol1) = game#attractor_closure_inplace_sol_strat (fun _ -> true) sol strat !w0 !w1 in
 				  
                 		  msg_plain ATTRACTOR 0 (fun _ -> "investigated " ^ (string_of_int (ns_size sol0 + ns_size sol1)) ^ ", adding "  ^ (string_of_int (ns_size (ns_union sol0 sol1) - !counter)) ^ "!\n");
 				  stat_addint [stats.attractor_investigated_nodes] (fun _ -> ns_size sol0 + ns_size sol1);
@@ -532,8 +532,8 @@ let universal_solve_run options stats backend game' =
    				    msg_tagged BACKEND 0 (fun _ -> "SCC was not completely solved.\n");
 				    
                 		    timer_start stats.logistics_timing;
-				    pg_remove_nodes game sol0;
-				    pg_remove_nodes game sol1;
+				    game#remove_nodes sol0;
+				    game#remove_nodes sol1;
 				    timer_stop stats.logistics_timing;
                 		    let (sol', strat') = universal_solve_decompose game (recdepth + 1) in
                 		    timer_start stats.logistics_timing;
@@ -557,14 +557,14 @@ let universal_solve_run options stats backend game' =
             let to_remove = ref [] in
             ns_iter (fun w ->
         	     if sol.(w) = plr_undef then (
-        	       if (pg_get_owner game w = winner) then (
+        	       if (game#get_owner w = winner) then (
         		 sol.(w) <- winner;
         		 touchedscc.(sccindex.(w)) <- true;
         		 strat.(w) <- v;
         		 SingleOccQueue.add w q;
         		 attr := ns_add w !attr
         	       )
-        	       else if ns_size (pg_get_successors game w) = 1 then (
+        	       else if ns_size (game#get_successors w) = 1 then (
         		 sol.(w) <- winner;
         		 touchedscc.(sccindex.(w)) <- true;
         		 SingleOccQueue.add w q;
@@ -572,8 +572,8 @@ let universal_solve_run options stats backend game' =
         	       )
         	       else to_remove := (w, v)::!to_remove
         	     )
-        	    ) (pg_get_predecessors game v);
-	    pg_remove_edges game !to_remove;
+        	    ) (game#get_predecessors v);
+	    game#remove_edges !to_remove;
           done;
           !attr
         in
@@ -614,11 +614,11 @@ let universal_solve_run options stats backend game' =
 				      stat_addint [stats.universal_solved_nodes;
 						   stats.overall_solved_nodes] (fun _ -> 1);
                                       let h = ns_first sccs.(r) in
-				      let pl = pg_get_owner game h in
-                                        if (ns_size (pg_get_successors game h) = 0)
+				      let pl = game#get_owner h in
+                                        if (ns_size (game#get_successors h) = 0)
                                         then sol.(h) <- plr_opponent pl
                                         else (
-                                            sol.(h) <- plr_benefits (pg_get_priority game h);
+                                            sol.(h) <- plr_benefits (game#get_priority h);
                                             if (sol.(h) = pl)
                                             then strat.(h) <- h
 					                    );
@@ -662,8 +662,8 @@ let universal_solve_run options stats backend game' =
 
 	timer_start stats.logistics_timing;
 
-	let n = pg_size game' in
-	let m = pg_node_count game' in
+	let n = game'#size in
+	let m = game'#node_count in
 	let solution = sol_create game' in
 	let strategy = Array.make n (-1) in
 
@@ -671,14 +671,14 @@ let universal_solve_run options stats backend game' =
 
 	msg_tagged MAIN 0 (fun _ -> "Considering game...\n");
 	msg_tagged MAIN 0 (fun _ -> "  Nodes = " ^ string_of_int m ^ "\n");
-	msg_tagged MAIN 0 (fun _ -> "  Edges = " ^ string_of_int (pg_edge_count game') ^ "\n");
-	if (m > 0) then msg_tagged MAIN 0 (fun _ -> "  Index = " ^ string_of_int (pg_get_index game') ^ "\n");
+	msg_tagged MAIN 0 (fun _ -> "  Edges = " ^ string_of_int (game'#edge_count) ^ "\n");
+	if (m > 0) then msg_tagged MAIN 0 (fun _ -> "  Index = " ^ string_of_int (game'#get_index) ^ "\n");
 	
 	if m > 0 then (
 
         timer_start stats.logistics_timing;
 	(* msg_tagged MAIN 0 (fun _ -> "Building transposed graph..."); *)
-        let game = pg_copy game' in
+        let game = game'#copy in
 	(* msg_plain MAIN 0 (fun _ -> "finished\n"); *)
 	
         timer_stop stats.logistics_timing;
@@ -704,7 +704,7 @@ let universal_solve_run options stats backend game' =
                 stat_addint [stats.globalopt_remove_useless_self_cycles_nodes] (fun _ -> removedl);
                 msg_plain GLOBAL 0 (fun _ -> string_of_int removedl ^ " transition(s) removed!\n");
                 
-                let sinks = List.filter (fun i -> ns_size (pg_get_successors game i) = 0) removed in
+                let sinks = List.filter (fun i -> ns_size (game#get_successors i) = 0) removed in
                 let sinksl = List.length sinks in
                 
                 msg_tagged GLOBAL 0 (fun _ -> "Created sinks: " ^ string_of_int sinksl ^ "!\n");
@@ -714,7 +714,7 @@ let universal_solve_run options stats backend game' =
                 if sinksl > 0 then (
                     let (w0, w1) = (ref ns_empty, ref ns_empty) in
                     List.iter (fun i ->
-                    	let player = pg_get_owner game i in
+                    	let player = game#get_owner i in
                         let w = if player = plr_Even then w1 else w0 in
                         w := ns_add i !w;
                         solution.(i) <- plr_opponent player;
@@ -724,7 +724,7 @@ let universal_solve_run options stats backend game' =
                     timer_start stats.attractor_timing;
                     
                 	msg_tagged ATTRACTOR 0 (fun _ -> "Building attractor... ");
-                    let (sol0, sol1) = attractor_closure_inplace_sol_strat game (fun _ -> true)
+                    let (sol0, sol1) = game#attractor_closure_inplace_sol_strat (fun _ -> true)
                                                                            solution strategy !w0 !w1 in
                                                                            
                     let solcount = ns_size sol0 + ns_size sol1 in
@@ -742,8 +742,8 @@ let universal_solve_run options stats backend game' =
                     timer_start stats.global_timing_without_attractor;
 
                     timer_start stats.logistics_timing;
-					pg_remove_nodes game sol0;
-					pg_remove_nodes game sol1;
+					game#remove_nodes sol0;
+					game#remove_nodes sol1;
                     timer_stop stats.logistics_timing;
                 );
 
@@ -781,7 +781,7 @@ let universal_solve_run options stats backend game' =
                     timer_stop stats.global_timing_without_attractor;
                     timer_start stats.attractor_timing;
                 	msg_tagged ATTRACTOR 0 (fun _ -> "Building attractor... ");
-                    let (sol0, sol1) = attractor_closure_inplace_sol_strat game (fun _ -> true)
+                    let (sol0, sol1) = game#attractor_closure_inplace_sol_strat (fun _ -> true)
                                                                            solution strategy !w0 !w1 in
                		msg_plain ATTRACTOR 0 (fun _ -> "investigated " ^ (string_of_int (ns_size sol0 + ns_size sol1)) ^ ", removing "  ^ (string_of_int (ns_size (ns_union sol0 sol1))) ^ "!\n");
 
@@ -797,8 +797,8 @@ let universal_solve_run options stats backend game' =
                     timer_start stats.global_timing_without_attractor;
 
                     timer_start stats.logistics_timing;
-					pg_remove_nodes game sol0;
-					pg_remove_nodes game sol1;
+					game#remove_nodes sol0;
+					game#remove_nodes sol1;
                     timer_stop stats.logistics_timing;
 
                 );
@@ -851,12 +851,12 @@ let universal_solve_fallback options backend fallback =
 let universal_solve_by_player_solver options solver game =
 	let (sol, strat) = universal_solve options (fun g -> solver g plr_Even) game in
 	let solved = ref ns_empty in
-	let n = pg_size game in
+	let n = game#size in
 	for i = 0 to n - 1 do
 		if sol.(i) = plr_Even then solved := ns_add i !solved
 	done;
-	let game' = pg_copy game in
-	pg_remove_nodes game' !solved;
+	let game' = game#copy in
+	game'#remove_nodes !solved;
 	let (sol', strat') = universal_solve options (fun g -> solver g plr_Odd) game' in
 	for i = 0 to n - 1 do
 		if sol'.(i) = plr_Odd then (
@@ -873,7 +873,7 @@ let universal_solve_trivial verb_level game =
 
 
 let compute_winning_nodes verb_level game strat pl =
-	let sol = fst (universal_solve_trivial verb_level (subgame_by_strat_pl game strat pl)) in
+	let sol = fst (universal_solve_trivial verb_level (game#subgame_by_strat_pl strat pl)) in
 	let l = ref [] in
 	for i = 0 to (Array.length sol) - 1 do
 		if sol.(i) = pl then l := i::!l

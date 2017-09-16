@@ -12,13 +12,13 @@ SourceRepository head
   Type: git
   Location: git://github.com/tcsprojects/pgsolver.git
   Browser: https://github.com/tcsprojects/pgsolver
-Plugins:     META
+Plugins:     META (0.4)
 BuildTools: ocamlbuild
 Library "pgsolver"
   Path:       src
   BuildDepends: num, str, TCSLib, extlib, ocaml-sat-solvers, minisat
   Modules: pgsolver/Basics, pgsolver/Info,
-           paritygame/Paritygame, paritygame/Verification, paritygame/Univsolve, paritygame/Solvers,
+           paritygame/Paritygame, paritygame/Arrayparitygame, paritygame/Verification, paritygame/Univsolve, paritygame/Solvers,
            paritygame/Solverregistry, paritygame/Mdp, paritygame/Paritygamebitset, paritygame/Parsers,
            paritygame/Specialsolve, paritygame/Transformations,
            solvers/Bigstep, solvers/Dominiondecomp, solvers/Fpiter, solvers/Genetic, solvers/Guessstrategy,

@@ -12,21 +12,21 @@ let list_max a less = ListUtils.max_elt (fun x y -> if less x y then -1 else 1) 
 
 
 let evaluate_player1_strategy game node_compare strategy =
-	let game' = pg_copy game in
-	for i = 0 to pg_size game' - 1 do
-		pg_set_priority game' i (1 + pg_get_priority game' i);
-		pg_set_owner game' i (plr_opponent (pg_get_owner game' i))
+	let game' = game#copy  in
+	for i = 0 to game'#size - 1 do
+		game'#set_priority i (1 + game'#get_priority i);
+		game'#set_owner i (plr_opponent (game'#get_owner i))
 	done;
 	evaluate_strategy game' node_compare strategy
 
 let improvement_policy_by_counterstrategy game node_compare old_strategy valu =
-	let n = pg_size game in
+	let n = game#size  in
 	let tau = winning_strategies game node_compare (Array.make n (-1)) valu in
 	let valutau = evaluate_player1_strategy game node_compare tau in
 	let find i =
 		let ordering_valu x y = node_valuation_total_ordering game node_compare valu x y >= 0 in
 		let ordering_valutau x y = node_valuation_total_ordering game node_compare valutau x y >= 0 in
-		let tr = pg_get_successors game i in
+		let tr = game#get_successors  i in
 		let a = ns_filter (fun j -> ordering_valu j old_strategy.(i)) tr in
 		ns_max a (fun x y -> ordering_valutau y x)
 	in
@@ -48,7 +48,7 @@ let improvement_policy_by_counterstrategy game node_compare old_strategy valu =
 
 
 let improvement_policy_optimize_best_locally game node_total_ordering old_strategy valu =
-	let n = pg_size game in
+	let n = game#size  in
 	let l = ref [] in
 	for i = 0 to n - 1 do
 		if old_strategy.(i) > -1
@@ -74,7 +74,7 @@ let improvement_policy_optimize_best_locally game node_total_ordering old_strate
 
 
 let improvement_policy_optimize_worst_locally game node_total_ordering old_strategy valu =
-	let n = pg_size game in
+	let n = game#size  in
 	let l = ref [] in
 	for i = 0 to n - 1 do
 		if old_strategy.(i) > -1

@@ -21,18 +21,18 @@ let solve game =
         let msg_plain = message in
 
         let generate_strat game pl =
-            let n = pg_size game in
+            let n = game#size in
             let s = Array.make n (-1) in
-	    pg_iterate (fun v -> fun (_,pl',d,_,_) -> if (pl = pl') then s.(v) <- ns_some d) game; 
+	    game#iterate (fun v -> fun (_,pl',d,_,_) -> if (pl = pl') then s.(v) <- ns_some d); 
             s
         in
 
 	let heuristic_solve game =
-		let n = pg_size game in
+		let n = game#size in
 		let s0 = generate_strat game plr_Even in
 		let s1 = generate_strat game plr_Odd in
-		let (sol0, _) = universal_solve_trivial verbosity_level_default (subgame_by_strat game s0) in
-		let (sol1, _) = universal_solve_trivial verbosity_level_default (subgame_by_strat game s1) in
+		let (sol0, _) = universal_solve_trivial verbosity_level_default (game#subgame_by_strat s0) in
+		let (sol1, _) = universal_solve_trivial verbosity_level_default (game#subgame_by_strat s1) in
 		let sol = sol_init game (fun i -> if sol0.(i) = plr_Even then plr_Even else if sol1.(i) = plr_Odd then plr_Odd else plr_undef) in
 		let strat = Array.init n (fun i -> if sol0.(i) = plr_Even then s0.(i) else if sol1.(i) = plr_Odd then s1.(i) else -1) in
 		(sol, strat)

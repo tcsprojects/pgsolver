@@ -1,5 +1,6 @@
 open Basics ;;
-open Paritygame ;;
+open Paritygame;;
+open Arrayparitygame;;
 open Univsolve;;
 open Transformations;;
 open Tcsarray;;
@@ -40,13 +41,13 @@ let add_est est pr =
     |	other -> other;;
 
 let initial_estimation game d =
-	let n = pg_size game in
+	let n = game#size in
 	let rew = reward plr_Even in
-	Array.init n (fun i -> let pl = pg_get_owner game i in
-			       let delta = pg_get_successors game i in
+	Array.init n (fun i -> let pl = game#get_owner i in
+			       let delta = game#get_successors i in
 			       let e = Array.make d 0 in
 			       if pl = plr_Odd then (
-				 let pr = ns_fold (fun pr j -> let pr' = pg_get_priority game j in
+				 let pr = ns_fold (fun pr j -> let pr' = game#get_priority j in
 							       if rew pr' > rew pr	then pr	else pr'
 						  ) (2 * d) delta in
 				 if pr > 0 then e.(pr - 1) <- 1
@@ -58,14 +59,14 @@ let format_estentry = function PosInfty -> "+oo" | Escape esc ->
 	ListUtils.format (fun (i, v) -> string_of_int i ^ ":" ^ string_of_int v) (List.filter (fun (_, v) -> v != 0) (Array.to_list (Array.mapi (fun i v -> (i + 1, v)) esc)))
 
 let improvement_arena (game: paritygame) estimation =
-	subgame_by_edge_pred game (fun u v ->
-		compare estimation.(u) (add_est estimation.(v) (pg_get_priority game v)) <= 0
+	game#subgame_by_edge_pred (fun u v ->
+		compare estimation.(u) (add_est estimation.(v) (game#get_priority v)) <= 0
 	);;
 
 let zero_arena arena estimation =
-	let pred u v = compare estimation.(u) (add_est estimation.(v) (pg_get_priority arena v)) = 0 in
-	subgame_by_edge_pred arena (fun u v -> let pl = pg_get_owner arena u in
-					       let delta = pg_get_successors arena u in
+	let pred u v = compare estimation.(u) (add_est estimation.(v) (arena#get_priority v)) = 0 in
+	arena#subgame_by_edge_pred (fun u v -> let pl = arena#get_owner u in
+					       let delta = arena#get_successors u in
 					       (pred u v) && ((pl = plr_Odd) || (ns_forall (pred u) delta))
 	);;
 
@@ -74,9 +75,9 @@ let is_infty = function PosInfty -> true | _ -> false;;
 let is_zero = function Escape esc -> ArrayUtils.forall esc (fun _ e -> e = 0) | _ -> false;;
 
 let counter_strategy zero_arena estimation =
-	let seed = collect_nodes zero_arena (fun i (_, pl, delta, _, _) -> pl = plr_Even && ns_size delta = 0 && (not (is_infty estimation.(i)))) in
-	let strat = Array.make (pg_size zero_arena) (-1) in
-	let _ = attr_closure_inplace zero_arena strat plr_Odd seed in
+	let seed = zero_arena#collect_nodes (fun i (_, pl, delta, _, _) -> pl = plr_Even && ns_size delta = 0 && (not (is_infty estimation.(i)))) in
+	let strat = Array.make (zero_arena#size) (-1) in
+	let _ = zero_arena#attr_closure_inplace strat plr_Odd seed in
 	strat;;
 
 let addition d = function
@@ -91,7 +92,7 @@ let subtraction d = function
 |	(Escape a, Escape b) -> Escape (Array.mapi (fun i x -> x - b.(i)) a);;
 
 let improv_pot game d (u, v) est =
-    let est' = add_est est.(v) (pg_get_priority game v) in
+    let est' = add_est est.(v) (game#get_priority v) in
     subtraction d (est', est.(u))
 
 let minop ests = if Array.length ests = 0 then PosInfty else array_max ests (fun x y -> compare x y > 0);;
@@ -107,8 +108,8 @@ let format_estimation arr =
 
 let basic_update_step arena d estimation =
     msg_tagged 3 (fun _ -> "\nEstimation:\n" ^ format_estimation estimation ^ "\n");
-    msg_tagged 3 (fun _ -> "Arena:\n" ^ game_to_string arena ^ "\n");
-	let n = pg_size arena in
+    msg_tagged 3 (fun _ -> "Arena:\n" ^ arena#to_string ^ "\n");
+	let n = arena#size in
 	let upd = Array.make n PosInfty in
 	(* 0 = not evaluated, 1 = evaluated, 2 = all_eval, 3 = red_one0_eval *)
 	let eval_state = Array.make n 0 in
@@ -124,20 +125,20 @@ let basic_update_step arena d estimation =
 		h
 	in
 
-        pg_iterate (fun i -> fun (_,pl,delta,_,_) -> if ns_size delta = 0 then (
+        arena#iterate (fun i -> fun (_,pl,delta,_,_) -> if ns_size delta = 0 then (
 						       if pl = plr_Even
 						       then green_all_evaluated := i::!green_all_evaluated
 						       else red_all_evaluated := i::!red_all_evaluated;
 						       eval_state.(i) <- 2
 						     )
-						     else if pl = plr_Odd then red_rest := i::!red_rest) arena;
+						     else if pl = plr_Odd then red_rest := i::!red_rest);
 			     
 	let update_todo i =
 		eval_state.(i) <- 1;
 		decr todo;
 		ns_iter (fun j ->
-			   let pl = pg_get_owner arena j in
-			   let delta = pg_get_successors arena j in
+			   let pl = arena#get_owner j in
+			   let delta = arena#get_successors j in
 			   if (eval_state.(j) = 0) || (eval_state.(j) = 3) then (
 			     if ns_forall (fun k -> eval_state.(k) = 1) delta then (
                 	       if pl = plr_Even
@@ -153,7 +154,7 @@ let basic_update_step arena d estimation =
                 	       )
 			     )
 			   )
-			  ) (pg_get_predecessors arena i)
+			  ) (arena#get_predecessors i)
 	in
 
 	while !todo > 0 do
@@ -162,7 +163,7 @@ let basic_update_step arena d estimation =
 			if eval_state.(r) = 2 then (
 				msg_tagged 3 (fun _ -> "Rule 1 is applied to " ^ string_of_int r ^ " : ");
                 update_todo r;
-                let delta = Array.of_list (ns_nodes (pg_get_successors arena r)) in
+                let delta = Array.of_list (ns_nodes (arena#get_successors r)) in
                 upd.(r) <- minop (Array.map (fun g -> addition d (upd.(g), (improv_pot arena d (r, g) estimation))) delta);
                 msg_plain 3 (fun _ -> format_estentry upd.(r) ^ "\n");
             )
@@ -181,7 +182,7 @@ let basic_update_step arena d estimation =
 			if eval_state.(r) = 2 then (
 				msg_tagged 3 (fun _ -> "Rule 3 is applied to " ^ string_of_int r ^ " : ");
                 update_todo r;
-                let delta =  Array.of_list (ns_nodes (pg_get_successors arena r)) in
+                let delta =  Array.of_list (ns_nodes (arena#get_successors r)) in
                 if Array.length delta = 0
                 then upd.(r) <- Escape (Array.make d 0)
                 else upd.(r) <- maxop (Array.map (fun g -> addition d (upd.(g), (improv_pot arena d (r, g) estimation))) delta);
@@ -191,7 +192,7 @@ let basic_update_step arena d estimation =
 		else (
 			red_rest := List.filter (fun r -> eval_state.(r) = 0) !red_rest;
 			let (i, est) = List.fold_left (fun (i, est) r ->
-						       let delta =  Array.of_list (ns_nodes (pg_get_successors arena r)) in
+						       let delta =  Array.of_list (ns_nodes (arena#get_successors r)) in
 						       let est' = minop (Array.map (fun g ->
 										    if eval_state.(g) = 1
 										    then addition d (upd.(g), (improv_pot arena d (r, g) estimation))
@@ -214,8 +215,8 @@ let basic_update_step arena d estimation =
 
 let update_strategy0 arena est_after strat =
 	Array.iteri (fun i est ->
-		     let pl = pg_get_owner arena i in
-		     let delta =  Array.of_list (ns_nodes (pg_get_successors arena i)) in
+		     let pl = arena#get_owner i in
+		     let delta =  Array.of_list (ns_nodes (arena#get_successors i)) in
 		     if (pl = plr_Even) && (strat.(i) = -1) && (is_infty est)
 		     then strat.(i) <- array_max delta (fun x y -> compare est_after.(x) est_after.(y) < 0)
 		    ) est_after;;
@@ -224,10 +225,10 @@ let update_strategy0 arena est_after strat =
 let get_intermediate_strategy0 arena est_after strat' =
 	let strat = Array.copy strat' in
 	Array.iteri (fun i est ->
-		let delta =  Array.of_list (ns_nodes (pg_get_successors arena i)) in
-		if (pg_get_owner arena i = plr_Even) && (strat.(i) = -1) && (Array.length delta > 0)
-		then strat.(i) <- array_max delta (fun x y -> compare (add_est est_after.(x) (pg_get_priority arena x))
-		                                                      (add_est est_after.(y) (pg_get_priority arena y)) < 0)
+		let delta =  Array.of_list (ns_nodes (arena#get_successors i)) in
+		if (arena#get_owner i = plr_Even) && (strat.(i) = -1) && (Array.length delta > 0)
+		then strat.(i) <- array_max delta (fun x y -> compare (add_est est_after.(x) (arena#get_priority x))
+		                                                      (add_est est_after.(y) (arena#get_priority y)) < 0)
 	) est_after;
 	strat
 
@@ -235,13 +236,13 @@ let get_intermediate_strategy0 arena est_after strat' =
 let solve_scc game' =
 	let game = alternating_transformation game' false in
 
-	let n = pg_size game in
+	let n = game#size in
 	msg_tagged 3 (fun _ -> "Entering SCC of size " ^ string_of_int n ^ "\n");
-	let d = pg_max_prio game in
+	let d = game#get_max_prio in
 	let est = ref (initial_estimation game d) in
 	let eq = ref false in
 	let strat = Array.make n (-1) in
-	let arena = ref (pg_create 0) in
+	let arena = ref (new array_pg 0) in
 	let counter = ref 0 in
 	while not (!eq) do
         incr counter;

@@ -36,11 +36,11 @@ let _ =
 	let number = ref 0 in
 	
   let rec work i =
-		if (i >= pg_size game) then (
-			let game2 = Paritygame.subgame_by_strat game strat in
+		if (i >= game#size ) then (
+			let game2 = game#subgame_by_strat strat in
 			let (sol2, _) = solve game2 in
 			let good = ref true in
-			for j = 0 to pg_size game - 1 do
+			for j = 0 to game#size  - 1 do
 				if (sol.(j) != sol2.(j)) then
 					good := false;
 			done;
@@ -57,7 +57,7 @@ let _ =
 			if (sol.(i) == !player && strat.(i) != -1) then (
 			  ns_iter (fun w -> strat.(i) <- w;
 					    work (i + 1))
-				  (pg_get_successors game i)
+				  (game#get_successors  i)
 			) else (
 				work (i+1);
 			)

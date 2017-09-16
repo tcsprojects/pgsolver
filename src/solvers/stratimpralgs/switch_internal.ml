@@ -24,10 +24,10 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 		strategy_set := TreeSet.add strat !strategy_set
 	in
 	add_to_strategy_set old_strategy;
-	let n = pg_size game in
+	let n = game#size  in
 	for i = 0 to n - 1 do
-	  let pl = pg_get_owner game i in
-	  let tr = pg_get_successors game i in
+	  let pl = game#get_owner  i in
+	  let tr = game#get_successors  i in
 		if pl = plr_Even then (
 			ns_iter (fun j ->
 				if node_valuation_ordering game node_total_ordering valu.(j) valu.(old_strategy.(i)) > 0 then (
@@ -47,7 +47,7 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 		let base_counter = compute_counter_strategy game base in
 		let rec helper set v =
 			if TreeSet.mem v set then None
-			else if pg_get_owner game v = plr_Odd then helper (TreeSet.add v set) base_counter.(v)
+			else if game#get_owner  v = plr_Odd then helper (TreeSet.add v set) base_counter.(v)
 			else if base.(v) = target.(v) then helper (TreeSet.add v set) base.(v)
 			else let a = Array.copy base in
 			     a.(v) <- target.(v);
@@ -56,7 +56,7 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 			helper TreeSet.empty_def node
 	in
 	TreeSet.iter (fun strategy ->
-		let n = pg_size game in
+		let n = game#size  in
 		for i = 0 to n - 1 do
 			let current = ref (morph old_strategy strategy i) in
 			while !current != None do
@@ -76,16 +76,16 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 		improvement_set_array.(!i) <- (st, evaluate_strategy game node_total_ordering st);
 		incr i
 	) !improvement_set;
-	let best_strategies = Array.make (pg_size game) 0 in
+	let best_strategies = Array.make (game#size ) 0 in
 	Array.iteri (fun i (st, va) ->
-		let m = pg_size game in
+		let m = game#size  in
 		for v = 0 to m - 1 do
 			if node_valuation_ordering game node_total_ordering va.(v) (snd improvement_set_array.(best_strategies.(v))).(v) > 0
 			then best_strategies.(v) <- i;
 		done;
 	) improvement_set_array;
-	let strategy = Array.init (pg_size game) (fun v ->
-		if pg_get_owner game v = plr_Odd then -1
+	let strategy = Array.init (game#size ) (fun v ->
+		if game#get_owner  v = plr_Odd then -1
 		else (fst improvement_set_array.(best_strategies.(v))).(v)
 	) in
 	(strategy, !strategy_set)
@@ -96,24 +96,24 @@ let improvement_policy_learn_cycles sub_policy game node_total_ordering (cycles,
 	let (strategy, u') = sub_policy game node_total_ordering u old_strategy valu cycles in
 	let combined_strategy =
         Array.init (Array.length valu) (fun i ->
-        	if pg_get_owner game i = plr_Even
+        	if game#get_owner  i = plr_Even
         	then strategy.(i)
         	else best_decision_by_valuation_ordering game node_total_ordering valu i
         )
     in
-    let game' = subgame_by_edge_pred game (fun i j -> combined_strategy.(i) = j) in
-    let (sccs, sccindex, topology, roots) = strongly_connected_components game' in
+    let game' = game#subgame_by_edge_pred (fun i j -> combined_strategy.(i) = j) in
+    let (sccs, sccindex, topology, roots) = game'#strongly_connected_components in
     let cycles = ref cycles in
     let normalize l =
-    	ns_make (list_upfront (ns_nodes l) (list_max (ns_nodes l) (fun x y -> pg_get_priority game x < pg_get_priority game y)))
+    	ns_make (list_upfront (ns_nodes l) (list_max (ns_nodes l) (fun x y -> game#get_priority  x < game#get_priority  y)))
     in
     Array.iteri (fun i scc ->
     	if (ns_size scc > 1) && (topology.(i) = []) then (
     		let c = normalize scc in
-    		if (pg_get_priority game (ns_first c) mod 2 = 0) && (not (TreeSet.mem c !cycles)) then (
+    		if (game#get_priority  (ns_first c) mod 2 = 0) && (not (TreeSet.mem c !cycles)) then (
     			cycles := TreeSet.add c !cycles;
     			let fmt k =
-					match (pg_get_desc game k) with
+					match (game#get_desc  k) with
 		                None -> string_of_int k
 		            |   Some t -> t
 		        in    			
@@ -155,32 +155,32 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 		let running = ref true in
 		let changed = ref false in
 		while !running do
-			  let graph = subgame_by_edge_pred game (fun v w ->
-					let pl = pg_get_owner game v in
+			  let graph = game#subgame_by_edge_pred (fun v w ->
+					let pl = game#get_owner  v in
 					(pl = plr_Even) || (counter_strategy.(v) = w && !next_counter.(v) = w)
 				) in 
 				
-				let m = pg_size game in
+				let m = game#size  in
 				for i = 0 to m - 1 do
-				  let pl = pg_get_owner game i in
-				  let tr = pg_get_successors game i in
+				  let pl = game#get_owner  i in
+				  let tr = game#get_successors  i in
 				  if (pl = plr_Odd) && ns_exists (fun j -> counter_strategy.(i) != j && (TreeSet.mem j !non_final_nodes || TreeSet.mem (i,j) !used_escape_edges)) tr
-				  then ns_iter (fun w -> pg_del_edge graph i w) (pg_get_successors graph i)
+				  then ns_iter (fun w -> graph#del_edge i w) (graph#get_successors i)
 				done;
 				
 
 				let cycle = ref None in
 				let i = ref 0 in
 				while (!cycle = None && !i < n) do
-					let pr = pg_get_priority game !i in
+					let pr = game#get_priority  !i in
 					if (pr mod 2 == 0) then (
 						let s = ref TreeSet.empty_def in
 						let rec build j cyc =
 							if (j = !i && cyc != []) then (
 								cycle := Some cyc
-							) else if not (TreeSet.mem j !s) && (pg_get_priority game j <= pr) then (
+							) else if not (TreeSet.mem j !s) && (game#get_priority  j <= pr) then (
 								s := TreeSet.add j !s;
-								let tr = pg_get_successors graph j in
+								let tr = graph#get_successors j in
 								ns_iter (fun k ->
 									if (!cycle = None)
 									then build k ((j,k)::cyc);
@@ -197,7 +197,7 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 				| Some cycle -> (
 					changed := true;
 					List.iter (fun (i,j) ->
-						if (pg_get_owner game i = plr_Even)
+						if (game#get_owner  i = plr_Even)
 						then new_strategy.(i) <- j
 					) cycle;
 					List.iter (fun (i,_) ->
@@ -205,7 +205,7 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 					) cycle;
 					next_counter := compute_counter_strategy game new_strategy;
 					List.iter (fun (i,j) ->
-						if (pg_get_owner game i = plr_Odd && !next_counter.(i) != j)
+						if (game#get_owner  i = plr_Odd && !next_counter.(i) != j)
 						then used_escape_edges := TreeSet.add (i, !next_counter.(i)) !used_escape_edges
 					) cycle;
 					);
@@ -219,7 +219,7 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 let improvement_policy_smart game node_total_ordering todo old_strategy valu cycles =
     let combined_strategy =
         Array.init (Array.length valu) (fun i ->
-            if pg_get_owner game i = plr_Even
+            if game#get_owner  i = plr_Even
             then old_strategy.(i)
             else best_decision_by_valuation_ordering game node_total_ordering valu i
         )
@@ -235,7 +235,7 @@ let improvement_policy_smart game node_total_ordering todo old_strategy valu cyc
         while !applies1 && (not (!cycle' = [])) do
             let z = List.hd !cycle' in
             cycle' := List.tl !cycle';
-            if pg_get_owner game !x = plr_Odd
+            if game#get_owner  !x = plr_Odd
             then applies1 := combined_strategy.(!x) = z
             else applies0 := !applies0 && ((combined_strategy.(!x) = z) || (not (improv_edge !x z)));
             x := z
@@ -253,7 +253,7 @@ let improvement_policy_smart game node_total_ordering todo old_strategy valu cyc
         let strategy = Array.copy old_strategy in
 		TreeSet.iter (fun cycle ->
    			let fmt k =
-				match (pg_get_desc game k) with
+				match (game#get_desc  k) with
 	                None -> string_of_int k
 	            |   Some t -> t
 	        in    			
@@ -263,7 +263,7 @@ let improvement_policy_smart game node_total_ordering todo old_strategy valu cyc
             while (not (!cycle' = [])) do
                 let z = List.hd !cycle' in
                 cycle' := List.tl !cycle';
-                if (pg_get_owner game !x = plr_Even) && (improv_edge !x z) then strategy.(!x) <- z;
+                if (game#get_owner  !x = plr_Even) && (improv_edge !x z) then strategy.(!x) <- z;
                 x := z
             done
 		) todo;
@@ -275,7 +275,7 @@ let improvement_policy_cycle_avoid game node_total_ordering old_strategy valu =
 	let new_strategy = Array.copy old_strategy in
 	let counter_strategy = 
         Array.init (Array.length valu) (fun i ->
-        	if pg_get_owner game i = plr_Even
+        	if game#get_owner  i = plr_Even
         	then -1
         	else best_decision_by_valuation_ordering game node_total_ordering valu i
         )
@@ -286,7 +286,7 @@ let improvement_policy_cycle_avoid game node_total_ordering old_strategy valu =
 		let finished = ref false in
 		while not !finished do
 			s := TreeSet.add !current !s;
-			if pg_get_owner game !current = plr_Even
+			if game#get_owner  !current = plr_Even
 			then current := new_strategy.(!current)
 			else current := counter_strategy.(!current);
 			finished := TreeSet.mem !current !s;
@@ -303,7 +303,7 @@ let improvement_policy_cycle_avoid game node_total_ordering old_strategy valu =
 	let changed = ref false in
 	let n = Array.length old_strategy in
 	for i = 0 to n - 1 do
-		if (pg_get_owner game i = plr_Even) then (
+		if (game#get_owner  i = plr_Even) then (
 			let w = best_decision_by_ordering game (ordering i) i in
 			if (w != new_strategy.(i)) && (deford new_strategy.(i) w < 0) then (
 				new_strategy.(i) <- w;
@@ -337,13 +337,13 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 		let cycles = ref (TreeSet.empty cycle_enforce_cycles_compare) in
 		let combined_strategy =
 			Array.init (Array.length valu) (fun i ->
-				if pg_get_owner game i = plr_Even
+				if game#get_owner  i = plr_Even
 				then strategy.(i)
 				else best_decision_by_valuation_ordering game node_total_ordering valu i
 			)
 		in
-		let game' = subgame_by_edge_pred game (fun i j -> combined_strategy.(i) = j) in
-		let (sccs, sccindex, topology, roots) = strongly_connected_components game' in
+		let game' = game#subgame_by_edge_pred (fun i j -> combined_strategy.(i) = j) in
+		let (sccs, sccindex, topology, roots) = game'#strongly_connected_components in
 		Array.iteri (fun i scc ->
 			if (ns_size scc > 1) && (topology.(i) = []) then (
 				let node0 = ref ns_empty in
@@ -351,7 +351,7 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 				let edge0 = ref TreeMap.empty_def in
 				let edge1 = ref TreeMap.empty_def in
 				ns_iter (fun v ->
-					if pg_get_owner game v = plr_Even then (
+					if game#get_owner  v = plr_Even then (
 						node0 := ns_add v !node0;
 						edge0 := TreeMap.add v combined_strategy.(v) !edge0;
 					)
@@ -372,7 +372,7 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 		let m = ref (ns_size node1) in
 		let nodecur = ref v in
 		while !m > 0 do
-			while (pg_get_owner game !nodecur = plr_Even) do
+			while (game#get_owner  !nodecur = plr_Even) do
 				valcur := TreeSet.add !nodecur !valcur;
 				nodecur := TreeMap.find !nodecur edge0
 			done;
@@ -386,7 +386,7 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 					|	Some valw' -> if node_valuation_ordering game node_total_ordering valw valw' < 0
 					                  then valworst := Some valw;
 				);
-			) (pg_get_successors game !nodecur);
+			) (game#get_successors  !nodecur);
 			
 			valcur := TreeSet.add !nodecur !valcur;
 			nodecur := TreeMap.find !nodecur edge1;
@@ -400,14 +400,14 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 	let finished = ref false in
 	let new_strategy = Array.copy old_strategy in
 	while (not !finished) && (!c <= n) do
-		if (pg_get_owner game !i = plr_Even) then (
+		if (game#get_owner  !i = plr_Even) then (
 			let pots = ref [] in
 			ns_iter (fun w ->
 				new_strategy.(!i) <- w;
 				if TreeSet.subset (get_cycles new_strategy) cycles
 				then pots := (A w, valu.(w))::!pots;
 				new_strategy.(!i) <- old_strategy.(!i);
-			) (pg_get_successors game !i);
+			) (game#get_successors  !i);
 			TreeSet.iter (fun ((node0, node1, edge0, edge1) as cyc) ->
 				if (ns_elem !i node0) then (
 					TreeMap.iter (fun v w ->

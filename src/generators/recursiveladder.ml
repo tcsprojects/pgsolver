@@ -1,4 +1,5 @@
 open Paritygame;;
+open Arrayparitygame;;
   
 let generator_game_func arguments =
 
@@ -14,7 +15,7 @@ let generator_game_func arguments =
 
   let w = 5 in
 
-  let game = pg_create (5 * height - 5) in
+  let game = new array_pg (5 * height - 5) in
 
   for i = 0 to height-1 do
   	let start_idx = i * w - 2 in
@@ -27,10 +28,10 @@ let generator_game_func arguments =
 
   	let prnt j pr pl succs =
 	  let j' = start_idx + j in
-	  pg_set_priority game j' pr;
-	  pg_set_owner game j' (plr_benefits (start_pl + pl));
-	  pg_set_desc game j' (Some (nd_show (start_idx + j)));
-	  List.iter (fun w -> pg_add_edge game j' (w+start_idx)) succs
+	  game#set_priority j' pr;
+	  game#set_owner j' (plr_benefits (start_pl + pl));
+	  game#set_desc j' (Some (nd_show (start_idx + j)));
+	  List.iter (fun w -> game#add_edge j' (w+start_idx)) succs
 	in
 
 	if not mn then (

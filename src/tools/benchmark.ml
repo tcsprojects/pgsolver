@@ -33,7 +33,7 @@ struct
   let univsolve_localopt_compact_priorities = ref true
 
   let to_global alg pg =
-	let (c, g) = induce_counting_partialparitygame pg 0 in
+	let (c, g) = pg#induce_counting_partialparitygame 0 in
 	let _ = alg g in
 	(([||],[||]), !c)
 
@@ -80,7 +80,7 @@ struct
 		      @
 
   fold_solvers (fun solve ident abbrev desc arr ->
-  					(["--" ^ ident; "-" ^ abbrev], String(fun solveargs -> let solve = solve (Array.of_list (Tcsstrings.StringUtils.explode solveargs ' ')) in solvers := (ident, (fun g -> (solve g, pg_size g)))::!solvers),
+  					(["--" ^ ident; "-" ^ abbrev], String(fun solveargs -> let solve = solve (Array.of_list (Tcsstrings.StringUtils.explode solveargs ' ')) in solvers := (ident, (fun g -> (solve g, g#size)))::!solvers),
   					 "\n     Use solver: " ^ desc)::arr
   ) []
 
@@ -133,10 +133,10 @@ let _ =
 
   List.iter (fun g ->
 	incr game_count;
-	game_size := !game_size + pg_node_count g;
-	game_edges := !game_edges + pg_edge_count g;
-	game_index := !game_index + pg_get_index g;
-	let (sccs, _, _, _) = Paritygame.strongly_connected_components g in
+	game_size := !game_size + g#node_count;
+	game_edges := !game_edges + g#edge_count;
+	game_index := !game_index + g#get_index;
+	let (sccs, _, _, _) = g#strongly_connected_components in
 	let larg = ref 0 in
 	Array.iter (fun s -> larg := max !larg (ns_size s)) sccs;
 	largest_scc := !largest_scc + !larg;

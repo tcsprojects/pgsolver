@@ -33,7 +33,7 @@ module StrategyHelper = struct
 		let n = ref 0 in 
 		while (
 			try
-				let _ =  pg_find_desc game (Some ("m" ^ string_of_int !n)) in
+				let _ =  game#find_desc  (Some ("m" ^ string_of_int !n)) in
 				true
 			with Not_found -> false
 		) do
@@ -43,19 +43,19 @@ module StrategyHelper = struct
 	
 	let is game strategy v w =
 		try
-			strategy.(pg_find_desc game (Some v)) = pg_find_desc game (Some w)
+			strategy.(game#find_desc  (Some v)) = game#find_desc  (Some w)
 		with Not_found -> false
 	
 	let leads_to game valu v w =
 		try
-			let i = pg_find_desc game (Some v) in
-			let j = pg_find_desc game (Some w) in
+			let i = game#find_desc  (Some v) in
+			let j = game#find_desc  (Some w) in
 			let (_, path, _) = valu.(i) in
 			TreeSet.mem j path
 		with Not_found -> false
 
 	let improvable game strategy valu v =
-		let i = pg_find_desc game (Some v) in
+		let i = game#find_desc  (Some v) in
 		best_decision_by_valuation_ordering game node_total_ordering_by_position valu i != strategy.(i)
 		
 end;;
@@ -179,8 +179,8 @@ type val_info = {
 let valuation_info game strategy compare =
 	let info = strategy_info game strategy in
 	let n = info.len in
-	let find a i = pg_find_desc game (Some (a ^ string_of_int i)) in 
-	let y = TreeSet.singleton compare (pg_find_desc game (Some "Y")) in
+	let find a i = game#find_desc  (Some (a ^ string_of_int i)) in 
+	let y = TreeSet.singleton compare (game#find_desc  (Some "Y")) in
 	let w = Array.init info.len (fun i -> TreeSet.add (find (if info.g.(i) = 0 then "c" else "z") i) (TreeSet.add (find "d" i) y)) in
 	let ll = Array.make (info.len + 1) y in
 	for i = info.len - 1 downto 0 do
@@ -236,7 +236,7 @@ type mdpval_info = {
 let mdpvaluation_info game strategy compare =
 	let info = strategy_info game strategy in
 	let valinfo = valuation_info game strategy compare in
-	let find a i = pg_find_desc game (Some (a ^ string_of_int i)) in
+	let find a i = game#find_desc  (Some (a ^ string_of_int i)) in
 	let mbv = Array.map (fun s -> TreeMap.by_set s (fun _ -> 1.0)) valinfo.bv in
 	if (info.b.(0) = 1 && info.mu > 0) then (
 		let found = ref None in
@@ -331,21 +331,21 @@ type occ_info_struct = {
 
 let occ_info game occ n =
 	let occrec from tto =
-		let i = pg_find_desc game (Some from) in
-		let j = pg_find_desc game (Some tto) in
+		let i = game#find_desc  (Some from) in
+		let j = game#find_desc  (Some tto) in
 		let o = ref 0 in
 		Array.iteri (fun ind k ->
 			if k = j then o := occ.(i).(ind);
-		) (Array.of_list (ns_nodes (pg_get_successors game i)));
+		) (Array.of_list (ns_nodes (game#get_successors  i)));
 		!o
 	in 
 	let occrecnot from tto =
-		let i = pg_find_desc game (Some from) in
-		let j = pg_find_desc game (Some tto) in
+		let i = game#find_desc  (Some from) in
+		let j = game#find_desc  (Some tto) in
 		let o = ref 0 in
 		Array.iteri (fun ind k ->
 			if k != j then o := occ.(i).(ind);
-		) (Array.of_list (ns_nodes (pg_get_successors game i)));
+		) (Array.of_list (ns_nodes (game#get_successors  i)));
 		!o
 	in 
 	{
@@ -405,7 +405,7 @@ let show_info game occ strategy valu n =
 
 let counter_strategy_lookup game strategy len = 
 	let counter = compute_counter_strategy game strategy in
-	let find a i = pg_find_desc game (Some (a ^ string_of_int i)) in
+	let find a i = game#find_desc  (Some (a ^ string_of_int i)) in
 	([| Array.init len (fun i -> if counter.(find "E" i) = find "g" i then 1 else 0);
 	   Array.init (len-1) (fun i -> if counter.(find "X" i) = find "s" i then 1 else 0) |],
 	 [| Array.init len (fun i -> if strategy.(strategy.(counter.(find "E" i))) = find "d" 0 then 0 else 1);
@@ -675,24 +675,24 @@ let test_assumptions game strategy valu =
 
 
 let test_valuation_assumptions game strategy valu n =
-	let find a i = pg_find_desc game (Some (a ^ string_of_int i)) in	
+	let find a i = game#find_desc  (Some (a ^ string_of_int i)) in	
 	let info = strategy_info game strategy in
 	let vinfo = valuation_info game strategy (TreeSet.get_compare (let (_, v_valu, _) = valu.(0) in v_valu)) in
 	let check_valu desc s i assrt =
 		let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
-		let v = pg_find_desc game (Some (s ^ string_of_int i)) in
+		let v = game#find_desc  (Some (s ^ string_of_int i)) in
 		let (_, v_valu, _) = valu.(v) in
-		let va = TreeSet.filter (fun u -> pg_get_priority game u >= 11) v_valu in
-		let ff = TreeSet.format (fun i -> OptionUtils.get_some (pg_get_desc game i)) in
+		let va = TreeSet.filter (fun u -> game#get_priority  u >= 11) v_valu in
+		let ff = TreeSet.format (fun i -> OptionUtils.get_some (game#get_desc  i)) in
 		let diff = TreeSet.sym_diff va assrt in
 		if not (TreeSet.is_empty diff)
 		then print_string ("\n\n" ^ desc ^ " " ^ " " ^ ArrayUtils.format string_of_int info.b ^ " " ^ ff diff ^ " | " ^ ff va ^ " | " ^ ff assrt ^ "\n\n");
 	in
 let check_valu_range desc s i assrt_low assrt_high =
     let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
-    let v = pg_find_desc game (Some (s ^ string_of_int i)) in
+    let v = game#find_desc  (Some (s ^ string_of_int i)) in
     let (_, v_valu, _) = valu.(v) in
-    let va = TreeSet.filter (fun u -> pg_get_priority game u >= 11) v_valu in
+    let va = TreeSet.filter (fun u -> game#get_priority  u >= 11) v_valu in
     let diff_low = TreeSet.sym_diff va assrt_low in
 		let diff_high = TreeSet.sym_diff va assrt_high in
     if not (TreeSet.is_empty diff_low) && not (TreeSet.is_empty diff_high)
@@ -738,15 +738,15 @@ in
 	
 	
 let test_mdpvaluation_assumptions game strategy valu mdpvalu n =
-	let find a i = pg_find_desc game (Some (a ^ string_of_int i)) in
+	let find a i = game#find_desc  (Some (a ^ string_of_int i)) in
 	let info = strategy_info game strategy in
 	let vinfo = mdpvaluation_info game strategy (TreeSet.get_compare (let (_, v_valu, _) = valu.(0) in v_valu)) in
 	let check_valu desc s i assrt =
 		let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
-		let v = pg_find_desc game (Some (s ^ string_of_int i)) in
-		let ff = TreeMap.format (fun (i, v) -> OptionUtils.get_some (pg_get_desc game i) ^ ":" ^ string_of_float v) in
+		let v = game#find_desc  (Some (s ^ string_of_int i)) in
+		let ff = TreeMap.format (fun (i, v) -> OptionUtils.get_some (game#get_desc  i) ^ ":" ^ string_of_float v) in
 		let va = fst mdpvalu.(v) in
-		let va = TreeMap.filter (fun u v -> pg_get_priority game u >= 11) va in
+		let va = TreeMap.filter (fun u v -> game#get_priority  u >= 11) va in
 		if not (TreeMap.equal (fun v1 v2 -> not (v1 > v2) && not (v1 < v2)) va assrt) 
 		then print_string ("\n\n" ^ desc ^ " " ^ " " ^ ArrayUtils.format string_of_int info.b ^ " " ^ " | " ^ ff va ^ " | " ^ ff assrt ^ "\n\n");
 	in
@@ -787,12 +787,12 @@ let test_improving_switches game strategy valu n =
 	in
 	let info = strategy_info game strategy in
 	(*let strat a i b j = if StrategyHelper.is game strategy (a ^ string_of_int i) (b ^ string_of_int j) then 1 else 0 in*)
-	let impr = Array.init (pg_size game) (fun i ->
-    (pg_get_owner game i = plr_Even) && (strategy.(i) != best_decision i)
+	let impr = Array.init (game#size ) (fun i ->
+    (game#get_owner  i = plr_Even) && (strategy.(i) != best_decision i)
   ) in
 	let check_impr desc s i assrt =
 		let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
-		let v = pg_find_desc game (Some (s ^ string_of_int i)) in
+		let v = game#find_desc  (Some (s ^ string_of_int i)) in
 		if (impr.(v) != assrt) then (
 			print_string ("\n\n" ^ desc ^ " " ^ s ^ string_of_int i ^ " (false " ^ (if assrt then "+ + + + + +" else "- - - - - -") ^ ") -- " ^ "\n\n");
 		)
@@ -1054,7 +1054,7 @@ let test_occrec_delta_assumptions game strategy valu occrec n =
 		print_string "Check\n";
 		let oi = OptionUtils.get_some !oldinfo in
 		let check desc s i assrt =
-			let v = pg_find_desc game (Some (s ^ string_of_int i)) in
+			let v = game#find_desc  (Some (s ^ string_of_int i)) in
 			let delta = ref 0 in
 			for j = 0 to Array.length occrec.(v) - 1 do
 			  delta := !delta + occrec.(v).(j) - !oldoccrec.(v).(j);
@@ -1165,7 +1165,7 @@ let test_occrec_assumptions game strategy valu occrec n =
 		print_string "CheckGlobal\n";
 		let oi = OptionUtils.get_some !oldinfox in
 		let check desc s i assrt =
-			let v = pg_find_desc game (Some (s ^ string_of_int i)) in
+			let v = game#find_desc  (Some (s ^ string_of_int i)) in
 			let acc = ref 0 in
 			for j = 0 to Array.length occrec.(v) - 1 do
 			  acc := !acc + occrec.(v).(j);
@@ -1266,8 +1266,8 @@ let test_occrec_assumptions game strategy valu occrec n =
 
 
 let check_fair_exp_occ game strategy bits occ =
-		let find x i = pg_find_desc game (Some (x ^ string_of_int i)) in
-		let get x i y j = let (a,b) = (find x i,find y j) in occ.(a).(ArrayUtils.index_of (Array.of_list (ns_nodes (pg_get_successors game a))) b) in
+		let find x i = game#find_desc  (Some (x ^ string_of_int i)) in
+		let get x i y j = let (a,b) = (find x i,find y j) in occ.(a).(ArrayUtils.index_of (Array.of_list (ns_nodes (game#get_successors  a))) b) in
 		let n = Array.length bits - 1 in
 		let valid = ref true in
 		let active = Bits.shr bits in
@@ -1407,7 +1407,7 @@ let improvement_policy_optimize_fair_default_tie_break game node_total_ordering 
 let improvement_policy_optimize_fair tie_break
                                      game node_total_ordering occ old_strategy valu =
     let msg_tagged_nl v = message_autotagged_newline v (fun _ -> "STRIMPR_FAIR") in
-	let desc i = match (pg_get_desc game i) with Some s -> s | None -> string_of_int i in
+	let desc i = match (game#get_desc  i) with Some s -> s | None -> string_of_int i in
   
 	let cmp =
 		if not mdplike
@@ -1422,7 +1422,7 @@ let improvement_policy_optimize_fair tie_break
     msg_tagged_nl 4 (fun _ ->
     	"Occ: " ^ 
     	ArrayUtils.formati (fun i a -> desc i ^ ":" ^
-    		let tr = Array.of_list (ns_nodes (pg_get_successors game i)) in
+    		let tr = Array.of_list (ns_nodes (game#get_successors  i)) in
     		ArrayUtils.formati (fun j k ->
     			desc tr.(j) ^ ":" ^ string_of_int k
     		) a
@@ -1433,7 +1433,7 @@ let improvement_policy_optimize_fair tie_break
     let strategy = Array.copy old_strategy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
-	pg_iterate (fun i (_, pl, tr, _, de) ->
+	game#iterate (fun i (_, pl, tr, _, de) ->
 		if pl = plr_Even then
 			Array.iteri (fun j k ->		
 				if cmp strategy.(i) k < 0 then (
@@ -1445,7 +1445,7 @@ let improvement_policy_optimize_fair tie_break
 					)
 				)
 			) (Array.of_list (ns_nodes tr))
-	) game;
+	) ;
 	l := List.rev !l;
 	msg_tagged_nl 4 (fun _ -> "Occurrence-Arena: " ^ ListUtils.format (fun (i,_,k) -> desc i ^ "->" ^ desc k) (List.rev !l) ^ "\n");
 	if !l != [] then (
@@ -1460,13 +1460,13 @@ let improvement_policy_optimize_fair tie_break
 				
 				
 let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy valu l =
-	let desc i = OptionUtils.get_some (pg_get_desc game i) in
+	let desc i = OptionUtils.get_some (game#get_desc  i) in
 	let find s =
 		let i = ref 0 in
-		while (!i < pg_size game) && (desc !i <> s) do
+		while (!i < game#size ) && (desc !i <> s) do
 			incr i
 		done;
-		if !i < pg_size game then Some !i else None
+		if !i < game#size  then Some !i else None
 	in
 	let leadsto i j =
 		let (_, path, _) = valu.(OptionUtils.get_some i) in
@@ -1572,7 +1572,7 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 		compare (mp ((soulab0, souidx0), (tarlab0, taridx0), (oldlab0, oldidx0))) (mp ((soulab1, souidx1), (tarlab1, taridx1), (oldlab1, oldidx1)))
 	in
 	let f i =
-		match pg_get_desc game i with
+		match game#get_desc  i with
 			None -> ('!', 0)
 		|	Some s -> 
 				if String.length s = 1
@@ -1582,7 +1582,7 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 				else (String.get s 0, int_of_string (StringUtils.rest_string s 1))
 	in
 	let (i,j,k) = ListUtils.min_elt (fun (i0,j0,k0) (i1,j1,k1) ->
-		compare_nodes (pg_size game) (f i0) (f k0) (f old_strategy.(i0)) (f i1) (f k1) (f old_strategy.(i1)) state' idxmap
+		compare_nodes (game#size ) (f i0) (f k0) (f old_strategy.(i0)) (f i1) (f k1) (f old_strategy.(i1)) state' idxmap
 		   (fun s -> f old_strategy.(OptionUtils.get_some (find s)))
 	) l in
 	switch_zadeh_exp_tie_break_callback n game old_strategy valu occ i k !r !s;
@@ -1594,20 +1594,20 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 let strategy_improvement_optimize_fair_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position
 	                     (improvement_policy_optimize_fair improvement_policy_optimize_fair_default_tie_break) (
-		pg_map2 (fun _ (_, pl, tr, _, _) ->
+		game#map2 (fun _ (_, pl, tr, _, _) ->
 			if pl = plr_Odd then [||]
 			else Array.make (ns_size tr) 0
-		) game
+		) 
 	) false "STRIMPR_FAIR";;
 
 
 let strategy_improvement_optimize_fair_sub_exp_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position 
                          (improvement_policy_optimize_fair improvement_policy_optimize_fair_sub_exp_tie_break) (
-		pg_map2 (fun _ (_, pl, tr, _, _) ->
+		game#map2 (fun _ (_, pl, tr, _, _) ->
 			if pl = plr_Odd then [||]
 			else Array.make (ns_size tr) 0
-		) game
+		) 
 	) false "STRIMPR_FAIRSE";;
 
 
@@ -1616,10 +1616,10 @@ let initial_strategy_for_exp_game game =
 	let n = ref 0 in
 	let find s =
 		let i = ref 0 in
-		while (!i < pg_size game) && (pg_get_desc game !i <> Some s) do
+		while (!i < game#size ) && (game#get_desc  !i <> Some s) do
 			incr i
 		done;
-		if !i < pg_size game then !i else -1
+		if !i < game#size  then !i else -1
 	in
 	while (find ("m" ^ string_of_int !n) != -1) do incr n done;
 	let n = !n in
@@ -1628,7 +1628,7 @@ let initial_strategy_for_exp_game game =
 		(String.get s 0, int_of_string (StringUtils.rest_string s 1))
 	in		
 	let strategy = initial_strategy_by_best_reward game in
-	pg_iterate (fun i (pr, pl, tr, _, de) ->
+	game#iterate (fun i (pr, pl, tr, _, de) ->
 		if (pl = plr_Even) && (ns_size tr >= 2) then (
 			let (c, j) = parse de in
 			match c with
@@ -1646,16 +1646,16 @@ let initial_strategy_for_exp_game game =
 			| 'm' -> strategy.(i) <- find (if j < n -1 then ("m" ^ string_of_int (j+1)) else "Y")
 			| _ -> ()
 		)
-  ) game;
+  ) ;
 	strategy;;
 
 let strategy_improvement_optimize_fair_exp_policy game =
 	strategy_improvement game initial_strategy_for_exp_game node_total_ordering_by_position 
                          (improvement_policy_optimize_fair improvement_policy_optimize_fair_sub_exp_tie_break) (
-		pg_map2 (fun _ (_, pl, tr, _, _) ->
+		game#map2 (fun _ (_, pl, tr, _, _) ->
 			if pl = plr_Odd then [||]
 			else Array.make (ns_size tr) 0
-		) game
+		) 
 	) false "STRIMPR_FAIRSE";;
 
 
@@ -1663,10 +1663,10 @@ let strategy_improvement_optimize_fair_exp_policy game =
 let strategy_improvement_optimize_fair_worstcase_policy game =
 	let find s =
 		let i = ref 0 in
-		while (!i < pg_size game) && (pg_get_desc game !i <> Some s) do
+		while (!i < game#size ) && (game#get_desc  !i <> Some s) do
 			incr i
 		done;
-		if !i < pg_size game then Some !i else None
+		if !i < game#size  then Some !i else None
 	in
 	if (find "p0" != None) then strategy_improvement_optimize_fair_exp_policy game else strategy_improvement_optimize_fair_sub_exp_policy game;;
 

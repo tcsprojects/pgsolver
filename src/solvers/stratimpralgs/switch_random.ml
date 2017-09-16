@@ -10,28 +10,28 @@ open Transformations;;
 
 
 let multiple_edge_transformation game =
-	let n = pg_size game in
+	let n = game#size in
 	let mult = Array.make n [||] in
-	let game' = pg_copy game in
+	let game' = game#copy in
 	for i = 0 to n - 1 do
-		if (pg_get_priority game i = 0) && (ns_size (pg_get_successors game i) = 1)
+		if (game#get_priority i = 0) && (ns_size (game#get_successors i) = 1)
 		then
 		  begin
-		    pg_set_priority game' i (-1);
-		    pg_set_owner game' i plr_undef;
-		    pg_set_desc game' i None;
-		    ns_iter (fun w -> pg_del_edge game' i w) (pg_get_successors game i)
+		    game'#set_priority i (-1);
+		    game'#set_owner i plr_undef;
+		    game'#set_desc i None;
+		    ns_iter (fun w -> game'#del_edge i w) (game#get_successors i)
 		  end
 	done;
 	for i = 0 to n - 1 do
-	  let pr = pg_get_priority game' i in
-	  let tr = pg_get_successors game' i in
+	  let pr = game'#get_priority i in
+	  let tr = game'#get_successors i in
 		if (pr >= 0) then (
 			let s = ref TreeMap.empty_def in
 			ns_iter (fun r ->
 				let r = ref r in
-				while (pg_get_priority game' !r < 0) do
-					r := ns_some (pg_get_successors game !r)
+				while (game'#get_priority !r < 0) do
+					r := ns_some (game#get_successors !r)
 				done;
 				try
 					let q = TreeMap.find !r !s in
@@ -44,19 +44,19 @@ let multiple_edge_transformation game =
 				      tr := r::!tr;
 				      mu := m::!mu
 				     ) !s;
-			ns_iter (fun w -> pg_del_edge game' i w) (pg_get_successors game' i);
-			List.iter (fun w -> pg_add_edge game' i w) !tr;
+			ns_iter (fun w -> game'#del_edge i w) (game'#get_successors i);
+			List.iter (fun w -> game'#add_edge i w) !tr;
 			mult.(i) <- Array.of_list !mu
 		)
 	done;
 	(game', mult)
 
 let multiple_edge_backtransformation game solution strategy =
-	let n = pg_size game in
+	let n = game#size in
 	for i = 0 to n - 1 do
-	  let pl = pg_get_owner game i in
-	  let tr = pg_get_successors game i in
-		if (pg_isDefined game i) && (solution.(i) = plr_undef) then (
+	  let pl = game#get_owner i in
+	  let tr = game#get_successors i in
+		if (game#is_defined i) && (solution.(i) = plr_undef) then (
 			solution.(i) <- solution.(ns_some tr);
 			if solution.(i) = pl
 			then strategy.(i) <- ns_some tr
@@ -66,8 +66,8 @@ let multiple_edge_backtransformation game solution strategy =
 let multiple_edge_solve game solver =
 	let (game', mult) = multiple_edge_transformation game in
 	let (game'', new2old, old2new) = compress_nodes game' in
-	let n = pg_size game' in
-	let n' = pg_size game'' in
+	let n = game'#size in
+	let n' = game''#size in
 	let mult' = Array.make n' [||] in
 	for i = 0 to n' - 1 do
 		mult'.(i) <- mult.(new2old.(i))
@@ -87,12 +87,12 @@ let multiple_edge_solve game solver =
 
 let improvement_policy_vorobyov2_init_edges game =
 	let ed = ref (TreeSet.empty compare) in
-	pg_iterate (fun i (pr, pl, tr, _, _) ->
+	game#iterate (fun i (pr, pl, tr, _, _) ->
 		if (pr >= 0) && (pl = plr_Even) then ns_iter (fun j ->
 			ed := TreeSet.add (i,j) !ed
 		) tr		
-	) game;
-	[(pg_copy game, !ed, TreeSet.empty compare, 0)]
+	);
+	[(game#copy, !ed, TreeSet.empty compare, 0)]
 
 let improvement_policy_vorobyov2 game node_compare
                                  stack
@@ -102,15 +102,15 @@ let improvement_policy_vorobyov2 game node_compare
 	|	(ga, ed, av, nu)::stack -> (
 		if strategy_improvable ga node_compare strategy valu then (
 			let strate = ref (TreeSet.empty compare) in
-			let ga' = pg_copy ga in
-			pg_iterate (fun i (pr, pl, tr, _, de) ->
+			let ga' = ga#copy in
+			ga'#iterate (fun i (pr, pl, tr, _, de) ->
 				    if (pr >= 0) && (pl = plr_Even) then 
 				      begin
 					strate := TreeSet.add (i,strategy.(i)) !strate;
-					ns_iter (fun w -> pg_del_edge ga' i w) (pg_get_successors ga' i);
-					pg_add_edge ga' i strategy.(i)
+					ns_iter (fun w -> ga'#del_edge i w) (ga'#get_successors i);
+					ga'#add_edge i strategy.(i)
 				      end
-				   ) ga';
+				   );
 			let entry = (ga', !strate, ed, max (TreeSet.cardinal !strate) (TreeSet.cardinal ed / 2)) in
 			iterate (entry::(ga, ed, av, nu)::stack)
 		)
@@ -123,7 +123,7 @@ let improvement_policy_vorobyov2 game node_compare
 				let (i,j) = impr_edges.(Random.int (Array.length impr_edges)) in
 				let strategy' = Array.copy strategy in
 				strategy'.(i) <- j;
-				pg_add_edge ga i j;
+				ga#add_edge i j;
 				(strategy', (ga, TreeSet.add (i,j) ed, TreeSet.remove (i,j) av, nu - 1)::stack)
 			)
 		)
@@ -182,11 +182,11 @@ let improvement_policy_vorobyovordered game node_total_ordering
 	(strategy, (edgearr, counter, stack, edgeord));;
 
 
-let improvement_policy_vorobyovordered_init_edges game init_strat =
-	Random.self_init ();
+let improvement_policy_vorobyovordered_init_edges (game:paritygame) init_strat =
+        Random.self_init ();
 	let counter = ref 0 in
 	let ord = ref [] in
-	let edgearr = pg_map2 (fun i (pr, pl, tr, _, _) ->
+	let edgearr = game#map2 (fun i (pr, pl, tr, _, _) ->
 		if pl = plr_Even && pr >= 0 then (
 			ns_iter (fun j -> ord := (i,j)::!ord) tr;
 			let tr = Array.of_list (ns_nodes tr) in
@@ -198,7 +198,7 @@ let improvement_policy_vorobyovordered_init_edges game init_strat =
             (ref 1, tr')
         )
         else (ref 0, [||])
-	) game in
+	) in
 	(edgearr, counter, ref [], (ArrayUtils.shuffle (Array.of_list !ord)))
 	
 
@@ -216,10 +216,10 @@ let improvement_policy_randomizedbland game node_total_ordering ordering old_str
 let improvement_policy_randomizedbland_init_edges game init_strat =
 	Random.self_init ();
 	let ord = ref [] in
-	pg_iterate (fun i (pr, pl, tr, _, _) ->
+	game#iterate (fun i (pr, pl, tr, _, _) ->
 		if pl = plr_Even && pr >= 0
 		then ns_iter (fun j -> ord := (i,j)::!ord) tr;
-	) game;
+	);
 	(ArrayUtils.shuffle (Array.of_list !ord))
 	
 let improvement_policy_vorobyov game node_total_ordering
@@ -273,10 +273,10 @@ let improvement_policy_vorobyov game node_total_ordering
 	(strategy, (edgearr, counter, stack));;
 
 
-let improvement_policy_vorobyov_init_edges game init_strat =
+let improvement_policy_vorobyov_init_edges (game:paritygame) init_strat =
 	Random.self_init ();
 	let counter = ref 0 in
-	let edgearr = pg_map2 (fun i (pr, pl, tr, _, _) ->
+	let edgearr = game#map2 (fun i (pr, pl, tr, _, _) ->
 		if pl = plr_Even && pr >= 0 then (
 			let tr = Array.of_list (ns_nodes tr) in
             let j = ArrayUtils.index_of tr init_strat.(i) in
@@ -287,7 +287,7 @@ let improvement_policy_vorobyov_init_edges game init_strat =
             (ref 1, tr')
         )
         else (ref 0, [||])
-	) game in
+	) in
 	(edgearr, counter, ref [])
 
 
@@ -304,11 +304,11 @@ let vorobyov_map_multiplicity arr =
 	) arr;
 	a
 
-let policy_vorobyov_multiple_edges_init_edges game init_strat multiplicities =
+let policy_vorobyov_multiple_edges_init_edges (game:paritygame) init_strat multiplicities =
 	let comb a b = Array.mapi (fun i x -> (x, b.(i))) a in
 	Random.self_init ();
 	let counter = ref 0 in
-	let edgearr = pg_map2 (fun i (pr, pl, tr, _, _) ->
+	let edgearr = game#map2 (fun i (pr, pl, tr, _, _) ->
 		if pl = plr_Even && pr >= 0 then (
 			let tr = Array.of_list (ns_nodes tr) in
 			let tr = vorobyov_map_multiplicity (comb tr multiplicities.(i)) in
@@ -320,7 +320,7 @@ let policy_vorobyov_multiple_edges_init_edges game init_strat multiplicities =
             (ref 1, tr')
         )
         else (ref 0, [||])
-	) game in
+	) in
 	(edgearr, counter, ref [])
 
 
@@ -336,7 +336,7 @@ let improvement_policy_single_randomly game node_total_ordering old_strategy val
 		if j != -1 then
 			ns_iter (fun k ->
 				if cmp j k < 0 then edges := (i,k)::!edges
-			) (pg_get_successors game i)
+			) (game#get_successors i)
 	) strategy;
 	let edges_arr = Array.of_list !edges in
 	let len = Array.length edges_arr in
@@ -356,7 +356,7 @@ let improvement_policy_single_node_edge_randomly game node_total_ordering old_st
         let edges = ref [] in
         ns_iter (fun k ->
             if cmp j k <= 0 then edges := k::!edges
-        ) (pg_get_successors game i);
+        ) (game#get_successors i);
         node_edges := (i, !edges)::!node_edges
 	)) strategy;
 	let node_edges_arr = Array.of_list !node_edges in
@@ -373,7 +373,7 @@ let improvement_policy_single_node_edge_randomly game node_total_ordering old_st
 	strategy
 
 let improvement_policy_all_randomly game node_total_ordering old_strategy valu =
-	let n = pg_size game in
+	let n = game#size in
 	let strategy = Array.copy old_strategy in
 	let cmp i j =
 		node_valuation_ordering game node_total_ordering valu.(i) valu.(j)
@@ -384,7 +384,7 @@ let improvement_policy_all_randomly game node_total_ordering old_strategy valu =
 		improvable := false;
 		for i = 0 to n - 1 do
 		  if strategy.(i) > -1 then (
-                    let a = ns_filter (fun j -> cmp strategy.(i) j <= 0) (pg_get_successors game i) in
+                    let a = ns_filter (fun j -> cmp strategy.(i) j <= 0) (game#get_successors i) in
                     improvable := !improvable || (ns_size a > 1);
                     strategy.(i) <- ns_some a;
                     same := !same && (strategy.(i) = old_strategy.(i))

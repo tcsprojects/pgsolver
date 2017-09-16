@@ -52,7 +52,7 @@ let _ =
   	NoAction -> ()
   | GeneratePg generator ->
   		let game = (OptionUtils.get_some (generator.parity_game) (Array.of_list (Tcsstrings.StringUtils.explode !subargs ' '))) in
-  		print_game game
+  		game#print
   | GenerateMdp generator ->
   		let generalized_mdp = (OptionUtils.get_some (generator.generalized_mdp) (Array.of_list (Tcsstrings.StringUtils.explode !subargs ' '))) in
   		print_mdp (generalized_mdp_to_mdp generalized_mdp)

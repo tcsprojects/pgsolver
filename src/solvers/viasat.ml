@@ -190,9 +190,9 @@ let solve' game =
   let prio_table = SingleTable.create 100 in
   let present_prios  = ref [] in
 	
-  let m = pg_size game in
+  let m = game#size in
 	
-  pg_iterate (fun i -> fun (p,_,_,_,_) -> let n = try
+  game#iterate (fun i -> fun (p,_,_,_,_) -> let n = try
 					       SingleTable.find prio_table p
 					     with _ -> 0
 					   in
@@ -200,7 +200,7 @@ let solve' game =
 					   SingleTable.add prio_table p (n+1);
 					   
 					   present_prios := insert p !present_prios
-	     ) game;
+	     ) ;
   
 
   let binlog n = int_of_float (ceil ((log (float_of_int n)) /. (log 2.))) in
@@ -228,7 +228,7 @@ let solve' game =
   msg_tagged 2 (fun _ -> "Number of nodes in the game    : " ^ string_of_int m ^ "\n");
 	
   message 3 (fun _ -> "Creating and scheduling clauses for addition ...\n");
-  pg_iterate (fun v -> fun (_,pl,ws,_,_) -> 
+  game#iterate (fun v -> fun (_,pl,ws,_,_) -> 
 		       (if pl=plr_Even then 
 			  begin
 			    message 3 (fun _ -> "  `" ^ show_var 0 (S v) ^ " -> " ^
@@ -249,12 +249,12 @@ let solve' game =
 					 schedule_clause [| getNTEVar (v,w) ; getSVar w |];
 					 message 3 (fun _ -> "  `" ^ show_var 0 (TA (v,w)) ^ " -> " ^ show_var 1 (S w) ^ "': ");
 					 schedule_clause [| getNTAVar (v,w); getNSVar w |]) ws
-	     ) game;
+	     );
 	
   let to_expand = ref [] in
   let remember var = to_expand := var::!to_expand in
 	
-  pg_iterate (fun v -> fun (p,_,ws,_,_) ->   
+  game#iterate (fun v -> fun (p,_,ws,_,_) ->   
 	  ns_iter (fun w ->
 		   let bigger_prios = List.filter (fun r -> r > p) !present_prios in
 		   List.iter (fun p' -> let k = (v,w,p',hbit p') in
@@ -272,7 +272,7 @@ let solve' game =
 		    else (message 3 (fun _ -> "  `" ^ show_var 0 (TA (v,w)) ^ " -> " ^ show_var 0 (GR k) ^ "': ");
 			  schedule_clause [| getNTAVar (v,w) ; getGRVar k |]));
 		   remember (GR k)) ws
-	     ) game;
+	     );
 	
   while !to_expand <> [] do
     (match List.hd !to_expand with
@@ -341,7 +341,7 @@ let solve' game =
 	      let winner = 1-x in
 	      message 3 (fun _ -> string_of_int x ^ ", successor: ");
 	      
-	      let succs = pg_get_successors game v in
+	      let succs = game#get_successors v in
 	      let get_fun = if winner = 0 then getTEVar else getTAVar in
 	      let y = try
 		  ns_find (fun w -> let j = get_fun (v,w) in solver#get_assignment j) succs

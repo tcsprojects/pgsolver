@@ -44,14 +44,14 @@ let solve' game =
 	let int_sort  = Z3.mk_int_sort ctx in
 	let bool_sort = Z3.mk_bool_sort ctx in
 
-	let n = pg_size game in
-	let max_prio = pg_max_prio game in
+	let n = game#size in
+	let max_prio = game#get_max_prio in
 	
 	let var_win = Array.init n (fun i -> new_bool_symbol ctx bool_sort "win" [i]) in
-	let var_desc_edge = Array.init n (fun i -> Array.map (fun j -> new_bool_symbol ctx bool_sort "des" [i;j]) (pg_get_successors game i)) in
+	let var_desc_edge = Array.init n (fun i -> Array.map (fun j -> new_bool_symbol ctx bool_sort "des" [i;j]) (game#get_successors i)) in
 	let var_pm = Array.init n (fun i -> Array.init (max_prio + 1) (fun p -> new_int_symbol ctx int_sort "pro" [i;p])) in
 	
-	pg_iterate (fun v -> fun (_,ow,tr,_,_) -> let plwin w = if ow = plr_Even then var_win.(w) else Z3.mk_not ctx var_win.(w) in
+	game#iterate (fun v -> fun (_,ow,tr,_,_) -> let plwin w = if ow = plr_Even then var_win.(w) else Z3.mk_not ctx var_win.(w) in
 						  let plwin' w = if ow = plr_Odd then var_win.(w) else Z3.mk_not ctx var_win.(w) in
 
 						  let pre = plwin v in
@@ -61,10 +61,10 @@ let solve' game =
 						  let pre' = plwin' v in
 						  let post' = Z3.mk_and ctx (Array.mapi (fun i w -> Z3.mk_and ctx [|plwin' w; var_desc_edge.(v).(i)|]) tr) in
 						  assrt (Z3.mk_implies ctx pre' post')
-		   ) game;
+		   );
 	
 	plr_iterate (fun pl -> 
-	  pg_iterate (fun v -> fun (pr,_,tr,_) ->
+	  game#iterate (fun v -> fun (pr,_,tr,_) ->
 			       Array.iteri (fun i w ->
 					    let pre = Z3.mk_and ctx [|(if pl = 0 then var_win.(v) else Z3.mk_not ctx var_win.(v)); var_desc_edge.(v).(i)|] in
 					    for pr' = pr + 1 to max_prio do
@@ -78,7 +78,7 @@ let solve' game =
 					      assrt (Z3.mk_implies ctx pre post2)
 					    )
 					   ) (Array.of_list (ns_nodes tr))
-		     ) game);
+		     ));
 	
 	msg_plain 2 (fun _ -> SimpleTiming.stop tim; "done: " ^ SimpleTiming.format tim ^ "\n");
 
@@ -97,8 +97,8 @@ let solve' game =
 	  | _ -> ());
 
 	let sol = Array.init n (fun i -> if get_bool_assignm_failundef ctx model var_win.(i) then 0 else 1) in
-	let strat = Array.init n (fun i -> if sol.(i) = pg_get_owner game i
-	                                   then let delta = pg_get_successors game i in
+	let strat = Array.init n (fun i -> if sol.(i) = game#get_owner i
+	                                   then let delta = game#get_successors i in
 	                                   	let j = ref 0 in
 	                                   	let fnd = ref false in
 	                                   	while (not !fnd) && (!j < Array.length delta) do

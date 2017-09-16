@@ -341,7 +341,7 @@ let partially_solve (game: partial_paritygame) =
 
 
 let solve' game =
-	partially_solve_dominion game 0 partially_solve;;
+	game#partially_solve_dominion 0 partially_solve;;
 
 let solve game = universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) solve' game;;
 

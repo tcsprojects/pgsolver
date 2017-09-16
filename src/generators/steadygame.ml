@@ -1,5 +1,6 @@
 open Tcsarray;;
 open Paritygame;;
+open Arrayparitygame;;
   
 let generator_game_func arguments = 
 
@@ -52,7 +53,7 @@ let generator_game_func arguments =
   	else if lenj = indegmax then DynArray.delete inavail jj;
   done;
 
-  pg_init size (fun i -> (i,
+  new array_pg size ~initFunc:(fun i -> (i,
 			  plr_random (),
 			  pg.(i),
 			  Some (nd_show i))

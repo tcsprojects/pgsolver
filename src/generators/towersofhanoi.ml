@@ -1,5 +1,6 @@
 open Paritygame ;;
-
+open Arrayparitygame;;
+  
 let levels = ref 0
 		 
 module ToHGame = Build( 

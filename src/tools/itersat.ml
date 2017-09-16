@@ -2,6 +2,7 @@ open Arg ;;
 open Tcsargs;;
 open Basics ;;
 open Paritygame ;;
+open Arrayparitygame;;
 open Parsers ;; 
 open Tcstiming ;;
 open Tcsset;;
@@ -335,14 +336,14 @@ let set_player l n =
 
 
 let game_to_conjunction game =
- 	let n = pg_size game in
+ 	let n = game#size in
 	let pr = Array.init n (fun i ->
-			if (pg_get_priority game i) mod 2 = 0
+			if (game#get_priority i) mod 2 = 0
 			then Ne (Parity i)
 			else Po (Parity i)
 		) in
 	let pl = Array.init n (fun i ->
-			if pg_get_owner game i = plr_Even
+			if game#get_owner  i = plr_Even
 			then Ne (Player i)
 			else Po (Player i)
 		) in
@@ -354,7 +355,7 @@ let game_to_conjunction game =
 	for i = 0 to n - 1 do
 		ns_iter (fun j ->
 			edges.(i).(j) <- Po (Edge (i, j))
-		) (pg_get_successors game i)
+		) (game#get_successors i)
 	done;
 	Array.init (2 * n + n * n) (fun i ->
 		if i < n then pr.(i)
@@ -985,7 +986,7 @@ let get_valuation n u v =
 
 let get_paritygame n =
 	let s = get_strategy n 0 in
-	pg_init n (fun i ->
+	new array_pg n ~initFunc:(fun i ->
 		let l = ref [] in
 		for j = 0 to n - 1 do
 			if (s.(i) != j) && (solver#get_variable_bool (Edge (i, j))) then l := j::!l
@@ -1114,7 +1115,7 @@ let _ =
 		message 1 (fun _ -> "A game satisfying the given conditions runs as follows:\n");
 
 		let pg = get_paritygame n in
-		print_game pg;
+		pg#print;
 		message 1 (fun _ -> "\n");
 
 		if !option_showiterations then (

@@ -3,7 +3,7 @@ open Tcsargs;;
 open Tcslist;;
 open Arg ;;
 open Tcstiming;;
-open Paritygame ;;
+open Paritygame;;
 open Verification ;;
 open Univsolve ;;
 open Solvers ;;
@@ -217,7 +217,7 @@ let _ =
 	LocalSolver (id, solve) -> (
 		 message 1 (fun _ -> "Chosen local solver `" ^ id ^ "' " ^ String.make (16 - (String.length id)) '.' ^ " ");
 		 let timobj = SimpleTiming.init true in
-		 let (c, g) = induce_counting_partialparitygame game !initnode in
+		 let (c, g) = game#induce_counting_partialparitygame !initnode in
 		 let result = (solve (Array.of_list (Tcsstrings.StringUtils.explode !solveargs ' '))) g in
 		 SimpleTiming.stop timobj;
 		 message 1 (fun _ -> (SimpleTiming.format timobj) ^ "\n");
@@ -256,7 +256,7 @@ let _ =
 	  let win1 = ref [] in
 	  let str0 = ref [] in
 	  let str1 = ref [] in
-	  sol_iter (fun j -> fun pl -> let ow = pg_get_owner game j in
+	  sol_iter (fun j -> fun pl -> let ow = game#get_owner j in
 				       if pl = plr_Even then
 					 (win0 := j :: !win0;
 					  if ow=plr_Even then let k = str_get strategy j in
@@ -285,9 +285,9 @@ let _ =
 		  message 1 (fun _ -> "[" ^ String.concat "," (List.rev !str1) ^ "]\n");
 	  );
 
-	  if !make_dotty_graph then Paritygame.to_dotty_file game solution strategy !dotty_file;
+	  if !make_dotty_graph then game#to_dotty_file solution strategy !dotty_file;
 
-	  if !format_game then Paritygame.print_game (Paritygame.subgame_by_strat game strategy);
+	  if !format_game then (game#subgame_by_strat strategy)#print;
 
 	  if !solonly then Paritygame.print_solution_strategy_parsable solution strategy;
 

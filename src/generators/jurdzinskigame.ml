@@ -1,5 +1,6 @@
 open Paritygame;;
-
+open Arrayparitygame;;
+  
 let height = ref 0
 let width = ref 0
 
