@@ -8,6 +8,7 @@ open Tcsstrings;;
 open Paritygame;;
 open Transformations;;
 open Specialsolve;;
+open Pgnodeset;;
 
 
 

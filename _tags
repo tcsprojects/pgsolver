@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: f5ef3304ea01268b80b72ff961bd46f4)
+# DO NOT EDIT (digest: ff42186f384c070fa019ecbcbfc18b96)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -22,6 +22,12 @@ true: annot, bin_annot
 <src/*.ml{,i,y}>: package(num)
 <src/*.ml{,i,y}>: package(ocaml-sat-solvers)
 <src/*.ml{,i,y}>: package(str)
+<src/data/*.ml{,i,y}>: package(TCSLib)
+<src/data/*.ml{,i,y}>: package(extlib)
+<src/data/*.ml{,i,y}>: package(minisat)
+<src/data/*.ml{,i,y}>: package(num)
+<src/data/*.ml{,i,y}>: package(ocaml-sat-solvers)
+<src/data/*.ml{,i,y}>: package(str)
 <src/generators/policyiter/generators/*.ml{,i,y}>: package(TCSLib)
 <src/generators/policyiter/generators/*.ml{,i,y}>: package(extlib)
 <src/generators/policyiter/generators/*.ml{,i,y}>: package(minisat)

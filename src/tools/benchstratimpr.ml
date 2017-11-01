@@ -5,6 +5,7 @@ open Tcsstrings ;;
 open Univsolve;;
 open Solvers ;;
 open Stratimpralgs ;;
+open Pgnodeset;;
 
 module CommandLine =
 struct

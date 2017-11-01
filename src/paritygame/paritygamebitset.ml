@@ -1,5 +1,6 @@
 open Basics;;
 open Paritygame;;
+open Pgnodeset;;
 
 let is_empty_bset bset length =
 	let i = ref 0 in

@@ -8,6 +8,7 @@ open Str ;;
 open Stratimpralgs;;
 open Tcslist;;
 open Tcsarray;;
+open Pgnodeset;;
 
 let out s =
 	print_string s;

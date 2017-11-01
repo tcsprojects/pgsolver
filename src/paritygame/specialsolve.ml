@@ -2,6 +2,8 @@ open Basics;;
 open Tcsset;;
 open Tcsqueue;;
 open Paritygame;;
+open Pgnode;;
+open Pgnodeset;;
 
 
 type compact_sol_strat = (node * player * node) list;;

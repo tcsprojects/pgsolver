@@ -3,6 +3,8 @@ open Tcsarray;;
 open Paritygame;;
 open Univsolve;;
 open Specialsolve;;
+open Pgnode;;
+open Pgnodeset;;
 
 type verifier = paritygame -> solution -> strategy -> (node list * string) option
 

@@ -10,6 +10,7 @@ open Tcsset;;
 open Tcsbasedata.OptionUtils;;
 open Paritygame ;;
 open Univsolve;;
+open Pgnodeset;;
 
 
 let newwin options game =

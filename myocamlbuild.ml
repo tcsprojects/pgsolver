@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 18d999fb1320beed3f799918f066302c) *)
+(* DO NOT EDIT (digest: 52e3520ae5e013ac5f0ebc7c53d27008) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -890,6 +890,7 @@ let package_default =
           ("pgsolver",
             [
                "src";
+               "src/data";
                "src/generators";
                "src/generators/modelchecking";
                "src/generators/policyiter";
@@ -908,6 +909,7 @@ let package_default =
           ("tests",
             [
                "src";
+               "src/data";
                "src/generators";
                "src/generators/modelchecking";
                "src/generators/policyiter";
@@ -920,6 +922,7 @@ let package_default =
           ("src/tools",
             [
                "src";
+               "src/data";
                "src/generators";
                "src/generators/modelchecking";
                "src/generators/policyiter";
@@ -932,6 +935,7 @@ let package_default =
           ("src/solvers/stratimpralgs",
             [
                "src";
+               "src/data";
                "src/generators";
                "src/generators/modelchecking";
                "src/generators/policyiter";
@@ -943,6 +947,7 @@ let package_default =
           ("src/solvers",
             [
                "src";
+               "src/data";
                "src/generators";
                "src/generators/modelchecking";
                "src/generators/policyiter";
@@ -954,6 +959,7 @@ let package_default =
           ("src/pgsolver",
             [
                "src";
+               "src/data";
                "src/generators";
                "src/generators/modelchecking";
                "src/generators/policyiter";
@@ -965,6 +971,7 @@ let package_default =
           ("src/paritygame",
             [
                "src";
+               "src/data";
                "src/generators";
                "src/generators/modelchecking";
                "src/generators/policyiter";
@@ -976,6 +983,7 @@ let package_default =
           ("src/generators/policyiter/generators",
             [
                "src";
+               "src/data";
                "src/generators";
                "src/generators/modelchecking";
                "src/generators/policyiter";
@@ -987,6 +995,7 @@ let package_default =
           ("src/generators/policyiter",
             [
                "src";
+               "src/data";
                "src/generators";
                "src/generators/modelchecking";
                "src/generators/policyiter/generators";
@@ -998,6 +1007,7 @@ let package_default =
           ("src/generators/modelchecking",
             [
                "src";
+               "src/data";
                "src/generators";
                "src/generators/policyiter";
                "src/generators/policyiter/generators";
@@ -1009,6 +1019,19 @@ let package_default =
           ("src/generators",
             [
                "src";
+               "src/data";
+               "src/generators/modelchecking";
+               "src/generators/policyiter";
+               "src/generators/policyiter/generators";
+               "src/paritygame";
+               "src/pgsolver";
+               "src/solvers";
+               "src/solvers/stratimpralgs"
+            ]);
+          ("src/data",
+            [
+               "src";
+               "src/generators";
                "src/generators/modelchecking";
                "src/generators/policyiter";
                "src/generators/policyiter/generators";
@@ -1019,6 +1042,7 @@ let package_default =
             ]);
           ("src",
             [
+               "src/data";
                "src/generators";
                "src/generators/modelchecking";
                "src/generators/policyiter";
@@ -1036,6 +1060,6 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 1040 "myocamlbuild.ml"
+# 1064 "myocamlbuild.ml"
 (* OASIS_STOP *)
 Ocamlbuild_plugin.dispatch dispatch_default;;

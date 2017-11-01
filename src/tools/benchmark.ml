@@ -7,6 +7,7 @@ open Solvers ;;
 open Paritygame ;;
 open Tcstiming ;;
 open Tcsstrings;;
+open Pgnodeset;;
 
 module CommandLine =
 struct

@@ -1,8 +1,12 @@
 # OASIS_START
-# DO NOT EDIT (digest: 586af6762c044e3dd0e2cd618d089b56)
+# DO NOT EDIT (digest: 3ceddf327b10c7b0a481ef970b026153)
 pgsolver/Basics
 pgsolver/Info
+data/Pgnode
+data/Pgnodeset
 paritygame/Paritygame
+paritygame/Arrayparitygame
+paritygame/Mapparitygame
 paritygame/Verification
 paritygame/Univsolve
 paritygame/Solvers

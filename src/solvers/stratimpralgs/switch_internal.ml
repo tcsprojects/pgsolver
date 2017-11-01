@@ -6,6 +6,7 @@ open Tcsbasedata;;
 open Univsolve;;
 open Tcslist;;
 open Tcsarray;;
+open Pgnodeset;;
 
 let list_upfront l i =
 	let rec tile f t =

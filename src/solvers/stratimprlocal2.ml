@@ -8,6 +8,7 @@ open Paritygame;;
 open Univsolve;;
 open Transformations;;
 open Basics;;
+open Pgnode;;
 
 (* Unoptimized implementation *)
 

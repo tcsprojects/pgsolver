@@ -4,6 +4,7 @@ open Tcsarray;;
 open Tcsset;;
 open Tcslist;;
 open Tcsgraph;;
+open Pgnodeset;;
 
   
 (**************************************************************
@@ -49,9 +50,6 @@ object (self : 'self)
   method copy =
     let new_nodes = Array.copy nodes in
     {< nodes = new_nodes >}
-
-  method sort f =
-    Array.sort f nodes
 
   method iterate f =
     for i=0 to (self#size) - 1 do
@@ -305,15 +303,15 @@ module Build(T: PGDescription) : (PGBuilder with type gamenode = T.gamenode ) =
       let rec iterate acc visited =
         function []          -> acc
                | ((v,c)::vs) -> begin
-                                if NodeSet.mem c visited then
+                                if ns_elem c visited then
                                   iterate acc visited vs
                                 else
                                   let ws = T.successors v in
                                   let ds = List.map encode ws in
-                                  iterate ((c, T.owner v, T.priority v, ds, T.show_node v) :: acc) (NodeSet.add c visited) ((List.combine ws ds) @ vs)
+                                  iterate ((c, T.owner v, T.priority v, ds, T.show_node v) :: acc) (ns_add c visited) ((List.combine ws ds) @ vs)
                               end
       in
-      let nodes = iterate [] NodeSet.empty (List.map (fun v -> (v,encode v)) vlist) in
+      let nodes = iterate [] ns_empty (List.map (fun v -> (v,encode v)) vlist) in
       let game = new array_pg (List.length nodes) in
       let rec transform =
         function []                  -> ()

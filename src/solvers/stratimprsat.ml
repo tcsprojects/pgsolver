@@ -4,6 +4,7 @@ open Univsolve ;;
 open Tcstiming;;
 open Satwrapper;;
 open Transformations;;
+open Pgnodeset;;
 
 
 type vars =

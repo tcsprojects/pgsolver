@@ -3,6 +3,7 @@ open Paritygame ;;
 open Univsolve;;
 open Tcsarray;;
 open Tcsqueue;;
+open Pgnodeset;;
 
 let ns_minarg arr f less = ns_fold (fun m i -> if less (f i) (f m) then i else m) (ns_some arr) arr;;
 let ns_maxarg arr f less =

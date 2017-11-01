@@ -1,6 +1,7 @@
 open Tcsmaths;;
 open Tcsstrings;;
 open Paritygame;;
+open Pgnodeset;;
 
 type generalized_mdp_node = Controller of int array * string option
                  		  | Randomizer of (BigFloat.t * int) array

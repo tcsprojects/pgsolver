@@ -13,6 +13,7 @@
 open Basics ;;
 open Paritygame ;;
 open Univsolve;;
+open Pgnodeset;;
 
 let solve game =
     let solve' game =

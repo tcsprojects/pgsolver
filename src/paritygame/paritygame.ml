@@ -7,78 +7,12 @@ open Tcsarray;;
 open Tcsset;;
 open Tcslist;;
 open Tcsgraph;;
+open Pgnode;;
+open Pgnodeset;;
 (*open Pgprofiling*)
   
-(**************************************************************
- *                          NODES                             *
- **************************************************************)
-type node = int
-
-let nd_undef = -1
-let nd_make v = v
-let nd_reveal v = v
-
-let nd_show = string_of_int
 
 
-let ns_nodeCompare = compare
-
-
-(**************************************************************
- *                          NODESET                           *
- **************************************************************)
-let ns_nodeCompare = compare
-
-type nodeset = node TreeSet.t
-
-let ns_isEmpty = TreeSet.is_empty
-let ns_compare = TreeSet.compare
-let ns_empty = TreeSet.empty ns_nodeCompare
-let ns_elem = TreeSet.mem
-let ns_fold f acc ns = TreeSet.fold (fun x y -> f y x) ns acc
-let ns_iter = TreeSet.iter
-let ns_filter = TreeSet.filter
-let ns_map = TreeSet.map
-let ns_size = TreeSet.cardinal
-let ns_exists = TreeSet.exists
-let ns_forall = TreeSet.for_all
-let ns_first = TreeSet.min_elt
-let ns_last = TreeSet.max_elt
-let ns_some = TreeSet.choose
-let ns_add = TreeSet.add
-let ns_del = TreeSet.remove
-let ns_union = TreeSet.union
-let ns_make = TreeSet.of_list ns_nodeCompare
-let ns_nodes = TreeSet.elements
-
-let ns_find f ns =
-    OptionUtils.get_some (ns_fold (fun a v -> if a = None && f v then Some v else a) None ns)
-
-let ns_some ws =
-  let n = ns_size ws in
-  let i = ref (Random.int n) in
-  ns_find (fun v ->
-    decr i;
-    !i = -1
-  ) ws
-
-let ns_max ns lessf = ns_fold (fun v -> fun w -> if lessf v w then w else v) (ns_some ns) ns
- 
-                              
-(**************************************************************
- *                     NODESET STRUCTURE                      *
- **************************************************************)
-module NodeSet = Set.Make(
-struct
-  type t = int
-  let compare = compare
-end);;
-
-module NodePairSet = Set.Make(
-struct
-  type t = int * int
-  let compare = compare
-end);;
                                  
                               
 (**************************************************************
@@ -276,9 +210,9 @@ class virtual paritygame = object (self : 'self)
 (********** GENERAL **********)
 method virtual size : int
 method virtual copy : 'self
-method virtual sort :  ((priority * player * nodeset * nodeset * string option) -> (priority * player * nodeset * nodeset * string option) -> int) -> unit
 
 method virtual iterate : (node -> (priority * player * nodeset * nodeset * string option) -> unit) -> unit
+
 method virtual edge_iterate : (node -> node -> unit) -> unit
 method virtual map : (node -> (priority * player * nodeset * nodeset * string option) ->  (priority * player * nodeset * nodeset * string option)) -> 'self
 method virtual map2 : 'a. (node -> (priority * player * nodeset * nodeset * string option) -> 'a) -> 'a array
@@ -428,9 +362,9 @@ method get_index = self#get_max_prio - self#get_min_prio + 1
                                                              
 method get_prio_nodes p =
   let l = ref ns_empty in
-  for i = (self#size)-1 downto 0 do
-    if self#get_priority i = p then l := ns_add i !l
-  done;
+  self#iterate (fun i (pr, _, _, _, _) ->
+    if pr = p then l := ns_add i !l
+  );
   !l
 
 method get_selected_priorities pred =
@@ -798,26 +732,19 @@ method partially_solve_game partially_solve =
 method get_player_decision_info =
   let hasPl0 = ref false in
   let hasPl1 = ref false in
-  let n = self#size in
-  let i = ref 0 in
-  while (!i < n) && (not (!hasPl0 && !hasPl1)) do
-    if (ns_size (self#get_successors !i) > 1) (* && (ArrayUtils.exists delta (fun _ el -> delta.(0) != el)) *)
-    then (if self#get_owner !i = 0 then hasPl0 else hasPl1) := true;
-    incr i
-  done;
+  self#iterate (fun _ (_, pl, succs, _, _) ->
+    if (ns_size succs > 1)
+    then (if pl = plr_Even then hasPl0 else hasPl1) := true;
+  );
   (!hasPl0, !hasPl1)
 
 method is_single_parity_game =
     let hasPar0 = ref false in
     let hasPar1 = ref false in
-    let n = self#size in
-    let i = ref 0 in
-    while (!i < n) && (not (!hasPar0 && !hasPar1)) do
-    	let pr = self#get_priority !i in
+    self#iterate (fun _ (pr, _, _, _, _) ->
     	if pr >= 0
     	then (if pr mod 2 = 0 then hasPar0 else hasPar1) := true;
-    	incr i
-    done;
+    );
     if !hasPar0 && !hasPar1
     then None
     else Some (if !hasPar0 then 0 else 1)
@@ -894,18 +821,18 @@ method to_dynamic_paritygame_by_strategy strat =
 
 (********** MODAL LOGIC **********)
 method get_diamonds t =
-  NodeSet.fold (fun v -> fun s ->
+  ns_fold (fun s -> fun v ->
                  ns_fold (fun s' -> fun u ->
                                    if self#is_defined u then
-                                     NodeSet.add u s'
+                                     ns_add u s'
                                    else s')
                                  s (self#get_predecessors v))
-               t NodeSet.empty
+               ns_empty t
 
 method get_boxes t =
   let c = self#get_diamonds t in
-  NodeSet.filter (fun v -> if self#is_defined v then
-                             ns_fold (fun b -> fun w -> b && NodeSet.mem w t) true (self#get_successors v)
+  ns_filter (fun v -> if self#is_defined v then
+                             ns_fold (fun b -> fun w -> b && ns_elem w t) true (self#get_successors v)
                            else
                              false
                  ) c

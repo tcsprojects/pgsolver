@@ -1,5 +1,6 @@
 open Paritygame;;
 open Arrayparitygame;;
+open Pgnode;;
   
 let random_game_func arguments =
 

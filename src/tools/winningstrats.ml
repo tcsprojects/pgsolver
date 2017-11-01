@@ -1,6 +1,7 @@
 open Arg;;
 open Tcsargs;;
 open Paritygame;;
+open Pgnodeset;;
   
 module CommandLine =
 struct

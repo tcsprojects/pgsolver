@@ -6,6 +6,8 @@ open Tcsbasedata;;
 open Paritygame ;;
 open Univsolve;;
 open Transformations;;
+open Pgnodeset;;
+
 
 
 let solve' (game: paritygame) =

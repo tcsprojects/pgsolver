@@ -8,6 +8,7 @@
 open Basics;;
 open Paritygame;;
 open Univsolve;;
+open Pgnodeset;;
 
 
 

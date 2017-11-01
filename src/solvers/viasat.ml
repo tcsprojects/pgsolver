@@ -4,6 +4,7 @@ open Univsolve ;;
 open Tcstiming;;
 open Satwrapper;;
 open Tcsarray;;
+open Pgnodeset;;
 
 
 module Varencoding =

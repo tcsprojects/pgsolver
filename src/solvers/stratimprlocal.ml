@@ -6,6 +6,7 @@ open Paritygame;;
 open Univsolve;;
 open Transformations;;
 open Basics;;
+open Pgnode;;
 
 module LocalSolver = struct
 	

@@ -5,6 +5,7 @@ open Tcsbasedata;;
 open Univsolve;;
 open Tcsarray;;
 open Tcslist;;
+open Pgnodeset;;
 
 let improvement_policy_optimize_fair_default_tie_break game node_total_ordering _ _ valu =
 	ListUtils.min_elt (fun (_, _, k) (_, _, k') ->

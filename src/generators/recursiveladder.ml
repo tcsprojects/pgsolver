@@ -1,6 +1,7 @@
 open Paritygame;;
 open Arrayparitygame;;
-  
+open Pgnode;;
+
 let generator_game_func arguments =
 
 	let show_help _ =

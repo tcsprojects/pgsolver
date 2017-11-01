@@ -10,6 +10,9 @@ open Paritygame;;
 open Arrayparitygame;;
 open Univsolve;;
 open Tcsqueue;;
+open Pgnode;;
+open Pgnodeset;;
+
 
 
 (* -------------  AUXILIARY FUNCTIONS -------------------------------------- *)
@@ -32,7 +35,7 @@ let rec find_lastindex_with a pred start =
 ;;
 
 
-(* This renders a Paritygame.nodeset as e.g. as "{1,2,3,4}".
+(* This renders a Pgnodeset.nodeset as e.g. as "{1,2,3,4}".
  * We'll use it when logging the successors of a node. *)
 let ns_format nodeset =
     let commajoin l r = match l with

@@ -1,6 +1,7 @@
 open Paritygame;;
 open Arrayparitygame;;
-  
+open Pgnode;;
+
 let n = ref 0
 let with_self_cycles = ref true
 			   

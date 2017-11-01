@@ -2,6 +2,7 @@ open Arg ;;
 open Tcsargs;;
 open Basics ;;
 open Paritygame ;;
+open Pgnodeset;;
 
 let out s =
 	print_string s;

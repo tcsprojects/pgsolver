@@ -7,7 +7,7 @@ open Paritygame;;
  * Global Preprocessing                                       *
  **************************************************************)
 
-val remove_useless_self_cycles_inplace: paritygame -> node list
+val remove_useless_self_cycles_inplace: paritygame -> Pgnode.node list
 
 
 
@@ -57,7 +57,7 @@ val combine_games: paritygame list -> paritygame
 
 val bouncing_node_transformation: paritygame -> paritygame
 
-val compress_nodes: paritygame -> paritygame * node array * node array
+val compress_nodes: paritygame -> paritygame * Pgnode.node array * Pgnode.node array
 
 val normal_form_translation: paritygame -> paritygame
 
@@ -73,7 +73,7 @@ val min_max_swap_transformation: paritygame -> paritygame
 (* broken; unfixed; replaced by non-inplace version, specialised to sorting by priority comparison
 val sort_game_inplace         : paritygame -> ((priority * player * nodeset * string option) ->
 					       (priority * player * nodeset * string option) -> int) ->
-				(player array * node array)
+				(player array * Pgnode.node array)
  *)
 						 
-val sort_game_by_prio : paritygame -> (paritygame * node array * node array)
+val sort_game_by_prio : paritygame -> (paritygame * Pgnode.node array * Pgnode.node array)

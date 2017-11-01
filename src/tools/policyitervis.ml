@@ -8,6 +8,7 @@ open Univsolve;;
 open Solvers ;;
 open Str ;;
 open Stratimpralgs ;;
+open Pgnodeset;;
 
 module CommandLine =
 struct

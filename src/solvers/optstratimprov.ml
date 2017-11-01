@@ -5,6 +5,7 @@ open Univsolve;;
 open Transformations;;
 open Tcsarray;;
 open Tcslist;;
+open Pgnodeset;;
 
 
 let array_max a less = ArrayUtils.max_elt (fun x y -> if less x y then -1 else 1) a

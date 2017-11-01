@@ -23,242 +23,15 @@
 
 open Tcsbasedata
 open Tcsset
-
-(**************************************************************
- *                          NODES                             *
- **************************************************************)
-              
-(** Type for nodes. Currently  represented as integer value.
-    WARNING: May becomes abstract in the future.
-*)
-type node = int
-
-(** Returns an undefined node. 
-    This conforms the integer value of -1.
-*)
-val nd_undef  : node
-
-(** Creates a string representation of the delivered node.
-
-    @param node node which should be represented as string
-    @return string representation
-*)
-val nd_show : node -> string
+open Pgnode
+open Pgnodeset
 
 
 
-(**************************************************************
- *                          NODESET                           *
- **************************************************************)
-                        
-(* Functions for representing sets of nodes, particularly for successors 
-   and predecessors of given nodes *)
-
-(** Type for nodesets.
-
-    @see <https://github.com/tcsprojects/tcslib/blob/master/src/data/tcsset.ml> Treeset of TCSSet
-*)
-type nodeset 
-
-(** Checks if the given nodeset is empty.
-
-    @param nodeset set to be checked
-    @return if nodeset is empty
-*)
-val ns_isEmpty : nodeset -> bool
-
-(** Checks if the given node is a member of the given nodeset.
-
-    @param node node to be checked
-    @param nodeset set to check if node is included
-    @return if node is included
-*)
-val ns_elem    : node -> nodeset -> bool
-
-(** Compares two nodes.
-
-    @param node node n_one to compare
-    @param node node n_two to compare with
-    @return -1 if n_one < n_two, 0 if n_one = n_two, 1 if n_one > n_two
-*)
-val ns_nodeCompare : node -> node -> int
-
-(** Compares two nodesets.
-
-    @param nodeset nodeset ns_one to compare
-    @param nodeset nodeset ns_two to compare with
-    @return -1 if ns_one < ns_two, 0 if ns_one = ns_two, 1 if ns_one > ns_two
-*)
-val ns_compare : nodeset -> nodeset -> int
-
-(** Constructor for empty nodeset.
-
-    @return empty nodeset
-*)
-val ns_empty   : nodeset
-
-(** Creates nodeset out of nodelist.
-
-   @param nodelist list of nodes from which set should be created
-   @return set of nodes from node list
-*)
-val ns_make    : node list -> nodeset
-                                
-(** Returns the number of nodes in a nodeset, e.g. the size.
-
-    @param nodeset nodeset which size should be calculated
-    @return size of nodeset
-*)
-val ns_size    : nodeset -> int
-
-                              
-(********** ITERATOR FUNCTIONS **********)
-(** Fold nodeset.
- *)                             
-val ns_fold    : ('a -> node -> 'a) -> 'a -> nodeset -> 'a
-                                                          
-(** Iterate nodeset.
- *)
-val ns_iter    : (node -> unit) -> nodeset -> unit
-                                                
-(** Map nodeset.
- *)
-val ns_map     : (node -> node) -> nodeset -> nodeset
-                                                
-(** Filter nodeset via filter function
-    
-    @param (node -> bool) filter funciton
-    @param nodeset nodeset to be filtered
-    @retrun filtered nodeset
- *)
-val ns_filter  : (node -> bool) -> nodeset -> nodeset
-
-                                                
-(********** FINDING ELEMENTS **********)
-(** Checks if via specified node does exist.
-
-    @param (node -> bool) specifier
-    @param nodeset nodeset to be checked
-    @return if node with specification exists
- *)
-val ns_exists  : (node -> bool) -> nodeset -> bool
-                                                
-(** Checks if specification holds for all nodes.
-
-    @param (node -> bool) specifier
-    @param nodeset nodeset to be checked
-    @return if specification holds for all nodes
- *)
-val ns_forall  : (node -> bool) -> nodeset -> bool
-                                                
-(** Finds and returns specified node option.
-
-    @param (node -> bool) specifier
-    @param nodeset nodeset to be searched
-    @return if found Some node if not None
- *)
-val ns_find    : (node -> bool) -> nodeset -> node
-                                                
-(** Returns maximum node.
-    The maximum is defined via given comparator function.
-
-    @param nodeset nodeset to be searched
-    @param (node -> node -> bool) comparator function ( true node one is smaller, false node one is bigger ).
-    @return maximum node for comparator
- *)
-val ns_max     : nodeset -> (node -> node -> bool) -> node
-
-(** Returns a randomly chosen element from a node set.
-    
-    @param nodeset nodeset to get random node from
-    @return random node
- *)
-val ns_some    : nodeset -> node
-
-(** Returns the smallest (by name) node in a nodeset.
-
-    @param nodeset nodeset to get smallest node from
-    @return smallest node by name
- *)
-val ns_first   : nodeset -> node
-
-(** Returns greatest (by name) node in a nodeset.
-
-    @param nodeset nodeset to get greatest node from
-    @param greatest node by name
-*)
-val ns_last    : nodeset -> node 
-
-(** Add node to nodeset.
-
-    @param node node to add
-    @param nodeset nodeset to add to
-    @return extended nodeset
- *)
-
-(********** MODIFICATION **********)                        
-val ns_add     : node -> nodeset -> nodeset
-
-(** Delete node from nodeset.
-
-    @param node node to be deleted
-    @param nodeset nodeset to remove node from
-    @return narrowed nodeset
- *)
-val ns_del     : node -> nodeset -> nodeset
-
-(** Unifies two nodesets.
-
-    @param nodeset nodeset one to be unified
-    @param nodeset nodeset two to be unified
-    @return unified nodeset from nodeset one and nodeset two
- *)
-val ns_union   : nodeset -> nodeset -> nodeset
-
-
-(** Extract a list of nodes from a nodeset.
-
-    @param nodeset nodeset to extract nodes as list from
-    @return node list from nodeset 
- *)
-val ns_nodes   : nodeset -> node list
 
 
 
                                  
-(**************************************************************
- *                     NODESET STRUCTURE                      *
- **************************************************************)
-(** A type and data structure for a set of game nodes. 
-*)
-module NodeSet : sig
-    type elt = int
-    type t
-    val empty : t
-    val is_empty : t -> bool
-    val mem : elt -> t -> bool
-    val add : elt -> t -> t
-    val singleton : elt -> t
-    val remove : elt -> t -> t
-    val union : t -> t -> t
-    val inter : t -> t -> t
-    val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
-    val cardinal : t -> int
-    val elements : t -> elt list
-    val min_elt : t -> elt
-    val max_elt : t -> elt
-    val choose : t -> elt
-    val split : elt -> t -> t * bool * t
-end
 
 
 
@@ -649,19 +422,13 @@ class virtual paritygame : object('self)
       @return new paritygame object with same specifications
   *)
   method virtual copy : 'self
-                          
-  (** Sorts this game by the specifications of the given function.
-
-      @param f function for sorting. expects two node specifications and returns int value which is the bigger one.
-  *)
-  method virtual sort : ((priority * player * nodeset * nodeset * string option) -> (priority * player * nodeset * nodeset * string option) -> int) -> unit
 
   (** Iterates over the whole paritygame and applies the given function to each node.
 
       @param f function which will be applied to each node. expects node and node properties as arguments
   *)
   method virtual iterate : (node -> (priority * player * nodeset * nodeset * string option) -> unit) -> unit
-                                                                                                          
+
   (** Iterate over all edges of the paritygame and applies the given function to each edge.
 
       @param f function to be applied to each edge 
@@ -1124,17 +891,17 @@ class virtual paritygame : object('self)
   (********** MODAL LOGIC **********)
   (** Returns the set of all nodes in this pg that have at least one successor in nodeset.
 
-      @param Nodeset.t nodeset to look for successor
+      @param nodeset nodeset to look for successor
       @return set of all nodes with one or more successors in nodeset
   *)
-  method get_diamonds : NodeSet.t -> NodeSet.t
+  method get_diamonds : nodeset -> nodeset
 
   (** Returns set of all nodes in this pg that have all successors in nodeset.
 
-      @param NodeSet.t nodeset to look for all successors
+      @param nodeset nodeset to look for all successors
       @return set of nodes with all successors in nodeset
    *)
-  method get_boxes     : NodeSet.t -> NodeSet.t                                
+  method get_boxes     : nodeset -> nodeset
 end
 
 

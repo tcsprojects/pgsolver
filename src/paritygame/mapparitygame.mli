@@ -1,43 +1,12 @@
-(** Interface for array paritygame.
-    For further information on each class method see paritygame.mli 
- *)
+open Tcsset;;
 
-
-(**************************************************************
- *                          TOOLS                             *
- **************************************************************)
-(** Method for adding an edge between two nodes in an (priority * player * successors * predecessors * description) array.
-    
-    @param array array to set edge (v,u) in
-    @param predecessor v
-    @param successor u
-*)
-val add_edge_in_node_array :
-  ('a * 'b * Pgnodeset.nodeset * Pgnodeset.nodeset * 'c) array ->
-  Pgnode.node -> Pgnode.node -> unit
-
-
-
-
-(**************************************************************
- *                       ARRAY PARITYGAME                     *
- **************************************************************)
-(** Arrayparitygame class. 
-    This class inherits from the general paritygame class and replaces the former paritygame type.
-    The structure behind this class is an (priority * player * nodeset * nodeset * string option) array. 
-
-    @param initfunction initializer function parameter. is not required. if should be used has to be tagged with ~initFunc:(fun....)
-    @param int size of arrayparitygame. is required.
-*)                                          
-class array_pg : ?initFunc:(Pgnode.node ->Paritygame.priority * Paritygame.player * Pgnode.node list * string option) -> int ->
+class map_pg :
   object ('self)
            
-    val mutable nodes : (Paritygame.priority * Paritygame.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option) array
+    val mutable nodes : (Pgnode.node, Paritygame.priority * Paritygame.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option) TreeMap.t
 
                                                                                                                             
     (********** GENERAL **********)  
-    method private init : (Pgnode.node -> Paritygame.priority * Paritygame.player * Pgnode.node list * string option) -> unit
-
     method size : int
                     
     method copy : 'self
@@ -207,47 +176,3 @@ class array_pg : ?initFunc:(Pgnode.node ->Paritygame.priority * Paritygame.playe
 
     method to_dynamic_paritygame_by_strategy : Paritygame.strategy -> Paritygame.dynamic_paritygame                                           
   end
-
-
-
-(********************************************************
- *                 PARITYGAME BUILDER                   *
- ********************************************************)
-(* This can be used to build parity games starting from a particular node in an on-the-fly fashion.
-   It is particularly useful when the resulting size is not (easily) known in advance. For an example
-   of its use, see src/generators/langincl.ml .
-
-   To use it, define a module of the type PGDescription using some type gamenode to represent nodes and
-   giving functions that read off the priority, owner successors, a possible string representation of a
-   game node, and a list of particular initial nodes.
-   The module obtained by applying the functor Build then gives you a module with a function that
-   builds a parity game containing all the game nodes that are reachable these initial ones. Additionally,
-   you get functions that take nodes as arguments from which to build the parity game.
- *)
-module type PGDescription =
-  sig
-    type gamenode
-    val compare : gamenode -> gamenode -> int
-    val owner : gamenode -> Paritygame.player
-    val priority : gamenode -> Paritygame.priority
-    val successors : gamenode -> gamenode list
-    val show_node : gamenode -> string option
-    val initnodes : unit -> gamenode list
-  end
-
-module type PGBuilder =
-  sig
-    type gamenode
-    val build : unit -> array_pg
-    val build_from_node : gamenode -> array_pg
-    val build_from_nodes : gamenode list -> array_pg
-  end
-
-module Build :
-  functor (T : PGDescription) ->
-    sig
-      type gamenode = T.gamenode
-      val build : unit -> array_pg
-      val build_from_node : gamenode -> array_pg
-      val build_from_nodes : gamenode list -> array_pg
-    end

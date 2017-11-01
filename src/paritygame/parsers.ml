@@ -1,7 +1,8 @@
 open Paritygame;;
 open Arrayparitygame;;
 open Bytes;;
-  
+
+
 let parse_init_parity_game in_channel = 
 	let game = ref (new array_pg 0) in
 	let add v pr pl succs desc =
@@ -26,6 +27,23 @@ let parse_init_parity_game in_channel =
 		List.iter (fun (v, pr, pl, succs, desc) -> add v pr pl succs desc) !queue
 	);
 	(!init_value, !game)
+
+
+
+(*
+let parse_init_parity_game in_channel =
+	let game = new map_pg in
+	let init_value = ref 0 in
+	let edges = ref [] in
+	Tcsgameparser.parse_parity_game (fun _ -> ()) (fun i -> init_value := i) (fun v pr pl succs desc ->
+	    let pl = if pl = 0 then plr_Even else plr_Odd in
+	    let desc = if desc = "" then None else Some desc in
+	    game#set_node v pr pl ns_empty ns_empty desc;
+	    edges := (v, succs)::!edges
+	) (fun _ -> ()) in_channel;
+    List.iter (fun (v, succs) -> List.iter (game#add_edge v) succs) !edges;
+	(!init_value, game)
+*)
 
 let parse_parity_game in_channel = snd (parse_init_parity_game in_channel)
      

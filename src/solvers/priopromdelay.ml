@@ -16,6 +16,7 @@ open Univsolve;;
 open Paritygamebitset;;
 open FSet;;
 open FMap;;
+open Pgnodeset;;
 
 let not_none = function
     None -> false

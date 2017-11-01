@@ -1,5 +1,6 @@
 open Paritygame
 open Tcsset
+open Pgnode
 
 val register: unit -> unit
 

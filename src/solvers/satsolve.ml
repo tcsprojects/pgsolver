@@ -3,6 +3,7 @@ open Basics ;;
 open Univsolve ;;
 open Tcstiming;;
 open Satwrapper;;
+open Pgnodeset;;
 
 
 type vars =
