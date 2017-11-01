@@ -17,6 +17,9 @@ open Paritygamebitset;;
 open FSet;;
 open FMap;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
+
 
 let not_none = function
     None -> false

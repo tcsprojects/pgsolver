@@ -3,6 +3,7 @@ open Tcsargs;;
 open Paritygame;;
 open Arrayparitygame;;
 open Pgnodeset;;
+open Pgplayer;;
   
 module CommandLine =
 struct

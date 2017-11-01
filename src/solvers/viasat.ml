@@ -5,6 +5,8 @@ open Tcstiming;;
 open Satwrapper;;
 open Tcsarray;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
 
 module Varencoding =

@@ -11,6 +11,7 @@ open Satwrapper ;;
 open Pseudosatwrapper ;;
 open Externalsat ;;
 open Pgnodeset;;
+open Pgplayer;;
 
 let split s i = (String.sub s 0 i, String.sub s (i + 1) (String.length s - i - 1));;
 

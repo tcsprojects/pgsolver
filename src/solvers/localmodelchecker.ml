@@ -5,6 +5,8 @@ open Tcslist;;
 open Tcsarray;;
 open Tcsset;;
 open Tcsbasedata;;
+open Pgplayer;;
+open Pgpriority;;
 
 
 

@@ -9,7 +9,8 @@ open Paritygame;;
 open Transformations;;
 open Specialsolve;;
 open Pgnodeset;;
-
+open Pgplayer;;
+open Pgpriority;;
 
 
 

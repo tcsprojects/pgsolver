@@ -9,6 +9,8 @@ open Paritygame ;;
 open Univsolve;;
 open Tcsarray;;
 open Smallprogress;;
+open Pgplayer;;
+
 
 
 let solve_scc_restr game player u =

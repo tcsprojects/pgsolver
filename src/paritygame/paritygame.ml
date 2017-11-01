@@ -9,40 +9,15 @@ open Tcslist;;
 open Tcsgraph;;
 open Pgnode;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 (*open Pgprofiling*)
   
 
 
                                  
                               
-(**************************************************************
- *                       PLAYER/PRIORITY                      *
- **************************************************************)
-type player = int
-type priority = int
 
-(********** PLAYER FUNCTIONS **********)                  
-let plr_Even = 0
-let plr_Odd = 1
-let plr_Zero = plr_Even
-let plr_One = plr_Odd
-let plr_undef = -1
-
-let plr_random _ = Random.int 2
-let plr_opponent pl = 1 - pl
-let plr_benefits pr = pr mod 2
-let plr_show = string_of_int
-
-let plr_iterate f =
-  f plr_Even; f plr_Odd
-
-
-(********** PRIORITY FUNCTION **********)
-let prio_good_for_player pr pl = if pl = plr_Even then pr mod 2 = 0 else pr mod 2 = 1
-let odd pr = pr mod 2 = 1
-let even pr = pr mod 2 = 0
-
-                           
 (**************************************************************
  *                        NODE ORDERING                       *
  **************************************************************)
@@ -50,11 +25,8 @@ type pg_ordering      = node * priority * player * nodeset -> node * priority * 
 
 (* type pg_ordering      = int * int * int * int array -> int * int * int * int array -> int *)
 
-let reward player prio =
-	if (not (prio mod 2 = player)) && (prio >= 0) then -prio else prio;;
-
 let ord_rew_for pl (_, pr, _, _) (_, pr', _, _) =
-	if (pr != -1) && (pr' != -1)
+	if (pr != prio_undef) && (pr' != prio_undef)
 	then compare (reward pl pr) (reward pl pr')
 	else compare pr pr';;
 
@@ -79,8 +51,7 @@ let sol_set sol v pl = sol.(v) <- pl
 let sol_iter = Array.iteri
 
 let format_solution sol =
-  let show i = match i with -1 -> "_" | _ -> string_of_int i in
-  "[" ^ String.concat "," (Array.to_list (Array.mapi (fun i -> fun w -> string_of_int i ^ ":" ^ show w) sol)) ^ "]"
+  "[" ^ String.concat "," (Array.to_list (Array.mapi (fun i -> fun w -> string_of_int i ^ ":" ^ plr_show w) sol)) ^ "]"
 
                                                                                                                   
 (***************************************************************
@@ -107,29 +78,23 @@ exception Unmergable
 let merge_strategies_inplace st1 st2 =
   let l = Array.length st1 in
   for i=0 to l-1 do
-   st1.(i) <-  match (st1.(i),st2.(i)) with
-                     (-1,x) -> x
-                   | (x,-1) -> x
-	 	   | _      -> raise Unmergable
+    if st1.(i) = -1 then st1.(i) <- st2.(i)
   done
 
 let merge_solutions_inplace sol1 sol2 =
   let l = Array.length sol1 in
   for i=0 to l-1 do
-   sol1.(i) <-  match (sol1.(i),sol2.(i)) with
-                      (-1,x) -> x
-                    | (x,-1) -> x
-	  	    | _      -> raise Unmergable
+    if sol1.(i) = plr_undef then sol1.(i) <- sol2.(i)
   done
 
 let print_solution_strategy_parsable sol strat =
 	let n = Array.length sol in
 	print_string ("paritysol " ^ string_of_int (n-1) ^ ";\n");
 	for i = 0 to n - 1 do
-		if sol.(i) >= 0 then (
+		if sol.(i) != plr_undef then (
             print_int i;
             print_char ' ';
-            print_int sol.(i);
+            print_string (plr_show sol.(i));
             if strat.(i) >= 0 then (
                 print_char ' ';
                 print_int strat.(i)
@@ -142,8 +107,8 @@ let print_solution_strategy_parsable sol strat =
 (**************************************************************
  *                   PARTIAL PARITYGAME                       *
  **************************************************************)
-type partial_paritygame = int * (int -> int Enumerators.enumerator) * (int -> int * int) * (int -> string option)
-type partial_solution = int -> int * int option
+type partial_paritygame = node * (node -> node Enumerators.enumerator) * (node -> priority * player) * (node -> string option)
+type partial_solution = node -> player * node option
 type partial_solver = partial_paritygame -> partial_solution
 
 
@@ -258,12 +223,12 @@ method print =
 	print_string ("parity " ^ string_of_int n ^ ";\n");
 	for i = 0 to n - 1 do
 	  let (pr, pl, succs, _, desc) = self#get_node i in
-	  if pr >= 0 && pl >= 0 && pl <= 1 then (
+	  if pr >= 0 && pl != plr_undef then (
             print_int i;
             print_char ' ';
             print_int pr;
             print_char ' ';
-            print_int pl;
+            print_string (plr_show pl);
             print_char ' ';
             print_string (String.concat "," (List.map string_of_int (ns_nodes succs)));
             (
@@ -284,23 +249,22 @@ method to_dotty solution strategy h =
   for i = 0 to (self#size)-1 do
     let (p,pl,succs,_,ann) = self#get_node i in
 
-    if p >= 0 && pl >= 0 && pl <= 1
+    if p >= 0 && pl != plr_undef
     then (let name = encode i in
           let label = (match ann with None -> ""
                                     | Some s -> s ^ ": ") ^ string_of_int p
           in
-          let shape = if pl=0 then "diamond" else "box" in
-          let color = try
+          let shape = if pl=plr_Even then "diamond" else "box" in
+          let color =
                         match solution.(i) with
-                              0 -> "green"
-                            | 1 -> "red"
-			    | _ -> "black"
-                      with _ -> "black"
+                              PlayerEven -> "green"
+                            | PlayerOdd -> "red"
+			                | _ -> "black"
           in
           output_string h (name ^ " [ shape=\"" ^ shape ^ "\", label=\"" ^ label ^ "\", color=\"" ^ color ^ "\" ];\n");
 
 	  ns_iter (fun w -> let color2 = try
-				             if pl = 1 - solution.(i) || w = strategy.(i) then color else "black"
+				             if (plr_opponent pl = solution.(i)) || (w = strategy.(i)) then color else "black"
 				           with _ -> "black"
 			      in
 			      output_string h (name ^ " -> " ^ encode w ^ " [ color=\"" ^ color2 ^ "\" ];\n" )) succs
@@ -356,7 +320,7 @@ method get_min_prio = self#get_priority (self#get_min ord_prio)
                                         
 method get_max_prio_for player =
 	let pr = self#get_priority (self#get_max_rew_node_for player) in
-	if pr mod 2 = player then pr else -1
+	if plr_benefits pr = player then pr else -1
 
 method get_index = self#get_max_prio - self#get_min_prio + 1
                                                              
@@ -379,9 +343,9 @@ method to_string =
 	let s = ref "" in
 	for i = n-1 downto 0 do
 	  let (pr, pl, succs, _ , desc) = self#get_node i in
-	  if pr >= 0 && pl >= 0 && pl <= 1 then
+	  if pr >= 0 && pl != plr_undef then
 	    begin
-	      s := string_of_int i ^ " " ^ string_of_int pr ^ " " ^ string_of_int pl ^ " " ^
+	      s := string_of_int i ^ " " ^ string_of_int pr ^ " " ^ plr_show pl ^ " " ^
 	           (String.concat "," (List.map string_of_int (ns_nodes succs)) ^
 		     (match desc with
 			None   -> ""
@@ -422,7 +386,7 @@ method collect_max_prio_nodes =
 	self#collect_nodes_by_prio (fun pr -> pr = m)
 
 method collect_max_parity_nodes =
-	let (p0, p1) = (self#get_max_prio_for 0, self#get_max_prio_for 1) in
+	let (p0, p1) = (self#get_max_prio_for plr_Even, self#get_max_prio_for plr_Odd) in
     let p = if p0 < 0 then p1 else if p1 < 0 then p0
             else if p0 < p1 then p0 + 1 else p1 + 1 in
     self#collect_nodes_by_prio (fun pr -> pr >= p)
@@ -631,10 +595,10 @@ method attr_closure_inplace strategy player region =
 
 
 method attractor_closure_inplace_sol_strat (deltafilter : (node -> bool)) sol strat pl0 pl1 =
-	let sol0 = self#attr_closure_inplace' strat 0 pl0 true (fun v -> not (ns_elem v pl1)) true in
-	let sol1 = self#attr_closure_inplace' strat 1 pl1 true (fun v -> not (ns_elem v pl0)) true in
-	ns_iter (fun q -> sol.(q) <- 0) sol0;
-	ns_iter (fun q -> sol.(q) <- 1) sol1;
+	let sol0 = self#attr_closure_inplace' strat plr_Even pl0 true (fun v -> not (ns_elem v pl1)) true in
+	let sol1 = self#attr_closure_inplace' strat plr_Odd pl1 true (fun v -> not (ns_elem v pl0)) true in
+	ns_iter (fun q -> sol.(q) <- plr_Even) sol0;
+	ns_iter (fun q -> sol.(q) <- plr_Odd) sol1;
         (sol0, sol1)
 
 (********** PARTIAL PARITYGAME **********)
@@ -670,14 +634,14 @@ method induce_counting_partialparitygame start =
 	in
 		(counter, ((start, delta, data, desc): partial_paritygame))
 
-method partially_solve_dominion (start: int) (partially_solve: partial_solver) =
+method partially_solve_dominion (start: node) (partially_solve: partial_solver) =
 	let n = self#size in
 	let (_, delta, data, desc) = self#induce_partialparitygame start in
-	let solution = Array.make n (-1) in
+	let solution = Array.make n (plr_undef) in
 	let strategy = Array.make n (-1) in
 
 	let rec expand i f =
-		if solution.(i) > -1 then ()
+		if solution.(i) != plr_undef then ()
 		else let (winner, strat) = f i in
 			 	solution.(i) <- winner;
 			 	match strat with
@@ -695,21 +659,21 @@ method partially_solve_dominion (start: int) (partially_solve: partial_solver) =
 method partially_solve_game partially_solve =
 	let n = self#size in
 	let (_, delta, data, desc) = self#induce_partialparitygame 0 in
-	let solution = Array.make n (-1) in
+	let solution = Array.make n plr_undef in
 	let strategy = Array.make n (-1) in
 	let data' node =
-		if solution.(node) = -1
+		if solution.(node) = plr_undef
 		then data node
-		else (solution.(node), snd (data node))
+		else (fst (data node), solution.(node))
 	in
 	let delta' node =
-		if solution.(node) = -1
+		if solution.(node) = plr_undef
 		then delta node
 		else Enumerators.singleton node
 	in
 
 	let rec expand i f =
-		if solution.(i) > -1 then ()
+		if solution.(i) != plr_undef then ()
 		else let (winner, strat) = f i in
 			 	solution.(i) <- winner;
 			 	match strat with
@@ -721,7 +685,7 @@ method partially_solve_game partially_solve =
 	in
 
     for i = 0 to n - 1 do
-        if (solution.(i) > -1) || (self#get_owner i < 0) then ()
+        if (solution.(i) != plr_undef) || (self#get_owner i = plr_undef) then ()
         else expand i (partially_solve (i, delta', data', desc))
     done;
 
@@ -755,10 +719,10 @@ method number_of_strategies pl m =
   min !n m
 
 method compute_priority_reach_array player =
-    let maxprspm = (self#get_max_prio_for (1 - player)) / 2 in
+    let maxprspm = (self#get_max_prio_for (plr_opponent player)) / 2 in
     (* Dumb version (!)  *)
     let rec calc_iter game  maxvalues =
-        let badPrio = game#get_max_prio_for (1 - player) in
+        let badPrio = game#get_max_prio_for (plr_opponent player) in
         let goodPrio = game#get_max_prio_for player in
         if badPrio >= 0 then (
             let tmp_nodes = ref ns_empty in

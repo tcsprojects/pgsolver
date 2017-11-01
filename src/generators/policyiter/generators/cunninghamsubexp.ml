@@ -4,6 +4,7 @@ open Tcsbasedata;;
 open Paritygame;;
 open Stratimprgenerators;;
 open Mdp;;
+open Pgplayer;;
 
 type gamenode =
 	FinalCycle

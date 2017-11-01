@@ -26,4 +26,3 @@ val nd_show : node -> string
     @return -1 if n_one < n_two, 0 if n_one = n_two, 1 if n_one > n_two
 *)
 val nd_compare : node -> node -> int
-

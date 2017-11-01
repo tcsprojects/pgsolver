@@ -1,4 +1,5 @@
 open Paritygame
+open Pgplayer
 
 (**************************************************************
  * Priority Promotion Approach Definitions                    *

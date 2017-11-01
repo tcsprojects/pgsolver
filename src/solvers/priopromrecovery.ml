@@ -15,6 +15,8 @@ open Paritygame;;
 open Univsolve;;
 open Paritygamebitset;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
 
 let query game region r p player was_open att_qP att_qO subgame_vr reg_strategy vr l =

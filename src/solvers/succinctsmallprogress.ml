@@ -12,6 +12,8 @@ open Univsolve;;
 open Tcsqueue;;
 open Pgnode;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
 
 

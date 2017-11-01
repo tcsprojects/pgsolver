@@ -5,6 +5,8 @@ open Tcstiming;;
 open Satwrapper;;
 open Transformations;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
 
 type vars =

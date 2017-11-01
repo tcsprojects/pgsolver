@@ -1,7 +1,8 @@
 open Paritygame;;
 open Arrayparitygame;;
 open Pgnode;;
-  
+open Pgplayer;;
+
 let random_game_func arguments =
 
 	let show_help _ =

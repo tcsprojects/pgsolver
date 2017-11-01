@@ -1,5 +1,6 @@
 open Paritygame;;
 open Stratimprgenerators;;
+open Pgplayer;;
 
 type gamenode = DecLaneEven of int (*a*)
 			  | DecLaneOdd of int (*b*)

@@ -6,6 +6,10 @@ open Tcslist;;
 open Tcsgraph;;
 open Pgnodeset;;
 open Pgnode;;
+open Pgplayer;;
+open Pgpriority;;
+
+
 
 (**************************************************************
  *                          TOOLS                             *

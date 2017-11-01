@@ -1,6 +1,8 @@
 open Paritygame;;
 open Arrayparitygame;;
 open Bytes;;
+open Pgplayer;;
+
 
 
 let parse_init_parity_game in_channel = 

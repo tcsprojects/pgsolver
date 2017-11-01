@@ -4,6 +4,8 @@ open Univsolve ;;
 open Tcstiming;;
 open Satwrapper;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
 
 type vars =

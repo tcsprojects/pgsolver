@@ -1,6 +1,7 @@
 open Paritygame;;
 open Arrayparitygame;;
-  
+open Pgplayer;;
+
 let n = ref 0
 let m = ref 2
 

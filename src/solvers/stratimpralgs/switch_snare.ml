@@ -7,6 +7,8 @@ open Tcsarray;;
 open Tcslist;;
 open Tcsgraph;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
 
 let default_snare_sel _ _ _ _ snares =

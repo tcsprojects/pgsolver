@@ -25,108 +25,8 @@ open Tcsbasedata
 open Tcsset
 open Pgnode
 open Pgnodeset
-
-
-
-
-
-
-                                 
-
-
-
-                   
-(**************************************************************
- *                      PLAYER / PRIORITY                     *
- **************************************************************)
-(** Type of player. Currently represented as an integer value.
-    
-    WARNING: This type may become abstract in the future.
-*)
-type player
-
-(** Type of priority of a node. Currently represented as an integer value.
-    This type may become abstract in the future.
-*)
-type priority = int
-
-                  
-(********** PLAYER FUNCTIONS **********)
-(** Player even. This player conforms the integer value 0.
-
-    @return player even.
-*)
-val plr_Even  : player
-
-(** Player odd. This player conforms the integer value 1.
-
-    @return player odd
-*)
-val plr_Odd   : player
-
-(** Undefined player. This player conforms the integer value -1.
-
-    @return undefined player
-*)
-val plr_undef : player
-
-(** Returns a random player.
-
-    @return player even or player odd
-*)
-val plr_random : unit -> player
-
-(** Returns the opponent player.
-
-    @param player delivered player
-    @return player odd if player even was delivered. player even, if player odd was delivered.
-*)
-val plr_opponent : player -> player
-
-(** Returns the player which benefits from the given priority.
-    Is the priority even, player even benefits. Is the priority odd, player odd benefits.
-
-    @param priority priority to check for
-    @return player which benefits from delivered priority
-*)
-val plr_benefits : priority -> player
-
-(** Returns a string representation of the player.
-
-    @param player player to be shown
-    @return string representation of given player
-*)
-val plr_show : player -> string
-
-(** Applies function to both players.
-
-    @param f function to be applied to players
-*)
-val plr_iterate : (player -> unit) -> unit
-
-
-(********** PRIORITY FUNCTIONS **********)
-(** Checks if a given priority is good for a given player.
-
-    @param priority priority to be checked with player
-    @param player player to be checked with priority
-    @return true, if priority is good for player. false, if priority is not good for player
-*)
-val prio_good_for_player : priority -> player -> bool
-
-(** Checks if a priority is odd.
-
-    @param priority priority to be checked
-    @return if priority is odd
-*)
-val odd: priority -> bool
-
-(** Checks if a priority is even.
-
-    @param priority priority to be checked
-    @return if priority is even
-*)
-val even: priority -> bool
+open Pgplayer
+open Pgpriority
 
 
 
@@ -140,13 +40,6 @@ val even: priority -> bool
 *)
 type pg_ordering  = node * priority * player * nodeset -> node * priority * player * nodeset -> int
                                                                                                   
-(** Returns reward of given priority for given player. 
-    
-    @param player player to check for reward
-    @param priority priority to check for
-    @return negative (priority x -1) if bad for player, priority if good for player
-*)
-val reward            : player -> priority -> priority
 
 (** Returns pg_ordering by reward for given player.
 

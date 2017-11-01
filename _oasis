@@ -18,7 +18,7 @@ Library "pgsolver"
   Path:       src
   BuildDepends: num, str, TCSLib, extlib, ocaml-sat-solvers, minisat
   Modules: pgsolver/Basics, pgsolver/Info,
-           data/Pgnode, data/Pgnodeset,
+           data/Pgnode, data/Pgnodeset, data/Pgplayer, data/Pgpriority,
            paritygame/Paritygame, paritygame/Arrayparitygame, paritygame/Mapparitygame,
            paritygame/Verification, paritygame/Univsolve, paritygame/Solvers,
            paritygame/Solverregistry, paritygame/Mdp, paritygame/Paritygamebitset, paritygame/Parsers,

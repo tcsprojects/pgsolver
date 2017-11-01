@@ -2,6 +2,7 @@ open Tcsset
 open Arrayparitygame
 open Paritygame
 open Mdp
+open Pgplayer
 
 
 

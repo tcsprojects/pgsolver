@@ -3,6 +3,7 @@ open Stratimprgenerators;;
 open Mdp;;
 open Arg;;
 open Tcsargs;;
+open Pgplayer;;
 
 let auso_compat = ref false
 let index_one = ref false

@@ -2,7 +2,8 @@ open OUnit;;
 open Solvers;;
 open Paritygame;;
 open Arrayparitygame;;
-  
+open Pgplayer;;
+
 let random_game (size, max_prio, outdegmin, outdegmax, self_cycles, seed) =
 		Random.init seed;
     new array_pg size ~initFunc:(fun i -> (

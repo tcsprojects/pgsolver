@@ -1,5 +1,6 @@
 open Basics;;
 open Paritygame;;
+open Pgpriority;;
 
 
 

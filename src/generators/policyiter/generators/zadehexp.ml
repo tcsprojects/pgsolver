@@ -1,6 +1,8 @@
 open Paritygame;;
 open Stratimprgenerators;;
 open Mdp;;
+open Pgplayer;;
+open Pgplayer;;
 
 type gamenode =
 	FinalCycle (*Z*)                      (*t*)

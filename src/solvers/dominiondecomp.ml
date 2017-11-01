@@ -11,6 +11,7 @@ open Tcsbasedata.OptionUtils;;
 open Paritygame ;;
 open Univsolve;;
 open Pgnodeset;;
+open Pgplayer;;
 
 
 let newwin options game =

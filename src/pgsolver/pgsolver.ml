@@ -10,6 +10,7 @@ open Solvers ;;
 open Generators ;;
 open Whoiswho ;;
 open Pgnode;;
+open Pgplayer;;
 (* open Pgprofiling;; *)
 
 module CommandLine =

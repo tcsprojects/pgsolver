@@ -9,6 +9,7 @@ open Stratimpralgs;;
 open Tcslist;;
 open Tcsarray;;
 open Pgnodeset;;
+open Pgplayer;;
 
 let out s =
 	print_string s;

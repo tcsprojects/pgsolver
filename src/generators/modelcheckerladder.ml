@@ -5,6 +5,9 @@
 
 open Paritygame;;
 open Arrayparitygame;;
+open Pgplayer;;
+open Pgpriority;;
+
 let n = ref 0
 
 module ModelcheckerLadderGame = Build( 

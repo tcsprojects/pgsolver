@@ -1,6 +1,8 @@
 open Paritygame;;
 open Arrayparitygame;;
 open Pgnode;;
+open Pgplayer;;
+open Pgpriority;;
 
 let n = ref 0
 let with_self_cycles = ref true

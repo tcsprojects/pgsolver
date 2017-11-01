@@ -1,6 +1,8 @@
 open Paritygame;;
 open Arrayparitygame;;
 open Pgnode;;
+open Pgpriority;;
+
   
 let generator_game_func arguments = 
 

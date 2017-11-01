@@ -6,6 +6,7 @@ open Stratimprgenerators;;
 open Tcsmaths;;
 open Tcsstrings;;
 open Tcsarray;;
+open Pgplayer;;
 
 let n = ref 0
 let accesslen = ref 2

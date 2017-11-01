@@ -7,6 +7,10 @@ open Tcsbasedata;;
 open Paritygame;;
 open Arrayparitygame;;
 open Pgnodeset;;
+open Pgpriority;;
+open Pgplayer;;
+
+
 
 
 

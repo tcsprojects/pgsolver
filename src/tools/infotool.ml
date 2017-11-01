@@ -3,6 +3,7 @@ open Tcsargs;;
 open Basics ;;
 open Paritygame ;;
 open Pgnodeset;;
+open Pgplayer;;
 
 let out s =
 	print_string s;

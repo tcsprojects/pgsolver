@@ -9,6 +9,7 @@ open Solvers ;;
 open Str ;;
 open Stratimpralgs ;;
 open Pgnodeset;;
+open Pgplayer;;
 
 module CommandLine =
 struct

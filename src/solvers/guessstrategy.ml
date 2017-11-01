@@ -14,6 +14,9 @@ open Basics ;;
 open Paritygame ;;
 open Univsolve;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
+
 
 let solve game =
     let solve' game =

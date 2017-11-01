@@ -1,6 +1,8 @@
 open Paritygame ;;
 open Arrayparitygame;;
-  
+open Pgplayer;;
+open Pgpriority;;
+
 let levels = ref 0
 		 
 module ToHGame = Build( 

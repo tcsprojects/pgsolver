@@ -8,6 +8,7 @@ open Str ;;
 open Stratimpralgs;;
 open Tcsset;;
 open Pgnodeset;;
+open Pgplayer;;
 
 
 let out s =

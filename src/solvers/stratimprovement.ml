@@ -7,6 +7,8 @@ open Paritygame ;;
 open Univsolve;;
 open Transformations;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
 
 

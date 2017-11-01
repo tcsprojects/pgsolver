@@ -12,6 +12,8 @@ open Paritygame ;;
 open Univsolve;;
 open Tcsbasedata;;
 open Pgnodeset;;
+open Pgplayer;;
+
 
 let even i = (i mod 2 = 0)
 let odd i = (i mod 2 = 1)

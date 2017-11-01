@@ -4,6 +4,7 @@ open Tcsbasedata;;
 open Paritygame;;
 open Stratimprgenerators;;
 open Mdp;;
+open Pgplayer;;
 
 type gamenode = CycleNode of int * int (*d*)
 			  | CycleCenter of int (*e*)

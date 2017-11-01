@@ -8,6 +8,8 @@ open Tcsarray;;
 open Tcslist;;
 open Tcsstrings;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
 
 

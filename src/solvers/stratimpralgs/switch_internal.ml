@@ -7,6 +7,8 @@ open Univsolve;;
 open Tcslist;;
 open Tcsarray;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
 let list_upfront l i =
 	let rec tile f t =

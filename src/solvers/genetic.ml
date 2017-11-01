@@ -13,6 +13,9 @@ open Basics ;;
 open Arg;;
 open Tcsargs;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
+
 
 let _ = Random.self_init ()
 

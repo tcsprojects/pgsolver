@@ -4,6 +4,9 @@ open Tcsqueue;;
 open Paritygame;;
 open Pgnode;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
+
 
 
 type compact_sol_strat = (node * player * node) list;;

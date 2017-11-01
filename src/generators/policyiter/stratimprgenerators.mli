@@ -1,5 +1,7 @@
 open Paritygame
 open Mdp
+open Pgpriority
+open Pgplayer
 
 module SymbolicParityGame : sig
 

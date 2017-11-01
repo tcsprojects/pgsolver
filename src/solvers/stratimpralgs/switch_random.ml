@@ -6,6 +6,8 @@ open Univsolve;;
 open Tcsarray;;
 open Transformations;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
 
 

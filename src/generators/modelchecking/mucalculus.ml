@@ -2,7 +2,9 @@ open Tcsset;;
 open Tcsarray;;
 open Paritygame;;
 open Arrayparitygame;;
-  
+open Pgplayer;;
+open Pgpriority;;
+
 type ('p,'a) mucalc = Prop of 'p
 		    | Var of string
 		    | Neg of ('p,'a) mucalc

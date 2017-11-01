@@ -9,6 +9,8 @@ open Univsolve;;
 open Transformations;;
 open Basics;;
 open Pgnode;;
+open Pgplayer;;
+open Pgpriority;;
 
 (* Unoptimized implementation *)
 

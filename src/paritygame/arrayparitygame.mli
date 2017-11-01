@@ -29,35 +29,35 @@ val add_edge_in_node_array :
     @param initfunction initializer function parameter. is not required. if should be used has to be tagged with ~initFunc:(fun....)
     @param int size of arrayparitygame. is required.
 *)                                          
-class array_pg : ?initFunc:(Pgnode.node ->Paritygame.priority * Paritygame.player * Pgnode.node list * string option) -> int ->
+class array_pg : ?initFunc:(Pgnode.node ->Pgpriority.priority * Pgplayer.player * Pgnode.node list * string option) -> int ->
   object ('self)
            
-    val mutable nodes : (Paritygame.priority * Paritygame.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option) array
+    val mutable nodes : (Pgpriority.priority * Pgplayer.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option) array
 
                                                                                                                             
     (********** GENERAL **********)  
-    method private init : (Pgnode.node -> Paritygame.priority * Paritygame.player * Pgnode.node list * string option) -> unit
+    method private init : (Pgnode.node -> Pgpriority.priority * Pgplayer.player * Pgnode.node list * string option) -> unit
 
     method size : int
                     
     method copy : 'self
                     
-    method iterate : (Pgnode.node -> Paritygame.priority * Paritygame.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option -> unit) -> unit
+    method iterate : (Pgnode.node -> Pgpriority.priority * Pgplayer.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option -> unit) -> unit
                                                                                                                                                          
     method edge_iterate : (Pgnode.node -> Pgnode.node -> unit) -> unit
 
-    method map : (Pgnode.node -> Paritygame.priority * Paritygame.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option ->
-                  Paritygame.priority * Paritygame.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option) -> 'self
+    method map : (Pgnode.node -> Pgpriority.priority * Pgplayer.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option ->
+                  Pgpriority.priority * Pgplayer.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option) -> 'self
                                                                                                                           
-    method map2 : 'a. (Pgnode.node -> (Paritygame.priority * Paritygame.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option) -> 'a) -> 'a array
+    method map2 : 'a. (Pgnode.node -> (Pgpriority.priority * Pgplayer.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option) -> 'a) -> 'a array
                                                                                                                                                      
 
     (********** GETTERS **********)                                                                                                                                                 
-    method get_node : int -> Paritygame.priority * Paritygame.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option
+    method get_node : int -> Pgpriority.priority * Pgplayer.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option
 
-    method get_priority : Pgnode.node -> Paritygame.priority
+    method get_priority : Pgnode.node -> Pgpriority.priority
 
-    method get_owner : Pgnode.node -> Paritygame.player
+    method get_owner : Pgnode.node -> Pgplayer.player
 
     method get_successors : Pgnode.node -> Pgnodeset.nodeset
 
@@ -81,23 +81,23 @@ class array_pg : ?initFunc:(Pgnode.node ->Paritygame.priority * Paritygame.playe
 
     method get_max : Paritygame.pg_ordering -> Pgnode.node
 
-    method get_max_prio : Paritygame.priority
+    method get_max_prio : Pgpriority.priority
 
-    method get_max_prio_for : Paritygame.player -> Paritygame.priority
+    method get_max_prio_for : Pgplayer.player -> Pgpriority.priority
 
     method get_max_prio_node : Pgnode.node
 
-    method get_max_rew_node_for : Paritygame.player -> Pgnode.node
+    method get_max_rew_node_for : Pgplayer.player -> Pgnode.node
 
     method get_min : Paritygame.pg_ordering -> Pgnode.node
 
-    method get_min_prio : Paritygame.priority
+    method get_min_prio : Pgpriority.priority
 
-    method get_prio_nodes : Paritygame.priority -> Pgnodeset.nodeset
+    method get_prio_nodes : Pgpriority.priority -> Pgnodeset.nodeset
 
-    method get_priorities : Paritygame.priority list
+    method get_priorities : Pgpriority.priority list
 
-    method get_selected_priorities : (Paritygame.priority -> bool) -> Paritygame.priority list
+    method get_selected_priorities : (Pgpriority.priority -> bool) -> Pgpriority.priority list
 
     method edge_count : int
 
@@ -113,13 +113,13 @@ class array_pg : ?initFunc:(Pgnode.node ->Paritygame.priority * Paritygame.playe
 
                          
     (********** SETTERS **********)
-    method set_node' : int -> Paritygame.priority * Paritygame.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option -> unit
+    method set_node' : int -> Pgpriority.priority * Pgplayer.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option -> unit
 
-    method set_node : int -> Paritygame.priority -> Paritygame.player -> Pgnodeset.nodeset -> Pgnodeset.nodeset -> string option -> unit
+    method set_node : int -> Pgpriority.priority -> Pgplayer.player -> Pgnodeset.nodeset -> Pgnodeset.nodeset -> string option -> unit
                                                 
-    method set_priority : Pgnode.node -> Paritygame.priority -> unit
+    method set_priority : Pgnode.node -> Pgpriority.priority -> unit
 
-    method set_owner : Pgnode.node -> Paritygame.player -> unit
+    method set_owner : Pgnode.node -> Pgplayer.player -> unit
 
     method set_desc : Pgnode.node -> string option -> unit
 
@@ -135,11 +135,11 @@ class array_pg : ?initFunc:(Pgnode.node ->Paritygame.priority * Paritygame.playe
 
 
     (********** NODE COLLECTION  **********)
-    method collect_nodes : (Pgnode.node -> Paritygame.priority * Paritygame.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option -> bool) -> Pgnodeset.nodeset
+    method collect_nodes : (Pgnode.node -> Pgpriority.priority * Pgplayer.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option -> bool) -> Pgnodeset.nodeset
 
-    method collect_nodes_by_prio : (Paritygame.priority -> bool) -> Pgnodeset.nodeset
+    method collect_nodes_by_prio : (Pgpriority.priority -> bool) -> Pgnodeset.nodeset
 
-    method collect_nodes_by_owner : (Paritygame.player -> bool) -> Pgnodeset.nodeset * Pgnodeset.nodeset
+    method collect_nodes_by_owner : (Pgplayer.player -> bool) -> Pgnodeset.nodeset * Pgnodeset.nodeset
 
     method collect_max_prio_nodes : Pgnodeset.nodeset
 
@@ -157,13 +157,13 @@ class array_pg : ?initFunc:(Pgnode.node ->Paritygame.priority * Paritygame.playe
 
     method subgame_by_strat : Paritygame.strategy -> 'self
 
-    method subgame_by_strat_pl : Paritygame.strategy -> Paritygame.player -> 'self
+    method subgame_by_strat_pl : Paritygame.strategy -> Pgplayer.player -> 'self
 
 
     (********** DOMINION **********)
-    method set_closed : Pgnodeset.nodeset -> Paritygame.player -> bool
+    method set_closed : Pgnodeset.nodeset -> Pgplayer.player -> bool
 
-    method set_dominion : ('self -> Paritygame.solution * Paritygame.strategy) -> Pgnodeset.nodeset -> Paritygame.player -> Paritygame.strategy option
+    method set_dominion : ('self -> Paritygame.solution * Paritygame.strategy) -> Pgnodeset.nodeset -> Pgplayer.player -> Paritygame.strategy option
 
     (********** DECOMPOSITION **********)                                                                                                                                             
     method strongly_connected_components : Pgnodeset.nodeset array * Paritygame.scc array * Paritygame.scc list array * Paritygame.scc list
@@ -173,9 +173,9 @@ class array_pg : ?initFunc:(Pgnode.node ->Paritygame.priority * Paritygame.playe
 
 
     (********** ATTRACTOR CLOSURE **********) 
-    method attr_closure_inplace' : Paritygame.strategy -> Paritygame.player -> Pgnodeset.nodeset -> bool -> (Pgnode.node -> bool) -> bool -> Pgnodeset.nodeset
+    method attr_closure_inplace' : Paritygame.strategy -> Pgplayer.player -> Pgnodeset.nodeset -> bool -> (Pgnode.node -> bool) -> bool -> Pgnodeset.nodeset
 
-    method attr_closure_inplace : Paritygame.strategy -> Paritygame.player -> Pgnodeset.nodeset -> Pgnodeset.nodeset
+    method attr_closure_inplace : Paritygame.strategy -> Pgplayer.player -> Pgnodeset.nodeset -> Pgnodeset.nodeset
                                                                                                                                                     
     method attractor_closure_inplace_sol_strat : (Pgnode.node -> bool) -> Paritygame.solution -> Paritygame.strategy -> Pgnodeset.nodeset ->
                                                   Pgnodeset.nodeset -> Pgnodeset.nodeset * Pgnodeset.nodeset
@@ -195,11 +195,11 @@ class array_pg : ?initFunc:(Pgnode.node ->Paritygame.priority * Paritygame.playe
     (********** GAME INFORMATION **********)
     method get_player_decision_info : bool * bool
 
-    method is_single_parity_game : Paritygame.priority option
+    method is_single_parity_game : Pgpriority.priority option
 
-    method number_of_strategies : Paritygame.player -> int -> int
+    method number_of_strategies : Pgplayer.player -> int -> int
 
-    method compute_priority_reach_array : Paritygame.player -> Paritygame.priority array array
+    method compute_priority_reach_array : Pgplayer.player -> Pgpriority.priority array array
 
 
     (********** DYNAMIC PARITYGAME **********)
@@ -228,8 +228,8 @@ module type PGDescription =
   sig
     type gamenode
     val compare : gamenode -> gamenode -> int
-    val owner : gamenode -> Paritygame.player
-    val priority : gamenode -> Paritygame.priority
+    val owner : gamenode -> Pgplayer.player
+    val priority : gamenode -> Pgpriority.priority
     val successors : gamenode -> gamenode list
     val show_node : gamenode -> string option
     val initnodes : unit -> gamenode list

@@ -1,6 +1,8 @@
 open Paritygame;;
 open Arrayparitygame;;
-  
+
+open Pgplayer;;
+
 let height = ref 0
 let width = ref 0
 

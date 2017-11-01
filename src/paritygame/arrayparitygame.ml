@@ -5,6 +5,8 @@ open Tcsset;;
 open Tcslist;;
 open Tcsgraph;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
   
 (**************************************************************

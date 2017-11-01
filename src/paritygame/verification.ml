@@ -5,6 +5,8 @@ open Univsolve;;
 open Specialsolve;;
 open Pgnode;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
 type verifier = paritygame -> solution -> strategy -> (node list * string) option
 

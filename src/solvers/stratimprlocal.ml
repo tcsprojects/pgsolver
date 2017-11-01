@@ -7,6 +7,8 @@ open Univsolve;;
 open Transformations;;
 open Basics;;
 open Pgnode;;
+open Pgplayer;;
+open Pgpriority;;
 
 module LocalSolver = struct
 	

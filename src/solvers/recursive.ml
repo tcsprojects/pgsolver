@@ -9,6 +9,8 @@ open Basics;;
 open Paritygame;;
 open Univsolve;;
 open Pgnodeset;;
+open Pgplayer;;
+open Pgpriority;;
 
 
 
