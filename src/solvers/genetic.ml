@@ -15,6 +15,7 @@ open Tcsargs;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgsolution;;
 
 
 let _ = Random.self_init ()
@@ -324,7 +325,7 @@ let solve' game =
   done;
   msg_tagged 3 (fun _ -> "Genetic pool now has " ^ string_of_int (DynArray.length pool) ^ " strategies.\n");
 
-  let sol = sol_create game in
+  let sol = new array_solution game#size in
   let wstr = ref [||] in
 
   (* iterate over competitions, and possibly procreations, mutations and tests until a winning strategy has been found *)
@@ -405,7 +406,7 @@ let solve' game =
           begin
             found := true;
             wstr := str;
-            List.iter (fun v -> sol.(v) <- p) ws
+            List.iter (fun v -> sol#set v p) ws
           end
         else 
           begin
@@ -417,7 +418,7 @@ let solve' game =
               begin
                 found := true;
                 wstr := str;
-                List.iter (fun v -> sol.(v) <- p) ws
+                List.iter (fun v -> sol#set v p) ws
               end
           end
       end;

@@ -14,6 +14,8 @@ open Pgnode;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgsolution;;
+
 
 
 
@@ -476,10 +478,10 @@ let solve' game =
 
     (* Derive winning set from the SMP:
      * Odd wins all states with measure Top. *)
-    let sol = sol_create game in
+    let sol = new array_solution n in
     for i = 0 to n - 1 do
         log_debug ("Checking " ^ string_of_int i);
-        sol.(i) <- if mu.(i) = Top then plr_Odd else plr_Even;
+        sol#set i (if mu.(i) = Top then plr_Odd else plr_Even);
     done;
 
     log_info ("extract player 0 strategy..");
@@ -515,7 +517,7 @@ let invert_game game =
 
 let solve_for_player player solver game =
     let (sol, strat) = solver game in
-    let (subgame_other_player, map_to_sub, map_to_game) = game#subgame_by_node_filter (fun i -> sol.(i) != player) in
+    let (subgame_other_player, map_to_sub, map_to_game) = game#subgame_by_node_filter (fun i -> sol#get i != player) in
     if (subgame_other_player#size > 0) then (
         let subgame_other_player = invert_game subgame_other_player in
         let (_, strat') = solver subgame_other_player in

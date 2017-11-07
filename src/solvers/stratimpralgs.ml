@@ -14,6 +14,7 @@ open Tcsargs;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgsolution;;
 
 (* let array_max a less = ArrayUtils.max_elt (fun x y -> if less x y then -1 else 1) a *)
 let list_max a less = ListUtils.max_elt (fun x y -> if less x y then -1 else 1) a
@@ -609,11 +610,11 @@ let strategy_improvement' (game: paritygame)
   let game' = alternating_transformation game true in
   let game'' = cheap_escape_cycles_transformation game' false in
   let (sol'', strat'') = strategy_improvement game'' init_strat node_compare impr_policy impr_policy_init check_policy ident in
-  let sol = sol_init game' (fun v -> sol''.(v)) in
+  let sol = sol_init game' (fun v -> sol''#get v) in
   let strat = Array.init (game'#size) (fun i -> strat''.(i)) in
   let (sol', strat') = alternating_revertive_restriction game game' sol strat in
   for i = 0 to game#size  - 1 do
-    if sol'.(i) != game#get_owner  i then strat'.(i) <- -1
+    if sol'#get i != game#get_owner  i then strat'.(i) <- -1
   done;
   (sol', strat');;
   
@@ -626,7 +627,7 @@ let strategy_improvement'' (game: paritygame)
 			   (ident: string) =
   let game' = cheap_escape_cycles_transformation game false in
   let (sol', strat') = strategy_improvement game' init_strat node_compare impr_policy (impr_policy_init game') check_policy ident in
-  let sol = sol_init game (fun i -> sol'.(i)) in
+  let sol = sol_init game (fun i -> sol'#get i) in
   let strat = Array.init (game#size ) (fun i -> strat'.(i)) in
   (sol, strat);;
   

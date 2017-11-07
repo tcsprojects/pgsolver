@@ -1,5 +1,6 @@
 open Basics;;
 open Paritygame;;
+open Pgsolution;;
 
 type compact_sol_strat = (Pgnode.node * Pgplayer.player * Pgnode.node) list
 

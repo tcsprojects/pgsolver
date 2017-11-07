@@ -45,8 +45,8 @@ let solve_scc game =
 
 	let correct (sol, strat) pl =
 		for i = 0 to n - 1 do
-			if sol.(i) != pl then (
-				sol.(i) <- plr_undef;
+			if sol#get i != pl then (
+				sol#set i plr_undef;
 				strat.(i) <- -1;
 			)
 		done
@@ -54,7 +54,7 @@ let solve_scc game =
 	let (sol, strat) = solve_scc_restr game plr_Even u in
 	correct (sol, strat) plr_Even;
 
-	if ArrayUtils.exists sol (fun _ pl -> pl != plr_undef)
+	if sol#number_solved > 0
 	then (sol, strat)
 	else (
         let (sol, strat) = solve_scc_restr game plr_Odd u in

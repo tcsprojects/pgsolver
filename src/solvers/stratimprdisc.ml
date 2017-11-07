@@ -8,6 +8,7 @@ open Pgnode;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgsolution;;
 
 
 let array_max a less = ArrayUtils.max_elt (fun x y -> if less x y then -1 else 1) a
@@ -151,10 +152,10 @@ let solve_discountedpayoffgame (game: 'a payoffgame) (discount: 'a) (fld: 'a fie
 
 	msg_plain 2 (fun _ -> "\n");
 	
-	let solution = sol_make n in
+	let solution = new array_solution n in
 	for i=0 to n-1 do
 	  let wpl = if cmp !valuation.(i) zero < 0 then plr_Odd else plr_Even in
-	  solution.(i) <- wpl;
+	  solution#set i wpl;
 	  let (_, pl, _, _) = game.(i) in
 	  if wpl != pl then strategy.(i) <- -1
 	done;

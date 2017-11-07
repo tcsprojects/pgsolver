@@ -1,6 +1,6 @@
 open Paritygame;;
 
-type verifier = paritygame -> solution -> strategy -> (Pgnode.node list * string) option
+type verifier = paritygame -> Pgsolution.solution -> strategy -> (Pgnode.node list * string) option
 									  
 (* Default verification *)
 val verify_solution_strategy: verifier

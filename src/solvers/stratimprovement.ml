@@ -9,7 +9,7 @@ open Transformations;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
-
+open Pgsolution;;
 
 
 let solve' (game: paritygame) =
@@ -309,8 +309,8 @@ let solve' (game: paritygame) =
     msg_plain 2 (fun _ -> "\n");
 
     (* Finished *)
-    let solution = sol_create game in
-    Array.iteri (fun i (w, _, _) -> solution.(i) <- plr_benefits (prio w)) valu;
+    let solution = new array_solution n in
+    Array.iteri (fun i (w, _, _) -> solution#set i (plr_benefits (prio w))) valu;
     let strategy = Array.make n (-1) in
     	for i = 0 to n - 1 do
     		strategy.(i) <-	if isP0 i

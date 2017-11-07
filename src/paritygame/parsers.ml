@@ -2,6 +2,7 @@ open Paritygame;;
 open Arrayparitygame;;
 open Bytes;;
 open Pgplayer;;
+open Pgsolution;;
 
 
 
@@ -51,4 +52,8 @@ let parse_parity_game in_channel = snd (parse_init_parity_game in_channel)
      
 let parse_solution in_channel =
 	let (sol, str) = Tcsgameparser.parse_explicit_parity_solution in_channel in
-	(Array.map (fun pl -> if pl = 0 then plr_Even else plr_Odd) sol, str)
+	let sol' = new array_solution (Array.length sol) in
+	Array.iteri (fun i pl ->
+	    sol'#set i (if pl = 0 then plr_Even else if pl = 1 then plr_Odd else plr_undef)
+	) sol;
+	(sol', str)

@@ -7,6 +7,7 @@ open Pgnode;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgsolution;;
 
 type verifier = paritygame -> solution -> strategy -> (node list * string) option
 
@@ -44,48 +45,38 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 			else *)
 	    if strat.(i) < -1 || (strat.(i) != -1 && not (ns_elem strat.(i) delta))
 	    then Some ([i], "Strategy for node " ^ string_of_int i ^ " is corrupt (" ^ string_of_int strat.(i) ^ ")")
-	    else if sol.(i) = plr_undef
+	    else if sol#get i = plr_undef
 	    then if strat.(i) >= 0
 		 then Some (i::[strat.(i)], "Strategy for node " ^ string_of_int i ^ " is defined (" ^ string_of_int strat.(i) ^ ") but solution is not")
 		 else sanity_check (i + 1)
-	    else if sol.(i) != pl
+	    else if sol#get i != pl
 	    then if strat.(i) >= 0
 		 then Some (i::[strat.(i)], "Strategy for node " ^ string_of_int i ^ " is defined (" ^ string_of_int strat.(i) ^ ") but node is not in the winning set of player " ^ plr_show pl)
 		 else try
-                     let j = ns_find (fun j -> sol.(j) != sol.(i)) delta in
+                     let j = ns_find (fun j -> sol#get j != sol#get i) delta in
                      Some ([i;j], "Node " ^ string_of_int i ^ " can escape to " ^ string_of_int j ^ " from the winning set of player " ^ plr_show pl)
           	   with Not_found -> 
                      sanity_check (i + 1)
 	    else if strat.(i) >= 0
-	    then if sol.(strat.(i)) != sol.(i)
+	    then if sol#get strat.(i) != sol#get i
 		 then Some(i::[strat.(i)], "Strategy for node " ^ string_of_int i ^ " leads to node " ^ string_of_int strat.(i) ^ " which is out of the winning set of player " ^ plr_show pl)
 		 else sanity_check (i + 1)
 	    else Some (i::[strat.(i)], "Strategy for node " ^ string_of_int i ^ " is undefined (" ^ string_of_int strat.(i) ^ ")")
 	  )
 	in
 	
-	let arrf f a =
-      let i = ref 0 in
-      let found = ref (-1) in
-      while !found = -1 && !i < Array.length a do
-        if f a.(!i) then found := !i;
-        incr i
-      done;
-      if !found = -1 then None else Some !found
-    in
-
 	let sophisticated_check pl =
 		let strat' = Array.make n (-1) in
 		let badnodes = ref ns_empty in
 		for i = 0 to n - 1 do
 			if game#get_owner i = pl	then strat'.(i) <- strat.(i);
-			if sol.(i) != pl then badnodes := ns_add i !badnodes
+			if sol#get i != pl then badnodes := ns_add i !badnodes
 		done;
 		let game' = game#subgame_by_strat strat' in
 		game'#remove_nodes !badnodes;
 		let op = plr_opponent pl in
 		let (sol', strat'') = compute_winning_n game' op in
-		match (arrf (fun entry -> entry = op) sol') with
+		match (sol'#find (fun _ entry -> entry = op)) with
 		|	None -> None
 		|	Some i -> let (cycle, pr) = build_cycle game' strat'' i in
 				      Some (cycle, "Cycle winner failure - " ^ plr_show op ^ " wins with priority " ^ string_of_int pr ^ " but " ^ plr_show pl ^ " should...")
@@ -106,7 +97,7 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 
 
 
-let verify_solution_strategy_univ gm sol strat = verify_solution_strategy_custom gm sol strat (fun g _ -> universal_solve_trivial verbosity_level_default g);;
+let verify_solution_strategy_univ gm (sol: solution) strat = verify_solution_strategy_custom gm sol strat (fun g _ -> universal_solve_trivial verbosity_level_default g);;
 
 
 
@@ -180,10 +171,10 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 			else Some (i::trace, "Cycle winner failure - " ^ plr_show (plr_opponent pl) ^ " wins but " ^ plr_show pl ^ " should...")
 		)
 		else let delta = game#get_successors i in
-		     if not (game#is_defined i) || (sol.(i) = plr_undef)
+		     if not (game#is_defined i) || (sol#get i = plr_undef)
 		     then Some (i::trace, "Reached undefined position starting in a defined position")
-		     else if sol.(i) != pl
-		     then Some (i::trace, "Reached winning set of " ^ plr_show sol.(i) ^ " starting in winning set of " ^ plr_show pl ^ " following the strategy of " ^ plr_show pl)
+		     else if sol#get i != pl
+		     then Some (i::trace, "Reached winning set of " ^ plr_show (sol#get i) ^ " starting in winning set of " ^ plr_show pl ^ " following the strategy of " ^ plr_show pl)
 		     else if game#get_owner i = pl
 		     then (
 					if not (has (Array.of_list (ns_nodes delta )) strat.(i))
@@ -227,10 +218,10 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 		else if table.(i) = 3
 		then testnext (i + 1)
 		else
-				if not (game#is_defined i) || (sol.(i) = plr_undef)
+				if not (game#is_defined i) || (sol#get i = plr_undef)
 				then testnext (i + 1)
-				else match (test sol.(i) i []) with
-                   None -> (expand sol.(i) i;
+				else match (test (sol#get i) i []) with
+                   None -> (expand (sol#get i) i;
                             testnext (i + 1))
                  | Some (tr, s) -> Some (List.rev tr, s)
 	in

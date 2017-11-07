@@ -1,3 +1,4 @@
+open Pgsolution
 open Paritygame
 open Tcsset
 open Pgnode

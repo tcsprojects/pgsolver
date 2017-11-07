@@ -37,8 +37,8 @@ let solve game =
 		let s1 = generate_strat game plr_Odd in
 		let (sol0, _) = universal_solve_trivial verbosity_level_default (game#subgame_by_strat s0) in
 		let (sol1, _) = universal_solve_trivial verbosity_level_default (game#subgame_by_strat s1) in
-		let sol = sol_init game (fun i -> if sol0.(i) = plr_Even then plr_Even else if sol1.(i) = plr_Odd then plr_Odd else plr_undef) in
-		let strat = Array.init n (fun i -> if sol0.(i) = plr_Even then s0.(i) else if sol1.(i) = plr_Odd then s1.(i) else -1) in
+		let sol = sol_init game (fun i -> if sol0#get i = plr_Even then plr_Even else if sol1#get i = plr_Odd then plr_Odd else plr_undef) in
+		let strat = Array.init n (fun i -> if sol0#get i = plr_Even then s0.(i) else if sol1#get i = plr_Odd then s1.(i) else -1) in
 		(sol, strat)
 	in
 
@@ -48,7 +48,7 @@ let solve game =
 		incr counter;
 		msg_tagged 2 (fun _ -> "Guessing strategy #" ^ string_of_int !counter ^ "\r");
 		let (sol, strat) = heuristic_solve game in
-		let c = sol_number_solved sol in
+		let c = sol#number_solved in
 		if c = 0 then iterate_strat game else (
 			msg_plain 2 (fun _ -> "\n");
 			msg_tagged 2 (fun _ -> "Returning " ^ string_of_int c ^ " solved nodes.\n");

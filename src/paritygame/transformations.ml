@@ -9,6 +9,7 @@ open Arrayparitygame;;
 open Pgnodeset;;
 open Pgpriority;;
 open Pgplayer;;
+open Pgsolution;;
 
 
 
@@ -405,11 +406,11 @@ let alternating_revertive_restriction (oldpg: paritygame)
 				      (sol: solution)
 				      (strat: strategy) =
 	let n = oldpg#size in
-	let sol' = sol_create oldpg in
+	let sol' = new array_solution n in
 	let strat' = Array.make n (-1) in
 
 	for i = 0 to n - 1 do
-	  sol'.(i) <- sol.(i);
+	  sol'#set i (sol#get i);
 	  if strat.(i) < n
 	  then strat'.(i) <- strat.(i)
 	  else let delta = altpg#get_successors strat.(i) in
@@ -649,7 +650,7 @@ let normal_form_translation pg =
 let normal_form_revertive_translation old_game sol strat =
   let n = old_game#size in
   let rec lookup v = if v < n then v else lookup strat.(v) in
-  (Array.init n (fun i -> sol.(i)),
+  (sol_init old_game (fun i -> sol#get i),
    Array.init n (fun i -> lookup strat.(i)))
     
 let uniquize_sorted_prios_inplace game =

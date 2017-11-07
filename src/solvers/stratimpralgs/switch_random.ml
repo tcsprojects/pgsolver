@@ -59,9 +59,9 @@ let multiple_edge_backtransformation game solution strategy =
 	for i = 0 to n - 1 do
 	  let pl = game#get_owner i in
 	  let tr = game#get_successors i in
-		if (game#is_defined i) && (solution.(i) = plr_undef) then (
-			solution.(i) <- solution.(ns_some tr);
-			if solution.(i) = pl
+		if (game#is_defined i) && (solution#get i = plr_undef) then (
+			solution#set i (solution#get (ns_some tr));
+			if solution#get i = pl
 			then strategy.(i) <- ns_some tr
 		)
 	done

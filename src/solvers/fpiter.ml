@@ -248,7 +248,7 @@ let solve' game =
   done;
 
   let solution = sol_init game (fun v -> plr_Odd) in
-  ns_iter (fun v -> solution.(v) <- plr_Even) !win;
+  ns_iter (fun v -> solution#set v plr_Even) !win;
 
   (* now turn eventually positional strategy into a positional strategy *)
 
@@ -309,7 +309,7 @@ let solve' game =
   let last_visit = Array.make n None in
 
   while !next_node < n do
-    let top_moment = if solution.(!next_node) = plr_Odd then even_top_moment else odd_top_moment
+    let top_moment = if solution#get !next_node = plr_Odd then even_top_moment else odd_top_moment
     in
     todo := [ (!next_node, top_moment) ];
     while !todo <> [] do
@@ -318,7 +318,7 @@ let solve' game =
       let prio = game#get_priority v in
       let owner = game#get_owner v in
       let ws = game#get_successors v in 
-      let winner = solution.(v) in
+      let winner = solution#get v in
       msg_tagged 3 (fun _ -> "  Processing node " ^ string_of_int v ^ " at time " ^ show_timestamp bound ^ "\n");
       if last_visit.(v) = None || 
          let lstvis = OptionUtils.get_some last_visit.(v) in
@@ -345,7 +345,7 @@ let solve' game =
         message 3 (fun _ -> " greater or equal!\n") *)
     done;
     msg_tagged 3 (fun _ -> "Searching for next node to visit after " ^ string_of_int !next_node ^ " ");
-    while !next_node < n && (strategy.(!next_node) > -1 || let o = game#get_owner !next_node in solution.(!next_node) <> o) do
+    while !next_node < n && (strategy.(!next_node) > -1 || let o = game#get_owner !next_node in solution#get !next_node <> o) do
       incr next_node;
       message 3 (fun _ -> ".")
     done;

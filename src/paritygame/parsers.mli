@@ -1,3 +1,4 @@
+open Pgsolution
 open Tcsgameparser
 open Paritygame
 

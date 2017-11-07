@@ -3,6 +3,7 @@ open Tcsargs;;
 open Paritygame;;
 open Pgnodeset;;
 open Pgplayer;;
+open Pgsolution;;
 
   
 module CommandLine =
@@ -32,7 +33,7 @@ let _ =
 	
 	let (sol, strat) = solve game in
 	
-  print_string ("\nWinning Set:\n " ^ Paritygame.format_solution sol ^ "\n");
+  print_string ("\nWinning Set:\n " ^ sol#format ^ "\n");
 	
 	print_string ("\nWinning Strategies for Player " ^ string_of_int (if !player = plr_Even then 0 else 1) ^ "\n");
 
@@ -44,20 +45,20 @@ let _ =
 			let (sol2, _) = solve game2 in
 			let good = ref true in
 			for j = 0 to game#size  - 1 do
-				if (sol.(j) != sol2.(j)) then
+				if (sol#get j != sol2#get j) then
 					good := false;
 			done;
 			if (!good) then (
 				let strat2 = Array.copy strat in
 				for j = 0 to Array.length strat2 - 1 do
-					if (sol.(j) != !player) then
+					if (sol#get j != !player) then
 						strat2.(j) <- -1;
 				done;
 			  print_string ("\n" ^ format_strategy strat2 ^ "\n");
 				number := !number + 1
 			);
 		) else (
-			if (sol.(i) == !player && strat.(i) != -1) then (
+			if (sol#get i == !player && strat.(i) != -1) then (
 			  ns_iter (fun w -> strat.(i) <- w;
 					    work (i + 1))
 				  (game#get_successors  i)

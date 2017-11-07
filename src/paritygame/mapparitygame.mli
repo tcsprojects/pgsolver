@@ -74,9 +74,9 @@ class map_pg :
 
     method print : unit
   
-    method to_dotty : Paritygame.solution -> Paritygame.strategy -> out_channel -> unit
+    method to_dotty : Pgsolution.solution -> Paritygame.strategy -> out_channel -> unit
 
-    method to_dotty_file : Paritygame.solution -> Paritygame.strategy -> string -> unit
+    method to_dotty_file : Pgsolution.solution -> Paritygame.strategy -> string -> unit
 
     method to_string : string
 
@@ -132,7 +132,7 @@ class map_pg :
     (********** DOMINION **********)
     method set_closed : Pgnodeset.nodeset -> Pgplayer.player -> bool
 
-    method set_dominion : ('self -> Paritygame.solution * Paritygame.strategy) -> Pgnodeset.nodeset -> Pgplayer.player -> Paritygame.strategy option
+    method set_dominion : ('self -> Pgsolution.solution * Paritygame.strategy) -> Pgnodeset.nodeset -> Pgplayer.player -> Paritygame.strategy option
 
     (********** DECOMPOSITION **********)                                                                                                                                             
     method strongly_connected_components : Pgnodeset.nodeset array * Paritygame.scc array * Paritygame.scc list array * Paritygame.scc list
@@ -146,7 +146,7 @@ class map_pg :
 
     method attr_closure_inplace : Paritygame.strategy -> Pgplayer.player -> Pgnodeset.nodeset -> Pgnodeset.nodeset
                                                                                                                                                     
-    method attractor_closure_inplace_sol_strat : (Pgnode.node -> bool) -> Paritygame.solution -> Paritygame.strategy -> Pgnodeset.nodeset ->
+    method attractor_closure_inplace_sol_strat : (Pgnode.node -> bool) -> Pgsolution.solution -> Paritygame.strategy -> Pgnodeset.nodeset ->
                                                   Pgnodeset.nodeset -> Pgnodeset.nodeset * Pgnodeset.nodeset
 
 
@@ -155,9 +155,9 @@ class map_pg :
 
     method induce_counting_partialparitygame : Pgnode.node -> int ref * Paritygame.partial_paritygame
 
-    method partially_solve_dominion : Pgnode.node -> Paritygame.partial_solver -> Paritygame.solution * Paritygame.strategy
+    method partially_solve_dominion : Pgnode.node -> Paritygame.partial_solver -> Pgsolution.solution * Paritygame.strategy
 
-    method partially_solve_game : Paritygame.partial_solver -> Paritygame.solution * Paritygame.strategy
+    method partially_solve_game : Paritygame.partial_solver -> Pgsolution.solution * Paritygame.strategy
 
 
 

@@ -11,6 +11,7 @@ open Pgnode;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgsolution;;
 (*open Pgprofiling*)
   
 
@@ -35,23 +36,6 @@ let ord_prio (_, pr, _, _) (_, pr', _, _) = compare pr pr';;
 let ord_total_by ordering (i, pri, pli, tri) (j, prj, plj, trj) =
 	let o = ordering (i, pri, pli, tri) (j, prj, plj, trj) in
 	if o = 0 then compare i j else o;;
-  
-(**************************************************************
- *                        SOLUTION                            *
- **************************************************************)
-type solution = player array
-
-(* sol_create and sol_init below paritygame class (because of dependency) *)
-let sol_make n = Array.make n plr_undef
-let sol_number_solved sol =
-  Array.fold_left (fun c e -> if e = plr_undef then c else c + 1) 0 sol
-
-let sol_get sol v = sol.(v)
-let sol_set sol v pl = sol.(v) <- pl
-let sol_iter = Array.iteri
-
-let format_solution sol =
-  "[" ^ String.concat "," (Array.to_list (Array.mapi (fun i -> fun w -> string_of_int i ^ ":" ^ plr_show w) sol)) ^ "]"
 
                                                                                                                   
 (***************************************************************
@@ -73,7 +57,6 @@ let format_strategy st =
 (***************************************************************
  *                SOLUTION/STRATEGY FUNCTIONS                  *
  ***************************************************************)
-exception Unmergable
 
 let merge_strategies_inplace st1 st2 =
   let l = Array.length st1 in
@@ -81,29 +64,22 @@ let merge_strategies_inplace st1 st2 =
     if st1.(i) = -1 then st1.(i) <- st2.(i)
   done
 
-let merge_solutions_inplace sol1 sol2 =
-  let l = Array.length sol1 in
-  for i=0 to l-1 do
-    if sol1.(i) = plr_undef then sol1.(i) <- sol2.(i)
-  done
-
 let print_solution_strategy_parsable sol strat =
-	let n = Array.length sol in
-	print_string ("paritysol " ^ string_of_int (n-1) ^ ";\n");
-	for i = 0 to n - 1 do
-		if sol.(i) != plr_undef then (
-            print_int i;
+	(*let n = Array.length sol in
+	print_string ("paritysol " ^ string_of_int (n-1) ^ ";\n");*)
+	print_string ("paritysol;\n");
+	sol#iter (fun i pl ->
+        print_string (nd_show i);
+        print_char ' ';
+        print_string (plr_show pl);
+        if strat.(i) >= 0 then (
             print_char ' ';
-            print_string (plr_show sol.(i));
-            if strat.(i) >= 0 then (
-                print_char ' ';
-                print_int strat.(i)
-            );
-            print_char ';';
-            print_newline ()
-        )
-        done;;
-  
+            print_int strat.(i)
+        );
+        print_char ';';
+        print_newline ()
+    );;
+
 (**************************************************************
  *                   PARTIAL PARITYGAME                       *
  **************************************************************)
@@ -241,7 +217,7 @@ method print =
            )
         done
           
-method to_dotty solution strategy h =
+method to_dotty (solution: solution) strategy h =
   let encode i = "N" ^ (string_of_int i) in
 
   output_string h "digraph G {\n";
@@ -256,7 +232,7 @@ method to_dotty solution strategy h =
           in
           let shape = if pl=plr_Even then "diamond" else "box" in
           let color =
-                        match solution.(i) with
+                        match solution#get i with
                               PlayerEven -> "green"
                             | PlayerOdd -> "red"
 			                | _ -> "black"
@@ -264,7 +240,7 @@ method to_dotty solution strategy h =
           output_string h (name ^ " [ shape=\"" ^ shape ^ "\", label=\"" ^ label ^ "\", color=\"" ^ color ^ "\" ];\n");
 
 	  ns_iter (fun w -> let color2 = try
-				             if (plr_opponent pl = solution.(i)) || (w = strategy.(i)) then color else "black"
+				             if (plr_opponent pl = solution#get i) || (w = strategy.(i)) then color else "black"
 				           with _ -> "black"
 			      in
 			      output_string h (name ^ " -> " ^ encode w ^ " [ color=\"" ^ color2 ^ "\" ];\n" )) succs
@@ -412,12 +388,12 @@ method set_closed nodeset pl =
 		     else ns_fold (fun r i -> r && ns_elem i nodeset) true delta
     ) nodeset
 
-method set_dominion solver nodeset pl =
+method set_dominion (solver:  ('self -> solution * strategy)) nodeset pl =
 	if self#set_closed nodeset pl then (
         let l = ns_nodes nodeset in
         let a = Array.of_list l in
         let (sol, strat') = solver (self#subgame_by_list nodeset) in
-        if ArrayUtils.forall sol (fun _ pl' -> pl' = pl)
+        if sol#for_all (fun _ pl' -> pl' = pl)
         then (
         	let strat = Array.make (self#size) (-1) in
             let i = ref 0 in
@@ -594,11 +570,11 @@ method attr_closure_inplace strategy player region =
 	self#attr_closure_inplace' strategy player region true (fun _ -> true) true
 
 
-method attractor_closure_inplace_sol_strat (deltafilter : (node -> bool)) sol strat pl0 pl1 =
+method attractor_closure_inplace_sol_strat (deltafilter : (node -> bool)) (sol: solution) strat pl0 pl1 =
 	let sol0 = self#attr_closure_inplace' strat plr_Even pl0 true (fun v -> not (ns_elem v pl1)) true in
 	let sol1 = self#attr_closure_inplace' strat plr_Odd pl1 true (fun v -> not (ns_elem v pl0)) true in
-	ns_iter (fun q -> sol.(q) <- plr_Even) sol0;
-	ns_iter (fun q -> sol.(q) <- plr_Odd) sol1;
+	ns_iter (fun q -> sol#set q plr_Even) sol0;
+	ns_iter (fun q -> sol#set q plr_Odd) sol1;
         (sol0, sol1)
 
 (********** PARTIAL PARITYGAME **********)
@@ -637,13 +613,13 @@ method induce_counting_partialparitygame start =
 method partially_solve_dominion (start: node) (partially_solve: partial_solver) =
 	let n = self#size in
 	let (_, delta, data, desc) = self#induce_partialparitygame start in
-	let solution = Array.make n (plr_undef) in
+	let solution = new array_solution n in
 	let strategy = Array.make n (-1) in
 
 	let rec expand i f =
-		if solution.(i) != plr_undef then ()
+		if solution#get i != plr_undef then ()
 		else let (winner, strat) = f i in
-			 	solution.(i) <- winner;
+			 	solution#set i winner;
 			 	match strat with
 			 		Some j -> (
 			 			strategy.(i) <- j;
@@ -659,23 +635,23 @@ method partially_solve_dominion (start: node) (partially_solve: partial_solver) 
 method partially_solve_game partially_solve =
 	let n = self#size in
 	let (_, delta, data, desc) = self#induce_partialparitygame 0 in
-	let solution = Array.make n plr_undef in
+	let solution = new array_solution n in
 	let strategy = Array.make n (-1) in
 	let data' node =
-		if solution.(node) = plr_undef
+		if solution#get node = plr_undef
 		then data node
-		else (fst (data node), solution.(node))
+		else (fst (data node), solution#get node)
 	in
 	let delta' node =
-		if solution.(node) = plr_undef
+		if solution#get node = plr_undef
 		then delta node
 		else Enumerators.singleton node
 	in
 
 	let rec expand i f =
-		if solution.(i) != plr_undef then ()
+		if solution#get i != plr_undef then ()
 		else let (winner, strat) = f i in
-			 	solution.(i) <- winner;
+			 	solution#set i winner;
 			 	match strat with
 			 		Some j -> (
 			 			strategy.(i) <- j;
@@ -685,7 +661,7 @@ method partially_solve_game partially_solve =
 	in
 
     for i = 0 to n - 1 do
-        if (solution.(i) != plr_undef) || (self#get_owner i = plr_undef) then ()
+        if (solution#get i != plr_undef) || (self#get_owner i = plr_undef) then ()
         else expand i (partially_solve (i, delta', data', desc))
     done;
 
@@ -806,8 +782,13 @@ end;;
 (**************************************************************
  *                        SOLUTION PART 2                     *
  **************************************************************)
-let sol_create game  = Array.make (game#size) plr_undef                               
-let sol_init game f = Array.init (game#size) f
+let sol_init game f =
+    let sol = new array_solution game#size in
+    game#iterate (fun i _ ->
+        sol#set i (f i)
+    );
+    sol
+
 
 
 (***************************************************************

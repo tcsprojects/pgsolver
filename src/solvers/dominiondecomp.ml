@@ -12,13 +12,14 @@ open Paritygame ;;
 open Univsolve;;
 open Pgnodeset;;
 open Pgplayer;;
+open Pgsolution;;
 
 
 let newwin options game =
 
 	let n = game#size in
 	let l = int_of_float (ceil (sqrt (float (2 * n)))) in
-	let sol = sol_create game in
+	let sol = new array_solution n in
 	let strat = Array.make n (-1) in
 	let options' = (universal_options_alter_verb options verbosity_level_default) in
 
@@ -28,7 +29,7 @@ let newwin options game =
 			None -> false
 		|   Some strat' -> (
             ns_iter (fun q ->
-                sol.(q) <- pl;
+                sol#set q pl;
                 if strat'.(q) != -1
                 then strat.(q) <- strat'.(q)
             ) nodeset;

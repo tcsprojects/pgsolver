@@ -17,6 +17,7 @@ open Paritygamebitset;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgsolution;;
 
 
 let query game region r p player was_open att_qP att_qO subgame_vr reg_strategy vr l =
@@ -128,7 +129,7 @@ let search game =
   let l = game#size in
   let reg_strategy = Array.make l (-1) in
   let r_strategy = Array.make l (-1) in
-  let solution = sol_create game in
+  let solution = new array_solution l in
   let str_out = Array.make l (-1) in
   let empty = ref false in
   let p = ref (-1) in
@@ -181,7 +182,7 @@ let search game =
         if reg_strategy.(i) <> -1
         then str_out.(i) <- reg_strategy.(i);
         if BitSet.is_set !region i
-        then sol_set solution i !player;
+        then solution#set i !player;
       done;
     )
     else (
@@ -194,9 +195,9 @@ let search game =
         if reg_strategy.(i) <> -1
         then str_out.(i) <- reg_strategy.(i);
         if BitSet.is_set region' i
-        then solution.(i) <- !player;
+        then solution#set i !player;
         r_strategy.(i) <- -1;
-        if solution.(i) = plr_undef && BitSet.is_set vr i
+        if solution#get i = plr_undef && BitSet.is_set vr i
         then (
           incr node_count;
           empty := false;

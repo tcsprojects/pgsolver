@@ -27,6 +27,7 @@ open Pgnode
 open Pgnodeset
 open Pgplayer
 open Pgpriority
+open Pgsolution
 
 
 
@@ -64,60 +65,6 @@ val ord_total_by      : pg_ordering -> pg_ordering
 
 
                                          
-
-(**************************************************************
- *                        SOLUTION                            *
- **************************************************************)
-(** Type of a solution for a paritygame.
-    
-    WARNING: May becomes abstract in the future.
-*)
-type solution = player array
-
-(* sol_create and sol_init below paritygame class (because of dependency) *)
-(** Creates solution from size of game.
-    Works like solution create method.
-
-     @param int size of game
-     @return solution 
- *)
-val sol_make   : int -> solution         
-
-(** Get the winner of a node according to a 
-    solution.
-
-    @param solution solution to determine winner
-    @param node node to check for winner
-    @return winning player
- *)       
-val sol_get    : solution -> node -> player
-                                       
-(** Set the winner of a node in a solution.
-
-    @param solution solution to change winner for node in
-    @param node node to change winner for
-    @param player new winner for node
- *)
-val sol_set    : solution -> node -> player -> unit
-
-(** Iterate over all nodes with their winners
-    in a solution.
-
-    @param (node -> player -> unit) iteration functoin
-    @param solution solution to iterate
- *)
-val sol_iter   : (node -> player -> unit) -> solution -> unit 
-
-(** For solution testing.
- *)
-val sol_number_solved : solution -> int
-                                      
-(** Returns solution as string.
-
-    @param solution solution to format
-    @return string representation of solution
- *)
-val format_solution : solution -> string
 
 
 
@@ -189,10 +136,6 @@ val format_strategy : strategy -> string
 val permute_solution: int array -> solution -> solution
 val permute_strategy: int array -> int array -> solution -> solution
 *)
-(** Exception which signals that two two strategies or solutions
-    are unmergable.
- *)
-exception Unmergable
 
 (** Calling merge_strategies_inplace strat1 strat2 adds all strategy decisions from strat2 to strat1. 
     Throws an Unmergable-Exception if the domain of both strategies is not empty. 
@@ -201,14 +144,6 @@ exception Unmergable
     @param strategy strategy two to merge
 *)
 val merge_strategies_inplace : strategy -> strategy -> unit
-
-(** Calling merge_solutions_inplace sol1 sol2 adds all solution informations from sol2 to sol1. 
-    Throws an Unmergable-Exception if the domain of both solutions is not empty. 
-
-    @param solution solution one to merge
-    @param solution solution two to merge
-*)
-val merge_solutions_inplace : solution -> solution -> unit
 
 (** Print solution and strategy.
 
@@ -803,13 +738,6 @@ end
 (**************************************************************
  *                     SOLUTION PART 2                        *
  **************************************************************)
-(** Creates solution for game.
-    Initially, every node is won by player_undef.
-
-    @param game game to create solution for (determines size)
-    @return solution for game
- *)
-val  sol_create : paritygame -> solution
 
 (** Create solution for game,
     Initially filled with values determined by (node -> player).

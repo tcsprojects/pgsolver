@@ -37,7 +37,6 @@ let _ =
     Recursive.register ();
     Satsolve.register ();
     Smallprogress.register ();
-    (*Smtsolve.register ();*)
     Stratimprdisc.register ();
     Stratimprlocal.register ();
     Stratimprlocal2.register ();

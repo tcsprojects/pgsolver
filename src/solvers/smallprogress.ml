@@ -6,6 +6,8 @@ open Tcsqueue;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgsolution;;
+
 
 let ns_minarg arr f less = ns_fold (fun m i -> if less (f i) (f m) then i else m) (ns_some arr) arr;;
 let ns_maxarg arr f less =
@@ -119,12 +121,12 @@ let solve_scc_reach game player spmidx updspm =
         work queue;
     done;
 
-    let sol = sol_create game in
+    let sol = new array_solution n in
     let strat = Array.make n (-1) in
 
     game#iterate (fun i -> fun (_,ow,succs,_,_) -> message 3 (fun _ -> "Checking " ^ string_of_int i ^ "\n");
-						 sol.(i) <- if isTop spmidx.(i) then plr_opponent player else player;
-						 if (ow = player) && (player = sol.(i))
+						 sol#set i (if isTop spmidx.(i) then plr_opponent player else player);
+						 if (ow = player) && (player = sol#get i)
 						 then strat.(i) <- ns_minarg succs (fun q -> spmidx.(q)) (less 0));
 
     (sol, strat);;
@@ -348,20 +350,20 @@ let solve' game =
 		)
 	done;
 
-    let sol = sol_create game in
+    let sol = new array_solution n in
     let strat = Array.make n (-1) in
 
     for i = 0 to n - 1 do
         msg_tagged 3 (fun _ -> "Checking " ^ string_of_int i ^ "\n");
-        sol.(i) <- if is_top spmidx.(i) plr_Even then plr_Odd
+        sol#set i (if is_top spmidx.(i) plr_Even then plr_Odd
 		           else if is_top spmidx.(i) plr_Odd then plr_Even
-				   else failwith "[Smallprogress.solve'] impossible: no top value";
+				   else failwith "[Smallprogress.solve'] impossible: no top value");
     done;
     for i = 0 to n - 1 do
       let pl = game#get_owner i in
       let delta = game#get_successors i in
 
-      if (pl = sol.(i))
+      if (pl = sol#get i)
       then strat.(i) <- ns_minarg delta (fun q -> spmidx.(q)) (less pl 0)
     done;
 

@@ -1530,7 +1530,7 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 		)
 	done;
 	let msg_tagged_nl v = message_autotagged_newline v (fun _ -> "ANALYZE") in
-		msg_tagged_nl 2 (fun _ -> show_info game occ old_strategy valu n);
+		(* msg_tagged_nl 2 (fun _ -> show_info game occ old_strategy valu n); *)
 
 	
 	let compare_nodes k (soulab0, souidx0) (tarlab0, taridx0) (oldlab0, oldidx0) (soulab1, souidx1) (tarlab1, taridx1) (oldlab1, oldidx1)
@@ -1588,7 +1588,7 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 		compare_nodes (game#size ) (f i0) (f k0) (f old_strategy.(i0)) (f i1) (f k1) (f old_strategy.(i1)) state' idxmap
 		   (fun s -> f old_strategy.(OptionUtils.get_some (find s)))
 	) l in
-	switch_zadeh_exp_tie_break_callback n game old_strategy valu occ i k !r !s;
+	(*switch_zadeh_exp_tie_break_callback n game old_strategy valu occ i k !r !s;*)
 	(i,j,k)
 
 

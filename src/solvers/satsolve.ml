@@ -6,6 +6,7 @@ open Satwrapper;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgsolution;;
 
 
 type vars =
@@ -80,8 +81,8 @@ let solve' game =
 	let satis = solver#get_solve_result = SolveSatisfiable in
 	if not satis then failwith "impossible: unsatisfiable";
 
-	let sol = Array.init n (fun i -> if solver#get_variable (Winning i) = 0 then plr_Even else plr_Odd) in
-	let strat = Array.init n (fun i -> if sol.(i) = game#get_owner i
+	let sol = sol_init game (fun i -> if solver#get_variable (Winning i) = 0 then plr_Even else plr_Odd) in
+	let strat = Array.init n (fun i -> if sol#get i = game#get_owner i
 	                                   then let delta = Array.of_list (ns_nodes (game#get_successors i)) in
 	                                        delta.(solver#get_variable_first (Array.map (fun j -> Strategy (i, j)) delta)) else -1)
 	in

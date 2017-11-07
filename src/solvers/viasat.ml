@@ -332,7 +332,7 @@ let solve' game =
    | x -> failwith ("satsolver reports " ^ format_solve_result x ^ " instead of SAT"));
   msg_plain 2 (fun _ -> SimpleTiming.stop tim; "done: " ^ SimpleTiming.format tim ^ "\n");
   
-  let solution = Array.make m (plr_Even) in
+  let solution = sol_init game (fun _ -> plr_Even) in
   let strategy = Array.make m (-1) in
 	
   message 3 (fun _ -> "Obtaining values of S-variables ...\n");
@@ -351,7 +351,7 @@ let solve' game =
                 with _ -> failwith "[Viasat] Fatal error: node belonging to strategy has no successor within that strategy!!!"
 	      in
 	      message 3 (fun _ -> (string_of_int y) ^ "\n");
-	      solution.(v) <- if winner=0 then plr_Even else plr_Odd;
+	      solution#set v (if winner=0 then plr_Even else plr_Odd);
 	      strategy.(v) <- y) stable;
   
   release_encoding ();

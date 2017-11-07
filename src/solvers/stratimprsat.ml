@@ -110,8 +110,8 @@ let solve' game sink0 sink1 =
 	let satis = solver#get_solve_result = SolveSatisfiable in
 	if not satis then failwith "impossible: unsatisfiable";
 	
-	let sol = Array.init n (fun i -> if solver#get_variable (Winning i) = 0 then plr_Even else plr_Odd) in
-	let strat = Array.init n (fun i -> if sol.(i) = game#get_owner i
+	let sol = sol_init game (fun i -> if solver#get_variable (Winning i) = 0 then plr_Even else plr_Odd) in
+	let strat = Array.init n (fun i -> if sol#get i = game#get_owner i
 	                                   then let delta = Array.of_list (ns_nodes (game#get_successors i)) in
 	                                        delta.(solver#get_variable_first (Array.map (fun j -> Strategy (i, j)) delta)) else -1) in
 	
@@ -125,7 +125,7 @@ let solve'' game =
   let (game_cheap, a, b) = sort_game_by_prio game_cheap in
   let (sink0, sink1) = (b.(Array.length b - 4), b.(Array.length b - 3)) in
   let (sol, str) = solve' game_cheap sink0 sink1 in
-  (Array.init n (fun i -> sol.(b.(i))),
+  (sol_init game (fun i -> sol#get b.(i)),
    Array.init n (fun i -> let k = str.(b.(i)) in
 	 		  if k < 0 then k else a.(k)));;
   
@@ -134,7 +134,7 @@ let solve''' game =
   let (sol, strat) = solve'' game' in
   let (sol', strat') = alternating_revertive_restriction game game' sol strat in
   for i = 0 to game#size - 1 do
-    if sol'.(i) != game#get_owner i then strat'.(i) <- -1
+    if sol'#get i != game#get_owner i then strat'.(i) <- -1
   done;
   (sol', strat');;
   

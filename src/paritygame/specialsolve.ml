@@ -6,6 +6,7 @@ open Pgnode;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgsolution;;
 
 
 
@@ -13,9 +14,9 @@ type compact_sol_strat = (node * player * node) list;;
 
 let compact_sol_strat_to_sol_strat game comp =
 	let n = game#size in
-	let sol = sol_make n in
+	let sol = new array_solution n in
 	let strat = str_make n in
-	List.iter (fun (i, pl, j) -> sol_set sol i pl;
+	List.iter (fun (i, pl, j) -> sol#set i pl;
 				     str_set strat i j
 		  ) comp;
 	(sol, strat);;
@@ -51,7 +52,7 @@ let solve_single_player_scc game player =
   let n = game#size in
   let strategy = str_make n in
   let temp_strat = str_make n in
-  let solution = sol_make n in
+  let solution = new array_solution n in
   
   let clear_visited _ = str_iter (fun v _ -> str_set temp_strat v nd_undef) temp_strat in
   
@@ -70,7 +71,7 @@ let solve_single_player_scc game player =
 				   if w=v then
 				     begin
 				       str_iter (fun i w -> if w != nd_undef then (
-							      sol_set solution i player;
+							      solution#set i player;
 							      if game#get_owner i = player then str_set strategy i (str_get temp_strat i))
 						) temp_strat;
 				       true
@@ -91,14 +92,14 @@ let solve_single_player_scc game player =
   let complete_solution_and_strategy _ =
     clear_visited ();
     let queue = SingleOccQueue.create () in
-    sol_iter (fun v -> fun pl -> if pl != plr_undef then (
-				   ns_iter (fun w -> if sol_get solution w = plr_undef then SingleOccQueue.add (w,v) queue) (game#get_predecessors v)) 
-	     ) solution;
+    solution#iter (fun v -> fun pl -> if pl != plr_undef then (
+				   ns_iter (fun w -> if solution#get w = plr_undef then SingleOccQueue.add (w,v) queue) (game#get_predecessors v))
+	     );
     while not (SingleOccQueue.is_empty queue) do
       let (w,v) = SingleOccQueue.take queue in
-      sol_set solution w player;
+      solution#set w player;
       if game#get_owner w = player then str_set strategy w v;
-      ns_iter (fun u -> if sol_get solution u = plr_undef then SingleOccQueue.add (u,w) queue) (game#get_predecessors w)
+      ns_iter (fun u -> if solution#get u = plr_undef then SingleOccQueue.add (u,w) queue) (game#get_predecessors w)
     done
   in
 
@@ -116,9 +117,9 @@ let solve_single_player_scc game player =
    else
      begin
        let pl' = plr_opponent player in 
-       sol_iter (fun i -> fun _ -> sol_set solution i pl';
+       solution#iter (fun i -> fun _ -> solution#set i pl';
 				   if game#get_owner i = pl' then str_set strategy i (ns_first (game#get_successors i))
-		) solution
+		)
      end);
   (solution, strategy)
 
@@ -314,9 +315,9 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
 	in
 	
 	List.iter (fun r -> let _ = process_root r in ()) roots;
-	let solution = sol_make n in
+	let solution = new array_solution n in
 	for i = 0 to (Array.length sccs) - 1 do
-	  ns_iter (fun u -> sol_set solution u marked.(i)) sccs.(i)
+	  ns_iter (fun u -> solution#set u marked.(i)) sccs.(i)
 	done;
 	(solution, strategy);;
   
@@ -324,7 +325,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
 let compute_winning_nodes_direct game strat pl =
   let sol = fst (compute_winning_nodes_for_direct (game#subgame_by_strat strat) (plr_opponent pl)) in
   let l = ref [] in
-  sol_iter (fun i -> fun pl' -> if pl' = pl then l := i::!l) sol;
+  sol#iter (fun i -> fun pl' -> if pl' = pl then l := i::!l);
   !l;;
   
   

@@ -11,6 +11,7 @@ open Specialsolve;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgsolution;;
 
 
 
@@ -336,7 +337,7 @@ let universal_solve_run options stats backend game' =
         stats.recursive_calls := !(stats.recursive_calls) + 1;
 
 		timer_start stats.logistics_timing;
-        let sol = sol_create game in
+        let sol = new array_solution n in
         let strat = Array.make n (-1) in
         timer_stop stats.logistics_timing;
 
@@ -392,8 +393,8 @@ let universal_solve_run options stats backend game' =
                 i := !i + 1
             ) nodes;
             for j = 0 to n - 1 do
-                sol.(idxmap.(j)) <- sol'.(j);
-                if sol'.(j) != plr_undef
+                sol#set idxmap.(j) (sol'#get j);
+                if sol'#get j != plr_undef
                 then solved := ns_add idxmap.(j) !solved
                 else failwith "subgame was not solved!";
                 if (strat'.(j) >= 0) then strat.(idxmap.(j)) <- idxmap.(strat'.(j))
@@ -500,10 +501,10 @@ let universal_solve_run options stats backend game' =
 				let (w0, w1) = (ref ns_empty, ref ns_empty) in
 				let counter = ref 0 in
 				for i = 0 to n - 1 do
-				  if (sol.(i) = plr_Even) then w0 := ns_add i !w0;
-				  if (sol.(i) = plr_Odd) then w1 := ns_add i !w1;
-				  if sol.(i) != plr_undef then incr counter;
-				  if not (game#is_defined i) || (game#get_owner i != sol.(i))
+				  if (sol#get i = plr_Even) then w0 := ns_add i !w0;
+				  if (sol#get i = plr_Odd) then w1 := ns_add i !w1;
+				  if sol#get i != plr_undef then incr counter;
+				  if not (game#is_defined i) || (game#get_owner i != sol#get i)
 				  then strat.(i) <- -1;
 				done;
 				msg_plain BACKEND 0 (fun _ -> string_of_int !counter ^ " out of " ^ string_of_int n ^ "\n");
@@ -540,7 +541,7 @@ let universal_solve_run options stats backend game' =
                 		    let (sol', strat') = universal_solve_decompose game (recdepth + 1) in
                 		    timer_start stats.logistics_timing;
 				    merge_strategies_inplace strat strat';
-				    merge_solutions_inplace sol sol';
+				    sol#merge_inplace sol';
 				    timer_stop stats.logistics_timing
                 		  )
 				);
@@ -555,19 +556,19 @@ let universal_solve_run options stats backend game' =
           ns_iter (fun i -> SingleOccQueue.add i q) init;
           while (not (SingleOccQueue.is_empty q)) do
             let v = SingleOccQueue.take q in
-            let winner = sol.(v) in
+            let winner = sol#get v in
             let to_remove = ref [] in
             ns_iter (fun w ->
-        	     if sol.(w) = plr_undef then (
+        	     if sol#get w = plr_undef then (
         	       if (game#get_owner w = winner) then (
-        		 sol.(w) <- winner;
+        		 sol#set w winner;
         		 touchedscc.(sccindex.(w)) <- true;
         		 strat.(w) <- v;
         		 SingleOccQueue.add w q;
         		 attr := ns_add w !attr
         	       )
         	       else if ns_size (game#get_successors w) = 1 then (
-        		 sol.(w) <- winner;
+        		 sol#set w winner;
         		 touchedscc.(sccindex.(w)) <- true;
         		 SingleOccQueue.add w q;
         		 attr := ns_add w !attr
@@ -590,7 +591,7 @@ let universal_solve_run options stats backend game' =
                 solvedscc.(r) <- true;
                 timer_start stats.logistics_timing;
         		let untouched = if (touchedscc.(r))
-        						then Some (ns_filter (fun v -> sol.(v) = plr_undef) sccs.(r))
+        						then Some (ns_filter (fun v -> sol#get v = plr_undef) sccs.(r))
         						else None
         		in
         		timer_stop stats.logistics_timing;
@@ -618,10 +619,10 @@ let universal_solve_run options stats backend game' =
                                       let h = ns_first sccs.(r) in
 				      let pl = game#get_owner h in
                                         if (ns_size (game#get_successors h) = 0)
-                                        then sol.(h) <- plr_opponent pl
+                                        then sol#set h (plr_opponent pl)
                                         else (
-                                            sol.(h) <- plr_benefits (game#get_priority h);
-                                            if (sol.(h) = pl)
+                                            sol#set h (plr_benefits (game#get_priority h));
+                                            if (sol#get h = pl)
                                             then strat.(h) <- h
 					                    );
 					                	ns_add h ns_empty
@@ -666,7 +667,7 @@ let universal_solve_run options stats backend game' =
 
 	let n = game'#size in
 	let m = game'#node_count in
-	let solution = sol_create game' in
+	let solution = new array_solution n in
 	let strategy = Array.make n (-1) in
 
 	timer_stop stats.logistics_timing;
@@ -719,7 +720,7 @@ let universal_solve_run options stats backend game' =
                     	let player = game#get_owner i in
                         let w = if player = plr_Even then w1 else w0 in
                         w := ns_add i !w;
-                        solution.(i) <- plr_opponent player;
+                        solution#set i (plr_opponent player);
                     ) sinks;
 
                     timer_stop stats.global_timing_without_attractor;
@@ -773,7 +774,7 @@ let universal_solve_run options stats backend game' =
                     let (w0, w1) = (ref ns_empty, ref ns_empty) in
                     List.iter (fun (node, player, move) ->
                         nodes := ns_add node !nodes;
-                        solution.(node) <- player;
+                        solution#set node player;
                         strategy.(node) <- move;
                         let w = if player = plr_Even then w0 else w1 in
                         w := ns_add node !w
@@ -820,7 +821,7 @@ let universal_solve_run options stats backend game' =
 
         timer_start stats.logistics_timing;
         merge_strategies_inplace strategy strat;
-        merge_solutions_inplace solution sol;
+        solution#merge_inplace sol;
         timer_stop stats.logistics_timing;
 	);
 
@@ -843,7 +844,7 @@ let universal_solve options backend game =
 let universal_solve_fallback options backend fallback =
 	let solver game =
 	  let (sol, strat) = backend game in
-	  if ArrayUtils.exists sol (fun _ pl -> pl != plr_undef)
+	  if sol#number_solved > 0
 	  then (sol, strat)
 	  else fallback game
 	in
@@ -855,14 +856,14 @@ let universal_solve_by_player_solver options solver game =
 	let solved = ref ns_empty in
 	let n = game#size in
 	for i = 0 to n - 1 do
-		if sol.(i) = plr_Even then solved := ns_add i !solved
+		if sol#get i = plr_Even then solved := ns_add i !solved
 	done;
 	let game' = game#copy in
 	game'#remove_nodes !solved;
 	let (sol', strat') = universal_solve options (fun g -> solver g plr_Odd) game' in
 	for i = 0 to n - 1 do
-		if sol'.(i) = plr_Odd then (
-			sol.(i) <- plr_Odd;
+		if sol'#get i = plr_Odd then (
+			sol#set i plr_Odd;
 			strat.(i) <- strat'.(i)
 		)
 	done;
@@ -871,13 +872,13 @@ let universal_solve_by_player_solver options solver game =
 
 
 let universal_solve_trivial verb_level game =
-	universal_solve (universal_solve_def_options false verb_level) (fun _ -> (sol_make 0, [||])) game;;
+	universal_solve (universal_solve_def_options false verb_level) (fun _ -> (new array_solution 0, [||])) game;;
 
 
 let compute_winning_nodes verb_level game strat pl =
 	let sol = fst (universal_solve_trivial verb_level (game#subgame_by_strat_pl strat pl)) in
 	let l = ref [] in
-	for i = 0 to (Array.length sol) - 1 do
-		if sol.(i) = pl then l := i::!l
-	done;
+	sol#iter (fun i plr ->
+	    if plr = pl then l := i::!l
+	);
 	!l
