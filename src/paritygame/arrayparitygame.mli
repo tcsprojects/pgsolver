@@ -105,9 +105,9 @@ class array_pg : ?initFunc:(Pgnode.node ->Pgpriority.priority * Pgplayer.player 
 
     method print : unit
   
-    method to_dotty : Pgsolution.solution -> Paritygame.strategy -> out_channel -> unit
+    method to_dotty : Pgsolution.solution -> Pgstrategy.strategy -> out_channel -> unit
 
-    method to_dotty_file : Pgsolution.solution -> Paritygame.strategy -> string -> unit
+    method to_dotty_file : Pgsolution.solution -> Pgstrategy.strategy -> string -> unit
 
     method to_string : string
 
@@ -155,15 +155,15 @@ class array_pg : ?initFunc:(Pgnode.node ->Pgpriority.priority * Pgplayer.player 
 
     method subgame_by_node_filter : (Pgnode.node -> bool) -> 'self * (Pgnode.node -> Pgnode.node) * (Pgnode.node -> Pgnode.node)
 
-    method subgame_by_strat : Paritygame.strategy -> 'self
+    method subgame_by_strat : Pgstrategy.strategy -> 'self
 
-    method subgame_by_strat_pl : Paritygame.strategy -> Pgplayer.player -> 'self
+    method subgame_by_strat_pl : Pgstrategy.strategy -> Pgplayer.player -> 'self
 
 
     (********** DOMINION **********)
     method set_closed : Pgnodeset.nodeset -> Pgplayer.player -> bool
 
-    method set_dominion : ('self -> Pgsolution.solution * Paritygame.strategy) -> Pgnodeset.nodeset -> Pgplayer.player -> Paritygame.strategy option
+    method set_dominion : ('self -> Pgsolution.solution * Pgstrategy.strategy) -> Pgnodeset.nodeset -> Pgplayer.player -> Pgstrategy.strategy option
 
     (********** DECOMPOSITION **********)                                                                                                                                             
     method strongly_connected_components : Pgnodeset.nodeset array * Paritygame.scc array * Paritygame.scc list array * Paritygame.scc list
@@ -173,11 +173,11 @@ class array_pg : ?initFunc:(Pgnode.node ->Pgpriority.priority * Pgplayer.player 
 
 
     (********** ATTRACTOR CLOSURE **********) 
-    method attr_closure_inplace' : Paritygame.strategy -> Pgplayer.player -> Pgnodeset.nodeset -> bool -> (Pgnode.node -> bool) -> bool -> Pgnodeset.nodeset
+    method attr_closure_inplace' : Pgstrategy.strategy -> Pgplayer.player -> Pgnodeset.nodeset -> bool -> (Pgnode.node -> bool) -> bool -> Pgnodeset.nodeset
 
-    method attr_closure_inplace : Paritygame.strategy -> Pgplayer.player -> Pgnodeset.nodeset -> Pgnodeset.nodeset
+    method attr_closure_inplace : Pgstrategy.strategy -> Pgplayer.player -> Pgnodeset.nodeset -> Pgnodeset.nodeset
                                                                                                                                                     
-    method attractor_closure_inplace_sol_strat : (Pgnode.node -> bool) -> Pgsolution.solution -> Paritygame.strategy -> Pgnodeset.nodeset ->
+    method attractor_closure_inplace_sol_strat : (Pgnode.node -> bool) -> Pgsolution.solution -> Pgstrategy.strategy -> Pgnodeset.nodeset ->
                                                   Pgnodeset.nodeset -> Pgnodeset.nodeset * Pgnodeset.nodeset
 
 
@@ -186,9 +186,9 @@ class array_pg : ?initFunc:(Pgnode.node ->Pgpriority.priority * Pgplayer.player 
 
     method induce_counting_partialparitygame : Pgnode.node -> int ref * Paritygame.partial_paritygame
 
-    method partially_solve_dominion : Pgnode.node -> Paritygame.partial_solver -> Pgsolution.solution * Paritygame.strategy
+    method partially_solve_dominion : Pgnode.node -> Paritygame.partial_solver -> Pgsolution.solution * Pgstrategy.strategy
 
-    method partially_solve_game : Paritygame.partial_solver -> Pgsolution.solution * Paritygame.strategy
+    method partially_solve_game : Paritygame.partial_solver -> Pgsolution.solution * Pgstrategy.strategy
 
 
 
@@ -205,7 +205,7 @@ class array_pg : ?initFunc:(Pgnode.node ->Pgpriority.priority * Pgplayer.player 
     (********** DYNAMIC PARITYGAME **********)
     method to_dynamic_paritygame : Paritygame.dynamic_paritygame
 
-    method to_dynamic_paritygame_by_strategy : Paritygame.strategy -> Paritygame.dynamic_paritygame                                           
+    method to_dynamic_paritygame_by_strategy : Pgstrategy.strategy -> Paritygame.dynamic_paritygame
   end
 
 

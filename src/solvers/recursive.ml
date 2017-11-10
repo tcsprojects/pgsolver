@@ -12,6 +12,8 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
+open Pgstrategy;;
+open Pgnode;;
 
 
 
@@ -21,7 +23,7 @@ let solver rec_solve game =
     let l = game#size in
     msg_tagged 3 (fun _ -> "Solving the game: " ^ game#format_game ^ "\n");
     let solution = new array_solution l in
-    let strategy = Array.make l (-1) in
+    let strategy = new array_strategy l in
 
     let max_prio = ref (-1) in
     let more_than_one = ref false in
@@ -36,11 +38,11 @@ let solver rec_solve game =
           let winner = plr_benefits !max_prio in
 	  game#iterate (fun v -> fun (p',pl',ws,_,_) -> if p' <> -1
 						      then (solution#set v winner;
-							    if pl'=winner then strategy.(v) <- ns_some ws));
+							    if pl'=winner then strategy#set v (ns_some ws)));
           message 3 (fun _ -> "  Returned solution:\n    " ^
                      solution#format ^ "\n");
           message 3 (fun _ -> "  Returned strategy:\n    " ^
-                     format_strategy strategy ^ "\n");
+                     strategy#format ^ "\n");
           (solution,strategy))
     else (
     	  let max_prio = ref (game#get_max_prio) in
@@ -78,13 +80,13 @@ let solver rec_solve game =
 
         		game'#iterate (fun v (_,pl',_,_,_) ->
         		    solution#set (map_to_game v) pl;
-                    if pl' = pl then strategy.(map_to_game v) <- map_to_game str.(v)
+                    if pl' = pl then strategy#set (map_to_game v) (map_to_game (str#get v))
                 );
                 ns_iter (fun v -> solution#set v pl) attr;
-                ns_iter (fun v -> if game#get_owner v = pl then let ws = game#get_successors v in strategy.(v) <- ns_some ws) nodes_with_prio_p;
+                ns_iter (fun v -> if game#get_owner v = pl then let ws = game#get_successors v in strategy#set v (ns_some ws)) nodes_with_prio_p;
 
                 msg_tagged 3 (fun _ -> "Solution: " ^ solution#format ^ "\n");
-                msg_tagged 3 (fun _ -> "Strategy: " ^ format_strategy strategy ^ "\n");
+                msg_tagged 3 (fun _ -> "Strategy: " ^ strategy#format ^ "\n");
                 (solution,strategy))
           else (message 3 (fun _ -> " yes\n");
                 let opponent_win = ref ns_empty in
@@ -96,7 +98,7 @@ let solver rec_solve game =
                 msg_tagged 3 (fun _ -> "Opponent " ^ plr_show opp ^ " wins from nodes Q = {" ^
                           String.concat "," (List.map string_of_int (ns_nodes !opponent_win)) ^ "}\n");
 
-                ns_iter (fun v -> strategy.(v) <- -1) attr;
+                ns_iter (fun v -> strategy#set v nd_undef) attr;
 
                 let attr = game#attr_closure_inplace strategy opp !opponent_win in
                 msg_tagged 3 (fun _ -> "The attractor of Q for player " ^ plr_show opp ^ " is: {" ^
@@ -106,22 +108,8 @@ let solver rec_solve game =
                 ns_iter (fun v ->
                     solution#set v opp;
                     if game#get_owner v = opp
-                    then strategy.(v) <- map_to_game str.(map_to_sub v)
+                    then strategy#set v (map_to_game (str#get (map_to_sub v)))
                 ) !opponent_win;
-
-(*
-                let game' = game#copy in
-                game'#remove_nodes attr;
-
-                msg_tagged 3 (fun _ -> "Second recursive descent to subgame ....\n");
-
-                let (sol,str) = !rec_solve game' in
-
-                msg_tagged 3 (fun _ -> "Merging and completing strategies and solutions:\n");
-
-                game'#iterate (fun v -> fun (_,ow,_,_,_) -> solution.(v) <- sol.(v);
-							 if ow = sol.(v) then strategy.(v) <- str.(v));
-							 *)
 
                 let (game', map_to_sub, map_to_game) = game#subgame_by_node_filter (fun i ->
                     not (ns_elem i attr)
@@ -134,16 +122,16 @@ let solver rec_solve game =
                 msg_tagged 3 (fun _ -> "Merging and completing strategies and solutions:\n");
 
                 game'#iterate (fun v -> fun (_,ow,_,_,_) -> solution#set (map_to_game v) (sol#get v);
-							 if ow = sol#get v then strategy.(map_to_game v) <- map_to_game str.(v));
+							 if ow = sol#get v then strategy#set (map_to_game v) (map_to_game (str#get v)));
 
 
                 msg_tagged 3 (fun _ -> "Solution: " ^ solution#format ^ "\n");
-                msg_tagged 3 (fun _ -> "Strategy: " ^ format_strategy strategy ^ "\n");
+                msg_tagged 3 (fun _ -> "Strategy: " ^ strategy#format ^ "\n");
 
                 (solution,strategy)));;
 
 let mcnaughton_zielonka game options =
-	let f = ref (fun _ -> (new array_solution 0, [||])) in
+	let f = ref (fun _ -> (new array_solution 0, new array_strategy 0)) in
 	f := universal_solve (universal_options_alter_verb options verbosity_level_default) (solver f);
 (*	f := solver f; *)
 	universal_solve options (solver f) game;;
@@ -155,7 +143,7 @@ let solve game =
 
 
 let fallback_solve game backend options =
-	let f = ref (fun _ -> (new array_solution 0, [||])) in
+	let f = ref (fun _ -> (new array_solution 0, new array_strategy 0)) in
 	f := universal_solve (universal_options_alter_verb options verbosity_level_default) (solver f);
 	universal_solve_fallback options backend (solver f) game;;
 

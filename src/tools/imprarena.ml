@@ -9,6 +9,7 @@ open Stratimpralgs;;
 open Tcsset;;
 open Pgnodeset;;
 open Pgplayer;;
+open Pgnode;;
 
 
 let out s =
@@ -37,8 +38,8 @@ let _ =
 						    )
 		   );
 	
-	let strategy = Array.init (game#size ) (fun i ->
-		if pre_strategy.(i) = "" then -1
+	let strategy = str_init game (fun i ->
+		if pre_strategy.(i) = "" then nd_undef
 		else game#find_desc  (Some pre_strategy.(i))
 	) in
 	
@@ -62,14 +63,14 @@ let _ =
 		let pl = game#get_owner  i in
 		let tr = game#get_successors  i in 
 		let j =
-			if pl = plr_Even then strategy.(i)
+			if pl = plr_Even then strategy#get i
 			else best_decision_by_valuation_ordering game node_total_ordering_by_position valu i
 		in
 		out (getd j);
 		out " | ";
 		if pl = plr_Even then (
 			ns_iter (fun j ->
-				if node_valuation_ordering game node_total_ordering_by_position valu.(strategy.(i)) valu.(j) < 0
+				if node_valuation_ordering game node_total_ordering_by_position valu.(strategy#get i) valu.(j) < 0
 				then out (getd j ^ " ");
 			) tr;
 		);

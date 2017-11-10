@@ -9,6 +9,8 @@ open Tcsgraph;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgstrategy;;
+open Pgnode;;
 
 
 let default_snare_sel _ _ _ _ snares =
@@ -23,12 +25,12 @@ let rec improvement_policy_snare_based sub_policy snare_sel game node_total_orde
 		Some (sna,str,esc) -> (
 			let fnd = ref None in
 			TreeSet.iter (fun (i,j) ->
-				if cmp j old_strategy.(i) > 0 then fnd := Some (i,j)
+				if cmp j (old_strategy#get i) > 0 then fnd := Some (i,j)
 			) str;
 			match !fnd with
 				Some (i,j) -> (
-					let new_strat = Array.copy old_strategy in
-					new_strat.(i) <- j;
+					let new_strat = old_strategy#copy in
+					new_strat#set i j;
 					(new_strat, (snares, enforce))
 				)
 			|	None -> improvement_policy_snare_based sub_policy snare_sel game node_total_ordering (snares, None) old_strategy valu
@@ -39,7 +41,7 @@ let rec improvement_policy_snare_based sub_policy snare_sel game node_total_orde
 			game#iterate (fun i (_, pl, tr, _, _) ->
 				if pl = plr_Even then (
 					ns_iter (fun j ->
-						if (cmp j old_strategy.(i) > 0) && (TreeSet.mem i (valx j)) then (
+						if (cmp j (old_strategy#get i) > 0) && (TreeSet.mem i (valx j)) then (
 							let sna = ref TreeSet.empty_def in
 							let todo = ref (TreeSet.singleton_def j) in
 							while not (TreeSet.is_empty !todo) do
@@ -49,7 +51,7 @@ let rec improvement_policy_snare_based sub_policy snare_sel game node_total_orde
 									sna := TreeSet.add k !sna;
 									let pl = game#get_owner  k in
 									let tr = game#get_successors  k in 
-									if pl = plr_Even then todo := TreeSet.add old_strategy.(k) !todo
+									if pl = plr_Even then todo := TreeSet.add (old_strategy#get k) !todo
 									else ns_iter (fun j -> todo := TreeSet.add j !todo) tr
 								)
 							done;
@@ -59,7 +61,7 @@ let rec improvement_policy_snare_based sub_policy snare_sel game node_total_orde
 								      let pl = game#get_owner  k in
 								      let tr = game#get_successors  k in 
 								      if i = k then str := TreeSet.add (i, j) !str
-								      else if pl = plr_Even then str := TreeSet.add (k,old_strategy.(k)) !str
+								      else if pl = plr_Even then str := TreeSet.add (k,old_strategy#get k) !str
 								      else ns_iter (fun j -> if not (TreeSet.mem j !sna) then esc := TreeSet.add (k,j) !esc) tr
 								     ) !sna;
 							snares := (!sna,!str,!esc)::!snares

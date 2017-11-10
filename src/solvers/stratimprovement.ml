@@ -10,6 +10,7 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
+open Pgstrategy;;
 
 
 let solve' (game: paritygame) =
@@ -257,7 +258,7 @@ let solve' (game: paritygame) =
 	);
 
     let valu = Array.make n (-1, DescRelSet.empty, 0) in
-    let strategy = Array.make n (-1) in
+    let strategy = new array_strategy n in
     let v0 = ref TreeSet.empty_def in
     let ggraph = Graph.make n in
 
@@ -266,7 +267,7 @@ let solve' (game: paritygame) =
     for i = 0 to n - 1 do
     	if isP1 i
     	then ()
-    	else (strategy.(i) <- ns_max (tra i) lessRew;
+    	else (strategy#set i (ns_max (tra i) lessRew);
     	      v0 := TreeSet.add i (!v0))
     done;
 
@@ -281,7 +282,7 @@ let solve' (game: paritygame) =
     let changed = ref true in
     let counter = ref 0 in
 
-    let selPred u v = (isP1 u) || (strategy.(u) = v) in
+    let selPred u v = (isP1 u) || (strategy#get u = v) in
     	while (!changed) do
    		    incr counter;
    		    msg_tagged 2 (fun _ -> "Iteration: " ^ string_of_int !counter ^ "\r");
@@ -298,8 +299,8 @@ let solve' (game: paritygame) =
     		);
     		let stratUpd x =
     			let w = ns_max (tra x) (lessValu valu) in
-    				if lessValu valu strategy.(x) w
-    				then (strategy.(x) <- w;
+    				if lessValu valu (strategy#get x) w
+    				then (strategy#set x w;
     				      changed := true)
     			    else ()
     		in
@@ -311,11 +312,11 @@ let solve' (game: paritygame) =
     (* Finished *)
     let solution = new array_solution n in
     Array.iteri (fun i (w, _, _) -> solution#set i (plr_benefits (prio w))) valu;
-    let strategy = Array.make n (-1) in
+    let strategy = new array_strategy n in
     	for i = 0 to n - 1 do
-    		strategy.(i) <-	if isP0 i
+    		strategy#set i (if isP0 i
     				then ns_max (tra i) (lessValu valu)
-    				else ns_max (tra i) (fun x y -> (lessValu valu) y x)
+    				else ns_max (tra i) (fun x y -> (lessValu valu) y x))
     	done;
     (solution, strategy);;
 

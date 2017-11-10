@@ -9,6 +9,7 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
+open Pgstrategy;;
 
 
 let array_max a less = ArrayUtils.max_elt (fun x y -> if less x y then -1 else 1) a
@@ -49,7 +50,7 @@ let dpg_compute_valuation_for_strategy game discount strategy fld =
 			while not (walk.(!j) || valid.(!j)) do
 				walk.(!j) <- true;
 				playlist := !j::!playlist;
-				j := strategy.(!j)
+				j := strategy#get !j
 			done;
 			if not valid.(!j) then (
 				let start = !j in
@@ -74,7 +75,7 @@ let dpg_compute_valuation_for_strategy game discount strategy fld =
 				valid.(!j) <- true;
 				walk.(!j) <- false;
 				let (va, _, _, _) = game.(!j) in
-				valuation.(!j) <- sum va (mul discount valuation.(strategy.(!j)))
+				valuation.(!j) <- sum va (mul discount valuation.(strategy#get !j))
 			done
 		)
 	done;
@@ -83,9 +84,9 @@ let dpg_compute_valuation_for_strategy game discount strategy fld =
 	
 let dpg_compute_valuation game discount strategy fld =
 	let (_, _, _, _, _, _, _, _, _, cmp, _) = fld in
-	let strat = Array.copy strategy in
+	let strat = strategy#copy in
 	Array.iteri (fun i (_, pl, tr, _) ->
-		if pl = plr_Odd then strat.(i) <- tr.(0)
+		if pl = plr_Odd then strat#set i tr.(0)
 	) game;
 
 	let valuation = ref [||] in
@@ -97,8 +98,8 @@ let dpg_compute_valuation game discount strategy fld =
 		Array.iteri (fun i (_, pl, tr, _) ->
 			if pl = plr_Odd then (
 				let j = array_max tr (fun x y -> cmp !valuation.(x) !valuation.(y) > 0) in
-				if cmp !valuation.(strat.(i)) !valuation.(j) > 0 then (
-					strat.(i) <- j;
+				if cmp !valuation.(strat#get i) !valuation.(j) > 0 then (
+					strat#set i j;
 					changed := true
 				)
 			)
@@ -115,14 +116,14 @@ let solve_discountedpayoffgame (game: 'a payoffgame) (discount: 'a) (fld: 'a fie
 	let (zero, _, _, _, _, _, _, _, _, cmp, _) = fld in
 	let n = Array.length game in
 	
-	let strategy = Array.init n (fun i ->
-		let (_, pl, tr, _) = game.(i) in
-		if pl = plr_Even then array_max tr (fun x y -> let (v, _, _, _) = game.(x) in
-		                                               let (u, _, _, _) = game.(y) in
-							       cmp v u < 0) 
-		          else -1
-	) in
-	
+	let strategy = new array_strategy n in
+	Array.iteri (fun i (_, pl, tr, _) ->
+		if pl = plr_Even
+		then strategy#set i (array_max tr (fun x y -> let (v, _, _, _) = game.(x) in
+		                                              let (u, _, _, _) = game.(y) in
+							                        cmp v u < 0))
+	) game;
+
 	let valuation = ref [||] in
 	
 	let changed = ref true in
@@ -134,7 +135,7 @@ let solve_discountedpayoffgame (game: 'a payoffgame) (discount: 'a) (fld: 'a fie
 		msg_tagged 2 (fun _ -> "Iteration: " ^ string_of_int !iterations ^ "\r");
 		
 		valuation := dpg_compute_valuation game discount strategy fld;
-		msg_tagged 3 (fun _ -> format_strategy strategy ^ "\n");
+		msg_tagged 3 (fun _ -> strategy#format ^ "\n");
 		changed := false;
 		for i = 0 to n - 1 do
 			let (_, pl, tr, _) = game.(i) in
@@ -142,9 +143,9 @@ let solve_discountedpayoffgame (game: 'a payoffgame) (discount: 'a) (fld: 'a fie
 				then array_max tr (fun x y -> cmp !valuation.(x) !valuation.(y) < 0) 
 			        else array_max tr (fun x y -> cmp !valuation.(x) !valuation.(y) > 0)
 			in
-			if pl = plr_Odd then strategy.(i) <- j
-			else if cmp !valuation.(strategy.(i)) !valuation.(j) < 0 then (
-				strategy.(i) <- j;
+			if pl = plr_Odd then strategy#set i j
+			else if cmp !valuation.(strategy#get i) !valuation.(j) < 0 then (
+				strategy#set i j;
 				changed := true
 			)
 		done;
@@ -157,7 +158,7 @@ let solve_discountedpayoffgame (game: 'a payoffgame) (discount: 'a) (fld: 'a fie
 	  let wpl = if cmp !valuation.(i) zero < 0 then plr_Odd else plr_Even in
 	  solution#set i wpl;
 	  let (_, pl, _, _) = game.(i) in
-	  if wpl != pl then strategy.(i) <- -1
+	  if wpl != pl then strategy#set i nd_undef
 	done;
 	
 	(solution, strategy);;

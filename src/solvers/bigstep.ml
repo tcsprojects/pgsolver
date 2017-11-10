@@ -10,7 +10,7 @@ open Univsolve;;
 open Tcsarray;;
 open Smallprogress;;
 open Pgplayer;;
-
+open Pgnode;;
 
 
 let solve_scc_restr game player u =
@@ -47,7 +47,7 @@ let solve_scc game =
 		for i = 0 to n - 1 do
 			if sol#get i != pl then (
 				sol#set i plr_undef;
-				strat.(i) <- -1;
+				strat#set i nd_undef;
 			)
 		done
 	in

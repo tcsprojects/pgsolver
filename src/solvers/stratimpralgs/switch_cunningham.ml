@@ -13,13 +13,13 @@ open Pgpriority;;
 
 
 let improvement_policy_optimize_roundrobin game node_total_ordering (e, next) old_strategy valu =
-	let strategy = Array.copy old_strategy in
+	let strategy = old_strategy#copy in
 	let e = ref e in
 	let fnd = ref false in
 	while (not !fnd) do
 		let (v,w) = !e in
-		if node_valuation_ordering game node_total_ordering valu.(old_strategy.(v)) valu.(w) < 0 then (
-			strategy.(v) <- w;
+		if node_valuation_ordering game node_total_ordering valu.(old_strategy#get v) valu.(w) < 0 then (
+			strategy#set v w;
 			fnd := true
 		)
 		else

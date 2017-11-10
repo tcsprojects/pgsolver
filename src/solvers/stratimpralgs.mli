@@ -2,6 +2,8 @@ open Pgsolution
 open Paritygame
 open Tcsset
 open Pgnode
+open Pgstrategy ;;
+
 
 val register: unit -> unit
 
@@ -38,6 +40,8 @@ val best_decision_by_valuation_ordering :
 
 val node_valuation_ordering :
   paritygame -> node_total_ordering_fun -> node_valuation -> node_valuation -> int
+
+val counter_strategy_by_valu_and_ordering: paritygame -> game_valuation -> node_total_ordering_fun -> strategy
 
 val compute_counter_strategy:
   paritygame -> strategy -> strategy

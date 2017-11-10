@@ -63,7 +63,7 @@ let attr_bit game game_vr todoS todoQ strategy player region region_en =
                   BitSet.set used w;
                   if pl<>player
                   then Queue.add w todoQ
-                  else (Queue.add w todoS; strategy.(w) <- v;)
+                  else (Queue.add w todoS; strategy#set w v)
                 );
               ) (ns_filter (fun w -> BitSet.is_set game_vr w) (game#get_predecessors v))
             ) region_en;
@@ -78,7 +78,7 @@ let attr_bit game game_vr todoS todoQ strategy player region region_en =
           BitSet.set used w;
           if pl<>player
           then Queue.add w todoQ
-          else (Queue.add w todoS; strategy.(w) <- v;)
+          else (Queue.add w todoS; strategy#set w v)
         );
       ) (ns_filter (fun w -> BitSet.is_set game_vr w) (game#get_predecessors v));
     )
@@ -94,7 +94,7 @@ let attr_bit game game_vr todoS todoQ strategy player region region_en =
             BitSet.set used w;
             if pl<>player
             then Queue.add w todoQ
-            else (Queue.add w todoS; strategy.(w) <- v;)
+            else (Queue.add w todoS; strategy#set w v)
           );
         ) (ns_filter (fun w -> BitSet.is_set game_vr w) (game#get_predecessors v));
       )

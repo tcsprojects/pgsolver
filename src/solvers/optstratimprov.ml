@@ -8,6 +8,8 @@ open Tcslist;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgnode;;
+open Pgstrategy;;
 
 
 let array_max a less = ArrayUtils.max_elt (fun x y -> if less x y then -1 else 1) a
@@ -79,7 +81,7 @@ let is_zero = function Escape esc -> ArrayUtils.forall esc (fun _ e -> e = 0) | 
 
 let counter_strategy zero_arena estimation =
 	let seed = zero_arena#collect_nodes (fun i (_, pl, delta, _, _) -> pl = plr_Even && ns_size delta = 0 && (not (is_infty estimation.(i)))) in
-	let strat = Array.make (zero_arena#size) (-1) in
+	let strat = new array_strategy (zero_arena#size) in
 	let _ = zero_arena#attr_closure_inplace strat plr_Odd seed in
 	strat;;
 
@@ -220,18 +222,18 @@ let update_strategy0 arena est_after strat =
 	Array.iteri (fun i est ->
 		     let pl = arena#get_owner i in
 		     let delta =  Array.of_list (ns_nodes (arena#get_successors i)) in
-		     if (pl = plr_Even) && (strat.(i) = -1) && (is_infty est)
-		     then strat.(i) <- array_max delta (fun x y -> compare est_after.(x) est_after.(y) < 0)
+		     if (pl = plr_Even) && (strat#get i = nd_undef) && (is_infty est)
+		     then strat#set i (array_max delta (fun x y -> compare est_after.(x) est_after.(y) < 0))
 		    ) est_after;;
   
 
 let get_intermediate_strategy0 arena est_after strat' =
-	let strat = Array.copy strat' in
+	let strat = strat'#copy in
 	Array.iteri (fun i est ->
 		let delta =  Array.of_list (ns_nodes (arena#get_successors i)) in
-		if (arena#get_owner i = plr_Even) && (strat.(i) = -1) && (Array.length delta > 0)
-		then strat.(i) <- array_max delta (fun x y -> compare (add_est est_after.(x) (arena#get_priority x))
-		                                                      (add_est est_after.(y) (arena#get_priority y)) < 0)
+		if (arena#get_owner i = plr_Even) && (strat#get i = nd_undef) && (Array.length delta > 0)
+		then strat#set i (array_max delta (fun x y -> compare (add_est est_after.(x) (arena#get_priority x))
+		                                                      (add_est est_after.(y) (arena#get_priority y)) < 0))
 	) est_after;
 	strat
 
@@ -244,7 +246,7 @@ let solve_scc game' =
 	let d = game#get_max_prio in
 	let est = ref (initial_estimation game d) in
 	let eq = ref false in
-	let strat = Array.make n (-1) in
+	let strat = new array_strategy n in
 	let arena = ref (new array_pg 0) in
 	let counter = ref 0 in
 	while not (!eq) do
@@ -253,7 +255,7 @@ let solve_scc game' =
 		arena := improvement_arena game !est;
 		let est' = basic_update_step !arena d !est in
 		update_strategy0 !arena est' strat;
-        msg_tagged 3 (fun _ -> "\nIntermediate strategy: " ^ format_strategy (get_intermediate_strategy0 !arena est' strat) ^ "\n");
+        msg_tagged 3 (fun _ -> "\nIntermediate strategy: " ^ (get_intermediate_strategy0 !arena est' strat)#format ^ "\n");
 		eq := ArrayUtils.forall est' (fun i entry -> compare (!est).(i) entry = 0);
 		est := est';
 	done;
@@ -261,7 +263,7 @@ let solve_scc game' =
 	let sol = sol_init game (fun i -> if is_infty (!est).(i) then plr_Even else plr_Odd) in
 
 	let strat' = counter_strategy (zero_arena !arena !est) !est in
-	merge_strategies_inplace strat strat';
+	strat#merge_inplace strat';
 
 	alternating_revertive_restriction game' game sol strat;;
 

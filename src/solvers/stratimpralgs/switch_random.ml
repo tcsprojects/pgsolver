@@ -8,6 +8,7 @@ open Transformations;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgnode;;
 
 
 
@@ -62,7 +63,7 @@ let multiple_edge_backtransformation game solution strategy =
 		if (game#is_defined i) && (solution#get i = plr_undef) then (
 			solution#set i (solution#get (ns_some tr));
 			if solution#get i = pl
-			then strategy.(i) <- ns_some tr
+			then strategy#set i (ns_some tr)
 		)
 	done
 
@@ -78,9 +79,9 @@ let multiple_edge_solve game solver =
 	let (sol', strat') = solver game'' mult' in
 	let sol = sol_init game' (fun i -> if old2new.(i) = -1 then plr_undef else sol'.(old2new.(i))
 	) in
-	let strat = Array.init n (fun i ->
+	let strat = str_init game (fun i ->
 		if old2new.(i) = -1 then -1
-		else let j = strat'.(old2new.(i)) in
+		else let j = strat'#get (old2new.(i)) in
 		     if j = -1 then -1 else new2old.(j)
 	) in
 	multiple_edge_backtransformation game sol strat;
@@ -109,9 +110,9 @@ let improvement_policy_vorobyov2 game node_compare
 			ga'#iterate (fun i (pr, pl, tr, _, de) ->
 				    if (pr >= 0) && (pl = plr_Even) then 
 				      begin
-					strate := TreeSet.add (i,strategy.(i)) !strate;
+					strate := TreeSet.add (i,strategy#get i) !strate;
 					ns_iter (fun w -> ga'#del_edge i w) (ga'#get_successors i);
-					ga'#add_edge i strategy.(i)
+					ga'#add_edge i (strategy#get i)
 				      end
 				   );
 			let entry = (ga', !strate, ed, max (TreeSet.cardinal !strate) (TreeSet.cardinal ed / 2)) in
@@ -119,13 +120,13 @@ let improvement_policy_vorobyov2 game node_compare
 		)
 		else if nu > 0 then (
 			let impr_edges = Array.of_list (List.filter (fun (i,j) ->
-				node_valuation_ordering ga node_compare valu.(j) valu.(strategy.(i)) > 0
+				node_valuation_ordering ga node_compare valu.(j) valu.(strategy#get i) > 0
 			) (TreeSet.elements av)) in
 			if Array.length impr_edges = 0 then iterate stack
 			else (
 				let (i,j) = impr_edges.(Random.int (Array.length impr_edges)) in
-				let strategy' = Array.copy strategy in
-				strategy'.(i) <- j;
+				let strategy' = strategy#copy in
+				strategy'#set i j;
 				ga#add_edge i j;
 				(strategy', (ga, TreeSet.add (i,j) ed, TreeSet.remove (i,j) av, nu - 1)::stack)
 			)
@@ -141,7 +142,7 @@ let improvement_policy_vorobyovordered game node_total_ordering
                                 (edgearr, counter, stack, edgeord)
                                 old_strategy valu =
 
-	let strategy = Array.copy old_strategy in
+	let strategy = old_strategy#copy in
 
 	while !counter > 0 do
 		let j = ref 0 in
@@ -175,7 +176,7 @@ let improvement_policy_vorobyovordered game node_total_ordering
 		let se = tr.(0) in
 		let ee = tr.(!i) in
 		if (node_valuation_ordering game node_total_ordering valu.(se) valu.(ee) < 0) then (
-			strategy.(e) <- ee;
+			strategy#set e ee;
 			tr.(0) <- ee;
 			tr.(!i) <- se;
 			unaltered := false
@@ -193,7 +194,7 @@ let improvement_policy_vorobyovordered_init_edges (game:paritygame) init_strat =
 		if pl = plr_Even && pr >= 0 then (
 			ns_iter (fun j -> ord := (i,j)::!ord) tr;
 			let tr = Array.of_list (ns_nodes tr) in
-            let j = ArrayUtils.index_of tr init_strat.(i) in
+            let j = ArrayUtils.index_of tr (init_strat#get i) in
             let tr' = Array.copy tr in
             tr'.(0) <- tr.(j);
             tr'.(j) <- tr.(0);
@@ -206,13 +207,13 @@ let improvement_policy_vorobyovordered_init_edges (game:paritygame) init_strat =
 	
 
 let improvement_policy_randomizedbland game node_total_ordering ordering old_strategy valu =
-	let strategy = Array.copy old_strategy in
+	let strategy = old_strategy#copy in
 	let cmp i j =
 		node_valuation_ordering game node_total_ordering valu.(i) valu.(j)
 	in
-	let idx = ArrayUtils.find (fun (x,y) -> cmp y strategy.(x) > 0) ordering in
+	let idx = ArrayUtils.find (fun (x,y) -> cmp y (strategy#get x) > 0) ordering in
 	let (x,y) = ordering.(idx) in
-	strategy.(x) <- y;
+	strategy#set x y;
 	(strategy, ordering)
 
 	
@@ -229,7 +230,7 @@ let improvement_policy_vorobyov game node_total_ordering
                                 (edgearr, counter, stack)
                                 old_strategy valu =
 
-	let strategy = Array.copy old_strategy in
+	let strategy = old_strategy#copy in
 
 	while !counter > 0 do
 		let j = ref (Random.int !counter) in
@@ -266,7 +267,7 @@ let improvement_policy_vorobyov game node_total_ordering
 		let se = tr.(0) in
 		let ee = tr.(!i) in
 		if (node_valuation_ordering game node_total_ordering valu.(se) valu.(ee) < 0) then (
-			strategy.(e) <- ee;
+			strategy#set e ee;
 			tr.(0) <- ee;
 			tr.(!i) <- se;
 			unaltered := false
@@ -282,7 +283,7 @@ let improvement_policy_vorobyov_init_edges (game:paritygame) init_strat =
 	let edgearr = game#map2 (fun i (pr, pl, tr, _, _) ->
 		if pl = plr_Even && pr >= 0 then (
 			let tr = Array.of_list (ns_nodes tr) in
-            let j = ArrayUtils.index_of tr init_strat.(i) in
+            let j = ArrayUtils.index_of tr (init_strat#get i) in
             let tr' = Array.copy tr in
             tr'.(0) <- tr.(j);
             tr'.(j) <- tr.(0);
@@ -315,7 +316,7 @@ let policy_vorobyov_multiple_edges_init_edges (game:paritygame) init_strat multi
 		if pl = plr_Even && pr >= 0 then (
 			let tr = Array.of_list (ns_nodes tr) in
 			let tr = vorobyov_map_multiplicity (comb tr multiplicities.(i)) in
-            let j = ArrayUtils.index_of tr init_strat.(i) in
+            let j = ArrayUtils.index_of tr (init_strat#get i) in
             let tr' = Array.copy tr in
             tr'.(0) <- tr.(j);
             tr'.(j) <- tr.(0);
@@ -330,38 +331,38 @@ let policy_vorobyov_multiple_edges_init_edges (game:paritygame) init_strat multi
 
 
 let improvement_policy_single_randomly game node_total_ordering old_strategy valu =
-	let strategy = Array.copy old_strategy in
+	let strategy = old_strategy#copy in
 	let cmp i j =
 		node_valuation_ordering game node_total_ordering valu.(i) valu.(j)
 	in
 	let edges = ref [] in
-	Array.iteri (fun i j ->
-		if j != -1 then
+	strategy#iter (fun i j ->
+		if j != nd_undef then
 			ns_iter (fun k ->
 				if cmp j k < 0 then edges := (i,k)::!edges
 			) (game#get_successors i)
-	) strategy;
+	) ;
 	let edges_arr = Array.of_list !edges in
 	let len = Array.length edges_arr in
 	if len > 0 then (
 		let (i, j) = edges_arr.(Random.int len) in
-		strategy.(i) <- j
+		strategy#set i j
 	);
 	strategy
 
 let improvement_policy_single_node_edge_randomly game node_total_ordering old_strategy valu =
-	let strategy = Array.copy old_strategy in
+	let strategy = old_strategy#copy in
 	let cmp i j =
 		node_valuation_ordering game node_total_ordering valu.(i) valu.(j)
 	in
 	let node_edges = ref [] in
-	Array.iteri (fun i j ->	if j != -1 then (
+	strategy#iter (fun i j ->	if j != nd_undef then (
         let edges = ref [] in
         ns_iter (fun k ->
             if cmp j k <= 0 then edges := k::!edges
         ) (game#get_successors i);
         node_edges := (i, !edges)::!node_edges
-	)) strategy;
+	)) ;
 	let node_edges_arr = Array.of_list !node_edges in
 	let len = Array.length node_edges_arr in
 	if len > 0 then (
@@ -370,14 +371,14 @@ let improvement_policy_single_node_edge_randomly game node_total_ordering old_st
         let len = Array.length edges_arr in
         if len > 0 then (
             let j = edges_arr.(Random.int len) in
-            strategy.(i) <- j
+            strategy#set i j
         )
 	);
 	strategy
 
 let improvement_policy_all_randomly game node_total_ordering old_strategy valu =
 	let n = game#size in
-	let strategy = Array.copy old_strategy in
+	let strategy = old_strategy#copy in
 	let cmp i j =
 		node_valuation_ordering game node_total_ordering valu.(i) valu.(j)
 	in
@@ -386,11 +387,11 @@ let improvement_policy_all_randomly game node_total_ordering old_strategy valu =
 	while (!improvable && !same) do
 		improvable := false;
 		for i = 0 to n - 1 do
-		  if strategy.(i) > -1 then (
-                    let a = ns_filter (fun j -> cmp strategy.(i) j <= 0) (game#get_successors i) in
+		  if strategy#get i != nd_undef then (
+                    let a = ns_filter (fun j -> cmp (strategy#get i) j <= 0) (game#get_successors i) in
                     improvable := !improvable || (ns_size a > 1);
-                    strategy.(i) <- ns_some a;
-                    same := !same && (strategy.(i) = old_strategy.(i))
+                    strategy#set i (ns_some a);
+                    same := !same && (strategy#get i = old_strategy#get i)
 		  )
 		done
 	done;

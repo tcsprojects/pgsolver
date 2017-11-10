@@ -12,6 +12,8 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
+open Pgstrategy;;
+open Pgnode;;
 
 
 
@@ -338,7 +340,7 @@ let universal_solve_run options stats backend game' =
 
 		timer_start stats.logistics_timing;
         let sol = new array_solution n in
-        let strat = Array.make n (-1) in
+        let strat = new array_strategy n in
         timer_stop stats.logistics_timing;
 
         timer_start stats.decomposition_timing;
@@ -397,7 +399,7 @@ let universal_solve_run options stats backend game' =
                 if sol'#get j != plr_undef
                 then solved := ns_add idxmap.(j) !solved
                 else failwith "subgame was not solved!";
-                if (strat'.(j) >= 0) then strat.(idxmap.(j)) <- idxmap.(strat'.(j))
+                if (strat'#get j != nd_undef) then strat#set idxmap.(j) idxmap.(strat'#get j)
             done;
            	timer_stop stats.logistics_timing;
             !solved
@@ -505,7 +507,7 @@ let universal_solve_run options stats backend game' =
 				  if (sol#get i = plr_Odd) then w1 := ns_add i !w1;
 				  if sol#get i != plr_undef then incr counter;
 				  if not (game#is_defined i) || (game#get_owner i != sol#get i)
-				  then strat.(i) <- -1;
+				  then strat#set i nd_undef;
 				done;
 				msg_plain BACKEND 0 (fun _ -> string_of_int !counter ^ " out of " ^ string_of_int n ^ "\n");
 				
@@ -540,7 +542,7 @@ let universal_solve_run options stats backend game' =
 				    timer_stop stats.logistics_timing;
                 		    let (sol', strat') = universal_solve_decompose game (recdepth + 1) in
                 		    timer_start stats.logistics_timing;
-				    merge_strategies_inplace strat strat';
+				    strat#merge_inplace strat';
 				    sol#merge_inplace sol';
 				    timer_stop stats.logistics_timing
                 		  )
@@ -563,7 +565,7 @@ let universal_solve_run options stats backend game' =
         	       if (game#get_owner w = winner) then (
         		 sol#set w winner;
         		 touchedscc.(sccindex.(w)) <- true;
-        		 strat.(w) <- v;
+        		 strat#set w v;
         		 SingleOccQueue.add w q;
         		 attr := ns_add w !attr
         	       )
@@ -623,7 +625,7 @@ let universal_solve_run options stats backend game' =
                                         else (
                                             sol#set h (plr_benefits (game#get_priority h));
                                             if (sol#get h = pl)
-                                            then strat.(h) <- h
+                                            then strat#set h h
 					                    );
 					                	ns_add h ns_empty
 					                )
@@ -668,7 +670,7 @@ let universal_solve_run options stats backend game' =
 	let n = game'#size in
 	let m = game'#node_count in
 	let solution = new array_solution n in
-	let strategy = Array.make n (-1) in
+	let strategy = new array_strategy n in
 
 	timer_stop stats.logistics_timing;
 
@@ -775,7 +777,7 @@ let universal_solve_run options stats backend game' =
                     List.iter (fun (node, player, move) ->
                         nodes := ns_add node !nodes;
                         solution#set node player;
-                        strategy.(node) <- move;
+                        strategy#set node move;
                         let w = if player = plr_Even then w0 else w1 in
                         w := ns_add node !w
                     ) selfcycles;
@@ -820,7 +822,7 @@ let universal_solve_run options stats backend game' =
         let (sol, strat) = universal_solve_decompose game 0 in
 
         timer_start stats.logistics_timing;
-        merge_strategies_inplace strategy strat;
+        strategy#merge_inplace strat;
         solution#merge_inplace sol;
         timer_stop stats.logistics_timing;
 	);
@@ -864,7 +866,7 @@ let universal_solve_by_player_solver options solver game =
 	for i = 0 to n - 1 do
 		if sol'#get i = plr_Odd then (
 			sol#set i plr_Odd;
-			strat.(i) <- strat'.(i)
+			strat#set i (strat'#get i)
 		)
 	done;
 	(sol, strat);;
@@ -872,7 +874,7 @@ let universal_solve_by_player_solver options solver game =
 
 
 let universal_solve_trivial verb_level game =
-	universal_solve (universal_solve_def_options false verb_level) (fun _ -> (new array_solution 0, [||])) game;;
+	universal_solve (universal_solve_def_options false verb_level) (fun _ -> (new array_solution 0, new array_strategy 0)) game;;
 
 
 let compute_winning_nodes verb_level game strat pl =

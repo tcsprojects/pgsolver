@@ -108,13 +108,7 @@ let _ =
 		let node_compare = node_total_ordering_by_position in
 		let valu = evaluate_strategy game node_compare strat in
 		let less i j = node_valuation_ordering game node_compare valu.(i) valu.(j) < 0 in
-		let counter_strat =
-			Array.init (Array.length valu) (fun i ->
-				if game#get_owner  i = plr_Odd
-				then best_decision_by_valuation_ordering game node_compare valu i
-				else -1
-			)
-		in
+		let counter_strat = counter_strategy_by_valu_and_ordering game valu node_compare in
 
 		if counter >= !start_iteration && (match !end_iteration with None -> true | Some end_idx -> counter <= end_idx) then (
 			before_iteration counter;
@@ -127,13 +121,13 @@ let _ =
 					    let to_node = get_ident j in
 					    let kind =
 					      if pl = plr_Even then
-						if strat.(i) = j
+						if strat#get i = j
 						then Even_player_strategy
-						else if less j strat.(i)
+						else if less j (strat#get i)
 						then Even_player_disabled
 						else Even_player_improving
 					      else
-                        			if counter_strat.(i) = j
+                        			if counter_strat#get i = j
                         			then Odd_player_strategy
 						else Odd_player_disabled
 					    in

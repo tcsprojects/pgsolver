@@ -4,6 +4,7 @@ open Tcstiming.SimpleTiming;;
 open Pgnode;;
 open Pgplayer;;
 open Pgsolution;;
+open Pgstrategy;;
 
 
 (******************************************************************************

@@ -9,7 +9,9 @@ open Arrayparitygame;;
 open Pgnodeset;;
 open Pgpriority;;
 open Pgplayer;;
+open Pgnode;;
 open Pgsolution;;
+open Pgstrategy;;
 
 
 
@@ -338,7 +340,7 @@ let total_transformation_inplace (pg: paritygame) =
 
 (* Restricts the strategy of the total closure to the original game *)
 let total_revertive_restriction_inplace (oldpg: paritygame) (strat: strategy) =
-	oldpg#iterate (fun i -> fun (_,_,succs,_,_) -> if ns_isEmpty succs then strat.(i) <- -1)
+	oldpg#iterate (fun i -> fun (_,_,succs,_,_) -> if ns_isEmpty succs then strat#set i nd_undef)
 
 
 (* Transforms a parity game into an equivalent (modulo dummy nodes) alternating parity game *)
@@ -407,14 +409,14 @@ let alternating_revertive_restriction (oldpg: paritygame)
 				      (strat: strategy) =
 	let n = oldpg#size in
 	let sol' = new array_solution n in
-	let strat' = Array.make n (-1) in
+	let strat' = new array_strategy n in
 
 	for i = 0 to n - 1 do
 	  sol'#set i (sol#get i);
-	  if strat.(i) < n
-	  then strat'.(i) <- strat.(i)
-	  else let delta = altpg#get_successors strat.(i) in
-	       strat'.(i) <- ns_some delta
+	  if strat#get i < n
+	  then strat'#set i (strat#get i)
+	  else let delta = altpg#get_successors (strat#get i) in
+	       strat'#set i (ns_some delta)
 	done;
 
 	(sol', strat');;
@@ -649,9 +651,9 @@ let normal_form_translation pg =
     
 let normal_form_revertive_translation old_game sol strat =
   let n = old_game#size in
-  let rec lookup v = if v < n then v else lookup strat.(v) in
+  let rec lookup v = if v < n then v else lookup (strat#get v) in
   (sol_init old_game (fun i -> sol#get i),
-   Array.init n (fun i -> lookup strat.(i)))
+   str_init old_game (fun i -> lookup (strat#get i)))
     
 let uniquize_sorted_prios_inplace game =
   let pr = ref 0 in

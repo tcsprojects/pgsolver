@@ -2,6 +2,7 @@ open Pgsolution ;;
 open Paritygame ;;
 open Basics ;;
 open Univsolve;;
+open Pgstrategy ;;
 
 val solve : paritygame -> solution * strategy
 val register : unit -> unit

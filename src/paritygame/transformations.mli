@@ -2,6 +2,7 @@ open Basics;;
 open Paritygame;;
 open Pgpriority;;
 open Pgsolution;;
+open Pgstrategy;;
 
 
 

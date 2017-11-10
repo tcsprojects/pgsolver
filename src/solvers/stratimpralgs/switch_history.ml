@@ -15,20 +15,20 @@ let improvement_policy_optimize_fair_default_tie_break game node_total_ordering 
 	)
 
 let improvement_policy_optimize_least_basic_iterations tie_break game node_total_ordering occ old_strategy valu =
-	Array.iteri (fun i j ->
+	old_strategy#iter (fun i j ->
 		     let pl = game#get_owner  i in
 		     let tr = game#get_successors  i in
 		     if pl = plr_Even then Array.iteri (fun k l ->
 							if l = j then occ.(i).(k) <- occ.(i).(k) + 1
 						       ) (Array.of_list (ns_nodes tr))
-		    ) old_strategy;
-	let strategy = Array.copy old_strategy in
+		    );
+	let strategy = old_strategy#copy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
 	game#iterate (fun i (_, pl, tr, _, _) ->
 		if pl = plr_Even then
 			Array.iteri (fun j k ->		
-				if node_valuation_ordering game node_total_ordering valu.(strategy.(i)) valu.(k) < 0 then (
+				if node_valuation_ordering game node_total_ordering valu.(strategy#get i) valu.(k) < 0 then (
 					if !minvalue = -1 then minvalue := occ.(i).(j);
 					if !minvalue = occ.(i).(j) then l := (i,j,k)::!l
 					else if !minvalue > occ.(i).(j) then (
@@ -40,7 +40,7 @@ let improvement_policy_optimize_least_basic_iterations tie_break game node_total
 	) ;
 	if !l != [] then (
 		let (i,j,k) = tie_break game node_total_ordering occ old_strategy valu !l in 
-		strategy.(i) <- k
+		strategy#set i k
 	);
 	(strategy, occ)	
 	
@@ -48,16 +48,16 @@ let improvement_policy_optimize_least_basic_iterations tie_break game node_total
 let improvement_policy_optimize_least_recently_basic tie_break game node_total_ordering occ old_strategy valu =
 	Array.iteri (fun i ->
 		Array.iteri (fun j k ->
-			occ.(i).(j) <- if old_strategy.(i) = k then 0 else occ.(i).(j) + 1
+			occ.(i).(j) <- if old_strategy#get i = k then 0 else occ.(i).(j) + 1
 		)
 	) occ;
-    let strategy = Array.copy old_strategy in
+    let strategy = old_strategy#copy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
 	game#iterate (fun i (_, pl, tr, _, _) ->
 		if pl = plr_Even then
 			Array.iteri (fun j k ->		
-				if node_valuation_ordering game node_total_ordering valu.(strategy.(i)) valu.(k) < 0 then (
+				if node_valuation_ordering game node_total_ordering valu.(strategy#get i) valu.(k) < 0 then (
 					if !minvalue = -1 then minvalue := occ.(i).(j);
 					if !minvalue = occ.(i).(j) then l := (i,j,k)::!l
 					else if !minvalue < occ.(i).(j) then (
@@ -69,20 +69,20 @@ let improvement_policy_optimize_least_recently_basic tie_break game node_total_o
 	) ;
 	if !l != [] then (
 		let (i,j,k) = tie_break game node_total_ordering occ old_strategy valu !l in 
-		strategy.(i) <- k
+		strategy#set i k
 	);
 	(strategy, occ)	
 		
 (* Select the improving edge that entered the strategy least-recently thus far.  *)	
 let improvement_policy_optimize_least_recently_entered tie_break game node_total_ordering occ old_strategy valu =
-    let strategy = Array.copy old_strategy in
+    let strategy = old_strategy#copy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
 	let maxvalue = ref (-1) in
 	game#iterate (fun i (_, pl, tr, _, _) ->
 		if pl = plr_Even then
 			Array.iteri (fun j k ->		
-				if node_valuation_ordering game node_total_ordering valu.(strategy.(i)) valu.(k) < 0 then (
+				if node_valuation_ordering game node_total_ordering valu.(strategy#get i) valu.(k) < 0 then (
 					if !minvalue = -1 then minvalue := occ.(i).(j);
 					maxvalue := max !maxvalue occ.(i).(j);
 					if !minvalue = occ.(i).(j) then l := (i,j,k)::!l
@@ -95,7 +95,7 @@ let improvement_policy_optimize_least_recently_entered tie_break game node_total
 	);
 	if !l != [] then (
 		let (i,j,k) = tie_break game node_total_ordering occ old_strategy valu !l in 
-		strategy.(i) <- k;
+		strategy#set i k;
 		occ.(i).(j) <- !maxvalue + 1
 	);
 	(strategy, occ)	

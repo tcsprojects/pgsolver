@@ -28,6 +28,7 @@ open Pgnodeset
 open Pgplayer
 open Pgpriority
 open Pgsolution
+open Pgstrategy
 
 
 
@@ -64,86 +65,12 @@ val ord_total_by      : pg_ordering -> pg_ordering
 
 
 
-                                         
-
-
-
-
-(***************************************************************
- *                        STRATEGY                             *
- ***************************************************************)                                   
-(* create positional strategies for a parity game
- *
- * A value of type strategy is essentially a map of type node -> node that represents positional strategies for both players.
- * The player for whom a decision v -> u is included in the strategy is implicitly given by the owner of node v in the underlying parity game.
- * Warning: a strategy does not remember its underlying parity game. Hence, a strategy that was created for one game can be used for another game,
- * but this can not only obviously lead to wrong computations but also to runtime errors.
- *)
-                                    
-(** Type of a strategy.
-
-    WARNING: May becomes abstract in the future.
-*)
-type strategy = node array
-                     
-(* str_create and str_init below paritygame class (because of dependency) *)
-(** Same as str_create, but only gets to know
-    the size of the paritygame.
-
-    @param int size of paritygame
-    @return strategy for paritygame
- *)
-val str_make   : int -> strategy                              
-
-(** Get decision for a node based on strategy.
-
-    @param strategy strategy to check for decision
-    @param node node to get decision for
-    @param successor of node based on strategy
- *)
-val str_get    : strategy -> node -> node
-
-(** Records the strategy decision based node -> node parameters.
-
-    @param strategy strategy to record decision for
-    @param node predecessor
-    @param node successor 
- *)
-val str_set    : strategy -> node -> node -> unit
-
-(** Iterate over all nodes and their corresponding successors
-    in a strategy.
-
-    @param (node -> node -> unit) function to use for each pair of node + successor
-    @param strategy strategy to iterate
- *)
-val str_iter   : (node -> node -> unit) -> strategy -> unit
-
-(** Returns string representation of strategy.
-
-    @param strategy strategy to get string for
-    @return string representation of strategy
- *)
-val format_strategy : strategy -> string
-
 
 
                                     
 (***************************************************************
  *                SOLUTION/STRATEGY FUNCTIONS                  *
  ***************************************************************)
-(*
-val permute_solution: int array -> solution -> solution
-val permute_strategy: int array -> int array -> solution -> solution
-*)
-
-(** Calling merge_strategies_inplace strat1 strat2 adds all strategy decisions from strat2 to strat1. 
-    Throws an Unmergable-Exception if the domain of both strategies is not empty. 
-   
-    @param strategy strategy one to merge
-    @param strategy strategy two to merge
-*)
-val merge_strategies_inplace : strategy -> strategy -> unit
 
 (** Print solution and strategy.
 
@@ -748,32 +675,10 @@ end
  *)
 val  sol_init   : paritygame -> (node -> player) -> solution
 
+val  str_init   : paritygame -> (node -> node) -> strategy
 
                                                       
 
-(***************************************************************
- *                      STRATEGY PART 2                        *
- ***************************************************************)                                   
-(** Creates strategy for paritygame.
-    Initially, every node maps to nd_undef.
-
-    @param paritygame paritygame to create strategy for
-    @return strategy for paritygame
- *)
-val str_create : paritygame -> strategy
-
-(** Create strategy initially filled with decisions 
-    according to (node -> node) function.
-
-    @param paritygame paritygame to create strategy for
-    @param (node -> node) decisions for each node
-    @return initialized strategy
- *)
-val str_init   : paritygame -> (node -> node) -> strategy
-
-
-                                                   
-                                                   
 (**************************************************************
  *                       GLOBAL SOLVER                        *
  **************************************************************)

@@ -1,5 +1,6 @@
 open Paritygame
 open Pgplayer
+open Pgstrategy
 
 (**************************************************************
  * Priority Promotion Approach Definitions                    *

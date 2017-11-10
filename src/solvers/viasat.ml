@@ -7,6 +7,7 @@ open Tcsarray;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgstrategy;;
 
 
 module Varencoding =
@@ -333,7 +334,7 @@ let solve' game =
   msg_plain 2 (fun _ -> SimpleTiming.stop tim; "done: " ^ SimpleTiming.format tim ^ "\n");
   
   let solution = sol_init game (fun _ -> plr_Even) in
-  let strategy = Array.make m (-1) in
+  let strategy = new array_strategy m in
 	
   message 3 (fun _ -> "Obtaining values of S-variables ...\n");
 	
@@ -352,7 +353,7 @@ let solve' game =
 	      in
 	      message 3 (fun _ -> (string_of_int y) ^ "\n");
 	      solution#set v (if winner=0 then plr_Even else plr_Odd);
-	      strategy.(v) <- y) stable;
+	      strategy#set v y) stable;
   
   release_encoding ();
   (solution,strategy)

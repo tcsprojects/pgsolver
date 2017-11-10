@@ -13,6 +13,8 @@ open Univsolve;;
 open Tcsbasedata;;
 open Pgnodeset;;
 open Pgplayer;;
+open Pgnode;;
+open Pgstrategy;;
 
 
 let even i = (i mod 2 = 0)
@@ -35,7 +37,7 @@ let solve' game =
                                else if even min_prio then (a+1,a) else (a,a+1)
   in
 
-  let strategy = Array.make n (-1) in
+  let strategy = new array_strategy n in
   let evt_pos_strategy = Array.make n [] in
   
   let all_nodes_list = game#collect_nodes (fun _ -> fun _ -> true) in
@@ -331,7 +333,7 @@ let solve' game =
             begin
               discard_decisions v winner prio bound; 
               let (w,mmnt) = List.hd evt_pos_strategy.(v) in
-              strategy.(v) <- w;
+              strategy#set v w;
               todo := (w, next_smallest winner prio mmnt) :: !todo
             end
           else
@@ -345,7 +347,7 @@ let solve' game =
         message 3 (fun _ -> " greater or equal!\n") *)
     done;
     msg_tagged 3 (fun _ -> "Searching for next node to visit after " ^ string_of_int !next_node ^ " ");
-    while !next_node < n && (strategy.(!next_node) > -1 || let o = game#get_owner !next_node in solution#get !next_node <> o) do
+    while !next_node < n && (strategy#get !next_node != nd_undef || let o = game#get_owner !next_node in solution#get !next_node <> o) do
       incr next_node;
       message 3 (fun _ -> ".")
     done;

@@ -12,6 +12,8 @@ open Pseudosatwrapper ;;
 open Externalsat ;;
 open Pgnodeset;;
 open Pgplayer;;
+open Pgstrategy;;
+open Pgnode;;
 
 let split s i = (String.sub s 0 i, String.sub s (i + 1) (String.length s - i - 1));;
 
@@ -971,9 +973,11 @@ let enforce_nonstatic_attractees l k n =
  *****************************************************************************)
 
 let get_strategy n u =
-	Array.init n (fun i ->
+    let strat = new array_strategy n in
+    for i = 0 to n - 1 do
 		solver#get_variable_first (Array.init n (fun a -> Strategy (u, i, a)))
-	)
+	done;
+	strat
 
 let get_worst_cycles n u =
 	Array.init n (fun i ->
@@ -991,11 +995,11 @@ let get_paritygame n =
 	new array_pg n ~initFunc:(fun i ->
 		let l = ref [] in
 		for j = 0 to n - 1 do
-			if (s.(i) != j) && (solver#get_variable_bool (Edge (i, j))) then l := j::!l
+			if (s#get i != j) && (solver#get_variable_bool (Edge (i, j))) then l := j::!l
 		done;
 		((i * 2 + solver#get_variable (Parity i)),
 		 (if solver#get_variable (Player i) = 0 then plr_Even else plr_Odd),
-		 (if s.(i) != -1 then !l @ [s.(i)] else !l),
+		 (if s#get i != nd_undef then !l @ [s#get i] else !l),
 		 (Some (string_of_int i)))
 	)
 
@@ -1124,7 +1128,7 @@ let _ =
 			message 1 (fun _ -> "\n");
 			for j = 0 to !k - 1 do
 				message 1 (fun _ -> "\n");
-				message 1 (fun _ -> format_strategy (get_strategy n j) ^ "\n");
+				message 1 (fun _ -> (get_strategy n j)#format ^ "\n");
 				message 1 (fun _ -> "\n");
 				if j < !k then
 					for i = 0 to n - 1 do

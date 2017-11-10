@@ -10,6 +10,8 @@ open Tcsstrings;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgstrategy;;
+open Pgnode;;
 
 
 
@@ -46,7 +48,7 @@ module StrategyHelper = struct
 	
 	let is game strategy v w =
 		try
-			strategy.(game#find_desc  (Some v)) = game#find_desc  (Some w)
+			strategy#get (game#find_desc  (Some v)) = game#find_desc  (Some w)
 		with Not_found -> false
 	
 	let leads_to game valu v w =
@@ -59,7 +61,7 @@ module StrategyHelper = struct
 
 	let improvable game strategy valu v =
 		let i = game#find_desc  (Some v) in
-		best_decision_by_valuation_ordering game node_total_ordering_by_position valu i != strategy.(i)
+		best_decision_by_valuation_ordering game node_total_ordering_by_position valu i != strategy#get i
 		
 end;;
 
@@ -409,10 +411,10 @@ let show_info game occ strategy valu n =
 let counter_strategy_lookup game strategy len = 
 	let counter = compute_counter_strategy game strategy in
 	let find a i = game#find_desc  (Some (a ^ string_of_int i)) in
-	([| Array.init len (fun i -> if counter.(find "E" i) = find "g" i then 1 else 0);
-	   Array.init (len-1) (fun i -> if counter.(find "X" i) = find "s" i then 1 else 0) |],
-	 [| Array.init len (fun i -> if strategy.(strategy.(counter.(find "E" i))) = find "d" 0 then 0 else 1);
-	   Array.init (len-1) (fun i -> if strategy.(strategy.(counter.(find "X" i))) = find "d" 0 then 0 else 1) |]);;
+	([| Array.init len (fun i -> if counter#get (find "E" i) = find "g" i then 1 else 0);
+	   Array.init (len-1) (fun i -> if counter#get (find "X" i) = find "s" i then 1 else 0) |],
+	 [| Array.init len (fun i -> if strategy#get (strategy#get (counter#get (find "E" i))) = find "d" 0 then 0 else 1);
+	   Array.init (len-1) (fun i -> if strategy#get (strategy#get (counter#get (find "X" i))) = find "d" 0 then 0 else 1) |]);;
 
 let test_assumptions game strategy valu =
   let assert_iff ident leftformula rightformula left right =
@@ -791,7 +793,7 @@ let test_improving_switches game strategy valu n =
 	let info = strategy_info game strategy in
 	(*let strat a i b j = if StrategyHelper.is game strategy (a ^ string_of_int i) (b ^ string_of_int j) then 1 else 0 in*)
 	let impr = Array.init (game#size ) (fun i ->
-    (game#get_owner  i = plr_Even) && (strategy.(i) != best_decision i)
+    (game#get_owner  i = plr_Even) && (strategy#get i != best_decision i)
   ) in
 	let check_impr desc s i assrt =
 		let desc = desc ^ " " ^ string_of_int i ^ " (mu=" ^ string_of_int info.mu ^ ") " in
@@ -1433,13 +1435,13 @@ let improvement_policy_optimize_fair tie_break
     	^ "\n"
     );
 	
-    let strategy = Array.copy old_strategy in
+    let strategy = old_strategy#copy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
 	game#iterate (fun i (_, pl, tr, _, de) ->
 		if pl = plr_Even then
 			Array.iteri (fun j k ->		
-				if cmp strategy.(i) k < 0 then (
+				if cmp (strategy#get i) k < 0 then (
 					if !minvalue = -1 then minvalue := occ.(i).(j);
 					if !minvalue = occ.(i).(j) then l := (i,j,k)::!l
 					else if !minvalue > occ.(i).(j) then (
@@ -1453,7 +1455,7 @@ let improvement_policy_optimize_fair tie_break
 	msg_tagged_nl 4 (fun _ -> "Occurrence-Arena: " ^ ListUtils.format (fun (i,_,k) -> desc i ^ "->" ^ desc k) (List.rev !l) ^ "\n");
 	if !l != [] then (
 		let (i,j,k) = tie_break game node_total_ordering occ old_strategy valu !l in 
-		strategy.(i) <- k;
+		strategy#set i k;
 		occ.(i).(j) <- occ.(i).(j) + 1
 	);
 	(strategy, occ)	
@@ -1585,8 +1587,8 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 				else (String.get s 0, int_of_string (StringUtils.rest_string s 1))
 	in
 	let (i,j,k) = ListUtils.min_elt (fun (i0,j0,k0) (i1,j1,k1) ->
-		compare_nodes (game#size ) (f i0) (f k0) (f old_strategy.(i0)) (f i1) (f k1) (f old_strategy.(i1)) state' idxmap
-		   (fun s -> f old_strategy.(OptionUtils.get_some (find s)))
+		compare_nodes (game#size ) (f i0) (f k0) (f (old_strategy#get i0)) (f i1) (f k1) (f (old_strategy#get i1)) state' idxmap
+		   (fun s -> f (old_strategy# get(OptionUtils.get_some (find s))))
 	) l in
 	(*switch_zadeh_exp_tie_break_callback n game old_strategy valu occ i k !r !s;*)
 	(i,j,k)
@@ -1635,18 +1637,18 @@ let initial_strategy_for_exp_game game =
 		if (pl = plr_Even) && (ns_size tr >= 2) then (
 			let (c, j) = parse de in
 			match c with
-			| 'a' -> strategy.(i) <- find ("o" ^ string_of_int j)
-			| 'b' -> strategy.(i) <- find ("p" ^ string_of_int j)
-			| 'v' -> strategy.(i) <- find ("r" ^ string_of_int j)
-			| 'w' -> strategy.(i) <- find ("q" ^ string_of_int j)
-			| 'o' -> strategy.(i) <- find ("m" ^ string_of_int 1)
-			| 'p' -> strategy.(i) <- find ("m" ^ string_of_int 1)
-			| 'q' -> strategy.(i) <- find ("m" ^ string_of_int 1)
-			| 'r' -> strategy.(i) <- find ("m" ^ string_of_int 1)
-			| 'd' -> strategy.(i) <- find ("E" ^ string_of_int j)
-			| 'g' -> strategy.(i) <- find ("c" ^ string_of_int j)
-			| 's' -> strategy.(i) <- find ("m" ^ string_of_int 0)
-			| 'm' -> strategy.(i) <- find (if j < n -1 then ("m" ^ string_of_int (j+1)) else "Y")
+			| 'a' -> strategy#set i (find ("o" ^ string_of_int j))
+			| 'b' -> strategy#set i (find ("p" ^ string_of_int j))
+			| 'v' -> strategy#set i (find ("r" ^ string_of_int j))
+			| 'w' -> strategy#set i (find ("q" ^ string_of_int j))
+			| 'o' -> strategy#set i (find ("m" ^ string_of_int 1))
+			| 'p' -> strategy#set i (find ("m" ^ string_of_int 1))
+			| 'q' -> strategy#set i (find ("m" ^ string_of_int 1))
+			| 'r' -> strategy#set i (find ("m" ^ string_of_int 1))
+			| 'd' -> strategy#set i (find ("E" ^ string_of_int j))
+			| 'g' -> strategy#set i (find ("c" ^ string_of_int j))
+			| 's' -> strategy#set i (find ("m" ^ string_of_int 0))
+			| 'm' -> strategy#set i (find (if j < n -1 then ("m" ^ string_of_int (j+1)) else "Y"))
 			| _ -> ()
 		)
   ) ;

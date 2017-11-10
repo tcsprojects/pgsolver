@@ -7,6 +7,7 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
+open Pgstrategy;;
 
 
 let ns_minarg arr f less = ns_fold (fun m i -> if less (f i) (f m) then i else m) (ns_some arr) arr;;
@@ -122,12 +123,12 @@ let solve_scc_reach game player spmidx updspm =
     done;
 
     let sol = new array_solution n in
-    let strat = Array.make n (-1) in
+    let strat = new array_strategy n in
 
     game#iterate (fun i -> fun (_,ow,succs,_,_) -> message 3 (fun _ -> "Checking " ^ string_of_int i ^ "\n");
 						 sol#set i (if isTop spmidx.(i) then plr_opponent player else player);
 						 if (ow = player) && (player = sol#get i)
-						 then strat.(i) <- ns_minarg succs (fun q -> spmidx.(q)) (less 0));
+						 then strat#set i (ns_minarg succs (fun q -> spmidx.(q)) (less 0)));
 
     (sol, strat);;
 
@@ -351,7 +352,7 @@ let solve' game =
 	done;
 
     let sol = new array_solution n in
-    let strat = Array.make n (-1) in
+    let strat = new array_strategy n in
 
     for i = 0 to n - 1 do
         msg_tagged 3 (fun _ -> "Checking " ^ string_of_int i ^ "\n");
@@ -364,7 +365,7 @@ let solve' game =
       let delta = game#get_successors i in
 
       if (pl = sol#get i)
-      then strat.(i) <- ns_minarg delta (fun q -> spmidx.(q)) (less pl 0)
+      then strat#set i (ns_minarg delta (fun q -> spmidx.(q)) (less pl 0))
     done;
 
     (sol, strat);;

@@ -16,6 +16,8 @@ open Univsolve;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgstrategy;;
+open Pgnode;;
 
 
 let solve game =
@@ -26,8 +28,8 @@ let solve game =
 
         let generate_strat game pl =
             let n = game#size in
-            let s = Array.make n (-1) in
-	    game#iterate (fun v -> fun (_,pl',d,_,_) -> if (pl = pl') then s.(v) <- ns_some d); 
+            let s = new array_strategy n in
+	        game#iterate (fun v -> fun (_,pl',d,_,_) -> if (pl = pl') then s#set v (ns_some d));
             s
         in
 
@@ -38,7 +40,7 @@ let solve game =
 		let (sol0, _) = universal_solve_trivial verbosity_level_default (game#subgame_by_strat s0) in
 		let (sol1, _) = universal_solve_trivial verbosity_level_default (game#subgame_by_strat s1) in
 		let sol = sol_init game (fun i -> if sol0#get i = plr_Even then plr_Even else if sol1#get i = plr_Odd then plr_Odd else plr_undef) in
-		let strat = Array.init n (fun i -> if sol0#get i = plr_Even then s0.(i) else if sol1#get i = plr_Odd then s1.(i) else -1) in
+		let strat = str_init game (fun i -> if sol0#get i = plr_Even then s0#get i else if sol1#get i = plr_Odd then s1#get i else nd_undef) in
 		(sol, strat)
 	in
 

@@ -13,6 +13,8 @@ open Univsolve;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgsolution;;
+open Pgstrategy;;
+open Pgnode;;
 
 
 let newwin options game =
@@ -20,7 +22,7 @@ let newwin options game =
 	let n = game#size in
 	let l = int_of_float (ceil (sqrt (float (2 * n)))) in
 	let sol = new array_solution n in
-	let strat = Array.make n (-1) in
+	let strat = new array_strategy n in
 	let options' = (universal_options_alter_verb options verbosity_level_default) in
 
 	let is_dominion nodeset pl =
@@ -30,8 +32,8 @@ let newwin options game =
 		|   Some strat' -> (
             ns_iter (fun q ->
                 sol#set q pl;
-                if strat'.(q) != -1
-                then strat.(q) <- strat'.(q)
+                if strat'#get q != nd_undef
+                then strat#set q (strat'#get q)
             ) nodeset;
             true
         	)

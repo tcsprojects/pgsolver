@@ -15,6 +15,8 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
+open Pgstrategy;;
+open Pgnode;;
 
 (* let array_max a less = ArrayUtils.max_elt (fun x y -> if less x y then -1 else 1) a *)
 let list_max a less = ListUtils.max_elt (fun x y -> if less x y then -1 else 1) a
@@ -77,9 +79,9 @@ let reward_total_ordering game node_total_ordering i j =
 	else node_total_ordering game (if ri mod 2 = 0 then i else j) (if ri mod 2 = 0 then j else i)
 
 let initial_strategy_by_what game selector =
-	Array.init (game#size ) (fun i ->
+	str_init game (fun i ->
 				   let tr = game#get_successors  i in
-				   if not (game#is_defined  i) || (game#get_owner  i = plr_Odd) || (ns_isEmpty tr) then -1 else selector tr
+				   if not (game#is_defined  i) || (game#get_owner  i = plr_Odd) || (ns_isEmpty tr) then nd_undef else selector tr
 	)
   
 let initial_strategy_by_first_edge game = initial_strategy_by_what game ns_first
@@ -124,7 +126,7 @@ let best_decision_by_valuation_ordering game node_total_ordering valu v =
 	best_decision_by_ordering game (node_valuation_total_ordering game node_total_ordering valu) v
 
 let strategy_improvable game node_total_ordering strat valu =
-    ArrayUtils.exists strat (fun i j ->
+    strat#exists (fun i j ->
         (game#get_owner  i = plr_Even) &&
         (node_valuation_ordering game node_total_ordering valu.(j)
         						 valu.(best_decision_by_valuation_ordering game node_total_ordering valu i) < 0)
@@ -137,14 +139,14 @@ let winning_regions game valu =
     )
 
 let winning_strategies game node_total_ordering strat valu =
-    Array.init (Array.length valu) (fun i ->
+    str_init game (fun i ->
         let (v, _, _) = valu.(i) in
         let winner = plr_benefits (game#get_priority  v) in
         let player = game#get_owner  i in
         if winner = player
-        then if player = plr_Even then strat.(i)
+        then if player = plr_Even then strat#get i
              else best_decision_by_valuation_ordering game node_total_ordering valu i
-        else -1
+        else nd_undef
     )
 
 let evaluate_strategy game node_total_ordering strat =
@@ -201,13 +203,15 @@ let evaluate_strategy game node_total_ordering strat =
 	) asc_rew graph;
 	valu
 
-let compute_counter_strategy game strategy = 
-	let valu = evaluate_strategy game node_total_ordering_by_position strategy in
-	Array.init (Array.length valu) (fun i ->
-		if game#get_owner  i = plr_Even
-		then -1
-		else best_decision_by_valuation_ordering game node_total_ordering_by_position valu i
-	)
+let counter_strategy_by_valu_and_ordering game valu ordering =
+    str_init game (fun i ->
+		if game#get_owner i = plr_Even
+		then nd_undef
+		else best_decision_by_valuation_ordering game ordering valu i
+    )
+
+let compute_counter_strategy game strategy =
+    counter_strategy_by_valu_and_ordering game (evaluate_strategy game node_total_ordering_by_position strategy) node_total_ordering_by_position
 
 let less_valuation val_comp v u =
 	let res = ref false in
@@ -478,37 +482,38 @@ let strategy_improvement (game: paritygame)
     let show_eval _ =
         if !verbosity > 2 then (
 
-            let g = game#subgame_by_edge_pred (fun u v -> (!strat).(u) = -1 || (!strat).(u) = v) in
+            let g = game#subgame_by_edge_pred (fun u v -> (!strat)#get u = nd_undef || (!strat)#get u = v) in
 	    game#iterate (fun i -> fun _ -> g#set_desc i (Some (string_of_int i ^ " : " ^ format_node_valuation (!valu).(i))));
  
 (*            msg_tagged_nl 3 (fun _ -> "\nMade valuation:\n" ^ g#to_sring ^ "\n"); *)
 
 	    let myfmt game strat =
-	      let a = Array.mapi (fun i j -> if (j >= 0) && (ns_size (game#get_successors  i) > 1) then get_desc game i i ^ "->" ^ get_desc game j j else "") strat in
-	      let b = List.filter (fun s -> not (s = "" || s = "->")) (Array.to_list a) in
-	      ListUtils.format (fun s -> s) (List.sort compare b)
+	      let a = ref [] in
+	      strat#iter (fun i j ->
+	        if (j != nd_undef) && (ns_size (game#get_successors  i) > 1) && get_desc game i i != "" && get_desc game j j != ""
+	        then a := (get_desc game i i ^ "->" ^ get_desc game j j)::!a
+	      );
+	      ListUtils.format (fun s -> s) (List.sort compare !a)
 	    in
 	    msg_tagged_nl 3 (fun _ -> "0-Strategy: " ^ myfmt game !strat ^ "\n");
-	    let strat' = Array.mapi (fun i j ->
-				     if j < 0 then best_decision_by_valuation_ordering game node_compare !valu i else -1
-				    ) !strat in
+	    let strat' = counter_strategy_by_valu_and_ordering game !valu node_compare in
 	    msg_tagged_nl 3 (fun _ -> "1-Strategy: " ^ myfmt game strat' ^ "\n");
 	    let impr = ref [] in
-	    Array.iteri (fun i j ->
-			 if j != -1 then ns_iter (fun k ->
+	    !strat#iter (fun i j ->
+			 if j != nd_undef then ns_iter (fun k ->
 						  if node_valuation_ordering game node_compare !valu.(j) !valu.(k) < 0
 						  then impr := (i,k)::!impr
 						 ) (game#get_successors  i)
-			) !strat;
+			);
 	    msg_tagged_nl 3 (fun _ -> "Improvement-Arena: " ^ ListUtils.format (fun (i,j) -> get_desc game i i ^ "->" ^ get_desc game j j) (List.sort compare !impr) ^ "\n")
         )
     in
     let show_changed oldstrat newstrat =
       if !verbosity > 2 then (
 	let l = ref [] in
-	Array.iteri (fun i j ->
-		     if newstrat.(i) != j then l := (i,j,newstrat.(i))::!l
-		    ) oldstrat;
+	oldstrat#iter (fun i j ->
+		     if newstrat#get i != j then l := (i,j,newstrat#get i)::!l
+		    );
 	msg_tagged_nl 3 (fun _ -> "Strategy-Change: " ^ ListUtils.format (fun (i,j,k) -> get_desc game i i ^ "->" ^ get_desc game j j ^ "/" ^ get_desc game k k) (List.sort compare !l) ^ "\n")
       )
     in
@@ -611,10 +616,10 @@ let strategy_improvement' (game: paritygame)
   let game'' = cheap_escape_cycles_transformation game' false in
   let (sol'', strat'') = strategy_improvement game'' init_strat node_compare impr_policy impr_policy_init check_policy ident in
   let sol = sol_init game' (fun v -> sol''#get v) in
-  let strat = Array.init (game'#size) (fun i -> strat''.(i)) in
+  let strat = str_init game' (fun i -> strat''#get i) in
   let (sol', strat') = alternating_revertive_restriction game game' sol strat in
   for i = 0 to game#size  - 1 do
-    if sol'#get i != game#get_owner  i then strat'.(i) <- -1
+    if sol'#get i != game#get_owner  i then strat'#set i nd_undef
   done;
   (sol', strat');;
   
@@ -628,7 +633,7 @@ let strategy_improvement'' (game: paritygame)
   let game' = cheap_escape_cycles_transformation game false in
   let (sol', strat') = strategy_improvement game' init_strat node_compare impr_policy (impr_policy_init game') check_policy ident in
   let sol = sol_init game (fun i -> sol'#get i) in
-  let strat = Array.init (game#size ) (fun i -> strat'.(i)) in
+  let strat = str_init game (fun i -> strat'#get i) in
   (sol, strat);;
   
 let improvement_policy_no_user_data imprpolicy = fun g o u s v -> (imprpolicy g o s v, u);;
@@ -660,13 +665,13 @@ let fold_sub_solvers fo b = TreeMap.fold (fun i (f, a, d) x -> fo f i a d x) !su
 
 
 let improvement_policy_optimize_all_locally game node_total_ordering old_strategy valu =
-	Array.mapi (fun i j ->
-		if j = -1 then -1
+	old_strategy#map (fun i j ->
+		if j = nd_undef then nd_undef
 		else let k = best_decision_by_valuation_ordering game node_total_ordering valu i in
 			 if node_valuation_ordering game node_total_ordering valu.(j) valu.(k) < 0
 			 then k
 			 else j
-	) old_strategy
+	)
 
 let strategy_improvement_optimize_all_locally_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position (improvement_policy_no_user_data improvement_policy_optimize_all_locally) () false "STRIMPR_LOCOPT";;
@@ -757,14 +762,14 @@ let mdplike_valuation game minprio strategy =
 		queue := List.tl !queue;
 		ns_iter (fun i ->
 			if not finished.(i) then (
-				if game#get_owner  i = plr_Even && finished.(strategy.(i)) then (
-					valu.(i) <- valu.(strategy.(i));
+				if game#get_owner  i = plr_Even && finished.(strategy#get i) then (
+					valu.(i) <- valu.(strategy#get i);
 					valu.(i) <- (TreeMap.add i 1.0 (fst valu.(i)), None);
 					finished.(i) <- true;
 					queue := i::!queue
 				) else if game#get_owner  i = plr_Odd then (
 					(* This is not the most general approach but good enough for what we are trying to do right now *)
-					let nodes = ns_filter (fun j -> game#get_owner  j = plr_Odd || strategy.(j) != i) (game#get_successors  i) in
+					let nodes = ns_filter (fun j -> game#get_owner  j = plr_Odd || strategy#get j != i) (game#get_successors  i) in
   					let len = ns_size nodes in
 	  				let nodes = if ns_size nodes < 2 then nodes else ns_filter is_cycle_node nodes in
 					if (ns_forall (fun j -> finished.(j)) nodes) then (
@@ -789,7 +794,7 @@ let mdplike_valuation game minprio strategy =
 	done;	
 	game#iterate (fun i -> fun (_,ow,succs,_,_) ->
 			     if ow = plr_Odd then (
-			       let nodes = ns_filter (fun j -> game#get_owner  j = plr_Odd || strategy.(j) != i) succs in
+			       let nodes = ns_filter (fun j -> game#get_owner  j = plr_Odd || strategy#get j != i) succs in
 			       if ns_size nodes > 1 then (
 				 let exit_node = ref (-1) in
 				 ns_iter (fun j -> if not (is_cycle_node j) then exit_node := j) nodes;
@@ -804,7 +809,7 @@ let mdplike_valuation game minprio strategy =
 
 	game#iterate (fun i -> fun (_,ow,succs,_,_) ->
 			     if ow = plr_Odd && snd valu.(i) != None && OptionUtils.get_some (snd valu.(i)) = true then (
-			       let nodes = ns_filter (fun j -> game#get_owner  j = plr_Odd || strategy.(j) != i) succs in
+			       let nodes = ns_filter (fun j -> game#get_owner  j = plr_Odd || strategy#get j != i) succs in
 			       if ns_size nodes > 1 then (
 				 let exit_node = ref (-1) in
 				 ns_iter (fun j -> if not (is_cycle_node j) then exit_node := j) nodes;

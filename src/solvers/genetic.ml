@@ -16,6 +16,7 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
+open Pgstrategy;;
 
 
 let _ = Random.self_init ()
@@ -326,7 +327,7 @@ let solve' game =
   msg_tagged 3 (fun _ -> "Genetic pool now has " ^ string_of_int (DynArray.length pool) ^ " strategies.\n");
 
   let sol = new array_solution game#size in
-  let wstr = ref [||] in
+  let wstr = ref (new array_strategy 0) in
 
   (* iterate over competitions, and possibly procreations, mutations and tests until a winning strategy has been found *)
   let found = ref false in
@@ -394,7 +395,7 @@ let solve' game =
         msg_tagged 3 (fun _ -> "Candidate: " ^ (show estr) ^ "\n");
  
         (* strip the evaluated strategy *)
-        let str = Array.init (Array.length str) (fun i -> fst str.(i)) in
+        let str = str_init game (fun i -> fst str.(i)) in
 
         (* not only choose a strategy randomly but also the player whom we consider *)
         let p = if g0 >= g1 then plr_Even else plr_Odd in

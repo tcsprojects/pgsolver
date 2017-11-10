@@ -9,6 +9,7 @@ open Tcstiming ;;
 open Tcsstrings;;
 open Pgnodeset;;
 open Pgsolution;;
+open Pgstrategy;;
 
 module CommandLine =
 struct
@@ -37,7 +38,7 @@ struct
   let to_global alg pg =
 	let (c, g) = pg#induce_counting_partialparitygame 0 in
 	let _ = alg g in
-	((new array_solution 0,[||]), !c)
+	((new array_solution 0,new array_strategy 0), !c)
 
   let speclist =  [(*(["--all"; "-a"], Unit(fun _ -> enum_solvers (fun s i _ _ -> solvers := (i, s)::!solvers)),
                       "\n     use all solvers") ; *)

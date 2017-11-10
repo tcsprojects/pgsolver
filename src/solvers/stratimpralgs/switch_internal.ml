@@ -9,6 +9,8 @@ open Tcsarray;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgstrategy;;
+open Pgnode;;
 
 let list_upfront l i =
 	let rec tile f t =
@@ -33,16 +35,17 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 	  let tr = game#get_successors  i in
 		if pl = plr_Even then (
 			ns_iter (fun j ->
-				if node_valuation_ordering game node_total_ordering valu.(j) valu.(old_strategy.(i)) > 0 then (
-					let s = Array.copy old_strategy in
-					s.(i) <- j;
+				if node_valuation_ordering game node_total_ordering valu.(j) valu.(old_strategy#get i) > 0 then (
+					let s = old_strategy#copy in
+					s#set i j;
 					add_to_strategy_set s
 				)
 			) tr;
 		)
 	done;
 	(* Step 2: Build improvement set *)
-	let improvement_set = ref (TreeSet.empty (fun x y -> compare (Array.to_list x) (Array.to_list y))) in
+    let gamenodes = Array.to_list (Array.init n (fun i -> i)) in
+	let improvement_set = ref (TreeSet.empty (fun x y -> compare (List.map x#get gamenodes) (List.map y#get gamenodes))) in
 	let add_to_improvement_set strat =
 		improvement_set := TreeSet.add strat !improvement_set
 	in
@@ -50,10 +53,10 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 		let base_counter = compute_counter_strategy game base in
 		let rec helper set v =
 			if TreeSet.mem v set then None
-			else if game#get_owner  v = plr_Odd then helper (TreeSet.add v set) base_counter.(v)
-			else if base.(v) = target.(v) then helper (TreeSet.add v set) base.(v)
-			else let a = Array.copy base in
-			     a.(v) <- target.(v);
+			else if game#get_owner v = plr_Odd then helper (TreeSet.add v set) (base_counter#get v)
+			else if base#get v = target#get v then helper (TreeSet.add v set) (base#get v)
+			else let a = base#copy in
+			     a#set v (target#get v);
 				 Some a
 		in
 			helper TreeSet.empty_def node
@@ -73,7 +76,7 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 		done;
 	) !strategy_set;
 	(* Step3: Build combination strategy *)
-	let improvement_set_array = Array.make (TreeSet.cardinal !improvement_set) ([||], valu) in
+	let improvement_set_array = Array.make (TreeSet.cardinal !improvement_set) (new array_strategy n, valu) in
 	let i = ref 0 in
 	TreeSet.iter (fun st ->
 		improvement_set_array.(!i) <- (st, evaluate_strategy game node_total_ordering st);
@@ -87,9 +90,9 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 			then best_strategies.(v) <- i;
 		done;
 	) improvement_set_array;
-	let strategy = Array.init (game#size ) (fun v ->
-		if game#get_owner  v = plr_Odd then -1
-		else (fst improvement_set_array.(best_strategies.(v))).(v)
+	let strategy = str_init game (fun v ->
+		if game#get_owner  v = plr_Odd then nd_undef
+		else (fst improvement_set_array.(best_strategies.(v)))#get v
 	) in
 	(strategy, !strategy_set)
 	
@@ -98,13 +101,13 @@ let improvement_policy_learn_strategies game node_total_ordering strategy_set ol
 let improvement_policy_learn_cycles sub_policy game node_total_ordering (cycles, u) old_strategy valu =
 	let (strategy, u') = sub_policy game node_total_ordering u old_strategy valu cycles in
 	let combined_strategy =
-        Array.init (Array.length valu) (fun i ->
+        str_init game (fun i ->
         	if game#get_owner  i = plr_Even
-        	then strategy.(i)
+        	then strategy#get i
         	else best_decision_by_valuation_ordering game node_total_ordering valu i
         )
     in
-    let game' = game#subgame_by_edge_pred (fun i j -> combined_strategy.(i) = j) in
+    let game' = game#subgame_by_edge_pred (fun i j -> combined_strategy#get i = j) in
     let (sccs, sccindex, topology, roots) = game'#strongly_connected_components in
     let cycles = ref cycles in
     let normalize l =
@@ -148,9 +151,9 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 		   We don't use cycles with potential escape edges included in the set *)
 		let used_escape_edges = ref TreeSet.empty_def in
 	  let counter_strategy = compute_counter_strategy game old_strategy in
-		let next_counter = ref (Array.copy counter_strategy) in
+		let next_counter = ref (counter_strategy#copy) in
 
-		let new_strategy = Array.copy old_strategy in
+		let new_strategy = old_strategy#copy in
 				
 								
 		
@@ -160,14 +163,14 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 		while !running do
 			  let graph = game#subgame_by_edge_pred (fun v w ->
 					let pl = game#get_owner  v in
-					(pl = plr_Even) || (counter_strategy.(v) = w && !next_counter.(v) = w)
+					(pl = plr_Even) || (counter_strategy#get v = w && !next_counter#get v = w)
 				) in 
 				
 				let m = game#size  in
 				for i = 0 to m - 1 do
 				  let pl = game#get_owner  i in
 				  let tr = game#get_successors  i in
-				  if (pl = plr_Odd) && ns_exists (fun j -> counter_strategy.(i) != j && (TreeSet.mem j !non_final_nodes || TreeSet.mem (i,j) !used_escape_edges)) tr
+				  if (pl = plr_Odd) && ns_exists (fun j -> counter_strategy#get i != j && (TreeSet.mem j !non_final_nodes || TreeSet.mem (i,j) !used_escape_edges)) tr
 				  then ns_iter (fun w -> graph#del_edge i w) (graph#get_successors i)
 				done;
 				
@@ -201,15 +204,15 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 					changed := true;
 					List.iter (fun (i,j) ->
 						if (game#get_owner  i = plr_Even)
-						then new_strategy.(i) <- j
+						then new_strategy#set i j
 					) cycle;
 					List.iter (fun (i,_) ->
 						non_final_nodes := TreeSet.add i !non_final_nodes;
 					) cycle;
 					next_counter := compute_counter_strategy game new_strategy;
 					List.iter (fun (i,j) ->
-						if (game#get_owner  i = plr_Odd && !next_counter.(i) != j)
-						then used_escape_edges := TreeSet.add (i, !next_counter.(i)) !used_escape_edges
+						if (game#get_owner  i = plr_Odd && !next_counter#get i != j)
+						then used_escape_edges := TreeSet.add (i, !next_counter#get i) !used_escape_edges
 					) cycle;
 					);
 		done;
@@ -221,14 +224,14 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 
 let improvement_policy_smart game node_total_ordering todo old_strategy valu cycles =
     let combined_strategy =
-        Array.init (Array.length valu) (fun i ->
+        old_strategy#map(fun i j ->
             if game#get_owner  i = plr_Even
-            then old_strategy.(i)
+            then j
             else best_decision_by_valuation_ordering game node_total_ordering valu i
         )
     in
     let improv_edge x y =
-    	node_valuation_ordering game node_total_ordering valu.(old_strategy.(x)) valu.(y) <= 0
+    	node_valuation_ordering game node_total_ordering valu.(old_strategy#get x) valu.(y) <= 0
     in
 	let cycle_applies cycle =
         let x = ref (List.hd cycle) in
@@ -239,8 +242,8 @@ let improvement_policy_smart game node_total_ordering todo old_strategy valu cyc
             let z = List.hd !cycle' in
             cycle' := List.tl !cycle';
             if game#get_owner  !x = plr_Odd
-            then applies1 := combined_strategy.(!x) = z
-            else applies0 := !applies0 && ((combined_strategy.(!x) = z) || (not (improv_edge !x z)));
+            then applies1 := combined_strategy#get !x = z
+            else applies0 := !applies0 && ((combined_strategy#get !x = z) || (not (improv_edge !x z)));
             x := z
         done;
         !applies1 && (not !applies0)
@@ -253,7 +256,7 @@ let improvement_policy_smart game node_total_ordering todo old_strategy valu cyc
 		(strat, todo)
 	)
 	else (
-        let strategy = Array.copy old_strategy in
+        let strategy = old_strategy#copy in
 		TreeSet.iter (fun cycle ->
    			let fmt k =
 				match (game#get_desc  k) with
@@ -266,7 +269,7 @@ let improvement_policy_smart game node_total_ordering todo old_strategy valu cyc
             while (not (!cycle' = [])) do
                 let z = List.hd !cycle' in
                 cycle' := List.tl !cycle';
-                if (game#get_owner  !x = plr_Even) && (improv_edge !x z) then strategy.(!x) <- z;
+                if (game#get_owner  !x = plr_Even) && (improv_edge !x z) then strategy#set !x z;
                 x := z
             done
 		) todo;
@@ -275,14 +278,8 @@ let improvement_policy_smart game node_total_ordering todo old_strategy valu cyc
 
 
 let improvement_policy_cycle_avoid game node_total_ordering old_strategy valu =
-	let new_strategy = Array.copy old_strategy in
-	let counter_strategy = 
-        Array.init (Array.length valu) (fun i ->
-        	if game#get_owner  i = plr_Even
-        	then -1
-        	else best_decision_by_valuation_ordering game node_total_ordering valu i
-        )
-    in
+	let new_strategy = old_strategy#copy in
+	let counter_strategy = counter_strategy_by_valu_and_ordering game valu node_total_ordering in
 	let allowed v w =
 		let s = ref TreeSet.empty_def in
 		let current = ref w in
@@ -290,8 +287,8 @@ let improvement_policy_cycle_avoid game node_total_ordering old_strategy valu =
 		while not !finished do
 			s := TreeSet.add !current !s;
 			if game#get_owner  !current = plr_Even
-			then current := new_strategy.(!current)
-			else current := counter_strategy.(!current);
+			then current := new_strategy#get !current
+			else current := counter_strategy#get !current;
 			finished := TreeSet.mem !current !s;
 		done;
 		not (TreeSet.mem v !s)
@@ -304,12 +301,12 @@ let improvement_policy_cycle_avoid game node_total_ordering old_strategy valu =
 		else if ax then 1 else -1
 	in
 	let changed = ref false in
-	let n = Array.length old_strategy in
+	let n = game#size in
 	for i = 0 to n - 1 do
 		if (game#get_owner  i = plr_Even) then (
 			let w = best_decision_by_ordering game (ordering i) i in
-			if (w != new_strategy.(i)) && (deford new_strategy.(i) w < 0) then (
-				new_strategy.(i) <- w;
+			if (w != new_strategy#get i) && (deford (new_strategy#get i) w < 0) then (
+				new_strategy#set i w;
 				changed := true;
 			)
 		);
@@ -339,13 +336,13 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 	let get_cycles strategy =
 		let cycles = ref (TreeSet.empty cycle_enforce_cycles_compare) in
 		let combined_strategy =
-			Array.init (Array.length valu) (fun i ->
+			str_init game (fun i ->
 				if game#get_owner  i = plr_Even
-				then strategy.(i)
+				then strategy#get i
 				else best_decision_by_valuation_ordering game node_total_ordering valu i
 			)
 		in
-		let game' = game#subgame_by_edge_pred (fun i j -> combined_strategy.(i) = j) in
+		let game' = game#subgame_by_edge_pred (fun i j -> combined_strategy#get i = j) in
 		let (sccs, sccindex, topology, roots) = game'#strongly_connected_components in
 		Array.iteri (fun i scc ->
 			if (ns_size scc > 1) && (topology.(i) = []) then (
@@ -356,11 +353,11 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 				ns_iter (fun v ->
 					if game#get_owner  v = plr_Even then (
 						node0 := ns_add v !node0;
-						edge0 := TreeMap.add v combined_strategy.(v) !edge0;
+						edge0 := TreeMap.add v (combined_strategy#get v) !edge0;
 					)
 					else (
 						node1 := ns_add v !node1;
-						edge1 := TreeMap.add v combined_strategy.(v) !edge1;
+						edge1 := TreeMap.add v (combined_strategy#get v) !edge1;
 					)
 				) scc;
 				cycles := TreeSet.add (!node0, !node1, !edge0, !edge1) !cycles;
@@ -401,32 +398,30 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 	let c = ref 0 in
 	let i = ref idx in
 	let finished = ref false in
-	let new_strategy = Array.copy old_strategy in
+	let new_strategy = old_strategy#copy in
 	while (not !finished) && (!c <= n) do
 		if (game#get_owner  !i = plr_Even) then (
 			let pots = ref [] in
 			ns_iter (fun w ->
-				new_strategy.(!i) <- w;
+				new_strategy#set !i w;
 				if TreeSet.subset (get_cycles new_strategy) cycles
 				then pots := (A w, valu.(w))::!pots;
-				new_strategy.(!i) <- old_strategy.(!i);
+				new_strategy#set !i (old_strategy#get !i);
 			) (game#get_successors  !i);
 			TreeSet.iter (fun ((node0, node1, edge0, edge1) as cyc) ->
 				if (ns_elem !i node0) then (
-					TreeMap.iter (fun v w ->
-						new_strategy.(v) <- w;
-					) edge0;
+					TreeMap.iter new_strategy#set edge0;
 					if TreeSet.subset (get_cycles new_strategy) cycles
 					then pots := (B cyc, cyc_value !i cyc)::!pots;
 					ns_iter (fun v ->
-						new_strategy.(v) <- old_strategy.(v);
+						new_strategy#set v (old_strategy#get v);
 					) node0;
 				);
 			) cycles;
 			let best = ref None in
 			List.iter (fun (q, valw) ->
 				match !best with
-					None -> if node_valuation_ordering game node_total_ordering valw valu.(old_strategy.(!i)) > 0
+					None -> if node_valuation_ordering game node_total_ordering valw valu.(old_strategy#get !i) > 0
 					        then best := Some (q, valw)
 				|	Some (q', valw') -> if node_valuation_ordering game node_total_ordering valw valw' > 0
 										then best := Some (q, valw);
@@ -434,12 +429,12 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 			match !best with
 				None -> ()
 			|	Some (A w, _) -> (
-					new_strategy.(!i) <- w;
+					new_strategy#set !i w;
 					finished := true;
 				)
 			|	Some (B (_, _, edge0, _), _) -> (
 					TreeMap.iter (fun v w ->
-						new_strategy.(v) <- w;
+						new_strategy#set v w;
 					) edge0;
 					finished := true;
 				);
@@ -464,7 +459,9 @@ let strategy_improvement_cycle_enforce game =
 
 
 let strategy_improvement_learn_strategies game =
-	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position improvement_policy_learn_strategies (TreeSet.empty (fun x y -> compare (Array.to_list x) (Array.to_list y))) true "STRIMPR_STRLEA";;
+    let gamenodes = Array.to_list (Array.init game#size (fun i -> i)) in
+	let t = TreeSet.empty (fun x y -> compare (List.map x#get gamenodes) (List.map y#get gamenodes)) in
+	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position improvement_policy_learn_strategies t true "STRIMPR_STRLEA";;
 
 let strategy_improvement_smart_policy game =
 	(*strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position (improvement_policy_learn_cycles improvement_policy_smart) (TreeSet.empty compare, TreeSet.empty compare) true "STRIMPR_SMART";; *)

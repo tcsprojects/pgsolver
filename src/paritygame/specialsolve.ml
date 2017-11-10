@@ -7,6 +7,7 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
+open Pgstrategy;;
 
 
 
@@ -15,9 +16,9 @@ type compact_sol_strat = (node * player * node) list;;
 let compact_sol_strat_to_sol_strat game comp =
 	let n = game#size in
 	let sol = new array_solution n in
-	let strat = str_make n in
+	let strat = new array_strategy n in
 	List.iter (fun (i, pl, j) -> sol#set i pl;
-				     str_set strat i j
+				     strat#set i j
 		  ) comp;
 	(sol, strat);;
 
@@ -39,10 +40,10 @@ let solve_cycle_scc game =
     let max_pr_node = game#get_max_prio_node in
     let max_pr_pl = plr_benefits (game#get_priority max_pr_node) in
     let solution = sol_init game (fun _ -> max_pr_pl) in
-    let strategy = str_make n in
+    let strategy = new array_strategy n in
 
     if game#get_owner max_pr_node = max_pr_pl
-    then str_set strategy (max_pr_node) (ns_some (game#get_successors max_pr_node));
+    then strategy#set (max_pr_node) (ns_some (game#get_successors max_pr_node));
     let _ = game#attr_closure_inplace strategy max_pr_pl (ns_make [max_pr_node]) in
     (solution, strategy)
 
@@ -50,11 +51,11 @@ let solve_cycle_scc game =
 
 let solve_single_player_scc game player =
   let n = game#size in
-  let strategy = str_make n in
-  let temp_strat = str_make n in
+  let strategy = new array_strategy n in
+  let temp_strat = new array_strategy n in
   let solution = new array_solution n in
   
-  let clear_visited _ = str_iter (fun v _ -> str_set temp_strat v nd_undef) temp_strat in
+  let clear_visited _ = temp_strat#iter (fun v _ -> temp_strat#set v nd_undef) in
   
   let can_reach_itself v pr =
     let queue = SingleOccQueue.create () in
@@ -63,17 +64,17 @@ let solve_single_player_scc game player =
 			   else
 			     begin
 			       let (w,u) = SingleOccQueue.take queue in
-			       if str_get temp_strat w != nd_undef || (let pr' = game#get_priority w in pr' > pr && not (prio_good_for_player pr' player)) then
+			       if temp_strat#get w != nd_undef || (let pr' = game#get_priority w in pr' > pr && not (prio_good_for_player pr' player)) then
 				 can_reach ()
 			       else
 				 begin
-				   str_set temp_strat w u;
+				   temp_strat#set w u;
 				   if w=v then
 				     begin
-				       str_iter (fun i w -> if w != nd_undef then (
+				       temp_strat#iter (fun i w -> if w != nd_undef then (
 							      solution#set i player;
-							      if game#get_owner i = player then str_set strategy i (str_get temp_strat i))
-						) temp_strat;
+							      if game#get_owner i = player then strategy#set i (temp_strat#get i))
+						);
 				       true
 				     end
 				   else
@@ -98,7 +99,7 @@ let solve_single_player_scc game player =
     while not (SingleOccQueue.is_empty queue) do
       let (w,v) = SingleOccQueue.take queue in
       solution#set w player;
-      if game#get_owner w = player then str_set strategy w v;
+      if game#get_owner w = player then strategy#set w v;
       ns_iter (fun u -> if solution#get u = plr_undef then SingleOccQueue.add (u,w) queue) (game#get_predecessors w)
     done
   in
@@ -118,7 +119,7 @@ let solve_single_player_scc game player =
      begin
        let pl' = plr_opponent player in 
        solution#iter (fun i -> fun _ -> solution#set i pl';
-				   if game#get_owner i = pl' then str_set strategy i (ns_first (game#get_successors i))
+				   if game#get_owner i = pl' then strategy#set i (ns_first (game#get_successors i))
 		)
      end);
   (solution, strategy)
@@ -126,8 +127,8 @@ let solve_single_player_scc game player =
       
 let solve_single_parity_scc game player =
     let solution = sol_init game (fun _ -> player) in
-    let strategy = str_create game in
-    game#iterate (fun i -> fun (_,ow,succs,_,_) -> if ow = player then str_set strategy i (ns_first (game#get_successors i)));
+    let strategy = new array_strategy game#size in
+    game#iterate (fun i -> fun (_,ow,succs,_,_) -> if ow = player then strategy#set i (ns_first (game#get_successors i)));
     (solution, strategy);;
 
 
@@ -166,8 +167,8 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
             transp x (fun y -> if ns_elem y !source_set_ref then (
             			 source_set_ref := ns_del y !source_set_ref;
 				 Queue.add y todo;
-				 if (getpl y = pl) && (str_get strat y = nd_undef)
-				 then str_set strat y x
+				 if (getpl y = pl) && (strat#get y = nd_undef)
+				 then strat#set y x
 			       )
 		     )
     	  done
@@ -175,7 +176,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
 	
 	let solve_scc comp pl =
 	  let game' = subnodes_by_list game (ns_nodes comp) in
-	  let strat = str_make (if compute_strat then Array.length game' else 0) in
+	  let strat = new array_strategy (if compute_strat then Array.length game' else 0) in
 	  let new_edges = Queue.create () in
 	  Array.iteri (fun i (_, _, delta) -> TreeSet.iter (fun j -> Queue.add (i, j) new_edges) !delta) game';
 	  let winner = ref (plr_opponent pl) in
@@ -206,7 +207,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
         		 then Queue.add x todo
         		 else (
         		   target_set := TreeSet.add x !target_set;
-        		   if pl' = pl then str_set strat x (TreeSet.min_elt inters);
+        		   if pl' = pl then strat#set x (TreeSet.min_elt inters);
         		   if x = u then finished := true;
         		 )
         	       done;
@@ -235,7 +236,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
 	in
 	
 	let n = game#size in
-	let strategy = str_make (if compute_strat then n else 0) in
+	let strategy = new array_strategy (if compute_strat then n else 0) in
 	
 	let max_prio_queue comp pr =
 	  let q = Queue.create () in
@@ -277,7 +278,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
                       else if (ns_exists (fun y -> x = y) delta) && (prio_good_for_player pr pl)
                       then (
 			marked.(r) <- pl;
-			if (compute_strat && getpl x = pl) then str_set strategy x x
+			if (compute_strat && getpl x = pl) then strategy#set x x
                       )
                       else marked.(r) <- plr_opponent pl
 		 else let pl_max = max_prio_for comp pl in
@@ -293,8 +294,8 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
 				     let d = game#get_successors q in
                       		     if (pl' = pl) then
 				       ns_iter (fun di ->
-						if (str_get strategy q = nd_undef) then (
-						  if sccindex.(di) = r then str_set strategy q di
+						if (strategy#get q = nd_undef) then (
+						  if sccindex.(di) = r then strategy#set q di
 						);
 					       ) d;
                       		    ) comp
@@ -306,7 +307,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
 						if compute_strat && (winner = pl) then (
 						  let arr = Array.of_list (ns_nodes comp) in
 						  for i = 0 to (Array.length arr) - 1 do
-                                         	    if str_get strat i <> nd_undef then str_set strategy arr.(i) arr.(str_get strat i)
+                                         	    if strat#get i <> nd_undef then strategy#set arr.(i) arr.(strat#get i)
 						  done;
 						);
 						winner

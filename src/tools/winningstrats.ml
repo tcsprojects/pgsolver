@@ -4,6 +4,7 @@ open Paritygame;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgsolution;;
+open Pgnode;;
 
   
 module CommandLine =
@@ -49,17 +50,17 @@ let _ =
 					good := false;
 			done;
 			if (!good) then (
-				let strat2 = Array.copy strat in
-				for j = 0 to Array.length strat2 - 1 do
+				let strat2 = strat#copy in
+				for j = 0 to game#size - 1 do
 					if (sol#get j != !player) then
-						strat2.(j) <- -1;
+						strat2#set j nd_undef;
 				done;
-			  print_string ("\n" ^ format_strategy strat2 ^ "\n");
+			  print_string ("\n" ^ strat2#format ^ "\n");
 				number := !number + 1
 			);
 		) else (
-			if (sol#get i == !player && strat.(i) != -1) then (
-			  ns_iter (fun w -> strat.(i) <- w;
+			if (sol#get i == !player && strat#get i != nd_undef) then (
+			  ns_iter (fun w -> strat#set i w;
 					    work (i + 1))
 				  (game#get_successors  i)
 			) else (

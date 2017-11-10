@@ -12,6 +12,7 @@ open Whoiswho ;;
 open Pgnode;;
 open Pgplayer;;
 open Pgsolution;;
+open Pgstrategy;;
 (* open Pgprofiling;; *)
 
 module CommandLine =
@@ -236,7 +237,7 @@ let _ =
 		match !solver with
 			  NoSolver            -> if !parse_sol = "" then (
 										 message 1 (fun _ -> "Chosen not to solve at all.\n");
-										 (new array_solution 0, [||])
+										 (new array_solution 0, new array_strategy 0)
 									 )
 									 else (
 										Parsers.parse_solution (open_in !parse_sol)
@@ -262,11 +263,11 @@ let _ =
 	  solution#iter (fun j -> fun pl -> let ow = game#get_owner j in
 				       if pl = plr_Even then
 					 (win0 := j :: !win0;
-					  if ow=plr_Even then let k = str_get strategy j in
+					  if ow=plr_Even then let k = strategy#get j in
 							      str0 := (nd_show j ^ "->" ^ nd_show k) :: !str0)
 				       else if pl= plr_Odd then
 					 (win1 := j :: !win1;
-					  if ow=plr_Odd then let k = str_get strategy j in
+					  if ow=plr_Odd then let k = strategy#get j in
 							     str1 := (nd_show j ^ "->" ^ nd_show k) :: !str1)
 		   );
 

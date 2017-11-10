@@ -7,6 +7,8 @@ open Transformations;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Pgstrategy;;
+open Pgnode;;
 
 
 type vars =
@@ -111,9 +113,9 @@ let solve' game sink0 sink1 =
 	if not satis then failwith "impossible: unsatisfiable";
 	
 	let sol = sol_init game (fun i -> if solver#get_variable (Winning i) = 0 then plr_Even else plr_Odd) in
-	let strat = Array.init n (fun i -> if sol#get i = game#get_owner i
+	let strat = str_init game (fun i -> if sol#get i = game#get_owner i
 	                                   then let delta = Array.of_list (ns_nodes (game#get_successors i)) in
-	                                        delta.(solver#get_variable_first (Array.map (fun j -> Strategy (i, j)) delta)) else -1) in
+	                                        delta.(solver#get_variable_first (Array.map (fun j -> Strategy (i, j)) delta)) else nd_undef) in
 	
 	solver#dispose;
 	(sol, strat);;
@@ -126,7 +128,7 @@ let solve'' game =
   let (sink0, sink1) = (b.(Array.length b - 4), b.(Array.length b - 3)) in
   let (sol, str) = solve' game_cheap sink0 sink1 in
   (sol_init game (fun i -> sol#get b.(i)),
-   Array.init n (fun i -> let k = str.(b.(i)) in
+   str_init game (fun i -> let k = str#get b.(i) in
 	 		  if k < 0 then k else a.(k)));;
   
 let solve''' game =
@@ -134,7 +136,7 @@ let solve''' game =
   let (sol, strat) = solve'' game' in
   let (sol', strat') = alternating_revertive_restriction game game' sol strat in
   for i = 0 to game#size - 1 do
-    if sol'#get i != game#get_owner i then strat'.(i) <- -1
+    if sol'#get i != game#get_owner i then strat'#set i nd_undef
   done;
   (sol', strat');;
   

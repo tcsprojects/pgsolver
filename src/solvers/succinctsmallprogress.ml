@@ -15,6 +15,8 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
+open Pgstrategy;;
+open Pgnode;;
 
 
 
@@ -485,7 +487,7 @@ let solve' game =
     done;
 
     log_info ("extract player 0 strategy..");
-    let strat = Array.make n nd_undef in
+    let strat = new array_strategy n in
     for i = 0 to n - 1 do
         if ((game#get_owner i) = plr_Even)
         then
@@ -493,9 +495,9 @@ let solve' game =
              * We re-use function "best_successor_lift", which recomputes
              * the measures of successors and returns a minimal one. *)
             let bestsucc, _ = best_successor_lift mu i in
-            strat.(i) <- bestsucc
+            strat#set i bestsucc
         else
-            strat.(i) <- nd_undef
+            strat#set i nd_undef
     done;
 
     (* TODO: get player 1 strategy by solving the dual.. *)
@@ -521,10 +523,10 @@ let solve_for_player player solver game =
     if (subgame_other_player#size > 0) then (
         let subgame_other_player = invert_game subgame_other_player in
         let (_, strat') = solver subgame_other_player in
-        Array.iteri (fun i j ->
+        strat'#iter (fun i j ->
             if (subgame_other_player#get_owner i = player)
-            then strat.(map_to_game i) <- map_to_game j
-        ) strat'
+            then strat#set (map_to_game i) (map_to_game j)
+        )
     );
     (sol, strat)
 

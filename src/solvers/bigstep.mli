@@ -1,5 +1,2 @@
-open Paritygame ;;
-open Pgsolution ;;
-
-val solve : paritygame -> solution * strategy
+val solve : Paritygame.global_solver
 val register: unit -> unit

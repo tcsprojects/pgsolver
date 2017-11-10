@@ -20,10 +20,10 @@ let improvement_policy_optimize_all_globally game' node_total_ordering old_strat
 	game#iterate (fun i (pr, pl, tr, _, _) ->
 		if pl = plr_Even
 		then
-		  ns_iter (fun w -> game#del_edge i w) (ns_filter (fun j -> not (valu_ord valu.(j) valu.(old_strategy.(i)) >= 0)) tr) 
+		  ns_iter (fun w -> game#del_edge i w) (ns_filter (fun j -> not (valu_ord valu.(j) valu.(old_strategy#get i) >= 0)) tr)
 	) ;
 
-	let strategy = Array.copy old_strategy in
+	let strategy = old_strategy#copy in
 	let valu_ord = node_valuation_ordering game node_total_ordering in
 	let graph = game#to_dynamic_paritygame in
 
@@ -81,7 +81,7 @@ let improvement_policy_optimize_all_globally game' node_total_ordering old_strat
 					valued.(v) <- true;
 					let u = compute_update v in
 					valu2.(v) <- compute_update' v u;
-					if game#get_owner  v = plr_Even then strategy.(v) <- u
+					if game#get_owner  v = plr_Even then strategy#set v u
 				)
 				else if (game#get_owner  v = plr_Odd) &&
 				        (TreeSet.exists (fun u -> valued.(u) &&

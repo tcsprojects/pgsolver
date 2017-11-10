@@ -12,6 +12,7 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
+open Pgstrategy;;
 (*open Pgprofiling*)
   
 
@@ -37,32 +38,10 @@ let ord_total_by ordering (i, pri, pli, tri) (j, prj, plj, trj) =
 	let o = ordering (i, pri, pli, tri) (j, prj, plj, trj) in
 	if o = 0 then compare i j else o;;
 
-                                                                                                                  
-(***************************************************************
- *                        STRATEGY                             *
- ***************************************************************)
-type strategy = node array
 
-(* str_create and str_init below paritygame class (because of dependency) *)                 
-let str_make n = Array.make n nd_undef
-let str_get str v = str.(v)
-let str_set str v u = str.(v) <- u
-let str_iter = Array.iteri
-
-let format_strategy st =
-  let show i = match i with -1 -> "_" | _ -> string_of_int i in
-  "[" ^ String.concat "," (Array.to_list (Array.mapi (fun i -> fun w -> string_of_int i ^ "->" ^ show w) st)) ^ "]"
-
-                                                                                                                  
 (***************************************************************
  *                SOLUTION/STRATEGY FUNCTIONS                  *
  ***************************************************************)
-
-let merge_strategies_inplace st1 st2 =
-  let l = Array.length st1 in
-  for i=0 to l-1 do
-    if st1.(i) = -1 then st1.(i) <- st2.(i)
-  done
 
 let print_solution_strategy_parsable sol strat =
 	(*let n = Array.length sol in
@@ -72,9 +51,9 @@ let print_solution_strategy_parsable sol strat =
         print_string (nd_show i);
         print_char ' ';
         print_string (plr_show pl);
-        if strat.(i) >= 0 then (
+        if strat#get i != nd_undef then (
             print_char ' ';
-            print_int strat.(i)
+            print_string (nd_show (strat#get i))
         );
         print_char ';';
         print_newline ()
@@ -95,7 +74,7 @@ type dynamic_paritygame = (priority * player * string option) DynamicGraph.dynam
 
 let dynamic_subgame_by_strategy graph strat =
 	DynamicGraph.sub_graph_by_edge_pred (fun v w ->
-		strat.(v) = -1 || strat.(v) = w
+		strat#get v = nd_undef || strat#get v = w
 	  ) graph
 
                                             
@@ -217,7 +196,7 @@ method print =
            )
         done
           
-method to_dotty (solution: solution) strategy h =
+method to_dotty (solution: solution) (strategy: strategy) h =
   let encode i = "N" ^ (string_of_int i) in
 
   output_string h "digraph G {\n";
@@ -240,7 +219,7 @@ method to_dotty (solution: solution) strategy h =
           output_string h (name ^ " [ shape=\"" ^ shape ^ "\", label=\"" ^ label ^ "\", color=\"" ^ color ^ "\" ];\n");
 
 	  ns_iter (fun w -> let color2 = try
-				             if (plr_opponent pl = solution#get i) || (w = strategy.(i)) then color else "black"
+				             if (plr_opponent pl = solution#get i) || (w = strategy#get i) then color else "black"
 				           with _ -> "black"
 			      in
 			      output_string h (name ^ " -> " ^ encode w ^ " [ color=\"" ^ color2 ^ "\" ];\n" )) succs
@@ -369,12 +348,12 @@ method collect_max_parity_nodes =
 
                                
 (********** SUBGAME **********)
-method subgame_by_strat strat = self#subgame_by_edge_pred (fun x y -> strat.(x) < 0 || strat.(x) = y)
+method subgame_by_strat (strat: strategy) = self#subgame_by_edge_pred (fun x y -> strat#get x = nd_undef || strat#get x = y)
                                                           
-method subgame_by_strat_pl strat pl =
+method subgame_by_strat_pl (strat: strategy) pl =
    self#subgame_by_edge_pred (fun i j ->
 		let pl' = self#get_owner i in
-		pl != pl' || strat.(i) = j
+		pl != pl' || strat#get i = j
      )
                              
                              
@@ -395,11 +374,11 @@ method set_dominion (solver:  ('self -> solution * strategy)) nodeset pl =
         let (sol, strat') = solver (self#subgame_by_list nodeset) in
         if sol#for_all (fun _ pl' -> pl' = pl)
         then (
-        	let strat = Array.make (self#size) (-1) in
+        	let strat = new array_strategy self#size in
             let i = ref 0 in
             List.iter (fun q ->
-                if strat'.(!i) != -1
-                then strat.(q) <- a.(strat'.(!i));
+                if strat'#get !i != nd_undef
+                then strat#set q a.(strat'#get !i);
                 i := !i + 1
             ) l;
             Some strat
@@ -526,7 +505,7 @@ method strongly_connected_components (*tgraph*) =
 
 
 (********** ATTRACTOR CLOSURE **********)    
-method attr_closure_inplace' strategy player region include_region includeNode overwrite_strat =
+method attr_closure_inplace' (strategy: strategy) player region include_region includeNode overwrite_strat =
   let message _ _ = () in
   let attr = ref ns_empty in
   let todo = Queue.create () in
@@ -554,8 +533,8 @@ method attr_closure_inplace' strategy player region include_region includeNode o
               if w > -1 then (message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is in the attractor because of " ^
                                          string_of_int v ^ "->" ^ string_of_int w ^ "\n");
                               attr := ns_add v !attr;
-                              if overwrite_strat || strategy.(v) < 0
-                              then strategy.(v) <- w;
+                              if overwrite_strat || strategy#get v = nd_undef
+                              then strategy#set v w;
                               schedule_predecessors v)
               else message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is not (yet) found to be in the attractor\n")
          else if ns_fold (fun b -> fun w -> b && (inattr w)) true ws
@@ -614,7 +593,7 @@ method partially_solve_dominion (start: node) (partially_solve: partial_solver) 
 	let n = self#size in
 	let (_, delta, data, desc) = self#induce_partialparitygame start in
 	let solution = new array_solution n in
-	let strategy = Array.make n (-1) in
+	let strategy = new array_strategy n in
 
 	let rec expand i f =
 		if solution#get i != plr_undef then ()
@@ -622,7 +601,7 @@ method partially_solve_dominion (start: node) (partially_solve: partial_solver) 
 			 	solution#set i winner;
 			 	match strat with
 			 		Some j -> (
-			 			strategy.(i) <- j;
+			 			strategy#set i j;
 			 			expand j f
 			 		)
 			 	|   None -> ns_iter (fun x -> expand x f) (self#get_successors i)
@@ -636,7 +615,7 @@ method partially_solve_game partially_solve =
 	let n = self#size in
 	let (_, delta, data, desc) = self#induce_partialparitygame 0 in
 	let solution = new array_solution n in
-	let strategy = Array.make n (-1) in
+	let strategy = new array_strategy n in
 	let data' node =
 		if solution#get node = plr_undef
 		then data node
@@ -654,7 +633,7 @@ method partially_solve_game partially_solve =
 			 	solution#set i winner;
 			 	match strat with
 			 		Some j -> (
-			 			strategy.(i) <- j;
+			 			strategy#set i j;
 			 			expand j f
 			 		)
 			 	|   None -> ns_iter (fun x -> expand x f) (self#get_successors i)
@@ -746,15 +725,15 @@ method to_dynamic_paritygame =
 	);
 	graph
 
-method to_dynamic_paritygame_by_strategy strat =
+method to_dynamic_paritygame_by_strategy (strat: strategy) =
 	let graph = DynamicGraph.make () in
 	self#iterate (fun i (pr, pl, _, _, desc) ->
 		DynamicGraph.add_node i (pr, pl, desc) graph
 	);
 	self#iterate (fun i (_, _, tr, _, _) ->
-		if strat.(i) = -1
+		if strat#get i = nd_undef
 		then ns_iter (fun j -> DynamicGraph.add_edge i j graph) tr
-		else DynamicGraph.add_edge i strat.(i) graph
+		else DynamicGraph.add_edge i (strat#get i) graph
 	);
 	graph
 
@@ -789,15 +768,15 @@ let sol_init game f =
     );
     sol
 
+let str_init game f =
+    let str = new array_strategy game#size in
+    game#iterate (fun i _ ->
+        str#set i (f i)
+    );
+    str
 
 
-(***************************************************************
- *                        STRATEGY PART 2                      *
- ***************************************************************)
-let str_create game = Array.make (game#size) nd_undef                               
-let str_init game f = Array.init (game#size) f
 
-                                 
 (**************************************************************
  *                       GLOBAL_SOLVER                        *
  **************************************************************)

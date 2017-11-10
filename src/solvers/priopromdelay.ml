@@ -20,6 +20,8 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
+open Pgnode;;
+open Pgstrategy;;
 
 
 
@@ -41,7 +43,7 @@ let query game region r p player was_open att_qP att_qO subgame_vr reg_strategy 
   player := plr_benefits p;
   let target = BitSet.create l in
   for i = 0 to l - 1 do
-    reg_strategy.(i) <- -1;
+    reg_strategy#set i nd_undef;
     if r.(i) = p
     then BitSet.set target i
   done;
@@ -57,12 +59,12 @@ let dispatcher game region r p player f max_f delay_even delay_odd even_set odd_
       let ws = game#get_successors i in
       if pl = player
       then (
-        if r_strategy.(i) = -1
+        if r_strategy#get i = nd_undef
         then (
           let w = ns_fold (fun b -> fun w -> if (b > -1 || not (BitSet.is_set vr w) || not (BitSet.is_set region w)) then b else w) (-1) ws in
-          if w > -1 then reg_strategy.(i) <- w;
+          if w > -1 then reg_strategy#set i w;
         )
-        else reg_strategy.(i) <- r_strategy.(i);
+        else reg_strategy#set i (r_strategy#get i);
       )
     ) target_enum;
   pre_bit game pre subgame_vr (plr_opponent player) pre_set l;
@@ -128,8 +130,8 @@ let successor game region r p player action f max_f delay_even delay_odd even_se
     for i = 0 to l - 1 do
       if BitSet.is_set region i
       then r.(i) <- !p;
-      if reg_strategy.(i) <> -1
-      then r_strategy.(i) <- reg_strategy.(i);
+      if reg_strategy#get i != nd_undef
+      then r_strategy#set i (reg_strategy#get i);
       if r.(i) < !p && r.(i) > !new_p
       then new_p := r.(i);
     done;
@@ -143,13 +145,13 @@ let successor game region r p player action f max_f delay_even delay_odd even_se
         if BitSet.is_set vr i && f.(i) < !p && f.(i) mod 2 <> !p mod 2
         then (
           let pr = game#get_priority i in
-          r_strategy.(i) <- -1;
+          r_strategy#set i nd_undef;
           r.(i) <- pr;
           f.(i) <- pr;
         )
         else r.(i) <- f.(i);
-        if reg_strategy.(i) <> -1
-        then r_strategy.(i) <- reg_strategy.(i);
+        if reg_strategy#get i != nd_undef
+        then r_strategy#set i (reg_strategy#get i);
       done;
       even_set := FSet.empty;
       odd_set := FSet.empty;
@@ -172,11 +174,11 @@ let successor game region r p player action f max_f delay_even delay_odd even_se
             let pr = game#get_priority i in
             r.(i) <- pr;
             f.(i) <- pr;
-            r_strategy.(i) <- -1;
+            r_strategy#set i nd_undef;
           );
         );
-        if reg_strategy.(i) <> -1
-        then r_strategy.(i) <- reg_strategy.(i);
+        if reg_strategy#get i != nd_undef
+        then r_strategy#set i (reg_strategy#get i);
       done;
       if player = plr_Even
       then (
@@ -201,10 +203,10 @@ let search game =
   let max_promo = ref 0 in
   let wr_count = ref 0 in
   let l = game#size in
-  let reg_strategy = Array.make l (-1) in
-  let r_strategy = Array.make l (-1) in
+  let reg_strategy = new array_strategy l in
+  let r_strategy = new array_strategy l in
   let solution = new array_solution l in
-  let str_out = Array.make l (-1) in
+  let str_out = new array_strategy l in
   let empty = ref false in
   let p = ref (-1) in
   let r = Array.make l (-1) in
@@ -260,8 +262,8 @@ let search game =
     then (
       empty := true;
       for i = 0 to l - 1 do
-        if reg_strategy.(i) <> -1
-        then str_out.(i) <- reg_strategy.(i);
+        if reg_strategy#get i != nd_undef
+        then str_out#set i (reg_strategy#get i);
         if BitSet.is_set !region i
         then solution#set i !player;
       done;
@@ -273,11 +275,11 @@ let search game =
       p := 0;
       action := 0;
       for i = 0 to l - 1 do
-        if reg_strategy.(i) <> -1
-        then str_out.(i) <- reg_strategy.(i);
+        if reg_strategy#get i != nd_undef
+        then str_out#set i (reg_strategy#get i);
         if BitSet.is_set region' i
         then solution#set i !player;
-        r_strategy.(i) <- -1;
+        r_strategy#set i nd_undef;
         if solution#get i = plr_undef && BitSet.is_set vr i
         then (
           incr node_count;

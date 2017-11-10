@@ -10,6 +10,7 @@ open Tcslist;;
 open Tcsarray;;
 open Pgnodeset;;
 open Pgplayer;;
+open Pgstrategy;;
 
 let out s =
 	print_string s;
@@ -48,7 +49,7 @@ let _ =
 	let pl = game#get_owner  i in 
         let tr = game#get_successors  i in
         if (pl = plr_Even) then (
-          let j = ArrayUtils.index_of (Array.of_list (ns_nodes tr)) strategy.(i) in
+          let j = ArrayUtils.index_of (Array.of_list (ns_nodes tr)) (strategy#get i) in
           x := !x + m.(i) * j;
 		)
       done;
@@ -77,7 +78,7 @@ let _ =
        let pl = game#get_owner  i in
        let tr = game#get_successors  i in
        if (pl = plr_Even) then (
-         let j = ArrayUtils.index_of (Array.of_list (ns_nodes tr)) strategy.(i) in
+         let j = ArrayUtils.index_of (Array.of_list (ns_nodes tr)) (strategy#get i) in
          s := !s ^ string_of_int j
        )
      done;
@@ -94,7 +95,7 @@ let _ =
        then iterate strategy (index + 1) callback
        else
          for j = 0 to Array.length tr - 1 do
-           strategy.(index) <- tr.(j);
+           strategy#set index tr.(j);
            iterate strategy (index + 1) callback
          done
    in
@@ -106,27 +107,27 @@ let _ =
 						   Some s -> print_string (" " ^ s)) ;
    out "\n";
       
-   iterate (Array.make n (-1)) 0 (fun strategy ->
-     let temp = Array.copy strategy in
+   iterate (new array_strategy 0) 0 (fun strategy ->
+     let temp = strategy#copy in
      let valu = evaluate_strategy game node_total_ordering_by_position strategy in
      let l = ref [] in
      let k = ref [] in
      game#iterate (fun i -> fun (_,pl,succs,_,_) -> let tr = Array.of_list (ns_nodes succs) in
 						  if (pl = plr_Even) then
 						    for j = 0 to Array.length tr - 1 do
-						      let c = node_valuation_ordering game node_total_ordering_by_position valu.(strategy.(i)) valu.(tr.(j)) in
+						      let c = node_valuation_ordering game node_total_ordering_by_position valu.(strategy#get i) valu.(tr.(j)) in
 						      if (c != 0) then (
-							temp.(i) <- tr.(j);
+							temp#set i tr.(j);
 							if c < 0
 							then l := strategy_to_int temp :: !l
 							else k := strategy_to_int temp :: !k;
-							temp.(i) <- strategy.(i)
+							temp#set i (strategy#get i)
 						      )
 						    done;
 		) ;
      let l = List.rev !l in
      let k = List.rev !k in
-     out (string_of_int (strategy_to_int strategy) ^ "(" ^ format_strategy strategy ^ "): ");
+     out (string_of_int (strategy_to_int strategy) ^ "(" ^ strategy#format ^ "): ");
      out (ListUtils.custom_format string_of_int "" "" ", " l);
      out (" | ");
      out (ListUtils.custom_format string_of_int "" "" ", " k);

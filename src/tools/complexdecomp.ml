@@ -10,6 +10,7 @@ open Stratimpralgs;;
 open Tcsset;;
 open Pgnodeset;;
 open Pgplayer;;
+open Pgstrategy;;
 
 let out s =
 	print_string s;
@@ -60,7 +61,7 @@ let _ =
 	out "\n";
 	out ("Finding optimal strategies using strategy iteration... ");
 
-	let sigma = ref [||] in
+	let sigma = ref (new array_strategy 0) in
 	_strat_impr_callback := Some (fun strat _ -> sigma := strat);
 	let (_, _) = strategy_improvement_optimize_all_locally_policy game in
 	_strat_impr_callback := None;
@@ -70,8 +71,8 @@ let _ =
 	
 	out "done.\n";
 	
-	out ("Optimal player 0 strategy: " ^ format_strategy sigma ^ "\n");
-	out ("Optimal player 1 strategy: " ^ format_strategy tau ^ "\n");
+	out ("Optimal player 0 strategy: " ^ sigma#format ^ "\n");
+	out ("Optimal player 1 strategy: " ^ tau#format ^ "\n");
 	
 	out "\n";
 	
@@ -89,11 +90,11 @@ let _ =
 					let sub = game#copy  in
 					let subnodes = nodes in
 					ns_iter (fun v ->
-						if (game#get_owner  v = plr_Odd) && (not (ns_elem tau.(v) subnodes))
+						if (game#get_owner  v = plr_Odd) && (not (ns_elem (tau#get v) subnodes))
 						then
 						  begin
 						    ns_iter (fun w -> sub#del_edge v w) (sub#get_successors v);
-						    sub#add_edge v tau.(v)
+						    sub#add_edge v (tau#get v)
 						  end
 					) nodes;
 					helper sub (indent ^ "  ") (fun scc -> ns_elem (ns_first scc) subnodes);

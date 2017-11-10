@@ -3,6 +3,7 @@ open Arrayparitygame;;
 open Bytes;;
 open Pgplayer;;
 open Pgsolution;;
+open Pgstrategy;;
 
 
 
@@ -56,4 +57,6 @@ let parse_solution in_channel =
 	Array.iteri (fun i pl ->
 	    sol'#set i (if pl = 0 then plr_Even else if pl = 1 then plr_Odd else plr_undef)
 	) sol;
-	(sol', str)
+	let str' = new array_strategy (Array.length str) in
+	Array.iteri str'#set str;
+	(sol', str')
