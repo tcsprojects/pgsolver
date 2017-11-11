@@ -34,7 +34,6 @@ let solve game =
         in
 
 	let heuristic_solve game =
-		let n = game#size in
 		let s0 = generate_strat game plr_Even in
 		let s1 = generate_strat game plr_Odd in
 		let (sol0, _) = universal_solve_trivial verbosity_level_default (game#subgame_by_strat s0) in

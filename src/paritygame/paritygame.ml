@@ -72,11 +72,6 @@ type partial_solver = partial_paritygame -> partial_solution
  **************************************************************)
 type dynamic_paritygame = (priority * player * string option) DynamicGraph.dynamic_graph
 
-let dynamic_subgame_by_strategy graph strat =
-	DynamicGraph.sub_graph_by_edge_pred (fun v w ->
-		strat#get v = nd_undef || strat#get v = w
-	  ) graph
-
                                             
 (***************************************************************
  *                  DECOMPOSITION FUNCTIONS                    *
@@ -114,9 +109,9 @@ let show_sccs sccs topology roots =
   s := " {" ^ !s;
 
   for i=1 to l-1 do
-    s := "," ^ string_of_int (l-i) ^ ":{" ^ String.concat "," (List.map string_of_int (ns_nodes (Array.get sccs (l-i)))) ^ "}" ^ !s
+    s := "," ^ string_of_int (l-i) ^ ":{" ^ String.concat "," (List.map nd_show (ns_nodes (Array.get sccs (l-i)))) ^ "}" ^ !s
   done;
-  if l > 0 then s := "0:{" ^ String.concat "," (List.map string_of_int (ns_nodes (Array.get sccs 0))) ^ "}" ^ !s;
+  if l > 0 then s := "0:{" ^ String.concat "," (List.map nd_show (ns_nodes (Array.get sccs 0))) ^ "}" ^ !s;
   "{" ^ !s;;
 
                                               
@@ -185,7 +180,7 @@ method print =
             print_char ' ';
             print_string (plr_show pl);
             print_char ' ';
-            print_string (String.concat "," (List.map string_of_int (ns_nodes succs)));
+            print_string (String.concat "," (List.map nd_show (ns_nodes succs)));
             (
              match desc with
                None -> () (* print_string (" \"" ^ string_of_int i ^ "\"") *)
@@ -197,12 +192,11 @@ method print =
         done
           
 method to_dotty (solution: solution) (strategy: strategy) h =
-  let encode i = "N" ^ (string_of_int i) in
+  let encode i = "N" ^ (nd_show i) in
 
   output_string h "digraph G {\n";
 
-  for i = 0 to (self#size)-1 do
-    let (p,pl,succs,_,ann) = self#get_node i in
+  self#iterate (fun i (p,pl,succs,_,ann) ->
 
     if p >= 0 && pl != plr_undef
     then (let name = encode i in
@@ -224,7 +218,7 @@ method to_dotty (solution: solution) (strategy: strategy) h =
 			      in
 			      output_string h (name ^ " -> " ^ encode w ^ " [ color=\"" ^ color2 ^ "\" ];\n" )) succs
 	 )
-  done;
+  );
   output_string h "}\n"
 
 method to_dotty_file solution strategy filename =
@@ -236,31 +230,27 @@ method to_dotty_file solution strategy filename =
 (********** GETTERS **********)
 method node_count =
   let count = ref 0 in
-  let n = self#size in
-  for i = 0 to n-1 do
+  self#iterate (fun i _ ->
     if self#is_defined i then incr count
-  done;
+  );
   !count
 
 method edge_count =
   let count = ref 0 in
-  let n = self#size in
-  for i=0 to n-1 do
+  self#iterate (fun i _ ->
     if self#is_defined i then count := !count + (ns_size (self#get_successors i))
-  done;
+  );
   !count
 
 method get_max o =
-	let m = ref 0 in
-	let n = self#size in
-	let (prm,plm,succm,_,_) = self#get_node !m in
-	let vm = ref (!m,prm,plm,succm) in
-	for i = 1 to n - 1 do
-	  let (pri,pli,succi,_,_) = self#get_node i in
+	let m = ref nd_undef in
+	let vm = ref None in
+	self#iterate (fun (i: node) (pri,pli,succi,_,_) ->
 	  let vi = (i,pri,pli,succi) in
-	  if o !vm vi < 0
-	  then (m := i; vm := vi)
-	done;
+	  match !vm with
+	    Some vm' -> if o vm' vi < 0 then (m := i; vm := Some vi)
+	  | _ -> (m := i; vm := Some vi)
+	);
 	!m
 
 method get_min o = self#get_max (fun x y -> - (o x y))
@@ -274,8 +264,11 @@ method get_max_prio = self#get_priority (self#get_max_prio_node)
 method get_min_prio = self#get_priority (self#get_min ord_prio)
                                         
 method get_max_prio_for player =
-	let pr = self#get_priority (self#get_max_rew_node_for player) in
-	if plr_benefits pr = player then pr else -1
+    let nd = self#get_max_rew_node_for player in
+    if nd != nd_undef then (
+        let pr = self#get_priority nd in
+        if plr_benefits pr = player then pr else -1
+    ) else -1
 
 method get_index = self#get_max_prio - self#get_min_prio + 1
                                                              
@@ -287,36 +280,35 @@ method get_prio_nodes p =
   !l
 
 method get_selected_priorities pred =
-  let prios = ref ns_empty in
-  self#iterate (fun v -> fun (pr,_,_,_,_) -> if pred pr then prios := ns_add pr !prios);
-  ns_nodes !prios
+  let prios = ref TreeSet.empty_def in
+  self#iterate (fun v -> fun (pr,_,_,_,_) -> if pred pr then prios := TreeSet.add pr !prios);
+  TreeSet.elements !prios
 
 method get_priorities = self#get_selected_priorities (fun _ -> true)
 
 method to_string =
 	let n = self#size in
 	let s = ref "" in
-	for i = n-1 downto 0 do
-	  let (pr, pl, succs, _ , desc) = self#get_node i in
+	self#iterate (fun i  (pr, pl, succs, _ , desc) ->
 	  if pr >= 0 && pl != plr_undef then
 	    begin
-	      s := string_of_int i ^ " " ^ string_of_int pr ^ " " ^ plr_show pl ^ " " ^
-	           (String.concat "," (List.map string_of_int (ns_nodes succs)) ^
+	      s := !s ^ nd_show i ^ " " ^ string_of_int pr ^ " " ^ plr_show pl ^ " " ^
+	           (String.concat "," (List.map nd_show (ns_nodes succs)) ^
 		     (match desc with
 			None   -> ""
 		      | Some a -> if a <> "" then " \"" ^ a ^ "\"" else "")
-		   ) ^ ";\n" ^ !s
+		   ) ^ ";\n"
            end
-	done;
+	);
 	"parity " ^ string_of_int (n-1) ^ ";\n" ^ !s
                                                                                                      
                                                  
 (********** NODE COLLECTION  **********)
 method collect_nodes pred =
     let l = ref ns_empty in
-    for i = (self#size) - 1 downto 0 do
-    	if self#is_defined i && (pred i (self#get_node i)) then l := ns_add i !l
-    done;
+    self#iterate (fun i nd ->
+    	if self#is_defined i && (pred i nd) then l := ns_add i !l
+    );
     !l
      
 method collect_nodes_by_prio pred =
@@ -325,15 +317,15 @@ method collect_nodes_by_prio pred =
 method collect_nodes_by_owner pred =
   let ltrue = ref ns_empty in
   let lfalse = ref ns_empty in
-  for i = self#size - 1 downto 0 do
+  self#iterate (fun i (_, pl, _, _, _) ->
     if self#is_defined i then
       begin
-	if pred (self#get_owner i) then
+	if pred pl then
 	  ltrue := ns_add i !ltrue
 	else
 	  lfalse := ns_add i !lfalse
       end
-  done;
+  );
   (!ltrue, !lfalse)
 
 method collect_max_prio_nodes =

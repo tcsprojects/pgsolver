@@ -122,7 +122,6 @@ let solve' game sink0 sink1 =
   
   
 let solve'' game =
-  let n = game#size in
   let game_cheap = cheap_escape_cycles_transformation game false in
   let (game_cheap, a, b) = sort_game_by_prio game_cheap in
   let (sink0, sink1) = (b.(Array.length b - 4), b.(Array.length b - 3)) in

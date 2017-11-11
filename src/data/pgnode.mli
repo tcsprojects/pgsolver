@@ -6,6 +6,8 @@
     WARNING: May becomes abstract in the future.
 *)
 type node = int
+val nd_to_int: node -> int
+val int_to_nd: int -> node
 
 (** Returns an undefined node.
     This conforms the integer value of -1.

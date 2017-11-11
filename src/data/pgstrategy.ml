@@ -72,17 +72,17 @@ class array_strategy (initSize: int) = object (self: 'self)
     method copy = {< nodes = nodes >}
 
     method get v =
-        nodes.(v)
+        nodes.(nd_to_int v)
 
     method set v p =
-        nodes.(v) <- p
+        nodes.(nd_to_int v) <- p
 
     method for_all f =
         let result = ref true in
         let n = Array.length nodes in
         let i = ref 0 in
         while !result && !i < n do
-            result := f !i nodes.(!i);
+            result := f (int_to_nd !i) nodes.(!i);
             incr i;
         done;
         !result

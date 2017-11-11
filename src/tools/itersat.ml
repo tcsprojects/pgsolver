@@ -975,7 +975,7 @@ let enforce_nonstatic_attractees l k n =
 let get_strategy n u =
     let strat = new array_strategy n in
     for i = 0 to n - 1 do
-		solver#get_variable_first (Array.init n (fun a -> Strategy (u, i, a)))
+		strat#set i (solver#get_variable_first (Array.init n (fun a -> Strategy (u, i, a))))
 	done;
 	strat
 

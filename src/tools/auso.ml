@@ -72,19 +72,6 @@ let _ =
    in
    *)
      
-   let format_strategy strategy =
-     let s = ref "" in
-     for i = 0 to n-1 do
-       let pl = game#get_owner  i in
-       let tr = game#get_successors  i in
-       if (pl = plr_Even) then (
-         let j = ArrayUtils.index_of (Array.of_list (ns_nodes tr)) (strategy#get i) in
-         s := !s ^ string_of_int j
-       )
-     done;
-     !s
-   in
-     
    let rec iterate strategy index callback =
      if index >= n
      then callback strategy

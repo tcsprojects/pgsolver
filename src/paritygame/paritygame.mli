@@ -107,13 +107,6 @@ type partial_solver = partial_paritygame -> partial_solution
  *)
 type dynamic_paritygame = (priority * player * string option) Tcsgraph.DynamicGraph.dynamic_graph
 
-(** Returns dynamic subgame by strategy
-
-    @param dynamic_paritygame dynamic paritygame to get subgame from
-    @param strategy strategy that determines subgame
-    @return subgame of dynamic_paritygame
- *)
-val dynamic_subgame_by_strategy: dynamic_paritygame -> strategy -> dynamic_paritygame
 
 
 

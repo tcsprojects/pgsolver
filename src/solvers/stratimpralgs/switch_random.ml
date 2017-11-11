@@ -70,7 +70,6 @@ let multiple_edge_backtransformation game solution strategy =
 let multiple_edge_solve game solver =
 	let (game', mult) = multiple_edge_transformation game in
 	let (game'', new2old, old2new) = compress_nodes game' in
-	let n = game'#size in
 	let n' = game''#size in
 	let mult' = Array.make n' [||] in
 	for i = 0 to n' - 1 do
