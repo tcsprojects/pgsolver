@@ -164,7 +164,7 @@ object (self : 'self)
       let pred = ns_filter (fun k -> TreeMap.mem k newNodes) pred in
       TreeMap.add v (pr, pl, succ, pred, desc) newNodes
     ) newNodes nodeSetList in
-    {<nodes = newNodes>}
+    ({<nodes = newNodes>}, (fun v -> v), fun v -> v)
 
 
   method subgame_by_node_filter pred =

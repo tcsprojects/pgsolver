@@ -383,7 +383,7 @@ let universal_solve_run options stats backend game' =
         let subgame_solve nodes solver =
            	timer_start stats.logistics_timing;
         	let solved = ref ns_empty in
-            let sg = game#subgame_by_list nodes in
+            let (sg, _, _) = game#subgame_by_list nodes in
            	timer_stop stats.logistics_timing;
             let (sol', strat') = solver sg in
            	timer_start stats.logistics_timing;

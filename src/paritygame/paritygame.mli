@@ -358,7 +358,7 @@ class virtual paritygame : object('self)
       @param nodeset list to create subgame by
       @return subgame created by nodelist
   *)
-  method virtual subgame_by_list : nodeset -> 'self
+  method virtual subgame_by_list : nodeset -> 'self * (node -> node) * (node -> node)
 
   (** Creates subgame by node filter.
 

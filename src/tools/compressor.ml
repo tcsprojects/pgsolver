@@ -12,7 +12,7 @@ let sccs_perform_inplace game performer =
 	let visited = Array.make (Array.length sccs) false in
 
 	let handlescc r =
-		let subgame = game#subgame_by_list sccs.(r) in
+		let (subgame, _, _) = game#subgame_by_list sccs.(r) in
 		performer subgame;
 		let i = ref 0 in
 		ns_iter (fun j ->

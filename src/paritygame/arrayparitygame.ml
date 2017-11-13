@@ -6,6 +6,7 @@ open Tcslist;;
 open Tcsgraph;;
 open Pgnodeset;;
 open Pgplayer;;
+open Pgnode;;
 open Pgpriority;;
 
   
@@ -184,10 +185,15 @@ object (self : 'self)
     let newNodesArray = Array.make nodeSetListSize (-1, plr_undef, ns_empty, ns_empty, None) in
     (* mapping table: key=oldPos, value=newPos*)
     let newPosTable = Hashtbl.create nodeSetListSize in
+    let oldPosTable = Array.make nodeSetListSize nd_undef in
 
     (*create mapping (oldPos -> newPos)*)
     let i = ref 0 in
-    ns_iter (fun node -> Hashtbl.add newPosTable node !i; i := !i+1) nodeSetList;
+    ns_iter (fun node ->
+        Hashtbl.add newPosTable node !i;
+        oldPosTable.(!i) <- node;
+        i := !i+1
+    ) nodeSetList;
 
     (*mapping function for predecessors and successors*)
     let mapNodeSet nodeSet =
@@ -201,7 +207,7 @@ object (self : 'self)
       (fun node -> let (prio,plr,succs,preds,desc) = self#get_node node in
                    Array.set newNodesArray !j (prio, plr, mapNodeSet succs, mapNodeSet preds, desc);
                    j := !j +1) nodeSetList;
-    {<nodes = newNodesArray>}
+    ({<nodes = newNodesArray>}, Hashtbl.find newPosTable, fun i -> oldPosTable.(i))
 
   method subgame_by_node_filter pred =
     let map_to_sub = ref TreeMap.empty_def in

@@ -161,7 +161,7 @@ method virtual remove_edges : (node * node) list -> unit
 (********** SUBGAME **********)
 method virtual subgame_by_edge_pred : (node -> node -> bool) -> 'self
 method virtual subgame_by_node_pred : (node -> bool) -> 'self
-method virtual subgame_by_list : nodeset -> 'self
+method virtual subgame_by_list : nodeset -> 'self * (node -> node) * (node -> node)
 method virtual subgame_by_node_filter : (node -> bool) -> 'self * (node -> node) * (node -> node)
 
                                                                                      
@@ -361,18 +361,16 @@ method set_closed nodeset pl =
 
 method set_dominion (solver:  ('self -> solution * strategy)) nodeset pl =
 	if self#set_closed nodeset pl then (
-        let l = ns_nodes nodeset in
-        let a = Array.of_list l in
-        let (sol, strat') = solver (self#subgame_by_list nodeset) in
+        let (sub_game, old_to_new, new_to_old) = self#subgame_by_list nodeset in
+        let (sol, strat') = solver sub_game in
         if sol#for_all (fun _ pl' -> pl' = pl)
         then (
         	let strat = new array_strategy self#size in
-            let i = ref 0 in
-            List.iter (fun q ->
-                if strat'#get !i != nd_undef
-                then strat#set q a.(strat'#get !i);
-                i := !i + 1
-            ) l;
+            ns_iter (fun q ->
+                let i = old_to_new q in
+                if strat'#get i != nd_undef
+                then strat#set q (new_to_old (strat'#get i))
+            ) nodeset;
             Some strat
         )
         else None
