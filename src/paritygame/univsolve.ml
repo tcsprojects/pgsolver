@@ -346,13 +346,11 @@ let universal_solve_run options stats backend game' =
         timer_start stats.decomposition_timing;
 
 	let dummy_decomposition game =
-		let n = game#size in
 		let l = ref ns_empty in
-		let a = Array.make n (-1) in
-		game#iterate (fun i _ -> l := ns_add i !l;
-				       a.(i) <- 0
-			   );
-		([|!l|], a, [|[]|], [0])
+		game#iterate (fun i _ ->
+		    l := ns_add i !l
+        );
+		([|!l|], (fun _ -> 0), [|[]|], [0])
 	in
 
 	let strongly_connected_components' game =
@@ -364,7 +362,7 @@ let universal_solve_run options stats backend game' =
         )
         else if game#node_count > 0
         then dummy_decomposition game
-        else ([|ns_empty|], [||], [||], [])
+        else ([|ns_empty|], (fun _ -> 0), [||], [])
 	in
 
         let (sccs, sccindex, topology, roots) = strongly_connected_components' game in
@@ -564,14 +562,14 @@ let universal_solve_run options stats backend game' =
         	     if sol#get w = plr_undef then (
         	       if (game#get_owner w = winner) then (
         		 sol#set w winner;
-        		 touchedscc.(sccindex.(w)) <- true;
+        		 touchedscc.(sccindex w) <- true;
         		 strat#set w v;
         		 SingleOccQueue.add w q;
         		 attr := ns_add w !attr
         	       )
         	       else if ns_size (game#get_successors w) = 1 then (
         		 sol#set w winner;
-        		 touchedscc.(sccindex.(w)) <- true;
+        		 touchedscc.(sccindex w) <- true;
         		 SingleOccQueue.add w q;
         		 attr := ns_add w !attr
         	       )

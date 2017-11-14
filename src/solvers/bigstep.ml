@@ -11,10 +11,52 @@ open Tcsarray;;
 open Smallprogress;;
 open Pgplayer;;
 open Pgnode;;
+open Pgnodeset;;
+
+
+let compute_priority_reach_array mygame player =
+    let maxprspm = (mygame#get_max_prio_for (plr_opponent player)) / 2 in
+    (* Dumb version (!)  *)
+    let rec calc_iter game  maxvalues =
+        let badPrio = game#get_max_prio_for (plr_opponent player) in
+        let goodPrio = game#get_max_prio_for player in
+        if badPrio >= 0 then (
+            let tmp_nodes = ref ns_empty in
+            if goodPrio > badPrio then
+                game#iterate (fun i (pr, _, _, _, _) ->
+                    if pr > badPrio then tmp_nodes := ns_add i !tmp_nodes
+                )
+            else (
+                let (sccs, sccindex, topology, roots) = game#strongly_connected_components in
+                let sccs: nodeset array = sccs in
+                let sccentry = Array.make (Array.length sccs) (-1) in
+                let rec count_nodes r =
+                	if sccentry.(r) = -1 then (
+                        List.iter count_nodes topology.(r);
+                        sccentry.(r) <- List.fold_left (fun a i -> a + sccentry.(i)) 0 topology.(r);
+                        ns_iter (fun v ->
+                        	if game#get_priority v = badPrio then sccentry.(r) <- 1 + sccentry.(r)
+                        ) sccs.(r)
+					)
+                in
+                List.iter count_nodes roots;
+                game#iterate (fun i (pr, _, _, _, _) ->
+                    if pr >= 0 then (maxvalues.(i)).(badPrio / 2) <- 1 + sccentry.(sccindex i);
+                    if pr = badPrio then tmp_nodes := ns_add i !tmp_nodes
+                );
+            );
+            game#remove_nodes !tmp_nodes;
+            calc_iter game maxvalues
+        )
+    in
+    let game = mygame#copy in
+    let maxvalues = Array.make_matrix (game#size) (1 + maxprspm) 1 in
+    calc_iter game maxvalues;
+    maxvalues
 
 
 let solve_scc_restr game player u =
-    let spmidx = Array.map (Array.map (fun m -> (0, min m u))) (game#compute_priority_reach_array player) in
+    let spmidx = Array.map (Array.map (fun m -> (0, min m u))) (compute_priority_reach_array game player) in
     let spmupd spmz _ =
       let l = Array.length spmz in
       let c = ref (Array.fold_left (fun r (v, _) -> r + v) 0 spmz) in

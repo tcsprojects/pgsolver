@@ -549,7 +549,7 @@ class virtual paritygame : object('self)
         @param scc list array is an array mapping each SCC to the list of its immediate successing SCCs and
         @param scc list is the list of SCCs having no predecessing SCC.
   *)
-  method strongly_connected_components : nodeset array * scc array * scc list array * scc list
+  method strongly_connected_components : nodeset array * (node -> scc) * scc list array * scc list
 
   (** Computes connectors for SCCs of game.
 
@@ -559,7 +559,7 @@ class virtual paritygame : object('self)
       @param scc list roots
       @return hashtable of connectors
    *)
-  method sccs_compute_connectors : nodeset array * scc array * scc list array * scc list -> (scc * scc, (scc * scc) list) Hashtbl.t
+  method sccs_compute_connectors : nodeset array * (node -> scc) * scc list array * scc list -> (scc * scc, (scc * scc) list) Hashtbl.t
 
 
   (********** ATTRACTOR CLOSURE **********) 
@@ -618,7 +618,6 @@ class virtual paritygame : object('self)
       @return amount of strategies for player (bounded by m)
   *)
   method number_of_strategies : player -> int -> int
-  method compute_priority_reach_array : player -> priority array array
 
 
   (********** DYNAMIC PARITYGAME **********)

@@ -133,30 +133,6 @@ let solve_scc_reach game player spmidx updspm =
     (sol, strat);;
 
 
-(*
-let solve_scc game player =
-    let spmidx = Array.map (Array.map (fun m -> (0, m))) (game#compute_priority_reach_array player) in
-
-	let spmupd spmz _ =
-		let l = Array.length spmz in
-        for i = 0 to l - 1 do
-            if (fst spmz.(i) > snd spmz.(i)) then (
-                spmz.(i) <- (0, snd spmz.(i));
-                if (i < l - 1)
-                then spmz.(i + 1) <- (1 + fst spmz.(i + 1), snd spmz.(i + 1))
-                else for j = 0 to l - 1 do
-                        spmz.(j) <- (snd spmz.(j), snd spmz.(j))
-                     done
-            )
-        done
-    in
-
-	solve_scc_reach game player spmidx spmupd;;
-
-
-let solve game = universal_solve_by_player_solver (universal_solve_init_options_verbose !universal_solve_global_options) solve_scc game;;
-*)
-
 let solve' game =
 
 	let msg_tagged v = message_autotagged v (fun _ -> "SMALLPROGRESS") in

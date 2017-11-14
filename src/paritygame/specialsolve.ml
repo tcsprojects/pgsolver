@@ -295,7 +295,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
                       		     if (pl' = pl) then
 				       ns_iter (fun di ->
 						if (strategy#get q = nd_undef) then (
-						  if sccindex.(di) = r then strategy#set q di
+						  if (sccindex di) = r then strategy#set q di
 						);
 					       ) d;
                       		    ) comp

@@ -166,9 +166,9 @@ class array_pg : ?initFunc:(Pgnode.node ->Pgpriority.priority * Pgplayer.player 
     method set_dominion : ('self -> Pgsolution.solution * Pgstrategy.strategy) -> Pgnodeset.nodeset -> Pgplayer.player -> Pgstrategy.strategy option
 
     (********** DECOMPOSITION **********)                                                                                                                                             
-    method strongly_connected_components : Pgnodeset.nodeset array * Paritygame.scc array * Paritygame.scc list array * Paritygame.scc list
+    method strongly_connected_components : Pgnodeset.nodeset array * (Pgnode.node -> Paritygame.scc) * Paritygame.scc list array * Paritygame.scc list
 
-    method sccs_compute_connectors : Pgnodeset.nodeset array * Paritygame.scc array * Paritygame.scc list array * Paritygame.scc list ->
+    method sccs_compute_connectors : Pgnodeset.nodeset array * (Pgnode.node -> Paritygame.scc) * Paritygame.scc list array * Paritygame.scc list ->
                                      (Paritygame.scc * Paritygame.scc, (Paritygame.scc * Paritygame.scc) list) Hashtbl.t
 
 
@@ -198,8 +198,6 @@ class array_pg : ?initFunc:(Pgnode.node ->Pgpriority.priority * Pgplayer.player 
     method is_single_parity_game : Pgpriority.priority option
 
     method number_of_strategies : Pgplayer.player -> int -> int
-
-    method compute_priority_reach_array : Pgplayer.player -> Pgpriority.priority array array
 
 
     (********** DYNAMIC PARITYGAME **********)

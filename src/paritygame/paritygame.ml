@@ -381,16 +381,16 @@ method set_dominion (solver:  ('self -> solution * strategy)) nodeset pl =
 (********** DECOMPOSITION **********)
 method strongly_connected_components (*tgraph*) =
   let l = self#size in
-  let dfsnum = Array.make l (-1) in
-  let index = Array.make l (-1) in
+  let dfsnum = ref TreeMap.empty_def in
+  let index = Array.make l nd_undef in
 
   let todo = ref [] in
-  for i=l-1 downto 0 do
+  self#iterate (fun (i: node) _ ->
     if self#is_defined i then todo := i :: !todo
-  done;
+  );
 
   let n = ref 0 in
-  let visited = Array.make l false in
+  let visited = ref TreeSet.empty_def in
 
   let dfs v =
   	let st = Stack.create () in
@@ -398,10 +398,10 @@ method strongly_connected_components (*tgraph*) =
   	while not (Stack.is_empty st) do
   		let u = Stack.pop st in
   		let pushed = ref false in
-  		if not visited.(u) then (
-  			visited.(u) <- true;
+  		if not (TreeSet.mem u !visited) then (
+  		    visited := TreeSet.add u !visited;
   			ns_iter (fun w ->
-  				if not visited.(w) then (
+  				if not (TreeSet.mem w !visited) then (
   					if not !pushed then (
   						Stack.push u st;
   						pushed := true
@@ -410,27 +410,25 @@ method strongly_connected_components (*tgraph*) =
   				)
   			) (self#get_successors u)
   		);
-  		if (not !pushed) && (dfsnum.(u) < 0) then (
-  			dfsnum.(u) <- !n;
+  		if (not !pushed) && (not (TreeMap.mem u !dfsnum)) then (
+  			dfsnum := TreeMap.add u !n !dfsnum;
   			index.(!n) <- u;
   			incr n
   		)
   	done
   in
 
-  for i=0 to l-1 do
-    if not visited.(i) && self#is_defined i then dfs i
-  done;
+  self#iterate(fun i _ ->
+    if not (TreeSet.mem i !visited) && self#is_defined i then dfs i
+  );
 
   decr n;
 
-  for i=0 to l-1 do
-    visited.(i) <- false
-  done;
+  let visited = ref TreeSet.empty_def in
 
   let sccs = DynArray.create ns_empty in
   let topology = DynArray.create TreeSet.empty_def in
-  let scc_index = Array.make l (-1) in
+  let scc_index = ref TreeMap.empty_def in
   let next_index = ref 0 in
   let roots = ref TreeSet.empty_def in
   let is_root = ref true in
@@ -445,28 +443,33 @@ method strongly_connected_components (*tgraph*) =
       let v = List.hd !todo in
       todo := List.tl !todo;
 
-      if not visited.(v) && dfsnum.(v) >= 0
-      then (visited.(v) <- true;
+      if not (TreeSet.mem v !visited) && TreeMap.mem v !dfsnum
+      then (visited := TreeSet.add v !visited;
             scc := ns_add v !scc;
-            let succs = List.sort (fun x -> fun y -> compare dfsnum.(y) dfsnum.(x)) (ns_nodes (self#get_predecessors v)) in
+            let succs = List.sort (fun x -> fun y -> compare (TreeMap.find x !dfsnum) (TreeMap.find y !dfsnum)) (ns_nodes (self#get_predecessors v)) in
             todo := succs @ !todo;
-            List.iter (fun w -> let c = scc_index.(w) in
-                                if c > -1
-                                then (DynArray.set topology c (TreeSet.add !next_index (DynArray.get topology c));
-                                      is_root := false))
-                       succs)
+            List.iter (fun w ->
+                try
+                    let c = TreeMap.find w !scc_index in
+                    DynArray.set topology c (TreeSet.add !next_index (DynArray.get topology c));
+                    is_root := false
+                with Not_found ->()
+            ) succs
+       )
     done;
     DynArray.insert sccs !next_index !scc;
     if !is_root then roots := TreeSet.add !next_index !roots;
-    ns_iter (fun v -> scc_index.(v) <- !next_index) !scc;
+    ns_iter (fun v ->
+        scc_index := TreeMap.add v !next_index !scc_index
+    ) !scc;
     incr next_index;
 
-    while !n >= 0 && visited.(index.(!n)) do
+    while !n >= 0 && (TreeSet.mem index.(!n) !visited) do
       decr n
     done
   done;
   (DynArray.to_array sccs,
-   scc_index,
+   (fun x -> TreeMap.find x !scc_index),
    DynArray.to_array (DynArray.map [] (fun s -> TreeSet.fold (fun x -> fun l -> x::l) s []) topology),
    TreeSet.fold (fun x -> fun l -> x::l) !roots [])
 
@@ -481,8 +484,8 @@ method strongly_connected_components (*tgraph*) =
 			let temp = Array.make s [] in
 			List.iter subcompute topology.(r);
 			ns_iter (fun v -> ns_iter (fun w ->
-							if sccindex.(w) != r
-							then temp.(sccindex.(w)) <- (v, w)::temp.(sccindex.(w))
+							if sccindex w != r
+							then temp.(sccindex w) <- (v, w)::temp.(sccindex w)
 						    )
 						    (self#get_successors v)
 				  ) sccs.(r);
@@ -501,7 +504,7 @@ method attr_closure_inplace' (strategy: strategy) player region include_region i
   let todo = Queue.create () in
 
   let schedule_predecessors v = ns_iter (fun w -> if includeNode w then (
-                                                    message 3 (fun _ -> "    Scheduling node " ^ string_of_int w ^
+                                                    message 3 (fun _ -> "    Scheduling node " ^ nd_show w ^
                                                                         " for attractor check\n");
                                                     Queue.add w todo)
                                                     )
@@ -519,19 +522,19 @@ method attr_closure_inplace' (strategy: strategy) player region include_region i
     then let pl' = self#get_owner v in
 	 let ws = self#get_successors v in
          if pl'=player
-         then let w = ns_fold (fun b -> fun w -> if (not (includeNode w)) || (b > -1 || not (inattr w)) then b else w) (-1) ws in
-              if w > -1 then (message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is in the attractor because of " ^
-                                         string_of_int v ^ "->" ^ string_of_int w ^ "\n");
+         then let w = ns_fold (fun b -> fun w -> if (not (includeNode w)) || (b != nd_undef || not (inattr w)) then b else w) nd_undef ws in
+              if w != nd_undef then (message 3 (fun _ -> "    Node " ^ nd_show v ^ " is in the attractor because of " ^
+                                         nd_show v ^ "->" ^ nd_show w ^ "\n");
                               attr := ns_add v !attr;
                               if overwrite_strat || strategy#get v = nd_undef
                               then strategy#set v w;
                               schedule_predecessors v)
-              else message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is not (yet) found to be in the attractor\n")
+              else message 3 (fun _ -> "    Node " ^ nd_show v ^ " is not (yet) found to be in the attractor\n")
          else if ns_fold (fun b -> fun w -> b && (inattr w)) true ws
-              then (message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is in the attractor because all successors are so");
+              then (message 3 (fun _ -> "    Node " ^ nd_show v ^ " is in the attractor because all successors are so");
                     attr := ns_add v !attr;
                     schedule_predecessors v)
-              else message 3 (fun _ -> "    Node " ^ string_of_int v ^ " is not (yet) found to be in the attractor\n")
+              else message 3 (fun _ -> "    Node " ^ nd_show v ^ " is not (yet) found to be in the attractor\n")
   done;
   !attr
 
@@ -555,24 +558,24 @@ method induce_partialparitygame start =
 
 method induce_counting_partialparitygame start =
 	let counter = ref 0 in
-	let access = Array.make (self#size) false in
+	let access = ref TreeSet.empty_def in
 	let delta i =
-		if not access.(i) then (
-			access.(i) <- true;
+		if not (TreeSet.mem i !access) then (
+			access := TreeSet.add i !access;
 			incr counter
 		);
 		Enumerators.of_list (ns_nodes (self#get_successors i))
 	in
 	let data i =
-		if not access.(i) then (
-			access.(i) <- true;
+		if not (TreeSet.mem i !access) then (
+            access := TreeSet.add i !access;
 			incr counter
 		);
 		(self#get_priority i, self#get_owner i)
 	in
 	let desc i =
-		if not access.(i) then (
-			access.(i) <- true;
+		if not (TreeSet.mem i !access) then (
+            access := TreeSet.add i !access;
 			incr counter
 		);
 		self#get_desc i
@@ -603,7 +606,12 @@ method partially_solve_dominion (start: node) (partially_solve: partial_solver) 
 
 method partially_solve_game partially_solve =
 	let n = self#size in
-	let (_, delta, data, desc) = self#induce_partialparitygame 0 in
+	let nodeIdx = ref nd_undef in
+	self#iterate (fun i _ ->
+	    if (!nodeIdx = nd_undef && self#is_defined i)
+	    then nodeIdx := i
+	);
+	let (_, delta, data, desc) = self#induce_partialparitygame !nodeIdx in
 	let solution = new array_solution n in
 	let strategy = new array_strategy n in
 	let data' node =
@@ -629,10 +637,10 @@ method partially_solve_game partially_solve =
 			 	|   None -> ns_iter (fun x -> expand x f) (self#get_successors i)
 	in
 
-    for i = 0 to n - 1 do
+    self#iterate (fun i _ ->
         if (solution#get i != plr_undef) || (self#get_owner i = plr_undef) then ()
         else expand i (partially_solve (i, delta', data', desc))
-    done;
+    );
 
     (solution, strategy)
 
@@ -663,47 +671,6 @@ method number_of_strategies pl m =
   self#iterate (fun v -> fun (_,p,vs,_,_) -> if !n < m && p=pl then n := !n * (ns_size vs));
   min !n m
 
-method compute_priority_reach_array player =
-    let maxprspm = (self#get_max_prio_for (plr_opponent player)) / 2 in
-    (* Dumb version (!)  *)
-    let rec calc_iter game  maxvalues =
-        let badPrio = game#get_max_prio_for (plr_opponent player) in
-        let goodPrio = game#get_max_prio_for player in
-        if badPrio >= 0 then (
-            let tmp_nodes = ref ns_empty in
-            if goodPrio > badPrio then
-                game#iterate (fun i (pr, _, _, _, _) ->
-                    if pr > badPrio then tmp_nodes := ns_add i !tmp_nodes
-                )
-            else (
-                let (sccs, sccindex, topology, roots): nodeset array * scc array * scc list array * scc list = game#strongly_connected_components in
-                let sccs: nodeset array = sccs in
-                let sccentry = Array.make (Array.length sccs) (-1) in
-                let rec count_nodes r =
-                	if sccentry.(r) = -1 then (
-                        List.iter count_nodes topology.(r);
-                        sccentry.(r) <- List.fold_left (fun a i -> a + sccentry.(i)) 0 topology.(r);
-                        ns_iter (fun v ->
-                        	if game#get_priority v = badPrio then sccentry.(r) <- 1 + sccentry.(r)
-                        ) sccs.(r)
-					)
-                in
-                List.iter count_nodes roots;
-                game#iterate (fun i (pr, _, _, _, _) ->
-                    if pr >= 0 then (maxvalues.(i)).(badPrio / 2) <- 1 + sccentry.(sccindex.(i));
-                    if pr = badPrio then tmp_nodes := ns_add i !tmp_nodes
-                )
-            );
-            game#remove_nodes !tmp_nodes;
-            calc_iter game maxvalues
-        )
-    in
-    let game = self#copy in
-    let maxvalues = Array.make_matrix (game#size) (1 + maxprspm) 1 in
-    calc_iter game maxvalues;
-    maxvalues
-
-      
 (********** DYNAMIC PARITYGAME **********)
 method to_dynamic_paritygame =
 	let graph = DynamicGraph.make () in
