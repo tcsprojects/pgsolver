@@ -204,56 +204,56 @@ class virtual paritygame : object('self)
       @param int position of wanted node
       @return node if it exists
   *)
-  method virtual get_node : int -> (priority * player * nodeset * nodeset * string option)
+  method virtual get_node : node -> (priority * player * nodeset * nodeset * string option)
 
   (** Gets priority of given node.
 
       @param node node which priority is wanted
       @return priority of given node 
   *)
-  method virtual get_priority : node -> priority
+  method get_priority : node -> priority
                                           
   (** Gets owner of given node. Owner means the  player which is allowed to choose on this node.
 
       @param node node which owner is wanted
       @return owner of this node
   *)
-  method virtual get_owner : node -> player
+  method get_owner : node -> player
 
   (** Gets sucessors of given node.
 
       @param node node which sucessors are wanted
       @return set of sucessors of given node
   *)
-  method virtual get_successors : node -> nodeset
+  method get_successors : node -> nodeset
                                             
   (** Gets predecessors of given node.
 
       @param node node which predecessors are wanted
       @return set of predecessors of given node
   *)
-  method virtual get_predecessors : node -> nodeset
+  method get_predecessors : node -> nodeset
                                               
   (** Gets description of given node as string option.
 
       @param node node which descr is wanted
       @return description of given node as string option
   *)
-  method virtual get_desc : node -> string option
+  method get_desc : node -> string option
                                            
   (** Gets description of given node as string.
 
       @param node node which desc is wanted
       @return description of given node as string
   *)
-  method virtual get_desc' : node -> string
+  method get_desc' : node -> string
 
   (** Gets node from given description as string option.
 
       @param stringopt description to look for
       @return node with looked for descr
   *)
-  method virtual find_desc : string option -> node
+  method find_desc : string option -> node
                                  
   (** Checks if the given node is defined. Means if it exists in this paritygame.
 
@@ -266,7 +266,7 @@ class virtual paritygame : object('self)
 
       @return string representation of this game
   *)
-  method virtual format_game : string
+  method format_game : string
                                  
 
   (********** SETTERS **********)
@@ -275,40 +275,40 @@ class virtual paritygame : object('self)
       @param int position where node should be positioned
       @param node node to be set
   *)
-  method virtual set_node' : int -> (priority * player * nodeset * nodeset * string option) -> unit
+  method virtual set_node' : node -> (priority * player * nodeset * nodeset * string option) -> unit
 
   (** Sets node at given position with given properties.
       Parameters are typical node properties.
   *)
-  method virtual set_node : int -> priority -> player -> nodeset -> nodeset -> string option -> unit
+  method set_node : node -> priority -> player -> nodeset -> nodeset -> string option -> unit
                                                                                                   
   (** Sets priority for given node.
 
       @param node node which priority should be set
       @param priorirty priority to be set to given node
   *)
-  method virtual set_priority : node -> priority -> unit
+  method set_priority : node -> priority -> unit
 
   (** Sets owner for given node. Owener means the player which is allowed to choose on this node.
 
       @param node node which owner should be set
       @param owner player which should be owner of this node
   *)
-  method virtual set_owner : node -> player -> unit
+  method set_owner : node -> player -> unit
 
   (** Sets description for given node from string option.
 
       @param node node which desc should be set
       @param stringopt descr for given node
   *)
-  method virtual set_desc : node -> string option -> unit
+  method set_desc : node -> string option -> unit
 
   (** Sets description for given node from string.
 
       @param node node which descr should be set
       @param string description for given node
   *)
-  method virtual set_desc' : node -> string -> unit
+  method set_desc' : node -> string -> unit
 
   (** Adds edge between two nodes.
 
@@ -559,7 +559,7 @@ class virtual paritygame : object('self)
       @param scc list roots
       @return hashtable of connectors
    *)
-  method sccs_compute_connectors : nodeset array * (node -> scc) * scc list array * scc list -> (scc * scc, (scc * scc) list) Hashtbl.t
+  method sccs_compute_connectors : nodeset array * (node -> scc) * scc list array * scc list -> (scc * scc, (node * node) list) Hashtbl.t
 
 
   (********** ATTRACTOR CLOSURE **********) 

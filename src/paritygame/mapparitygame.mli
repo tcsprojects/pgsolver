@@ -22,7 +22,7 @@ class map_pg :
                                                                                                                                                      
 
     (********** GETTERS **********)                                                                                                                                                 
-    method get_node : int -> Pgpriority.priority * Pgplayer.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option
+    method get_node : Pgnode.node -> Pgpriority.priority * Pgplayer.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option
 
     method get_priority : Pgnode.node -> Pgpriority.priority
 
@@ -82,9 +82,9 @@ class map_pg :
 
                          
     (********** SETTERS **********)
-    method set_node' : int -> Pgpriority.priority * Pgplayer.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option -> unit
+    method set_node' : Pgnode.node -> Pgpriority.priority * Pgplayer.player * Pgnodeset.nodeset * Pgnodeset.nodeset * string option -> unit
 
-    method set_node : int -> Pgpriority.priority -> Pgplayer.player -> Pgnodeset.nodeset -> Pgnodeset.nodeset -> string option -> unit
+    method set_node : Pgnode.node -> Pgpriority.priority -> Pgplayer.player -> Pgnodeset.nodeset -> Pgnodeset.nodeset -> string option -> unit
                                                 
     method set_priority : Pgnode.node -> Pgpriority.priority -> unit
 
@@ -138,7 +138,7 @@ class map_pg :
     method strongly_connected_components : Pgnodeset.nodeset array * (Pgnode.node -> Paritygame.scc)* Paritygame.scc list array * Paritygame.scc list
 
     method sccs_compute_connectors : Pgnodeset.nodeset array * (Pgnode.node -> Paritygame.scc) * Paritygame.scc list array * Paritygame.scc list ->
-                                     (Paritygame.scc * Paritygame.scc, (Paritygame.scc * Paritygame.scc) list) Hashtbl.t
+                                     (Paritygame.scc * Paritygame.scc, (Pgnode.node * Pgnode.node) list) Hashtbl.t
 
 
     (********** ATTRACTOR CLOSURE **********) 

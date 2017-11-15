@@ -133,25 +133,76 @@ method virtual map : (node -> (priority * player * nodeset * nodeset * string op
 method virtual map2 : 'a. (node -> (priority * player * nodeset * nodeset * string option) -> 'a) -> 'a array
 
 (********** GETTERS **********)
-method virtual get_node : int -> (priority * player * nodeset * nodeset * string option)
-method virtual get_priority : node -> priority
-method virtual get_owner : node -> player
-method virtual get_successors : node -> nodeset
-method virtual get_predecessors : node -> nodeset
-method virtual get_desc : node -> string option
-method virtual get_desc' : node -> string
-method virtual find_desc : string option -> node
+method virtual get_node : node -> (priority * player * nodeset * nodeset * string option)
+
+  method get_priority i =
+    let (pr,_,_,_,_) = self#get_node i in pr
+
+  method get_owner i =
+    let (_,pl,_,_,_) = self#get_node i in pl
+
+  method get_successors i =
+    let (_,_,succs,_,_) = self#get_node i in succs
+
+  method get_predecessors i =
+    let (_,_,_,preds,_) = self#get_node i in preds
+
+  method get_desc i =
+    let (_,_,_,_,desc) = self#get_node i in desc
+
+  method get_desc' i =
+    match self#get_desc i with
+      None -> ""
+    | Some s -> s
+
+
+method find_desc desc =
+  let nd = ref nd_undef in
+  self#iterate (fun i (_,_,_,_,desc') ->
+    if desc' = desc then nd := i
+  );
+  !nd
+
 method virtual is_defined : node -> bool
-method virtual format_game : string
+
+
+  method format_game =
+    let format_node i (p,pl,ws,_,_) =
+     if p <> -1 then nd_show i ^ ":" ^ string_of_int p ^ "," ^
+                                                                   plr_show pl ^ ",{" ^
+                                                                   String.concat "," (List.map nd_show (ns_nodes ws))
+                                                                   ^ "}"
+                                                              else ""
+    in
+    let l = ref [] in
+    self#iterate (fun i n ->
+      let s = format_node i n in
+      if (s != "") then l := s::!l
+    );
+    "[" ^ String.concat ";" (List.rev !l) ^ "]"
 
                                
 (********** SETTERS **********)
-method virtual set_node' : int ->(priority * player * nodeset * nodeset * string option) -> unit
-method virtual set_node : int -> priority -> player -> nodeset -> nodeset -> string option -> unit
-method virtual set_priority : node -> priority -> unit
-method virtual set_owner : node -> player -> unit
-method virtual set_desc : node -> string option -> unit
-method virtual set_desc' : node -> string -> unit
+method virtual set_node' : node ->(priority * player * nodeset * nodeset * string option) -> unit
+
+  method set_node i pr pl succs preds desc =
+    self#set_node' i (pr, pl, succs, preds, desc)
+
+  method set_priority i pr =
+    let (_, pl, succs, preds, desc) = self#get_node i in
+    self#set_node i pr pl succs preds desc
+
+  method set_owner i pl =
+    let (pr, _, succs, preds, desc) = self#get_node i in
+    self#set_node i pr pl succs preds desc
+
+  method set_desc i desc =
+    let (pr, pl, succs, preds, _) = self#get_node i in
+    self#set_node i pr pl succs preds desc
+
+  method set_desc' i desc =
+    self#set_desc i (if desc = "" then None else Some desc)
+
 method virtual add_edge : node -> node -> unit
 method virtual del_edge : node -> node -> unit
 method virtual remove_nodes : nodeset -> unit
@@ -171,10 +222,9 @@ method virtual subgame_by_node_filter : (node -> bool) -> 'self * (node -> node)
 method print =
 	let n = self#size in
 	print_string ("parity " ^ string_of_int n ^ ";\n");
-	for i = 0 to n - 1 do
-	  let (pr, pl, succs, _, desc) = self#get_node i in
+	self#iterate (fun i (pr, pl, succs, _, desc) ->
 	  if pr >= 0 && pl != plr_undef then (
-            print_int i;
+            print_string (nd_show i);
             print_char ' ';
             print_int pr;
             print_char ' ';
@@ -189,8 +239,8 @@ method print =
             print_char ';';
             print_newline ()
            )
-        done
-          
+    )
+
 method to_dotty (solution: solution) (strategy: strategy) h =
   let encode i = "N" ^ (nd_show i) in
 
@@ -675,22 +725,22 @@ method number_of_strategies pl m =
 method to_dynamic_paritygame =
 	let graph = DynamicGraph.make () in
 	self#iterate (fun i (pr, pl, _, _, desc) ->
-		DynamicGraph.add_node i (pr, pl, desc) graph
+		DynamicGraph.add_node (nd_to_int i) (pr, pl, desc) graph
 	);
 	self#iterate (fun i (_, _, tr, _, _) ->
-		ns_iter (fun j -> DynamicGraph.add_edge i j graph) tr
+		ns_iter (fun j -> DynamicGraph.add_edge (nd_to_int i) (nd_to_int j) graph) tr
 	);
 	graph
 
 method to_dynamic_paritygame_by_strategy (strat: strategy) =
 	let graph = DynamicGraph.make () in
 	self#iterate (fun i (pr, pl, _, _, desc) ->
-		DynamicGraph.add_node i (pr, pl, desc) graph
+		DynamicGraph.add_node (nd_to_int i) (pr, pl, desc) graph
 	);
 	self#iterate (fun i (_, _, tr, _, _) ->
 		if strat#get i = nd_undef
-		then ns_iter (fun j -> DynamicGraph.add_edge i j graph) tr
-		else DynamicGraph.add_edge i (strat#get i) graph
+		then ns_iter (fun j -> DynamicGraph.add_edge (nd_to_int i) (nd_to_int j) graph) tr
+		else DynamicGraph.add_edge (nd_to_int i) (nd_to_int (strat#get i)) graph
 	);
 	graph
 

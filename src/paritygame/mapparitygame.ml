@@ -51,66 +51,12 @@ object (self : 'self)
   method get_node i =
     TreeMap.find i nodes
 
-  method get_priority i =
-    let (pr,_,_,_,_) = TreeMap.find i nodes in pr
-
-  method get_owner i =
-    let (_,pl,_,_,_) = TreeMap.find i nodes in pl
-
-  method get_successors i =
-    let (_,_,succs,_,_) = TreeMap.find i nodes in succs
-
-  method get_predecessors i =
-    let (_,_,_,preds,_) = TreeMap.find i nodes in preds
-
-  method get_desc i =
-    let (_,_,_,_,desc) = TreeMap.find i nodes in desc
-
-  method get_desc' i =
-    match self#get_desc i with
-      None -> ""
-    | Some s -> s
-
   method is_defined v =
     TreeMap.mem v nodes
-                                          
-  method find_desc desc =
-    OptionUtils.get_some (TreeMap.fold (fun i (_,_,_,_,desc') a ->
-        if a = None && desc' = desc then Some i else None
-    ) nodes None)
-
-  method format_game =
-    "[" ^
-  String.concat ";"
-                             (List.map (fun (i, (p,(pl : player),ws,_,_)) ->
-                                                    string_of_int i ^ ":" ^ string_of_int p ^ "," ^
-                                                              plr_show pl ^ ",{" ^
-                                                              String.concat "," (List.map string_of_int (ns_nodes ws))
-                                                              ^ "}"
-                                                         ) (TreeMap.pairs nodes))
-  ^ "]"
 
   (********** SETTERS **********)
   method set_node' i node =
     nodes <- TreeMap.add i node nodes
-
-  method set_node i pr pl succs preds desc =
-    self#set_node' i (pr, pl, succs, preds, desc)
-
-  method set_priority i pr =
-    let (_, pl, succs, preds, desc) = self#get_node i in
-    self#set_node i pr pl succs preds desc
-
-  method set_owner i pl =
-    let (pr, _, succs, preds, desc) = self#get_node i in
-    self#set_node i pr pl succs preds desc
-
-  method set_desc i desc =
-    let (pr, pl, succs, preds, _) = self#get_node i in
-    self#set_node i pr pl succs preds desc
-
-  method set_desc' i desc =
-    self#set_desc i (if desc = "" then None else Some desc)
 
   method add_edge v u =
     nodes <- add_edge_in_node_map nodes v u

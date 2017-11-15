@@ -14,10 +14,10 @@ open Pgpriority;;
  *                          TOOLS                             *
  **************************************************************)
 let add_edge_in_node_array array predecessor successor =
-  let (prioPred, ownerPred, successorsPred, predecessorsPred, descPred) = Array.get array predecessor in
-  Array.set array predecessor (prioPred, ownerPred, (ns_add successor successorsPred), predecessorsPred, descPred);
-  let (prioSucc, ownerSucc, successorsSucc, predecessorsSucc, descSucc) = Array.get array successor in
-  Array.set array successor (prioSucc, ownerSucc, successorsSucc, (ns_add predecessor predecessorsSucc), descSucc);;
+  let (prioPred, ownerPred, successorsPred, predecessorsPred, descPred) = Array.get array (nd_to_int predecessor) in
+  Array.set array (nd_to_int predecessor) (prioPred, ownerPred, (ns_add successor successorsPred), predecessorsPred, descPred);
+  let (prioSucc, ownerSucc, successorsSucc, predecessorsSucc, descSucc) = Array.get array (nd_to_int successor) in
+  Array.set array (nd_to_int successor) (prioSucc, ownerSucc, successorsSucc, (ns_add predecessor predecessorsSucc), descSucc);;
 
 
 
@@ -39,7 +39,8 @@ object (self : 'self)
                           
   (********** GENERAL **********)    
   method private init f =
-    for i=0 to self#size-1 do
+    for i = 0 to self#size - 1 do
+      let i = int_to_nd i in
       let (pr, pl, succs, name) = f i in
            self#set_priority i pr;
            self#set_owner i pl;
@@ -56,6 +57,7 @@ object (self : 'self)
 
   method iterate f =
     for i=0 to (self#size) - 1 do
+      let i = int_to_nd i in
       if self#is_defined i then f i (self#get_node i)
     done
 
@@ -63,77 +65,24 @@ object (self : 'self)
     self#iterate(fun v -> fun (_,_,succs,_,_) -> ns_iter (fun w -> f v w) succs)
 
   method map f =
-    let newNodes = Array.mapi f nodes in
+    let newNodes = Array.mapi (fun i -> f (int_to_nd i)) nodes in
     {<nodes = newNodes>}
 
   (*see interface declaration *)
   method map2 =
-    fun f -> Array.mapi f nodes
+    fun f -> Array.mapi (fun i -> f (int_to_nd i)) nodes
 
                         
   (********** GETTERS **********)
   method get_node i =
-    nodes.(i)
+    nodes.(nd_to_int i)
 
-  method get_priority i =
-    let (pr,_,_,_,_) = nodes.(i) in pr
-                                 
-  method get_owner i =
-    let (_,pl,_,_,_) = nodes.(i) in pl
-
-  method get_successors i =
-    let (_,_,succs,_,_) = nodes.(i) in succs
-
-  method get_predecessors i =
-    let (_,_,_,preds,_) = nodes.(i) in preds
-
-  method get_desc i =
-    let (_,_,_,_,desc) = nodes.(i) in desc
-
-  method get_desc' i =
-    match self#get_desc i with
-      None -> ""
-    | Some s -> s
-
-  method find_desc desc =
-    ArrayUtils.find (fun (_,_,_,_,desc') -> desc = desc') nodes
-                    
   method is_defined v =
-    let (p,_,_,_,_) = nodes.(v) in p >= 0
-                                          
-  method format_game =
-    "[" ^
-  String.concat ";"
-                (List.filter (fun s -> s <> "")
-                             (Array.to_list (Array.mapi (fun i -> fun (p,(pl : player),ws,_,_) ->
-                                              if p <> -1 then string_of_int i ^ ":" ^ string_of_int p ^ "," ^
-                                                              plr_show pl ^ ",{" ^
-                                                              String.concat "," (List.map string_of_int (ns_nodes ws))
-                                                              ^ "}"
-                                                         else "") nodes)))
-  ^ "]"
+    let (p,_,_,_,_) = nodes.(nd_to_int v) in p >= 0
 
   (********** SETTERS **********)
   method set_node' i node =
-    nodes.(i) <- node
-
-  method set_node i pr pl succs preds desc =
-    self#set_node' i (pr, pl, succs, preds, desc)
-
-  method set_priority i pr =
-    let (_, pl, succs, preds, desc) = self#get_node i in
-    self#set_node i pr pl succs preds desc
-
-  method set_owner i pl =
-    let (pr, _, succs, preds, desc) = self#get_node i in
-    self#set_node i pr pl succs preds desc
-
-  method set_desc i desc =
-    let (pr, pl, succs, preds, _) = self#get_node i in
-    self#set_node i pr pl succs preds desc
-
-  method set_desc' i desc =
-    self#set_desc i (if desc = "" then None else Some desc)
+    nodes.(nd_to_int i) <- node
 
   method add_edge v u =
     add_edge_in_node_array nodes v u
