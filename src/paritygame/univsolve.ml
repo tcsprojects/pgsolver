@@ -13,6 +13,7 @@ open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
 open Pgstrategy;;
+open Arrayparitygame;;
 open Pgnode;;
 
 
@@ -876,7 +877,7 @@ let universal_solve_trivial verb_level game =
 
 
 let compute_winning_nodes verb_level game strat pl =
-	let sol = fst (universal_solve_trivial verb_level (game#subgame_by_strat_pl strat pl)) in
+	let sol = fst (universal_solve_trivial verb_level (game#subgame_by_strat_pl (new array_pg game#size) strat pl)) in
 	let l = ref [] in
 	sol#iter (fun i plr ->
 	    if plr = pl then l := i::!l

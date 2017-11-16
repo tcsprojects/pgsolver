@@ -7,6 +7,7 @@ open Pgnode;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
+open Arrayparitygame;;
 open Pgsolution;;
 open Pgstrategy;;
 
@@ -73,7 +74,7 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 			if game#get_owner i = pl	then strat'#set i (strat#get i);
 			if sol#get i != pl then badnodes := ns_add i !badnodes
 		done;
-		let game' = game#subgame_by_strat strat' in
+		let game' = game#subgame_by_strat (new array_pg game#size) strat' in
 		game'#remove_nodes !badnodes;
 		let op = plr_opponent pl in
 		let (sol', strat'') = compute_winning_n game' op in

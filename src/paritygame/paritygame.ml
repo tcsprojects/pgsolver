@@ -210,7 +210,14 @@ method virtual remove_edges : (node * node) list -> unit
 
 
 (********** SUBGAME **********)
-method virtual subgame_by_edge_pred : (node -> node -> bool) -> 'self
+  method subgame_by_edge_pred (subgame: paritygame) pred =
+    self#iterate (fun i (pr, pl, succs, _, desc) ->
+        let (_, _, currSucc, currPred, _) = subgame#get_node i in
+        subgame#set_node' i (pr, pl, currSucc, currPred, desc);
+        ns_iter (fun j -> if pred i j then subgame#add_edge i j) succs
+    );
+    subgame
+
 method virtual subgame_by_node_pred : (node -> bool) -> 'self
 method virtual subgame_by_list : nodeset -> 'self * (node -> node) * (node -> node)
 method virtual subgame_by_node_filter : (node -> bool) -> 'self * (node -> node) * (node -> node)
@@ -390,10 +397,10 @@ method collect_max_parity_nodes =
 
                                
 (********** SUBGAME **********)
-method subgame_by_strat (strat: strategy) = self#subgame_by_edge_pred (fun x y -> strat#get x = nd_undef || strat#get x = y)
+method subgame_by_strat game (strat: strategy) = self#subgame_by_edge_pred game (fun x y -> strat#get x = nd_undef || strat#get x = y)
                                                           
-method subgame_by_strat_pl (strat: strategy) pl =
-   self#subgame_by_edge_pred (fun i j ->
+method subgame_by_strat_pl game (strat: strategy) pl =
+   self#subgame_by_edge_pred game (fun i j ->
 		let pl' = self#get_owner i in
 		pl != pl' || strat#get i = j
      )

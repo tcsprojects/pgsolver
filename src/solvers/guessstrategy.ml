@@ -18,6 +18,7 @@ open Pgplayer;;
 open Pgpriority;;
 open Pgstrategy;;
 open Pgnode;;
+open Arrayparitygame;;
 
 
 let solve game =
@@ -36,8 +37,8 @@ let solve game =
 	let heuristic_solve game =
 		let s0 = generate_strat game plr_Even in
 		let s1 = generate_strat game plr_Odd in
-		let (sol0, _) = universal_solve_trivial verbosity_level_default (game#subgame_by_strat s0) in
-		let (sol1, _) = universal_solve_trivial verbosity_level_default (game#subgame_by_strat s1) in
+		let (sol0, _) = universal_solve_trivial verbosity_level_default (game#subgame_by_strat (new array_pg game#size) s0) in
+		let (sol1, _) = universal_solve_trivial verbosity_level_default (game#subgame_by_strat (new array_pg game#size) s1) in
 		let sol = sol_init game (fun i -> if sol0#get i = plr_Even then plr_Even else if sol1#get i = plr_Odd then plr_Odd else plr_undef) in
 		let strat = str_init game (fun i -> if sol0#get i = plr_Even then s0#get i else if sol1#get i = plr_Odd then s1#get i else nd_undef) in
 		(sol, strat)

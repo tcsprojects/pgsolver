@@ -13,6 +13,7 @@ open Pgnode;;
 open Pgplayer;;
 open Pgsolution;;
 open Pgstrategy;;
+open Arrayparitygame;;
 (* open Pgprofiling;; *)
 
 module CommandLine =
@@ -291,7 +292,7 @@ let _ =
 
 	  if !make_dotty_graph then game#to_dotty_file solution strategy !dotty_file;
 
-	  if !format_game then (game#subgame_by_strat strategy)#print;
+	  if !format_game then (game#subgame_by_strat (new array_pg game#size) strategy)#print;
 
 	  if !solonly then Paritygame.print_solution_strategy_parsable solution strategy;
 

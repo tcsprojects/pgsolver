@@ -11,6 +11,7 @@ open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
 open Pgstrategy;;
+open Arrayparitygame;;
 
 
 let solve' (game: paritygame) =
@@ -290,7 +291,7 @@ let solve' (game: paritygame) =
     		Array.fill valu 0 n (-1, DescRelSet.empty, 0);
     		valuation valu (Graph.subGraphByEdgePred ggraph selPred);
     		if !verbosity > 2 then (
-    			let g = game#subgame_by_edge_pred selPred in
+    			let g = game#subgame_by_edge_pred (new array_pg game#size) selPred in
     			for i = 0 to n - 1 do
     				g#set_desc i (Some ((string_of_int i) ^ " : " ^ formatvaluentry valu.(i)))
     			done;

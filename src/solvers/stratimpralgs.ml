@@ -17,6 +17,7 @@ open Pgpriority;;
 open Pgsolution;;
 open Pgstrategy;;
 open Pgnode;;
+open Arrayparitygame;;
 
 (* let array_max a less = ArrayUtils.max_elt (fun x y -> if less x y then -1 else 1) a *)
 let list_max a less = ListUtils.max_elt (fun x y -> if less x y then -1 else 1) a
@@ -482,7 +483,7 @@ let strategy_improvement (game: paritygame)
     let show_eval _ =
         if !verbosity > 2 then (
 
-            let g = game#subgame_by_edge_pred (fun u v -> (!strat)#get u = nd_undef || (!strat)#get u = v) in
+            let g = game#subgame_by_edge_pred (new array_pg game#size) (fun u v -> (!strat)#get u = nd_undef || (!strat)#get u = v) in
 	    game#iterate (fun i -> fun _ -> g#set_desc i (Some (string_of_int i ^ " : " ^ format_node_valuation (!valu).(i))));
  
 (*            msg_tagged_nl 3 (fun _ -> "\nMade valuation:\n" ^ g#to_sring ^ "\n"); *)
@@ -823,7 +824,7 @@ let mdplike_valuation game minprio strategy =
 		if (not finished.(i)) then failed := true;
 	done;
 	if (!failed) then (
-		let g = game#subgame_by_strat strategy in
+		let g = game#subgame_by_strat (new array_pg game#size) strategy in
 		g#iterate (fun i -> fun (_,_,_,_,d) -> g#set_desc i (Some ((OptionUtils.get_some d) ^ " - " ^ (if finished.(i) then "GOOD" else "BAD"))));
 		g#print;
 		failwith "failed";

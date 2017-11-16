@@ -11,6 +11,7 @@ open Tcsset;;
 open Pgnodeset;;
 open Pgplayer;;
 open Pgstrategy;;
+open Arrayparitygame;;
 
 let out s =
 	print_string s;
@@ -76,7 +77,7 @@ let _ =
 	
 	out "\n";
 	
-	let game' = game#subgame_by_strat sigma in
+	let game' = game#subgame_by_strat (new array_pg game#size) sigma in
 	
 	let rec helper game indent sccfilter =
 		let (sccs', _, topology', _) = game#strongly_connected_components in

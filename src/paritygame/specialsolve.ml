@@ -7,6 +7,7 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgpriority;;
 open Pgsolution;;
+open Arrayparitygame;;
 open Pgstrategy;;
 
 
@@ -324,7 +325,7 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
   
   
 let compute_winning_nodes_direct game strat pl =
-  let sol = fst (compute_winning_nodes_for_direct (game#subgame_by_strat strat) (plr_opponent pl)) in
+  let sol = fst (compute_winning_nodes_for_direct (game#subgame_by_strat (new array_pg game#size) strat) (plr_opponent pl)) in
   let l = ref [] in
   sol#iter (fun i -> fun pl' -> if pl' = pl then l := i::!l);
   !l;;

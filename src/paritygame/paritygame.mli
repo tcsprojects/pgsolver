@@ -344,7 +344,7 @@ class virtual paritygame : object('self)
       @param f function to specify edges
       @return subgame created by specified edges
   *)
-  method virtual subgame_by_edge_pred : (node -> node -> bool) -> 'self
+  method subgame_by_edge_pred : paritygame -> (node -> node -> bool) -> paritygame
 
   (** Creates a subgame from specified nodes. This means the subgame includes all nodes specified by the given function.
 
@@ -523,7 +523,7 @@ class virtual paritygame : object('self)
       @param strategy strategy to specify nodes
       @return subgame specified by given strategy
   *)
-  method subgame_by_strat : strategy -> 'self
+    method subgame_by_strat : paritygame -> Pgstrategy.strategy -> paritygame
 
   (** Creates a subgame from strategy + player. This means the subgame includes all nodes specified by the given strategy
       or owned by the opponent player of the given player.
@@ -532,7 +532,8 @@ class virtual paritygame : object('self)
       @param player player which opponents nodes will be included
       @return subgame specified by given strategy and player
   *)
-  method subgame_by_strat_pl : strategy -> player -> 'self
+
+    method subgame_by_strat_pl : paritygame -> Pgstrategy.strategy -> Pgplayer.player -> paritygame
                                                                                                                                  
 
   (********** DOMINION **********)

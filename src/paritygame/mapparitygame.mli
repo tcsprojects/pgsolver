@@ -1,4 +1,5 @@
 open Tcsset;;
+open Paritygame;;
 
 class map_pg :
   object ('self)
@@ -116,7 +117,7 @@ class map_pg :
 
 
     (********** SUBGAME **********)
-    method subgame_by_edge_pred : (Pgnode.node -> Pgnode.node -> bool) -> 'self
+    method subgame_by_edge_pred : paritygame -> (Pgnode.node -> Pgnode.node -> bool) -> paritygame
 
     method subgame_by_node_pred : (Pgnode.node -> bool) -> 'self
 
@@ -124,9 +125,9 @@ class map_pg :
 
     method subgame_by_node_filter : (Pgnode.node -> bool) -> 'self * (Pgnode.node -> Pgnode.node) * (Pgnode.node -> Pgnode.node)
 
-    method subgame_by_strat : Pgstrategy.strategy -> 'self
+    method subgame_by_strat : paritygame -> Pgstrategy.strategy -> paritygame
 
-    method subgame_by_strat_pl : Pgstrategy.strategy -> Pgplayer.player -> 'self
+    method subgame_by_strat_pl : paritygame -> Pgstrategy.strategy -> Pgplayer.player -> paritygame
 
 
     (********** DOMINION **********)

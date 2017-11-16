@@ -81,15 +81,6 @@ object (self : 'self)
 
 
   (********** SUBGAME **********)
-  method subgame_by_edge_pred pred =
-    let newNodes = TreeMap.fold (fun k (pr, plr, _, _, desc) ->
-      TreeMap.add k (pr, plr, ns_empty, ns_empty, desc)
-    ) nodes (TreeMap.empty_def) in
-    let newNodes = TreeMap.fold (fun i (_, _, succ, _, _) newNodes ->
-      ns_fold (fun newNodes j -> if pred i j then add_edge_in_node_map newNodes i j else newNodes) newNodes succ
-    ) nodes newNodes in
-    {<nodes = newNodes>}
-
   method subgame_by_node_pred pred =
     let newNodes = TreeMap.fold (fun k (pr, plr, _, _, desc) newNodes ->
       if pred k then TreeMap.add k (pr, plr, ns_empty, ns_empty, desc) newNodes else newNodes

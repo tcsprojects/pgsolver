@@ -1,3 +1,5 @@
+open Paritygame
+
 (** Interface for array paritygame.
     For further information on each class method see paritygame.mli 
  *)
@@ -147,7 +149,7 @@ class array_pg : ?initFunc:(Pgnode.node ->Pgpriority.priority * Pgplayer.player 
 
 
     (********** SUBGAME **********)
-    method subgame_by_edge_pred : (Pgnode.node -> Pgnode.node -> bool) -> 'self
+    method subgame_by_edge_pred : paritygame -> (Pgnode.node -> Pgnode.node -> bool) -> paritygame
 
     method subgame_by_node_pred : (Pgnode.node -> bool) -> 'self
 
@@ -155,9 +157,9 @@ class array_pg : ?initFunc:(Pgnode.node ->Pgpriority.priority * Pgplayer.player 
 
     method subgame_by_node_filter : (Pgnode.node -> bool) -> 'self * (Pgnode.node -> Pgnode.node) * (Pgnode.node -> Pgnode.node)
 
-    method subgame_by_strat : Pgstrategy.strategy -> 'self
+    method subgame_by_strat : paritygame -> Pgstrategy.strategy -> paritygame
 
-    method subgame_by_strat_pl : Pgstrategy.strategy -> Pgplayer.player -> 'self
+    method subgame_by_strat_pl : paritygame -> Pgstrategy.strategy -> Pgplayer.player -> paritygame
 
 
     (********** DOMINION **********)

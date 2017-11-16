@@ -108,14 +108,6 @@ object (self : 'self)
 
 
   (********** SUBGAME **********)
-  method subgame_by_edge_pred pred =
-    let newNodes = Array.make self#size (-1, plr_undef, ns_empty, ns_empty, None)  in
-    for i = 0 to self#size - 1 do
-      let (_,_,currSucc, currPred,_) = Array.get newNodes i in
-      Array.set newNodes i ((self#get_priority i), (self#get_owner i), currSucc, currPred, (self#get_desc i));
-      ns_iter (fun j -> if pred i j then add_edge_in_node_array newNodes i j) (self#get_successors i)
-    done;
-    {<nodes = newNodes>}
 
   method subgame_by_node_pred pred =
     let newNodes = Array.make self#size (-1, plr_undef, ns_empty, ns_empty, None)  in

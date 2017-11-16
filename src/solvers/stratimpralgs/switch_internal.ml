@@ -11,6 +11,7 @@ open Pgplayer;;
 open Pgpriority;;
 open Pgstrategy;;
 open Pgnode;;
+open Arrayparitygame;;
 
 let list_upfront l i =
 	let rec tile f t =
@@ -107,7 +108,7 @@ let improvement_policy_learn_cycles sub_policy game node_total_ordering (cycles,
         	else best_decision_by_valuation_ordering game node_total_ordering valu i
         )
     in
-    let game' = game#subgame_by_edge_pred (fun i j -> combined_strategy#get i = j) in
+    let game' = game#subgame_by_edge_pred (new array_pg game#size) (fun i j -> combined_strategy#get i = j) in
     let (sccs, sccindex, topology, roots) = game'#strongly_connected_components in
     let cycles = ref cycles in
     let normalize l =
@@ -161,7 +162,7 @@ let improvement_policy_level game node_total_ordering data old_strategy valu =
 		let running = ref true in
 		let changed = ref false in
 		while !running do
-			  let graph = game#subgame_by_edge_pred (fun v w ->
+			  let graph = game#subgame_by_edge_pred (new array_pg game#size) (fun v w ->
 					let pl = game#get_owner  v in
 					(pl = plr_Even) || (counter_strategy#get v = w && !next_counter#get v = w)
 				) in 
@@ -342,7 +343,7 @@ let improvement_policy_cycle_enforce game node_total_ordering (cycles, idx) old_
 				else best_decision_by_valuation_ordering game node_total_ordering valu i
 			)
 		in
-		let game' = game#subgame_by_edge_pred (fun i j -> combined_strategy#get i = j) in
+		let game' = game#subgame_by_edge_pred (new array_pg game#size) (fun i j -> combined_strategy#get i = j) in
 		let (sccs, sccindex, topology, roots) = game'#strongly_connected_components in
 		Array.iteri (fun i scc ->
 			if (ns_size scc > 1) && (topology.(i) = []) then (

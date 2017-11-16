@@ -5,6 +5,7 @@ open Pgnodeset;;
 open Pgplayer;;
 open Pgsolution;;
 open Pgnode;;
+open Arrayparitygame;;
 
   
 module CommandLine =
@@ -42,7 +43,7 @@ let _ =
 	
   let rec work i =
 		if (i >= game#size ) then (
-			let game2 = game#subgame_by_strat strat in
+			let game2 = game#subgame_by_strat (new array_pg game#size) strat in
 			let (sol2, _) = solve game2 in
 			let good = ref true in
 			for j = 0 to game#size  - 1 do

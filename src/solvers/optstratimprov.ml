@@ -64,13 +64,13 @@ let format_estentry = function PosInfty -> "+oo" | Escape esc ->
 	ListUtils.format (fun (i, v) -> string_of_int i ^ ":" ^ string_of_int v) (List.filter (fun (_, v) -> v != 0) (Array.to_list (Array.mapi (fun i v -> (i + 1, v)) esc)))
 
 let improvement_arena (game: paritygame) estimation =
-	game#subgame_by_edge_pred (fun u v ->
+	game#subgame_by_edge_pred (new array_pg game#size) (fun u v ->
 		compare estimation.(u) (add_est estimation.(v) (game#get_priority v)) <= 0
 	);;
 
 let zero_arena arena estimation =
 	let pred u v = compare estimation.(u) (add_est estimation.(v) (arena#get_priority v)) = 0 in
-	arena#subgame_by_edge_pred (fun u v -> let pl = arena#get_owner u in
+	arena#subgame_by_edge_pred (new array_pg arena#size) (fun u v -> let pl = arena#get_owner u in
 					       let delta = arena#get_successors u in
 					       (pred u v) && ((pl = plr_Odd) || (ns_forall (pred u) delta))
 	);;
