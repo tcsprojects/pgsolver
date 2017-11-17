@@ -346,13 +346,6 @@ class virtual paritygame : object('self)
   *)
   method subgame_by_edge_pred : paritygame -> (node -> node -> bool) -> paritygame
 
-  (** Creates a subgame from specified nodes. This means the subgame includes all nodes specified by the given function.
-
-      @param f function to specify nodes
-      @return subgame created by specified nodes
-  *)
-  method virtual subgame_by_node_pred : (node -> bool) -> 'self
-
   (** Create subgame induced and ordered by the nodes list.
 
       @param nodeset list to create subgame by

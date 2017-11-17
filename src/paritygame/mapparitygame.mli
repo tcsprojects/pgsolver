@@ -119,8 +119,6 @@ class map_pg :
     (********** SUBGAME **********)
     method subgame_by_edge_pred : paritygame -> (Pgnode.node -> Pgnode.node -> bool) -> paritygame
 
-    method subgame_by_node_pred : (Pgnode.node -> bool) -> 'self
-
     method subgame_by_list : Pgnodeset.nodeset -> 'self * (Pgnode.node -> Pgnode.node) * (Pgnode.node -> Pgnode.node)
 
     method subgame_by_node_filter : (Pgnode.node -> bool) -> 'self * (Pgnode.node -> Pgnode.node) * (Pgnode.node -> Pgnode.node)

@@ -109,18 +109,6 @@ object (self : 'self)
 
   (********** SUBGAME **********)
 
-  method subgame_by_node_pred pred =
-    let newNodes = Array.make self#size (-1, plr_undef, ns_empty, ns_empty, None)  in
-    for i = 0 to self#size - 1 do
-      if pred i then
-        begin
-          let (_,_,currSucc, currPred,_) = Array.get newNodes i in
-          Array.set newNodes i ((self#get_priority i), (self#get_owner i), currSucc, currPred, (self#get_desc i));
-          ns_iter (fun j -> add_edge_in_node_array newNodes i j) (self#get_successors i)
-        end
-    done;
-    {<nodes = newNodes>}
-
   method subgame_by_list nodeSetList  =
     let nodeSetListSize = ns_size nodeSetList in
     let newNodesArray = Array.make nodeSetListSize (-1, plr_undef, ns_empty, ns_empty, None) in
@@ -131,7 +119,7 @@ object (self : 'self)
     (*create mapping (oldPos -> newPos)*)
     let i = ref 0 in
     ns_iter (fun node ->
-        Hashtbl.add newPosTable node !i;
+        Hashtbl.add newPosTable node (int_to_nd !i);
         oldPosTable.(!i) <- node;
         i := !i+1
     ) nodeSetList;
@@ -148,7 +136,7 @@ object (self : 'self)
       (fun node -> let (prio,plr,succs,preds,desc) = self#get_node node in
                    Array.set newNodesArray !j (prio, plr, mapNodeSet succs, mapNodeSet preds, desc);
                    j := !j +1) nodeSetList;
-    ({<nodes = newNodesArray>}, Hashtbl.find newPosTable, fun i -> oldPosTable.(i))
+    ({<nodes = newNodesArray>}, Hashtbl.find newPosTable, fun i -> oldPosTable.(nd_to_int i))
 
   method subgame_by_node_filter pred =
     let map_to_sub = ref TreeMap.empty_def in
@@ -156,7 +144,7 @@ object (self : 'self)
 
     self#iterate (fun i _ ->
         if pred i then (
-            map_to_sub := TreeMap.add i (TreeMap.cardinal !map_to_game) !map_to_sub;
+            map_to_sub := TreeMap.add (nd_to_int i) (int_to_nd (TreeMap.cardinal !map_to_game)) !map_to_sub;
             map_to_game := TreeMap.add (TreeMap.cardinal !map_to_game) i !map_to_game
         )
     );
@@ -164,8 +152,8 @@ object (self : 'self)
         let j = TreeMap.find i !map_to_game in
         let li = ref [] in
         ns_iter (fun k ->
-            if (TreeMap.mem k !map_to_sub)
-            then li := (TreeMap.find k !map_to_sub) :: !li
+            if (TreeMap.mem (nd_to_int k) !map_to_sub)
+            then li := (TreeMap.find (nd_to_int k) !map_to_sub) :: !li
         ) (self#get_successors j);
         (self#get_priority j,
          self#get_owner j,
@@ -177,9 +165,9 @@ object (self : 'self)
       let (pr, pl, succs, name) = initFunc i in
       let (_,_,currSucc,currPred,_) = Array.get newNodes i in
       Array.set newNodes i (pr, pl, currSucc, currPred, name);
-      List.iter (fun w -> add_edge_in_node_array newNodes i w) succs
+      List.iter (fun w -> add_edge_in_node_array newNodes (int_to_nd i) w) succs
     done;
-    ({<nodes = newNodes>}, (fun i -> TreeMap.find i !map_to_sub), (fun i -> TreeMap.find i !map_to_game))      
+    ({<nodes = newNodes>}, (fun i -> TreeMap.find (nd_to_int i) !map_to_sub), (fun i -> TreeMap.find (nd_to_int i) !map_to_game))
 end;;
 
 
@@ -241,11 +229,11 @@ module Build(T: PGDescription) : (PGBuilder with type gamenode = T.gamenode ) =
 
 
     let encode v = try
-                     Encoding.find v !codes
+                     int_to_nd (Encoding.find v !codes)
                    with Not_found -> begin
                                        codes := Encoding.add v !next_code !codes;
                                        incr next_code;
-                                       !next_code - 1
+                                       int_to_nd (!next_code - 1)
                                      end
 
     let build_from_nodes vlist =

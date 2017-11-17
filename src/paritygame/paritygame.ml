@@ -218,7 +218,6 @@ method virtual remove_edges : (node * node) list -> unit
     );
     subgame
 
-method virtual subgame_by_node_pred : (node -> bool) -> 'self
 method virtual subgame_by_list : nodeset -> 'self * (node -> node) * (node -> node)
 method virtual subgame_by_node_filter : (node -> bool) -> 'self * (node -> node) * (node -> node)
 

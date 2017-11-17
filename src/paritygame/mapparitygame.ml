@@ -81,14 +81,6 @@ object (self : 'self)
 
 
   (********** SUBGAME **********)
-  method subgame_by_node_pred pred =
-    let newNodes = TreeMap.fold (fun k (pr, plr, _, _, desc) newNodes ->
-      if pred k then TreeMap.add k (pr, plr, ns_empty, ns_empty, desc) newNodes else newNodes
-    ) nodes (TreeMap.empty_def) in
-    let newNodes = TreeMap.fold (fun i (_, _, succ, _, _) newNodes ->
-      if pred i then ns_fold (fun newNodes j -> if pred j then add_edge_in_node_map newNodes i j else newNodes) newNodes succ else newNodes
-    ) nodes newNodes in
-    {<nodes = newNodes>}
 
   method subgame_by_list nodeSetList =
     let newNodes = ns_fold (fun newNodes v ->
@@ -103,9 +95,14 @@ object (self : 'self)
     ) newNodes nodeSetList in
     ({<nodes = newNodes>}, (fun v -> v), fun v -> v)
 
-
   method subgame_by_node_filter pred =
+    let newNodes = TreeMap.fold (fun k (pr, plr, _, _, desc) newNodes ->
+      if pred k then TreeMap.add k (pr, plr, ns_empty, ns_empty, desc) newNodes else newNodes
+    ) nodes (TreeMap.empty_def) in
+    let newNodes = TreeMap.fold (fun i (_, _, succ, _, _) newNodes ->
+      if pred i then ns_fold (fun newNodes j -> if pred j then add_edge_in_node_map newNodes i j else newNodes) newNodes succ else newNodes
+    ) nodes newNodes in
     let id (i: Pgnode.node) = i in
-    (self#subgame_by_node_pred pred, id, id)
+    ({<nodes = newNodes>}, id, id)
 
 end;;
