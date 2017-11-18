@@ -10,15 +10,16 @@ open Pgpriority;;
 open Arrayparitygame;;
 open Pgsolution;;
 open Pgstrategy;;
+open Tcsset;;
 
 type verifier = paritygame -> solution -> strategy -> (node list * string) option
 
 let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: strategy) compute_winning_n =
 	let build_cycle game (strategy: strategy) node =
-		let marker = Array.make (game#size) false in
+		let marker = ref TreeSet.empty_def in
 		let rec helper node =
-			if marker.(node) then [node] else (
-			     marker.(node) <- true;
+			if TreeSet.mem node !marker then [node] else (
+			     marker := TreeSet.add node !marker;
 				 if strategy#get node != nd_undef
 				 then node::(helper (strategy#get node))
 				 else node::(helper (ns_some (game#get_successors node)))
@@ -38,42 +39,49 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 
 	let n = game#size in
 
-	let rec sanity_check i =
-	  if i >= n then None else (
+	let sanity_check_node i =
 	    let pl = game#get_owner i in
 	    let delta = game#get_successors i in
 	    (* if sol.(i) < -1 || sol.(i) > 1
 			then Some ([i], "Solution for node " ^ string_of_int i ^ " is corrupt (" ^ string_of_int sol.(i) ^ ")")
 			else *)
 	    if (strat#get i != nd_undef && not (ns_elem (strat#get i) delta))
-	    then Some ([i], "Strategy for node " ^ string_of_int i ^ " is corrupt (" ^ nd_show (strat#get i) ^ ")")
+	    then Some ([i], "Strategy for node " ^ nd_show i ^ " is corrupt (" ^ nd_show (strat#get i) ^ ")")
 	    else if sol#get i = plr_undef
 	    then if strat#get i != nd_undef
-		 then Some (i::[strat#get i], "Strategy for node " ^ string_of_int i ^ " is defined (" ^ (nd_show (strat#get i)) ^ ") but solution is not")
-		 else sanity_check (i + 1)
+		 then Some (i::[strat#get i], "Strategy for node " ^ nd_show i ^ " is defined (" ^ (nd_show (strat#get i)) ^ ") but solution is not")
+		 else None
 	    else if sol#get i != pl
 	    then if strat#get i != nd_undef
-		 then Some (i::[strat#get i], "Strategy for node " ^ string_of_int i ^ " is defined (" ^ (nd_show (strat#get i)) ^ ") but node is not in the winning set of player " ^ plr_show pl)
+		 then Some (i::[strat#get i], "Strategy for node " ^ nd_show i ^ " is defined (" ^ (nd_show (strat#get i)) ^ ") but node is not in the winning set of player " ^ plr_show pl)
 		 else try
                      let j = ns_find (fun j -> sol#get j != sol#get i) delta in
-                     Some ([i;j], "Node " ^ string_of_int i ^ " can escape to " ^ string_of_int j ^ " from the winning set of player " ^ plr_show pl)
+                     Some ([i;j], "Node " ^ nd_show i ^ " can escape to " ^ nd_show j ^ " from the winning set of player " ^ plr_show pl)
           	   with Not_found ->
-                     sanity_check (i + 1)
+                     None
 	    else if strat#get i != nd_undef
 	    then if sol#get (strat#get i) != sol#get i
-		 then Some(i::[strat#get i], "Strategy for node " ^ string_of_int i ^ " leads to node " ^ (nd_show (strat#get i)) ^ " which is out of the winning set of player " ^ plr_show pl)
-		 else sanity_check (i + 1)
-	    else Some (i::[strat#get i], "Strategy for node " ^ string_of_int i ^ " is undefined (" ^ (nd_show (strat#get i)) ^ ")")
-	  )
+		 then Some(i::[strat#get i], "Strategy for node " ^ nd_show i ^ " leads to node " ^ (nd_show (strat#get i)) ^ " which is out of the winning set of player " ^ plr_show pl)
+		 else None
+	    else Some (i::[strat#get i], "Strategy for node " ^ nd_show i ^ " is undefined (" ^ (nd_show (strat#get i)) ^ ")")
 	in
+
+	let sanity_check =
+	  let result = ref None in
+	  game#iterate (fun i _ ->
+	    if !result = None
+	    then result := sanity_check_node i
+	  );
+	  !result
+    in
 
 	let sophisticated_check pl =
 		let strat' = new array_strategy n in
 		let badnodes = ref ns_empty in
-		for i = 0 to n - 1 do
-			if game#get_owner i = pl	then strat'#set i (strat#get i);
+		game#iterate (fun i (_, pl', _, _, _) ->
+			if pl' = pl	then strat'#set i (strat#get i);
 			if sol#get i != pl then badnodes := ns_add i !badnodes
-		done;
+		);
 		let game' = game#subgame_by_strat (new array_pg game#size) strat' in
 		game'#remove_nodes !badnodes;
 		let op = plr_opponent pl in
@@ -84,7 +92,7 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 				      Some (cycle, "Cycle winner failure - " ^ plr_show op ^ " wins with priority " ^ string_of_int pr ^ " but " ^ plr_show pl ^ " should...")
 	in
 
-	match (sanity_check 0) with
+	match sanity_check with
 		Some err -> Some err
 	|	None -> match (sophisticated_check plr_Even) with
 					Some err -> Some err
@@ -115,9 +123,8 @@ let verify_solution_strategy_custom (game: paritygame) (sol: solution) (strat: s
 
 let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: strategy) =
 	let message _ _ = () in
-	let n = game#size in
 	(* 0 = no information, 1 = currently tracking, 2 = marked during cycle check, 3 = verified *)
-	let table = Array.make n 0 in
+	let table = ref TreeMap.empty_def in
 
 	let has arr el =
 		let rec has' arr el i =
@@ -133,7 +140,7 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 				if h = i
 				then prio_good_for_player maxpr pl
 				else (
-					table.(h) <- 2;
+					table := TreeMap.add h 2 !table;
 					helper i maxpr (List.tl l)
 				)
 		in
@@ -141,9 +148,9 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 	in
 
 	let rec expand pl i =
-		message 3 (fun _ -> "   Expanding node " ^ string_of_int i ^ "\n");
-		if table.(i) != 3 then (
-			table.(i) <- 3;
+		message 3 (fun _ -> "   Expanding node " ^ nd_show i ^ "\n");
+		if not (TreeMap.find_opt i !table = Some 3) then (
+			table := TreeMap.add i 3 !table;
 			if pl = game#get_owner i
 			then expand pl (strat#get i)
 			else ns_iter (expand pl) (game#get_successors i)
@@ -151,11 +158,11 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 	in
 
 	let rec test pl i trace =
-		message 3 (fun _ -> "   Testing node " ^ string_of_int i ^
-		                    " current table entry " ^ string_of_int table.(i) ^ "\n");
-		if table.(i) = 3
+		message 3 (fun _ -> "   Testing node " ^ nd_show i ^
+		                    " current table entry " ^ string_of_int (match TreeMap.find_opt i !table with Some x -> x | None -> 0) ^ "\n");
+		if TreeMap.find_opt i !table = Some 3
 	    then None
-		else if (table.(i) = 1) || (table.(i) = 2)
+		else if (TreeMap.find_opt i !table = Some 1) || (TreeMap.find_opt i !table = Some 2)
 		then (
 			let res = wins_cycle i trace pl in
 			message 3 (fun _ -> "   Wins cycle? " ^ (if res then "Yes" else "No") ^ "\n");
@@ -173,25 +180,25 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 					if not (has (Array.of_list (ns_nodes delta )) (strat#get i))
 					then Some (i::trace, "Strategy failure at the end of the trace w.r.t. player " ^ plr_show pl)
 					else (
-                        table.(i) <- 1;
+                        table := TreeMap.add i 1 !table;
                         match (test pl (strat#get i) (i::trace)) with
                           Some err -> Some err
                         | None -> (
-                        	if table.(i) != 2
+                        	if not (TreeMap.find_opt i !table = Some 2)
                         	then expand pl i
-                        	else table.(i) <- 0;
+                        	else table := TreeMap.remove i !table;
                         	None
                         )
 					)
 		     )
 		     else (
-		     	table.(i) <- 1;
+		     	table := TreeMap.add i 1 !table;
 		     	match (test_list pl (Array.of_list (ns_nodes delta)) 0 (i::trace)) with
                           Some err -> Some err
                         | None -> (
-                        	if table.(i) != 2
+                        	if not (TreeMap.find_opt i !table = Some 2)
                         	then expand pl i
-                        	else table.(i) <- 0;
+                        	else table := TreeMap.remove i !table;
                         	None
                         )
 		     )
@@ -203,22 +210,26 @@ let verify_solution_strategy_generic (game: paritygame) (sol: solution) (strat: 
 			 | None -> test_list pl delta (j + 1) trace
 	in
 
-	let rec testnext i =
-		message 3 (fun _ -> "   Iterating node " ^ string_of_int i ^
-		                    " current table entry " ^ string_of_int table.(i) ^ "\n");
-		if i >= n
+	let testnextnode i =
+		message 3 (fun _ -> "   Iterating node " ^ nd_show i ^
+		                    " current table entry " ^ string_of_int (match TreeMap.find_opt i !table with Some x -> x | None -> 0) ^ "\n");
+		if TreeMap.find_opt i !table = Some 3
 		then None
-		else if table.(i) = 3
-		then testnext (i + 1)
 		else
 				if not (game#is_defined i) || (sol#get i = plr_undef)
-				then testnext (i + 1)
+				then None
 				else match (test (sol#get i) i []) with
                    None -> (expand (sol#get i) i;
-                            testnext (i + 1))
+                            None)
                  | Some (tr, s) -> Some (List.rev tr, s)
 	in
-		testnext 0;;
+
+  let result = ref None in
+  game#iterate (fun i _ ->
+    if !result = None
+    then result := testnextnode i
+  );
+  !result
 
 
 

@@ -382,24 +382,20 @@ let universal_solve_run options stats backend game' =
         let subgame_solve nodes solver =
            	timer_start stats.logistics_timing;
         	let solved = ref ns_empty in
-            let (sg, _, _) = game#subgame_by_list nodes in
+            let (sg, outerToInner, innerToOuter) = game#subgame_by_list nodes in
            	timer_stop stats.logistics_timing;
             let (sol', strat') = solver sg in
            	timer_start stats.logistics_timing;
-            let n = ns_size nodes in
-            let idxmap = Array.make n (-1) in
-            let i = ref 0 in
-            ns_iter (fun q ->
-                idxmap.(!i) <- q;
-                i := !i + 1
-            ) nodes;
-            for j = 0 to n - 1 do
-                sol#set idxmap.(j) (sol'#get j);
-                if sol'#get j != plr_undef
-                then solved := ns_add idxmap.(j) !solved
-                else failwith "subgame was not solved!";
-                if (strat'#get j != nd_undef) then strat#set idxmap.(j) idxmap.(strat'#get j)
-            done;
+           	ns_iter (fun i ->
+           	    let j = outerToInner i in
+           	    let winner = sol'#get j in
+           	    let descision = strat'#get j in
+           	    if winner = plr_undef
+           	    then failwith "subgame was not solved";
+           	    sol#set i winner;
+           	    solved := ns_add i !solved;
+                if descision != nd_undef then strat#set i (innerToOuter descision)
+           	) nodes;
            	timer_stop stats.logistics_timing;
             !solved
         in
@@ -501,13 +497,13 @@ let universal_solve_run options stats backend game' =
 				let n = game#size in
 				let (w0, w1) = (ref ns_empty, ref ns_empty) in
 				let counter = ref 0 in
-				for i = 0 to n - 1 do
+				game#iterate (fun i _ ->
 				  if (sol#get i = plr_Even) then w0 := ns_add i !w0;
 				  if (sol#get i = plr_Odd) then w1 := ns_add i !w1;
 				  if sol#get i != plr_undef then incr counter;
 				  if not (game#is_defined i) || (game#get_owner i != sol#get i)
-				  then strat#set i nd_undef;
-				done;
+				  then strat#set i nd_undef
+				);
 				msg_plain BACKEND 0 (fun _ -> string_of_int !counter ^ " out of " ^ string_of_int n ^ "\n");
 				
 				stat_addint [stats.backend_investigated_nodes] (fun _ -> n);
@@ -855,19 +851,18 @@ let universal_solve_fallback options backend fallback =
 let universal_solve_by_player_solver options solver game =
 	let (sol, strat) = universal_solve options (fun g -> solver g plr_Even) game in
 	let solved = ref ns_empty in
-	let n = game#size in
-	for i = 0 to n - 1 do
+	game#iterate (fun i _ ->
 		if sol#get i = plr_Even then solved := ns_add i !solved
-	done;
+	);
 	let game' = game#copy in
 	game'#remove_nodes !solved;
 	let (sol', strat') = universal_solve options (fun g -> solver g plr_Odd) game' in
-	for i = 0 to n - 1 do
+	game#iterate (fun i _ ->
 		if sol'#get i = plr_Odd then (
 			sol#set i plr_Odd;
 			strat#set i (strat'#get i)
 		)
-	done;
+	);
 	(sol, strat);;
 
 
