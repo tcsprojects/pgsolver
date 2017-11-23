@@ -185,12 +185,14 @@ let single_scc_transformation pg =
 			   );
 		let prio0 = !maxpr + 2 - !maxpr mod 2 in
 		let prio1 = !maxpr + 1 + !maxpr mod 2 in
-		let ptr0 = ref n in
-		let ptr1 = ref (if has0 then n + 2 else n) in
+		let ptr0 = int_to_nd n in
+		let ptr0' = int_to_nd (1 + nd_to_int ptr0) in
+		let ptr1 = int_to_nd (if has0 then n + 2 else n) in
+		let ptr1' = int_to_nd (1 + nd_to_int ptr1) in
 		let roots = List.filter (fun v -> pg#get_priority v >= 0) (List.map (fun i -> ns_first sccs.(i)) roots) in
 		if has0 then (
-		  let v = !ptr0 in
-		  let v' = v + 1 in
+		  let v = ptr0 in
+		  let v' = ptr0' in
 		  pg'#set_priority v 0;
 		  pg'#set_owner v plr_Odd;
 		  pg'#set_desc v None;
@@ -203,8 +205,8 @@ let single_scc_transformation pg =
 		  pg'#set_desc v' None
 		);
 		if has1 then (
-		  let v = !ptr1 in
-		  let v' = v + 1 in
+		  let v = ptr1 in
+		  let v' = ptr1' in
 		  pg'#set_priority v 0;
 		  pg'#set_owner v plr_Even;
 		  pg'#set_desc v None;
@@ -219,7 +221,7 @@ let single_scc_transformation pg =
 		List.iter (fun i ->
 			let v = ns_first sccs.(i) in
 			let pl = pg'#get_owner v in
-			pg'#add_edge v (if pl = plr_Even then !ptr0 else !ptr1) 
+			pg'#add_edge v (if pl = plr_Even then ptr0 else ptr1)
 		) leaves;
 		pg'
 	)
@@ -244,7 +246,7 @@ let anti_priority_compactation_transformation pg =
 							   pg'#set_owner i pl;
 							   pg'#set_desc i desc;
 							   if i=v then
-							     pg'#add_edge i n
+							     pg'#add_edge i (int_to_nd n)
 							   else
 							     ns_iter (fun w -> pg'#add_edge i w) succs
 		     );
@@ -256,17 +258,17 @@ let anti_priority_compactation_transformation pg =
               if !j = m - 1
               then
 		begin
-	          pg'#set_priority !j !i;
-	          pg'#set_owner !j (pg#get_owner v);
-		  pg'#set_desc !j None;
-		  ns_iter (fun w -> pg'#add_edge !j w) (pg#get_successors v)
+	          pg'#set_priority (int_to_nd !j) !i;
+	          pg'#set_owner (int_to_nd !j) (pg#get_owner v);
+		  pg'#set_desc (int_to_nd !j) None;
+		  ns_iter (fun w -> pg'#add_edge (int_to_nd !j) w) (pg#get_successors v)
 		end
               else
 		begin
-		  pg'#set_priority !j !i;
-	          pg'#set_owner !j !pl;
-		  pg'#set_desc !j None;
-		  pg'#add_edge !j (!j+1);
+		  pg'#set_priority (int_to_nd !j) !i;
+	          pg'#set_owner (int_to_nd !j) !pl;
+		  pg'#set_desc (int_to_nd !j) None;
+		  pg'#add_edge (int_to_nd !j) (int_to_nd (!j+1));
 		  
         	  incr j;
         	  pl := plr_opponent !pl
@@ -285,17 +287,18 @@ let cheap_escape_cycles_transformation pg keep_scc =
 							     pg'#set_priority i (pr+2);
 							     pg'#set_owner i pl;
 							     pg'#set_desc i desc;
-							     pg'#add_edge i (if pl = plr_Even then n else n + 1);
+							     pg'#add_edge i (int_to_nd (if pl = plr_Even then n else n + 1));
 							     ns_iter (fun w -> pg'#add_edge i w) succs
 							   end
 		   );
 	let r = pg#get_max_prio in
 	let pl = pg#get_owner 0 in
 	let m = if prio_good_for_player r pl then r + 1 else r + 2 in
-        let n1 = n+1 in
-	let n2 = n+2 in
-	let n3 = n+3 in
-	let n4 = n+4 in
+    let n1 = int_to_nd (n+1) in
+	let n2 = int_to_nd (n+2) in
+	let n3 = int_to_nd (n+3) in
+	let n4 = int_to_nd (n+4) in
+	let n = int_to_nd n in
 	
 	pg'#set_priority n 1;
 	pg'#set_owner n plr_Odd;
@@ -324,7 +327,7 @@ let cheap_escape_cycles_transformation pg keep_scc =
 	    pg'#set_priority n4 m;
 	    pg'#set_owner n4 (plr_opponent pl);
 	    pg'#set_desc n4 None;
-	    pg'#add_edge n4 0
+	    pg'#add_edge n4 (int_to_nd 0)
 	  end;
 	pg'
 
