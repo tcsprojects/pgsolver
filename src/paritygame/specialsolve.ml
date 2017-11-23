@@ -139,29 +139,6 @@ let solve_single_parity_scc game player =
    Computes winning sets for both players and strategy for player pl *)
 let compute_winning_nodes_for_direct (game: paritygame) pl =
 	let compute_strat = true in
-	
-	let subnodes_by_list game li =
-	  let small_to_big = Array.of_list li in
-	  let big_to_small = ref TreeMap.empty_def in
-	  Array.iteri (fun small big ->
-		       big_to_small := TreeMap.add big small !big_to_small
-		      ) small_to_big;
-	  let big_to_small = !big_to_small in
-	  Array.init (Array.length small_to_big) (fun small ->
-						  let big = small_to_big.(small) in
-						  let pr = game#get_priority big in
-						  let pl = game#get_owner big in
-						  let delta_big = game#get_successors big in
-						  let delta_small = ref TreeSet.empty_def in
-						  ns_iter (fun succ_big ->
-							   try
-							     delta_small := TreeSet.add (TreeMap.find succ_big big_to_small) !delta_small;
-							   with
-							   | Not_found -> ()
-							  ) delta_big;
-						  (pr, pl, delta_small)
-						 ) 
-	in
 	let list_attractor transp getpl strat source_set_ref todo =
     	  while not (Queue.is_empty todo) do
     	    let x = Queue.take todo in
@@ -176,64 +153,70 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
 	in
 	
 	let solve_scc comp pl =
-	  let game' = subnodes_by_list game (ns_nodes comp) in
-	  let strat = new array_strategy (if compute_strat then Array.length game' else 0) in
+	  let (game', map1, map2) = game#subgame_by_list comp in
+	  let strat = new array_strategy (if compute_strat then game'#size else 0) in
 	  let new_edges = Queue.create () in
-	  Array.iteri (fun i (_, _, delta) -> TreeSet.iter (fun j -> Queue.add (i, j) new_edges) !delta) game';
+	  game'#edge_iterate (fun i j -> Queue.add (i, j) new_edges);
 	  let winner = ref (plr_opponent pl) in
 	  while (!winner != pl) && not (Queue.is_empty new_edges) do
             let (u, v) = Queue.take new_edges in
             if u = v
-            then let (pr_u, _, _) = game'.(u) in (
+            then let pr_u = game'#get_priority u in (
 		   if prio_good_for_player pr_u pl then (
         	     winner := pl;
         	     if compute_strat then (
-        	       let (_, _, delta_u) = game'.(u) in
-                       let game'' = subnodes_by_list game (ns_nodes comp) in
-                       let g = Array.make (Array.length game'') [] in
-  		       Array.iteri (fun i -> fun (_,_,ws) -> TreeSet.iter (fun w -> g.(w) <- i::g.(w)) !ws) game'';
-        	       let target_set = ref (TreeSet.singleton_def u) in
+        	       let delta_u = game'#get_successors u in
+                       let (game'', _, _) = game#subgame_by_list comp in
+                       let g = ref TreeMap.empty_def in
+                       game''#edge_iterate (fun i w ->
+                        try
+                          g := TreeMap.add w (i::TreeMap.find w !g) !g
+                        with Not_found ->
+                          g := TreeMap.add w [i] !g
+                       );
+        	       let target_set = ref (ns_make [u]) in
         	       let todo = Queue.create () in
-        	       TreeSet.iter (fun x ->
-        			     let (pr_x, _, _) = game'.(x) in
+        	       ns_iter (fun x ->
+        			     let pr_x = game'#get_priority x in
         			     if pr_x <= pr_u
         			     then Queue.add x todo
-        			    ) !delta_u;
+        			    ) delta_u;
         	       let finished = ref false in
         	       while not !finished do
         		 let x = Queue.take todo in
-        		 let (_, pl', d) = game''.(x) in
-        		 let inters = TreeSet.inter !d !target_set in
-        		 if TreeSet.is_empty (inters)
+        		 let pl' = game''#get_owner x in
+        		 let d = game''#get_successors x in
+        		 let inters = ns_inter d !target_set in
+        		 if ns_isEmpty inters
         		 then Queue.add x todo
         		 else (
-        		   target_set := TreeSet.add x !target_set;
-        		   if pl' = pl then strat#set x (TreeSet.min_elt inters);
-        		   if x = u then finished := true;
+        		   target_set := ns_add x !target_set;
+        		   if pl' = pl then strat#set x (ns_some inters);
+        		   if x = u then finished := true
         		 )
         	       done;
         	       let s = ref ns_empty in
-        	       for i = 0 to (Array.length game') - 1 do
-        		 if not (TreeSet.mem i !target_set)
-        		 then s := ns_add i !s
-        	       done;
+        	       game'#iterate (fun i _ ->
+                     if not (ns_elem i !target_set)
+                     then s := ns_add i !s
+                    );
         	       let todo = Queue.create () in
-        	       TreeSet.iter (fun x -> Queue.add x todo) !target_set;
-                       list_attractor (fun x f -> List.iter f g.(x)) (fun i -> let (_, pl, _) = game''.(i) in pl) strat s todo
+        	       ns_iter (fun x -> Queue.add x todo) !target_set;
+                       list_attractor (fun x f -> List.iter f (TreeMap.find x !g)) game''#get_owner strat s todo
         	     )
 		   )
 		 )
-            else let (pr_u, _, delta_u) = game'.(u) in
-		 let (pr_v, _, delta_v) = game'.(v) in
+            else let (pr_u, _, delta_u, _, _) = game'#get_node u in
+		 let (pr_v, _, delta_v, _, _) = game'#get_node v in
 		 if (prio_good_for_player pr_u pl) && (pr_u >= pr_v)
-		 then TreeSet.iter (fun w ->
-        		 	    if not (TreeSet.mem w !delta_u) then (
+		 then ns_iter (fun w ->
+        		 	    if not (ns_elem w delta_u) then (
 				      Queue.add (u, w) new_edges;
-				      delta_u := TreeSet.add w !delta_u
+				      game'#add_edge u w
 				    )
-        			   ) !delta_v
+        			   ) delta_v
 	  done;
-	  (!winner, strat)
+	  (!winner, strat, map1, map2)
 	in
 	
 	let n = game#size in
@@ -304,12 +287,11 @@ let compute_winning_nodes_for_direct (game: paritygame) pl =
                       )
                       else marked.(r) <- if pl_max < 0
 					 then plr_opponent pl
-					 else let (winner, strat) = solve_scc comp pl in (
+					 else let (winner, strat, _, innerToOuter) = solve_scc comp pl in (
 						if compute_strat && (winner = pl) then (
-						  let arr = Array.of_list (ns_nodes comp) in
-						  for i = 0 to (Array.length arr) - 1 do
-                                         	    if strat#get i <> nd_undef then strategy#set arr.(i) arr.(strat#get i)
-						  done;
+						strat#iter (fun i j ->
+						    if j <> nd_undef then strategy#set (innerToOuter i) (innerToOuter j)
+						)
 						);
 						winner
                                               )

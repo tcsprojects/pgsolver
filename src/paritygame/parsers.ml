@@ -4,16 +4,18 @@ open Bytes;;
 open Pgplayer;;
 open Pgsolution;;
 open Pgstrategy;;
+open Pgnode;;
 
 
 
 let parse_init_parity_game in_channel = 
 	let game = ref (new array_pg 0) in
 	let add v pr pl succs desc =
+	  let v = int_to_nd v in
 	  !game#set_priority v pr;
 	  !game#set_owner v (if pl = 0 then plr_Even else plr_Odd);
 	  !game#set_desc v (if desc = "" then None else Some desc);
-	  List.iter (fun w -> !game#add_edge v w) succs
+	  List.iter (fun w -> !game#add_edge v (int_to_nd w)) succs
 	in
 	let queue = ref [] in
 	let max_node = ref (-1) in
@@ -30,7 +32,7 @@ let parse_init_parity_game in_channel =
 		game := new array_pg (!max_node + 1);
 		List.iter (fun (v, pr, pl, succs, desc) -> add v pr pl succs desc) !queue
 	);
-	(!init_value, !game)
+	(int_to_nd !init_value, !game)
 
 
 
@@ -55,8 +57,8 @@ let parse_solution in_channel =
 	let (sol, str) = Tcsgameparser.parse_explicit_parity_solution in_channel in
 	let sol' = new array_solution (Array.length sol) in
 	Array.iteri (fun i pl ->
-	    sol'#set i (if pl = 0 then plr_Even else if pl = 1 then plr_Odd else plr_undef)
+	    sol'#set (int_to_nd i) (if pl = 0 then plr_Even else if pl = 1 then plr_Odd else plr_undef)
 	) sol;
 	let str' = new array_strategy (Array.length str) in
-	Array.iteri str'#set str;
+	Array.iteri (fun i j -> str'#set (int_to_nd i) (int_to_nd j)) str;
 	(sol', str')

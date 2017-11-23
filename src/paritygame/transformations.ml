@@ -43,13 +43,14 @@ let remove_useless_self_cycles_inplace game =
    returns a map newprio -> oldprio *)
 let compact_prio_inplace (pg: paritygame) real_alternation =
   let n = pg#size in
-  let getpr i = pg#get_priority i in
-  let prios = Array.init n (fun i -> i) in
-  Array.sort (fun i j -> (getpr i) - (getpr j)) prios;
+  let prios = ref [] in
+  pg#iterate (fun i (pr, _, _, _, _) -> prios := (i, pr)::!prios);
+  let prios = Array.of_list !prios in
+  Array.sort (fun (_, pri) (_, prj) -> pri - prj) prios;
   let rec count index i last =
     if i >= n
     then index
-    else let pr = getpr prios.(i) in
+    else let pr = snd prios.(i) in
 	 if (pr < 0) || (pr = last)
 	 then count index (i + 1) last
 	 else if last < 0
@@ -62,7 +63,7 @@ let compact_prio_inplace (pg: paritygame) real_alternation =
   let compact = Array.make index (-1) in
   let rec buildmap newprio i last =
     if i < n then (
-      let (j, pr) = (prios.(i), getpr prios.(i)) in
+      let (j, pr) = prios.(i) in
       if (pr < 0)
       then buildmap newprio (i + 1) last
       else if (pr = last)
@@ -88,17 +89,16 @@ let compact_prio_inplace (pg: paritygame) real_alternation =
 
 let priority_propagation_inplace pg =
 	let cmp x y = compare (pg#get_priority x) (pg#get_priority y) in
-	let n = pg#size in
-	let wasminpred = Array.make n (-1, -1) in
-	let wasminsucc = Array.make n (-1, -1) in
+	let wasminpred = ref TreeMap.empty_def in
+	let wasminsucc = ref TreeMap.empty_def in
+	pg#iterate (fun i _ ->
+	    wasminpred := TreeMap.add i (-1, -1) !wasminpred;
+	    wasminsucc := TreeMap.add i (-1, -1) !wasminsucc
+	);
 	let updint interval entry pr =
-		let (lo, hi) = interval.(entry) in
-		if lo = -1
-		then interval.(entry) <- (pr, pr)
-		else if pr < lo
-		then interval.(entry) <- (pr, hi)
-		else if pr > hi
-		then interval.(entry) <- (lo, pr)
+		let (lo, hi) = TreeMap.find entry !interval in
+		let result = if lo = -1 then (pr, pr) else if pr < lo then (pr, hi) else if pr > hi then (lo, pr) else (lo, hi) in
+		interval := TreeMap.add entry result !interval
 	in
 	let qu = SingleOccQueue.create () in
 	pg#iterate (fun i -> fun (pr,_,_,_,_) -> if pr >= 0 then SingleOccQueue.add i qu);
@@ -117,20 +117,20 @@ let priority_propagation_inplace pg =
 		ns_iter (fun j -> if pg#get_priority j <= newpr then updint wasminsucc j (newpr + 1)) succs;
 		if pr < maxpr then (
 			pg#set_priority i maxpr;
-			let (lopred, hipred) = wasminpred.(i) in
-			let (losucc, hisucc) = wasminsucc.(i) in
+			let (lopred, hipred) = TreeMap.find i !wasminpred in
+			let (losucc, hisucc) = TreeMap.find i !wasminsucc in
 			if (lopred >= 0) && (lopred <= maxpr)
 			then ns_iter (fun j -> if pg#get_priority j < maxpr then SingleOccQueue.add j qu) succs;
 			if (losucc >= 0) && (losucc <= maxpr)
 			then ns_iter (fun j -> if pg#get_priority j < maxpr then SingleOccQueue.add j qu) preds;
 			if (maxpr >= hipred)
-			then wasminpred.(i) <- (-1, -1)
+			then wasminpred := TreeMap.add i (-1, -1) !wasminpred
 			else if (maxpr >= lopred) && (maxpr < hipred)
-			then wasminpred.(i) <- (maxpr + 1, hipred);
+			then wasminpred := TreeMap.add i (maxpr + 1, hipred) !wasminpred;
 			if (maxpr >= hisucc)
-			then wasminsucc.(i) <- (-1, -1)
+			then wasminsucc := TreeMap.add i (-1, -1) !wasminsucc
 			else if (maxpr >= losucc) && (maxpr < hisucc)
-			then wasminsucc.(i) <- (maxpr + 1, hisucc)
+			then wasminsucc := TreeMap.add i (maxpr + 1, hisucc) !wasminsucc
 		)
 	done;;
 
