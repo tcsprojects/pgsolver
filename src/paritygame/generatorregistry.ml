@@ -1,4 +1,4 @@
-open Paritygame;;
+(* open Paritygame;; *)
 open Tcsset;;
 
 let generatormap = ref TreeMap.empty_def;;
