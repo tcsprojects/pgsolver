@@ -1676,10 +1676,53 @@ let strategy_improvement_optimize_fair_worstcase_policy game =
 	if (find "p0" != None) then strategy_improvement_optimize_fair_exp_policy game else strategy_improvement_optimize_fair_sub_exp_policy game;;
 
 
+
+(* Select the improving edge that entered the strategy least-recently thus far.  *)
+let improvement_policy_optimize_least_recently_entered tie_break game node_total_ordering occ old_strategy valu =
+    let strategy = old_strategy#copy in
+	let l = ref [] in
+	let minvalue = ref (-1) in
+	let maxvalue = ref (-1) in
+	game#iterate (fun i (_, pl, tr, _, _) ->
+		if pl = plr_Even then
+			Array.iteri (fun j k ->
+				if node_valuation_ordering game node_total_ordering valu.(strategy#get i) valu.(k) < 0 then (
+					if !minvalue = -1 then minvalue := occ.(i).(j);
+					maxvalue := max !maxvalue occ.(i).(j);
+					if !minvalue = occ.(i).(j) then l := (i,j,k)::!l
+					else if !minvalue > occ.(i).(j) then (
+						l := [(i,j,k)];
+						minvalue := occ.(i).(j)
+					)
+				)
+			) (Array.of_list (ns_nodes tr))
+	);
+	if !l != [] then (
+		let (i,j,k) = tie_break game node_total_ordering occ old_strategy valu !l in
+		strategy#set i k;
+		occ.(i).(j) <- !maxvalue + 1
+	);
+	(strategy, occ)
+
+let strategy_improvement_optimize_least_recently_entered_policy_lower_bound game =
+	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position
+	                     (improvement_policy_optimize_least_recently_entered improvement_policy_optimize_fair_sub_exp_tie_break) (
+		game#map2 (fun _ (_, pl, tr, _, _) ->
+			if pl = plr_Odd then [||]
+			else Array.make (ns_size tr) 0
+		)
+	) false "STRIMPR_LRE";;
+
+
 let register _ =
     register_sub_solver
         (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_fair_policy g)
         "switchfair" "sf" "Zadeh's fair policy iteration";
+
+
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_least_recently_entered_policy_lower_bound g)
+        "switchlrelb" "slrelb" "Least recently entered lower bound policy iteration";;
 
     register_sub_solver
         (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_fair_worstcase_policy g)
