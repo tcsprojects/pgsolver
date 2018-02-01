@@ -1,5 +1,5 @@
-(* open Tcsset ;; 
-open Paritygame ;;
+open Tcsset ;; 
+(* open Paritygame ;; *)
 open Mucalculus ;;
     
 let length = ref 0
@@ -175,12 +175,8 @@ let roadworks_verification_func arguments =
 
   RWVGame.build ()
 
-let roadworks_verification_func _ = Paritygame.pg_create 1
- *)
-
 
 let roadworks_verification_func _ = failwith "Bitte nicht!" 
 
 let register _ = Generatorregistry.register_generator roadworks_verification_func "roadworksvergm" "Road Works Verification Game";;
 
-  (* let register _ = () *)

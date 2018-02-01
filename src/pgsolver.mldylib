@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 1b1a6a0a1599ad9829fcde1fe05b72f1)
+# DO NOT EDIT (digest: 856aded4b13d23f4dd93b3a7b16e6f7f)
 pgsolver/Basics
 pgsolver/Info
 paritygame/Paritygame
@@ -53,6 +53,7 @@ generators/Steadygame
 generators/Jurdzinskigame
 generators/modelchecking/Mucalculus
 generators/modelchecking/Elevators
+generators/modelchecking/Roadworks
 generators/Towersofhanoi
 generators/Langincl
 generators/Recursivedullgame

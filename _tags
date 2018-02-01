@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: f5ef3304ea01268b80b72ff961bd46f4)
+# DO NOT EDIT (digest: 7e76b446ee0e80f77e4ebfa3bf841d83)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -300,6 +300,14 @@ true: annot, bin_annot
 <src/generators/modelchecking/elevators_aux.{native,byte}>: package(ocaml-sat-solvers)
 <src/generators/modelchecking/elevators_aux.{native,byte}>: package(str)
 <src/generators/modelchecking/elevators_aux.{native,byte}>: use_pgsolver
+# Executable roadworks-bin
+<src/generators/modelchecking/roadworks_aux.{native,byte}>: package(TCSLib)
+<src/generators/modelchecking/roadworks_aux.{native,byte}>: package(extlib)
+<src/generators/modelchecking/roadworks_aux.{native,byte}>: package(minisat)
+<src/generators/modelchecking/roadworks_aux.{native,byte}>: package(num)
+<src/generators/modelchecking/roadworks_aux.{native,byte}>: package(ocaml-sat-solvers)
+<src/generators/modelchecking/roadworks_aux.{native,byte}>: package(str)
+<src/generators/modelchecking/roadworks_aux.{native,byte}>: use_pgsolver
 <src/generators/modelchecking/*.ml{,i,y}>: package(TCSLib)
 <src/generators/modelchecking/*.ml{,i,y}>: package(extlib)
 <src/generators/modelchecking/*.ml{,i,y}>: package(minisat)
