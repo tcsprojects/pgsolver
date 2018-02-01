@@ -24,6 +24,7 @@ let _ =
     Steadygame.register ();
     Jurdzinskigame.register ();
     Elevators.register ();
+    Roadworks.register ();
     Towersofhanoi.register ();
     Langincl.register ();
     Recursivedullgame.register ();;

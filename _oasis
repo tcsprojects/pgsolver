@@ -35,7 +35,8 @@ Library "pgsolver"
            generators/Randomgame, generators/Laddergame, generators/Clusteredrandomgame, generators/Cliquegame,
            generators/Modelcheckerladder, generators/Recursiveladder, generators/Steadygame, generators/Jurdzinskigame,
            generators/modelchecking/Mucalculus,
-           generators/modelchecking/Elevators, generators/Towersofhanoi, generators/Langincl,
+           generators/modelchecking/Elevators, generators/modelchecking/Roadworks, 
+           generators/Towersofhanoi, generators/Langincl,
            generators/Recursivedullgame,
            generators/policyiter/Stratimprgen, generators/policyiter/Stratimprgenerators,
            generators/policyiter/Stratimprgenlist,
@@ -46,7 +47,7 @@ Library "pgsolver"
            generators/policyiter/generators/Switchallexp, generators/policyiter/generators/Switchbestexp,
            generators/policyiter/generators/Randomfacetsubexp, generators/policyiter/generators/Randomedgesubexp,
            generators/policyiter/generators/Randomedgeexptest
-PostBuildCommand: mv pgsolver.native bin/pgsolver ; mv solverstest.* bin/solverstest ; mv auso.* bin/auso ; mv benchmark.* bin/benchmark ; mv benchstratimpr.* bin/benchstratimpr ; mv combine.* bin/combine ; mv complexdecomp.* bin/complexdecomp ; mv compressor.* bin/compressor ; mv fullimprarena.* bin/fullimprarena ; mv imprarena.* bin/imprarena ; mv infotool.* bin/infotool ; mv itersat.* bin/itersat ; mv obfuscator.* bin/obfuscator ; mv policyitervis.* bin/policyitervis ; mv transformer.* bin/transformer ; mv winningstrats.* bin/winningstrats ; mv cliquegame_aux.* bin/cliquegame ; mv clusteredrandomgame_aux.* bin/clusteredrandomgame ; mv jurdzinskigame_aux.* bin/jurdzinskigame ; mv laddergame_aux.* bin/laddergame ; mv langincl_aux.* bin/langincl ; mv modelcheckerladder_aux.* bin/modelcheckerladder ; mv randomgame_aux.* bin/randomgame ; mv recursivedullgame_aux.* bin/recursivedullgame ; mv recursiveladder_aux.* bin/recursiveladder ; mv steadygame_aux.* bin/steadygame ; mv towersofhanoi_aux.* bin/towersofhanoi ; mv elevators_aux.* bin/elevators ; mv stratimprgen.* bin/stratimprgen
+PostBuildCommand: mv pgsolver.native bin/pgsolver ; mv solverstest.* bin/solverstest ; mv auso.* bin/auso ; mv benchmark.* bin/benchmark ; mv benchstratimpr.* bin/benchstratimpr ; mv combine.* bin/combine ; mv complexdecomp.* bin/complexdecomp ; mv compressor.* bin/compressor ; mv fullimprarena.* bin/fullimprarena ; mv imprarena.* bin/imprarena ; mv infotool.* bin/infotool ; mv itersat.* bin/itersat ; mv obfuscator.* bin/obfuscator ; mv policyitervis.* bin/policyitervis ; mv transformer.* bin/transformer ; mv winningstrats.* bin/winningstrats ; mv cliquegame_aux.* bin/cliquegame ; mv clusteredrandomgame_aux.* bin/clusteredrandomgame ; mv jurdzinskigame_aux.* bin/jurdzinskigame ; mv laddergame_aux.* bin/laddergame ; mv langincl_aux.* bin/langincl ; mv modelcheckerladder_aux.* bin/modelcheckerladder ; mv randomgame_aux.* bin/randomgame ; mv recursivedullgame_aux.* bin/recursivedullgame ; mv recursiveladder_aux.* bin/recursiveladder ; mv steadygame_aux.* bin/steadygame ; mv towersofhanoi_aux.* bin/towersofhanoi ; mv elevators_aux.* bin/elevators ; mv roadworks_aux.* bin/roadworks ; mv stratimprgen.* bin/stratimprgen
 Executable "pgsolver-bin"
   Path: src/pgsolver
   BuildDepends: pgsolver
@@ -186,6 +187,11 @@ Executable "elevators-bin"
   Path: src/generators/modelchecking
   BuildDepends: pgsolver
   MainIs: elevators_aux.ml
+  CompiledObject: best
+Executable "roadworks-bin"
+  Path: src/generators/modelchecking
+  BuildDepends: pgsolver
+  MainIs: roadworks_aux.ml
   CompiledObject: best
 Executable "stratimprgen-bin"
   Path: src/generators/policyiter
