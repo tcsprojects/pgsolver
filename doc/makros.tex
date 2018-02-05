@@ -15,6 +15,14 @@
 \newcommand{\sem}[1]{\ensuremath{[\![ #1 ]\!]}}
 \newcommand{\hide}[1]{}
 
+\def\newarrow#1{\mathop{{\hbox{\setbox0=\hbox{$\scriptstyle{#1\quad}$}{$%
+\mathrel{\mathop{\setbox1=\hbox to
+\wd0{\rightarrowfill}\ht1=3pt\dp1=-2pt\box1}\limits^{#1}}%
+$}}}}}
+\newcommand{\Transition}[3]{\ensuremath{#1 \newarrow{#2} #3}}
+\newcommand{\Mubox}[1]{\ensuremath{[ #1 ]}}
+\newcommand{\Mudiam}[1]{\ensuremath{\langle #1 \rangle}}
+
 \newcommand{\TODOcomment}[2]{%
   \stepcounter{TODOcounter#1}%
   {\scriptsize\bf$^{(\arabic{TODOcounter#1})}$}%

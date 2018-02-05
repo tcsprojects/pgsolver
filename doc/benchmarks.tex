@@ -1,3 +1,5 @@
+% !TEX root =  main.tex
+
 %\section{Benchmark Games}
 
 %The \pgsolver library contains a few programs that create benchmarks for the parity game
@@ -272,6 +274,96 @@ and the game $G'_5$ by calling
     ~/pgsolver> bin/elevators -u 5
 \end{verbatim}
 
+\subsection{Synthesising a Traffic Light Controller}
+
+Consider the following problem. Road work is blocking one line of traffic on a two-lined road. There are two traffic lights
+controlling the flow of traffic into the narrow part from each side. We want to find a strategy for switching the traffic lights
+which ensures that 
+\begin{itemize}
+\item no car can enter the narrow part of road if there is an approaching car in this part already,
+\item every car that appears at either end of the road works will eventually be able to pass.
+\end{itemize}
+This synthesis problem can be modelled as a simple model checking problem for the modal $\mu$-calculus and, hence, as a parity 
+game problem. Consider the transition system $\mathcal{R}_n$ with states of the form 
+\begin{displaymath}
+(r_0,b_{\mathsf{left}},r_1,r_2\ldots,r_{n-2},b_{\mathsf{right}},r_{n-1},t) 
+\end{displaymath}
+where 
+\begin{itemize}
+\item $b_{\mathsf{left}},b_{\mathsf{right}} \in \{ \mathsf{red},\mathsf{green} \}$ model the two traffic lights,
+\item $r_0,\ldots,r_{n-1} \in \{\mathsf{emp},\mathsf{carL},\mathsf{carR}\}$ model segments of the road which, at any moment,
+      are either empty or occupied by a car driving into a particular direction, and   
+\item $t \in \{\mathsf{trLght},\mathsf{env}\}$ is used to indicate whether the next change of state can be 
+      a switching of the traffic light or a moving of the cars (seen as the \emph{environment} acting against the traffic light). 
+\end{itemize} 
+Transitions, labeled with actions, are as follows. First, both traffic light and environment can always choose not to do anything.
+\begin{displaymath}
+\Transition{(r_0,b_{\mathsf{left}},r_1,r_2\ldots,r_{n-2},b_{\mathsf{right}},r_{n-1},t)}{\mathsf{stay}}{(r_0,b_{\mathsf{left}},r_1,r_2\ldots,r_{n-2},b_{\mathsf{right}},r_{n-1},\overline{t})} 
+\end{displaymath}
+where $\overline{t}$ denotes the actor that is not $t$, i.e.\ $\overline{\mathsf{trLght}} = \mathsf{env}$ etc.
+
+When it is the traffic lights' turn, either light can change colour:
+\begin{align*}
+&\Transition{(r_0,b_{\mathsf{left}},\ldots,b_{\mathsf{right}},r_{n-1},\mathsf{trLght})}{\mathsf{swLght}}{(r_0,\overline{b_{\mathsf{left}}},\ldots,b_{\mathsf{right}},r_{n-1},\mathsf{env})} \\
+&\Transition{(r_0,b_{\mathsf{left}},\ldots,b_{\mathsf{right}},r_{n-1},\mathsf{trLght})}{\mathsf{swLght}}{(r_0,b_{\mathsf{left}},\ldots,\overline{b_{\mathsf{right}}},r_{n-1},\mathsf{env})} 
+\end{align*}
+where $\overline{\mathsf{red}} = \mathsf{green}$ etc.
+
+Finally, when it is the environment's turn, any car that is already present can move forwards and free empty spaces at the sides can
+be occupied by cars, modelled by transitions of the form
+\begin{displaymath}
+\Transition{(r_0,b_{\mathsf{left}},\ldots,b_{\mathsf{right}},r_{n-1},\mathsf{env})}{\mathsf{move}}{(r'_0,b_{\mathsf{left}},\ldots,b_{\mathsf{right}},r'_{n-1},\mathsf{trLght})}
+\end{displaymath}
+such that one of the following cases holds.
+\begin{itemize}
+\item $r_0 = \mathsf{emp}$, $r'_0 = \mathsf{carR}$
+\item $r_0 = \mathsf{carR} = r'_1$, $b_{\mathsf{left}} = \mathsf{green}$, $r_1 = \mathsf{emp} = r'_0$ 
+\item $\exists i$: $1 \le i \le n-3$, $r_i = \mathsf{carR} = r'_{i+1}$, $r_{i+1} = \mathsf{emp} = r'_i$  
+\item $r_{n-2} = \mathsf{carR}$, $r'_{n-2} = \mathsf{emp}$ 
+\item $r_{n-1} = \mathsf{emp}$, $r'_{n-1} = \mathsf{carL}$
+\item $r_{n-1} = \mathsf{carL} = r'_{n-2}$, $b_{\mathsf{right}} = \mathsf{green}$, $r_{n-2} = \mathsf{emp} = r'_{n-1}$ 
+\item $\exists i$: $2 \le i \le n-2$, $r_i = \mathsf{carL} = r'_{i-1}$, $r_{i-1} = \mathsf{emp} = r'_i$  
+\item $r_1 = \mathsf{carL}$, $r'_1 = \mathsf{emp}$ 
+\end{itemize}
+In all cases, all unmentioned variables remain the same, i.e.\ we have $r'_j = r_j$ for those $j$ that are unaffected by these
+conditions.
+
+We use the following propositions to model elementary properties of such states of the form
+$(r_0,b_{\mathsf{left}},r_1,\ldots,r_{n-2},b_{\mathsf{right}},r_{n-1},t)$.
+\begin{itemize}
+\item $\mathsf{green}_{\mathsf{left}}$ and $\mathsf{green}_{\mathsf{right}}$ hold in states in which the left, resp., right traffic
+      light is set to green, i.e.\ $b_{\mathsf{left}} = \mathsf{green}$ etc.;
+\item $\mathsf{wait}_{\mathsf{left}}$ and $\mathsf{wait}_{\mathsf{right}}$ hold in states in which the leftmost, resp.\ rightmost
+      road segment, i.e.\ those that are guarded by the respective traffic lights, are occupied by a car: $r_0 = \mathsf{carR}$ or
+      $r_{n-1} = \mathsf{carL}$;
+\item $\mathsf{crash}$ holds when a car is given a green light despite the fact that the oncoming traffic has not passed yet: 
+      \begin{align*}
+        &(r_0 = \mathsf{carR} \wedge b_{\mathsf{left}} = \mathsf{green} \wedge \exists i. 1 \le i \le n-2 \wedge r_i = \mathsf{carL}) \\
+        \vee & (r_{n-1} = \mathsf{carL} \wedge b_{\mathsf{right}} = \mathsf{green} \wedge \exists i. 1 \le i \le n-2 \wedge r_i = \mathsf{carR})
+      \end{align*}
+\end{itemize}
+The existence of a controller for the traffic lights, ensuring that no car is allowed to enter the narrow part of the road when
+a car facing the opposite direction is in it, as well as absence of infinite waiting for the cars is expressed by the following 
+formula of the modal $\mu$-calculus.
+\begin{align*}
+\nu X_2.\mu X_1.\nu X_0. \neg\mathsf{crash} \wedge \Big(&\Mudiam{-}(\Mubox{\mathsf{stay}}X_0 \wedge \Mubox{\mathsf{move}}X_1)\ \vee \ \\
+&\big( (\mathsf{green}_{\mathsf{left}} \vee \neg\mathsf{wait}_{\mathsf{left}}) \wedge
+(\mathsf{green}_{\mathsf{right}} \vee \neg\mathsf{wait}_{\mathsf{right}}) \wedge \Mudiam{-}\Mubox{-}X_2\big)\Big)
+\end{align*}
+The parity game arising from the product of the road works system $\mathcal{R}_5$ for instance (with $5$ road segments) and the formula above can
+be generated by calling
+\begin{verbatim}
+    ~/pgsolver> bin/roadworks 5
+\end{verbatim}
+This can be generalised to arbitrary parameters $n \ge 2$. The benchmark family can also be used directly in \pgsolver, for instance
+for the road works system $\mathcal{R}_8$, by typing  
+\begin{verbatim}
+    ~/pgsolver> bin/pgsolver -gen roadworksvergm "8" -local stratimprloc2 0
+\end{verbatim}
+Note that node $0$ represents the model checking problem for the formula above and $\mathcal{R}_n$'s initial state in which both lights
+are set to $\mathsf{red}$ and no cars are present.
+
+
 
 \section{Particular Problems Encoded as Parity Games}
 
@@ -410,6 +502,8 @@ The game $\mathcal{G}_{6,9}$ is generated by
 \end{verbatim}
 The second parameter is optional. If it is not given then $m=2$ is chosen by default.
 
+
+ 
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "main"
