@@ -1,7 +1,7 @@
 open Arg;;
 open Tcsargs;;
 open Paritygame;;
-  
+
 module CommandLine =
 struct
   let input_file = ref ""
@@ -12,13 +12,17 @@ struct
 
   let reverse_edges = ref false
 
+  let seed = ref None
+
   let speclist =  [(["--disablenodeobfuscation"; "-dn"], Unit(fun _ -> obfuscate_nodes := false),
-                      "\n     keep ordering of nodes") ;
-                   (["--disableedgeobfuscation"; "-de"], Unit(fun _ -> obfuscate_edges := false), 
+                    "\n     keep ordering of nodes") ;
+                   (["--disableedgeobfuscation"; "-de"], Unit(fun _ -> obfuscate_edges := false),
                     "\n     keep ordering of edges"); (* TODO: does not make sense anymore. There is no explicit ordering visible to the outside. Option should probably be removed. *)
                    (["--justreverseedges"; "-rv"], Unit(fun _ -> obfuscate_edges := false; reverse_edges := true),
-                    "\n     reverse edges (disables a previous `-de')")] (* TODO: same as above. `reverse' is also misleading. *)
-                   
+                    "\n     reverse edges (disables a previous `-de')"); (* TODO: same as above. `reverse' is also misleading. *)
+                   (["--seed"; "-s"], Int(fun i -> seed := Some(i)),
+                    "\n     set seed value")]
+
   let header = Info.get_title "Obfuscator Tool"
 end ;;
 
@@ -40,7 +44,7 @@ let _ =
     swap.(i) <- i
   done;
 
-  Random.self_init ();
+  Option.map_default (fun i _ -> Random.init i) (Random.self_init) !seed ();
 
   if !obfuscate_nodes then (
       for k=1 to 10*(m-1) do
