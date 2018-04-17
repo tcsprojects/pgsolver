@@ -25,6 +25,7 @@ let fold_partial_solvers = Solverregistry.fold_partial_solvers
 let _ =
     Bigstep.register ();
     Dominiondecomp.register ();
+    Externalsolver.register ();
     Fpiter.register ();
     Genetic.register ();
     Guessstrategy.register ();

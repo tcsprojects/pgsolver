@@ -16,12 +16,13 @@ Plugins:     META
 BuildTools: ocamlbuild
 Library "pgsolver"
   Path:       src
-  BuildDepends: num, str, TCSLib, extlib, ocaml-sat-solvers, minisat
+  BuildDepends: num, str, TCSLib, extlib, ocaml-sat-solvers, minisat, unix, threads
   Modules: pgsolver/Basics, pgsolver/Info,
            paritygame/Paritygame, paritygame/Verification, paritygame/Univsolve, paritygame/Solvers,
            paritygame/Solverregistry, paritygame/Mdp, paritygame/Paritygamebitset, paritygame/Parsers,
            paritygame/Specialsolve, paritygame/Transformations,
-           solvers/Bigstep, solvers/Dominiondecomp, solvers/Fpiter, solvers/Genetic, solvers/Guessstrategy,
+           solvers/Bigstep, solvers/Dominiondecomp, solvers/Externalsolver,
+           solvers/Fpiter, solvers/Genetic, solvers/Guessstrategy,
            solvers/Localmodelchecker, solvers/Optstratimprov, solvers/Prioprom, solvers/Priopromdelay,
            solvers/Priopromplus, solvers/Priopromrecovery, solvers/Recursive, solvers/Satsolve, solvers/Smallprogress,
            solvers/Stratimpralgs, solvers/Stratimprdisc, solvers/Stratimprlocal, solvers/Stratimprlocal2,
@@ -35,7 +36,7 @@ Library "pgsolver"
            generators/Randomgame, generators/Laddergame, generators/Clusteredrandomgame, generators/Cliquegame,
            generators/Modelcheckerladder, generators/Recursiveladder, generators/Steadygame, generators/Jurdzinskigame,
            generators/modelchecking/Mucalculus,
-           generators/modelchecking/Elevators, generators/modelchecking/Roadworks, 
+           generators/modelchecking/Elevators, generators/modelchecking/Roadworks,
            generators/Towersofhanoi, generators/Langincl,
            generators/Recursivedullgame,
            generators/policyiter/Stratimprgen, generators/policyiter/Stratimprgenerators,
