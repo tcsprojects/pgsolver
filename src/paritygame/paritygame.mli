@@ -209,6 +209,7 @@ val game_to_string : paritygame -> string
 
 (* `print_game <game>' prints <game> on STDOUT s.t. it could be parsed again. *)
 val print_game : paritygame -> unit
+val output_game : out_channel -> paritygame -> unit
 
 val print_solution_strategy_parsable : solution -> strategy -> unit
 

@@ -359,29 +359,32 @@ let game_to_string game =
            end
 	done;
 	"parity " ^ string_of_int (n-1) ^ ";\n" ^ !s;;
- 
-let print_game game =
+
+let output_int c_out i = output_string c_out (string_of_int i);;
+let output_newline c_out = output_char c_out '\n'; flush c_out;;
+let output_game c_out game =
 	let n = pg_size game in
-	print_string ("parity " ^ string_of_int n ^ ";\n");
+	output_string c_out ("parity " ^ string_of_int (n-1) ^ ";\n");
 	for i = 0 to n - 1 do
 	  let (pr, pl, succs, _, desc) = pg_get_node game i in
 	  if pr >= 0 && pl >= 0 && pl <= 1 then (
-            print_int i;
-            print_char ' ';
-            print_int pr;
-            print_char ' ';
-            print_int pl;
-            print_char ' ';
-            print_string (String.concat "," (List.map string_of_int (ns_nodes succs)));
+            output_int c_out i;
+            output_char c_out ' ';
+            output_int c_out pr;
+            output_char c_out ' ';
+            output_int c_out pl;
+            output_char c_out ' ';
+            output_string c_out (String.concat "," (List.map string_of_int (ns_nodes succs)));
             (
              match desc with
                None -> () (* print_string (" \"" ^ string_of_int i ^ "\"") *)
-             | Some s -> if s <> "" then print_string (" \"" ^ s ^ "\"")
+             | Some s -> if s <> "" then output_string c_out (" \"" ^ s ^ "\"")
             );
-            print_char ';';
-            print_newline ()
+            output_char c_out ';';
+            output_newline c_out
            )
         done;;
+let print_game = output_game stdout;;
 
 let print_solution_strategy_parsable sol strat =
 	let n = Array.length sol in
