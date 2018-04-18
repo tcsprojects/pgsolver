@@ -10,7 +10,7 @@ let pipe : in_channel -> out_channel -> unit = fun c_in c_out ->
   while not !eof do
     let len = input c_in buffer 0 size in
     if len > 0
-    then output_string c_out (String.sub buffer 0 len)
+    then output_string c_out (Bytes.sub_string buffer 0 len)
     else eof := true
   done;;
 
