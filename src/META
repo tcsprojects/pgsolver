@@ -1,9 +1,9 @@
 # OASIS_START
-# DO NOT EDIT (digest: 72d291150af3582ac0784c8e75e666c5)
+# DO NOT EDIT (digest: f13b1a003b5ae755a2f8f1bec894e749)
 version = "4.1"
 description =
 "A collection of tools for generating, manipulating and - most of all - solving parity games."
-requires = "num str TCSLib extlib ocaml-sat-solvers minisat"
+requires = "num str TCSLib extlib ocaml-sat-solvers minisat unix threads"
 archive(byte) = "pgsolver.cma"
 archive(byte, plugin) = "pgsolver.cma"
 archive(native) = "pgsolver.cmxa"

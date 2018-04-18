@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 586af6762c044e3dd0e2cd618d089b56)
+# DO NOT EDIT (digest: 6b0dae0a47fa1502179a773eaff2ca9b)
 pgsolver/Basics
 pgsolver/Info
 paritygame/Paritygame
@@ -14,6 +14,7 @@ paritygame/Specialsolve
 paritygame/Transformations
 solvers/Bigstep
 solvers/Dominiondecomp
+solvers/Externalsolver
 solvers/Fpiter
 solvers/Genetic
 solvers/Guessstrategy
