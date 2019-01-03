@@ -32,3 +32,17 @@ scripts/policyitervis/metapostgraphs
 setup.data
 *.byte
 *.cache
+scripts/policyitervis/animation_main.9*
+scripts/policyitervis/animation_main.8*
+scripts/policyitervis/animation_main.7*
+scripts/policyitervis/animation_main.6*
+scripts/policyitervis/animation_main.5*
+scripts/policyitervis/animation_main.4*
+scripts/policyitervis/animation_main.3*
+scripts/policyitervis/animation_main.2*
+scripts/policyitervis/animation_main.1*
+*.mpx
+*.mpt
+scripts/policyitervis/animation_animation.mp
+scripts/policyitervis/animation_main.mp
+scripts/policyitervis/animation_main.tex

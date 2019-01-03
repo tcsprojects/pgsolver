@@ -1,5 +1,6 @@
 let register _ =
     Zadehexp.register();
+    Zadehexpish.register();
     Cunninghamexp.register();
     Zadehsubexp.register();
     Cunninghamsubexp.register();

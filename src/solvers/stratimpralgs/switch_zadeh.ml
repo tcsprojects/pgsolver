@@ -33,24 +33,24 @@ end;;
 
 
 module StrategyHelper = struct
-	
+
 	let length game =
-		let n = ref 0 in 
+		let n = ref 0 in
 		while (
 			try
 				let _ =  game#find_desc  (Some ("m" ^ string_of_int !n)) in
 				true
 			with Not_found -> false
 		) do
-			incr n 
+			incr n
 		done;
 		!n
-	
+
 	let is game strategy v w =
 		try
 			strategy#get (game#find_desc  (Some v)) = game#find_desc  (Some w)
 		with Not_found -> false
-	
+
 	let leads_to game valu v w =
 		try
 			let i = game#find_desc  (Some v) in
@@ -62,14 +62,14 @@ module StrategyHelper = struct
 	let improvable game strategy valu v =
 		let i = game#find_desc  (Some v) in
 		best_decision_by_valuation_ordering game node_total_ordering_by_position valu i != strategy#get i
-		
+
 end;;
 
 
-	
-	
-	
-	
+
+
+
+
 type strategy_info = {
 	len: int;
 	b: int array;
@@ -78,7 +78,7 @@ type strategy_info = {
   g: int array;
 	e: int array;
 	ex: int array array;
-  ddd: int array array array;	
+  ddd: int array array array;
 	eg: int array;
 	eb: int array;
 	e0g: int array;
@@ -97,7 +97,7 @@ type strategy_info = {
 
 
 
-let strategy_info game strategy = 
+let strategy_info game strategy =
 	let len = StrategyHelper.length game in
 	let strat a i b j = if StrategyHelper.is game strategy (a ^ string_of_int i) (b ^ string_of_int j) then 1 else 0 in
     let ddd = [|[|
@@ -115,7 +115,7 @@ let strategy_info game strategy =
   let sx = [|s0; s1|] in
 	let e = Array.init len (fun i -> ex.(g.(i)).(i)) in
 	let s = Array.init len (fun i -> sx.(g.(i)).(i)) in
-	
+
 	let last = ref len in
 	let searching = ref true in
 	for i = len - 1 downto 0 do
@@ -126,8 +126,8 @@ let strategy_info game strategy =
 		);
 	done;
 	let mu = if !searching then Bits.least_zero b else !last in
-	
-	
+
+
 	let eee = [|[|
 	Array.init len (fun i -> strat "o" i "m" 1);
 	Array.init len (fun i -> strat "p" i "m" 1)
@@ -169,8 +169,8 @@ let strategy_info game strategy =
 		mug = Bits.least_zero g;
 	};;
 
-	
-	
+
+
 type val_info = {
 	bv: int TreeSet.t array;
 	gv: int TreeSet.t array;
@@ -179,12 +179,12 @@ type val_info = {
 	fv: int TreeSet.t array array;
 	ll: int TreeSet.t array;
 	rr: int TreeSet.t array;
-};;	
+};;
 
 let valuation_info game strategy compare =
 	let info = strategy_info game strategy in
 	let n = info.len in
-	let find a i = game#find_desc  (Some (a ^ string_of_int i)) in 
+	let find a i = game#find_desc  (Some (a ^ string_of_int i)) in
 	let y = TreeSet.singleton compare (game#find_desc  (Some "Y")) in
 	let w = Array.init info.len (fun i -> TreeSet.add (find (if info.g.(i) = 0 then "c" else "z") i) (TreeSet.add (find "d" i) y)) in
 	let ll = Array.make (info.len + 1) y in
@@ -207,10 +207,10 @@ let valuation_info game strategy compare =
 							 else if info.mu > 0
 							 then TreeSet.add (find "z" i) rr.(i+1)
 							 else if info.g.(i+1) = 1 && info.s.(i+1) = 1
-							 then TreeSet.add (find "z" i) (TreeSet.union w.(i+1) s.(i+1))  
-							 else if info.s.(i+1) = 0 
+							 then TreeSet.add (find "z" i) (TreeSet.union w.(i+1) s.(i+1))
+							 else if info.s.(i+1) = 0
 							 then TreeSet.add (find "z" i) (TreeSet.add (find "d" (i+1)) b.(0))
-							 else TreeSet.add (find "z" i) (TreeSet.union w.(i+1) b.(i+3))					
+							 else TreeSet.add (find "z" i) (TreeSet.union w.(i+1) b.(i+3))
 	done;
 	let sss = [|g;s|] in
 	let sg = Array.init n (fun i -> sss.(info.g.(i)).(i)) in
@@ -236,7 +236,7 @@ type mdpval_info = {
 	mll: (int, float) TreeMap.t array;
 	mrr: (int, float) TreeMap.t array;
 	mgg: (int, float) TreeMap.t array;
-};;	
+};;
 
 let mdpvaluation_info game strategy compare =
 	let info = strategy_info game strategy in
@@ -254,7 +254,7 @@ let mdpvaluation_info game strategy compare =
 			mbv.(0) <- TreeMap.add (find "d" j) 1.0 mbv.(1);
 			for i = j-1 downto 0 do
 				mbv.(0) <- TreeMap.add (find "d" i) 1.0 (TreeMap.add (find "z" i) 1.0 mbv.(0));
-			done; 
+			done;
 		);
 	);
 		let mrr = Array.map (fun s -> TreeMap.by_set s (fun _ -> 1.0)) valinfo.rr in
@@ -287,11 +287,11 @@ type improvement_info_struct = {
 	imp_e11: int array;
 };;
 
-						
+
 let improvement_info game strategy valu =
 	let info = strategy_info game strategy in
 	let improvable s = if StrategyHelper.improvable game strategy valu s then 1 else 0
-	in 
+	in
 	{
 		imp_b = Array.init info.len (fun i -> improvable ("m" ^ string_of_int i));
 		imp_g = Array.init info.len (fun i -> improvable ("d" ^ string_of_int i));
@@ -343,7 +343,7 @@ let occ_info game occ n =
 			if k = j then o := occ.(i).(ind);
 		) (Array.of_list (ns_nodes (game#get_successors  i)));
 		!o
-	in 
+	in
 	let occrecnot from tto =
 		let i = game#find_desc  (Some from) in
 		let j = game#find_desc  (Some tto) in
@@ -352,7 +352,7 @@ let occ_info game occ n =
 			if k != j then o := occ.(i).(ind);
 		) (Array.of_list (ns_nodes (game#get_successors  i)));
 		!o
-	in 
+	in
 	{
 		occ_b0 = Array.init n (fun i -> occrecnot ("m" ^ string_of_int i) ("d" ^ string_of_int i));
 		occ_b1 = Array.init n (fun i -> occrec ("m" ^ string_of_int i) ("d" ^ string_of_int i));
@@ -379,7 +379,7 @@ let occ_info game occ n =
 		occ_e1_1_0 = Array.init (n-1) (fun i -> occrecnot ("r" ^ string_of_int i) ("m" ^ string_of_int 1));
 		occ_e1_1_1 = Array.init (n-1) (fun i -> occrec ("r" ^ string_of_int i) ("m" ^ string_of_int 1));
 	};;
-																								
+
 let show_info game occ strategy valu n =
 	let string_of_int2 i = if i < 10 then "0" ^ string_of_int i else string_of_int i in
 	let info = strategy_info game strategy in
@@ -405,10 +405,10 @@ let show_info game occ strategy valu n =
 			(if i < n-1 then oinfo.occ_e1_0_0.(i) else 0); (if i < n-1 then oinfo.occ_e1_0_1.(i) else 0); (if i < n-1 then oinfo.occ_e1_1_0.(i) else 0); (if i < n-1 then oinfo.occ_e1_1_1.(i) else 0);
 		] ^ "|\n";
   done;
-	!s;;				
-	
+	!s;;
 
-let counter_strategy_lookup game strategy len = 
+
+let counter_strategy_lookup game strategy len =
 	let counter = compute_counter_strategy game strategy in
 	let find a i = game#find_desc  (Some (a ^ string_of_int i)) in
 	([| Array.init len (fun i -> if counter#get (find "E" i) = find "g" i then 1 else 0);
@@ -426,10 +426,10 @@ let test_assumptions game strategy valu =
 		then failwith (ident ^ " : " ^ leftformula ^ " ==> " ^ rightformula)
 	in
 	let info = strategy_info game strategy in
-	let (counter, counterx) = counter_strategy_lookup game strategy info.len in  
+	let (counter, counterx) = counter_strategy_lookup game strategy info.len in
 		for i = 0 to info.len - 1 do
 		  assert_iff "mu assumption" "mu > 0" "info.b.(0)" (info.mu > 0) (info.b.(0) = 1);
-			assert_ifthen "(As1)" "i >= mu && sigma(b_i)" "sigma(s_i)" (i >= info.mu && info.b.(i) = 1) (info.s.(i) = 1); 
+			assert_ifthen "(As1)" "i >= mu && sigma(b_i)" "sigma(s_i)" (i >= info.mu && info.b.(i) = 1) (info.s.(i) = 1);
 		  assert_ifthen "(As2)" "i < mu && ((sigma(b_2) && i > 1) || sigma(d_i) || !sigma(b_1))" "sigma(s_i)" (i < info.mu && ((info.b.(1) = 1 && i > 0) || info.e.(i) = 1 || info.b.(0) = 0)) (info.s.(i) = 1);
 			if i < info.len - 1 then assert_ifthen "(Ab)" "i < mu - 1 && !sigma(b_i)" "!sigma(b_i+1)" (i < info.mu - 1 && info.b.(i) = 0) (info.b.(i+1) = 0);
 			if info.mu != 0 then assert_ifthen "(Ab2)" "mu != 1 && !sigma(b_mu-1)" "sigma(b_mu)" (info.mu != 0 && info.b.(info.mu - 1) = 0) (info.b.(info.mu) = 1);
@@ -491,22 +491,22 @@ let test_assumptions game strategy valu =
 					assert_ifthen "7" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) = sigma(b_2)" "F_i,j->b_2" (info.e0g.(i) = 1 && info.e0b.(i) = 1 && info.g.(0) = info.b.(1)) (counter.(0).(i) = 0 && counterx.(0).(i) = 1);
 					if i < info.len - 1 then assert_ifthen "7" "sigma(eb_i,j) && sigma(eg_i,j) && sigma(g_1) = sigma(b_2)" "F_i,j->b_2" (info.e1g.(i) = 1 && info.e1b.(i) = 1 && info.g.(0) = info.b.(1)) (counter.(1).(i) = 0 && counterx.(1).(i) = 1);
 			);
-		
-		
+
+
 		if ((not mdplike) && info.s.(i) = 1 && info.e.(i) = 0) then (
 			let x = counter.(info.g.(i)).(i) = 1 in
 			let y = i < info.len - 1 && info.b.(i+1) != info.g.(i) in
-			if x != y 
+			if x != y
 			then failwith "yikes";
 		);
-		
-		
-		
+
+
+
 		(*
 		  let sxb = if i = info.len-1 then 0 else 1-info.b.(i+1) in
 			let mui = if info.mu <= i + 1 then 1 else 0 in
 			let lei = if info.least_one > i + 1 then 1 else 0 in
-			
+
 			if (info.mu = 0 && info.b.(0) = 1) then failwith "impossible";
 
 			if info.sx.(0).(i) != sxb && info.sx.(0).(i) != mui
@@ -515,12 +515,12 @@ let test_assumptions game strategy valu =
 			then print_string ("\nXrong" ^ string_of_int i ^ "/" ^ string_of_int info.sx.(1).(i) ^ "\n");
 			if info.sx.(1).(i) = sxb && info.sx.(1).(i) = 1 && info.b.(0) = 0 && info.sx.(1).(i) != lei && not mdplike
 			then print_string ("\nXrong" ^ string_of_int i ^ "/" ^ string_of_int info.least_one ^ "\n");
-			
-			
+
+
 			if (info.mu = 0 && i > 0 && info.b.(i) = 0 && info.s.(i) = 1 && info.e.(i) = 1) then failwith "arg";
-			
+
 			if (info.mu != 0 && info.b.(info.mu -1) = 0 && info.b.(info.mu) = 0) then print_string("noway\n");
-			
+
 			if (info.e0g.(i) = 0 && info.e0b.(i) = 1 && info.b.(0) = 1 && i < info.len - 1 && info.b.(i+1) = 0) then print_string("S0\n");
 			if (info.e0g.(i) = 0 && info.e0b.(i) = 1 && info.b.(0) = 1 && info.sx.(0).(i) = 0 && (info.mu = 0 || info.b.(info.mu) = 0)) then print_string("S0\n");
 
@@ -534,14 +534,14 @@ let test_assumptions game strategy valu =
 			if (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu = 0 && info.g.(0) != info.b.(1)) then print_string("foobarinaY\n");
 
 			if ( info.mu > 0 && 0= info.b.(0)) then print_string("foobarinaY\n");
-			
+
 			if (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu > 0 && i < info.len - 1 && info.b.(i+1) = 1 && info.sx.(0).(i) = 1) then print_string("foobarinaXX\n");
 			if (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu > 0 && i < info.len - 1 && info.b.(i+1) = 0 && info.sx.(1).(i) = 1) then print_string("foobarinaZZ\n");
 
 			if (info.e0g.(i) = 1 && info.e0b.(i) = 0 && info.mu > 0 && i < info.len - 1 && info.b.(i+1) = 0 && info.sx.(0).(i) = 1 && i = info.mu - 1) then print_string("foobarina!!\n");
 			if (info.e1g.(i) = 1 && info.e1b.(i) = 0 && info.mu > 0 && i < info.len - 1 && info.b.(i+1) = 1 && info.sx.(1).(i) = 1 && i = info.mu - 2) then print_string("foobarinaZZ\n");
 
-									
+
 			if (info.e0g.(i) = 1 && info.e0b.(i) = 0) then (
 				if (info.mu = 0) then (
 						if (info.sx.(0).(i) = 1) then print_string("\nasdfasdf\n");
@@ -558,9 +558,9 @@ let test_assumptions game strategy valu =
 			);
 			if (info.e0g.(i) = 0 && info.e0b.(i) = 1) then (
 					let x = if info.b.(0) = 0 && (info.sx.(0).(i) = 0 || i = info.len - 1 || info.b.(i+1) = 0) then 1 else 0 in
-					
+
 					if (x = 0 &&  i < info.len - 1 && info.b.(i+1) = 0) then failwith "asdf";
-					
+
 					if (info.sx.(0).(i) = 1 && info.b.(0) = 1 && info.mu != i+1) then failwith "fdsay";
 					if (info.sx.(0).(i) = 1 && info.b.(0) = 1 && i > 0 && info.b.(1) = 1) then failwith "rrer";
 					if (info.sx.(0).(i) = 1 && info.b.(0) = 1 && info.b.(i+1) = 0) then failwith "fdsay";
@@ -570,28 +570,28 @@ let test_assumptions game strategy valu =
 
 										if (info.b.(0) = 1 && info.b.(info.mu) = 0) then failwith "fdsazzzx";
 
-										
+
 					if (counter.(0).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int x ^ "\n");
 			);
-			
+
 				  if (i + 1 < info.len && info.b.(i+1) = 1 && info.sx.(0).(i) = 1 && info.g.(i) = 1) then failwith "asdfasf";
 				  if (i + 1 < info.len && info.b.(i+1) = 0 && info.sx.(1).(i) = 1 && info.g.(i) = 0) then failwith "asdfasf";
-			
+
 			if (info.e0g.(i) = 1 && info.e0b.(i) = 1) then (
 					if (counter.(0).(i) = 1) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int counter.(0).(i) ^ "\n");
 					let x = if info.e.(0) = 0 || info.g.(0) != info.b.(1) then 1 else 0 in
-					
+
 				  if (i + 1 < info.len && info.b.(i+1) = 1 && info.sx.(0).(i) = 1) then failwith "asdfasf";
 					if (info.s.(0) = 0 && info.g.(0) = info.b.(1) && info.e.(0) = 1) then failwith "w00t";
-					
+
 					if (info.e.(0) = 0 &&  info.g.(0) = info.b.(1)) then failwith "nope";
-					
+
 					if (info.g.(0) = 0 && info.b.(1) = 1 && info.mu > 1) then failwith "aha";
 					if (info.g.(0) = 1 && info.b.(1) = 0 && info.mu = 1) then failwith "sjs";
 
 					if (counterx.(0).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int x ^ "\n");
 			);
-			
+
 			if (info.e1g.(i) = 1 && info.e1b.(i) = 0) then (
 				if (info.mu = 0) then (
 						if (info.sx.(1).(i) = 1) then print_string("\nasdfasdf\n");
@@ -605,7 +605,7 @@ let test_assumptions game strategy valu =
 
 					if (x = 0 &&  i < info.len - 1 && info.b.(i+1) = 1) then failwith "asdf";
 
-					
+
 
 					if (info.sx.(1).(i) = 1 && info.b.(0) = 1 && info.mu <= i+1) then failwith "fdsax";
 					if (info.sx.(1).(i) = 1 && info.b.(0) = 1 && i > 0 && info.b.(1) = 1) then failwith "fdsax";
@@ -617,14 +617,14 @@ let test_assumptions game strategy valu =
 					if (info.g.(0) = 1 && info.b.(1) = 0 && info.mu = 1) then failwith "sjs";
 
 					if (counter.(1).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int x ^ "\n");
-					
-					
+
+
 					if (info.sx.(1).(i) = 1 && info.b.(i+1) = 0) then (
 						if (info.eb.(i) = 0) then (
 							print_string "rats";
 						);
 					);
-					
+
 			);
 			if (info.e1g.(i) = 1 && info.e1b.(i) = 1) then (
 					if (counter.(1).(i) = 1) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int counter.(1).(i) ^ "\n");
@@ -636,8 +636,8 @@ let test_assumptions game strategy valu =
 
 					if (counterx.(1).(i) = x) then print_string ("\nLoops " ^ string_of_int i ^ " / " ^ string_of_int x ^ "\n");
 			);
-															
-																																													
+
+
 		if (i >= info.mu && info.b.(i) = 1) || (i < info.mu && i > 0 && info.b.(1) = 1) || (i < info.mu && info.e.(i) = 1) || (i < info.mu && info.b.(0) = 0) then (
 			if (info.s.(i) != 1) then print_string ("\n\nAs" ^ string_of_int i ^ "/" ^ string_of_int info.mu ^ "\n\n");
 		);
@@ -662,7 +662,7 @@ let test_assumptions game strategy valu =
 		if info.mu = 0 && info.b.(0) = 0 && Bits.least_zero info.s <= Bits.least_one info.b && Bits.least_zero info.s <= Bits.least_zero info.g && info.eb.(i) = 1 && i < Bits.least_zero info.s && mdplike then print_string  ("\n\nCbbb\n\n");
 		*)
 	done;
-	(* b_i never meets g_0, b_0, b_1 *)	
+	(* b_i never meets g_0, b_0, b_1 *)
 	for i = 1 to info.len - 1 do
 		if (StrategyHelper.leads_to game valu ("m" ^ string_of_int i) "d0") then print_string ("\n\nb_" ^ string_of_int i ^ " to g_0\n\n");
 		if (StrategyHelper.leads_to game valu ("m" ^ string_of_int i) "m0") then print_string ("\n\nb_" ^ string_of_int i ^ " to b_0\n\n");
@@ -680,7 +680,7 @@ let test_assumptions game strategy valu =
 
 
 let test_valuation_assumptions game strategy valu n =
-	let find a i = game#find_desc  (Some (a ^ string_of_int i)) in	
+	let find a i = game#find_desc  (Some (a ^ string_of_int i)) in
 	let info = strategy_info game strategy in
 	let vinfo = valuation_info game strategy (TreeSet.get_compare (let (_, v_valu, _) = valu.(0) in v_valu)) in
 	let check_valu desc s i assrt =
@@ -728,9 +728,9 @@ in
 			check_valu "left_up" "g" i vinfo.gv.(i);
 			if (i < n-1) then check_valu "right_up" "s" i vinfo.sv.(i);
 			check_valu "bisel" "d" i vinfo.xv.(i);
-			check_valu "leftcyc" "E" i vinfo.fv.(0).(i);			
+			check_valu "leftcyc" "E" i vinfo.fv.(0).(i);
 			if (i < n-1) then check_valu "ritecyc" "X" i vinfo.fv.(1).(i);
-			
+
 			if (i < info.mu && info.b.(1) = 1) then check_valu "bisel-l3" "d" i vinfo.rr.(i);
 			if (i < info.mu) then check_valu_range "bisel-l4" "d" i vinfo.rr.(i) (TreeSet.add (find "d" i) vinfo.bv.(1));
 			(*
@@ -739,9 +739,9 @@ in
       if (info.mu = 0 && i = 0 && info.g.(0) = 1 && info.b.(0) = 0 && info.b.(1) = 1) then check_valu_range "test" "d" i (TreeSet.add (find "d" i) vinfo.bv.(1)) (TreeSet.add (find "z" i) (TreeSet.add (find "d" i) vinfo.bv.(1)));
 			*)
  	done;;
-	
-	
-	
+
+
+
 let test_mdpvaluation_assumptions game strategy valu mdpvalu n =
 	let find a i = game#find_desc  (Some (a ^ string_of_int i)) in
 	let info = strategy_info game strategy in
@@ -752,7 +752,7 @@ let test_mdpvaluation_assumptions game strategy valu mdpvalu n =
 		let ff = TreeMap.format (fun (i, v) -> OptionUtils.get_some (game#get_desc  i) ^ ":" ^ string_of_float v) in
 		let va = fst mdpvalu.(v) in
 		let va = TreeMap.filter (fun u v -> game#get_priority  u >= 11) va in
-		if not (TreeMap.equal (fun v1 v2 -> not (v1 > v2) && not (v1 < v2)) va assrt) 
+		if not (TreeMap.equal (fun v1 v2 -> not (v1 > v2) && not (v1 < v2)) va assrt)
 		then print_string ("\n\n" ^ desc ^ " " ^ " " ^ ArrayUtils.format string_of_int info.b ^ " " ^ " | " ^ ff va ^ " | " ^ ff assrt ^ "\n\n");
 	in
 if (info.mu = 0 && info.b.(0) = 0) then (
@@ -775,11 +775,11 @@ if (info.mu = 0 && info.b.(0) = 0) then (
 			check_valu "ladder" "m" i vinfo.mbv.(i);
 			if (i < info.mu) then check_valu "bisel" "d" i vinfo.mgg.(i);
  	done;;
-		
-	
-	
-	
-	
+
+
+
+
+
 let test_improving_switches game strategy valu n =
 	let best_decision v =
 		let cmp =
@@ -802,7 +802,7 @@ let test_improving_switches game strategy valu n =
 			print_string ("\n\n" ^ desc ^ " " ^ s ^ string_of_int i ^ " (false " ^ (if assrt then "+ + + + + +" else "- - - - - -") ^ ") -- " ^ "\n\n");
 		)
   in
-  	let rec ex i j f = i <= j && ((f i) || (ex (i+1) j f)) in 
+  	let rec ex i j f = i <= j && ((f i) || (ex (i+1) j f)) in
 	(*let sgn i = if i > 0 then 1 else 0 in*)
 	let impr_b = Array.init n (fun i ->
 		   (i = info.mu && info.b.(i) = 0 && info.e.(i) = 1 && info.g.(i) = (if i = n-1 then 0 else info.b.(i+1))) ||
@@ -811,14 +811,14 @@ let test_improving_switches game strategy valu n =
 	) in
 	let impr_s_0 = Array.init n (fun i ->
 		     (i = info.mu - 2 && info.b.(i+2) = 1 && info.sx.(0).(i) = 0) ||
-			 (i < info.mu - 2 && info.b.(i+2) = 0 && info.sx.(0).(i) = 0) ||  
+			 (i < info.mu - 2 && info.b.(i+2) = 0 && info.sx.(0).(i) = 0) ||
 			 (i > info.mu - 2 && i < n-1 && info.sx.(0).(i) = 0 && info.b.(i+1) = 0) ||
 			 (i > info.mu - 2 && i < n-1 && info.sx.(0).(i) = 1 && info.b.(i+1) = 1 && info.b.(0) = 0) ||
-			 (mdplike && i = info.mu - 1 && info.sx.(0).(i) = 1 && info.b.(info.mu) = 1 && info.b.(0) = 1 && (info.b.(1) = 0 || i = 0) && ex 0 i (fun j -> info.eb.(j) = 1))			 
+			 (mdplike && i = info.mu - 1 && info.sx.(0).(i) = 1 && info.b.(info.mu) = 1 && info.b.(0) = 1 && (info.b.(1) = 0 || i = 0) && ex 0 i (fun j -> info.eb.(j) = 1))
   ) in
 	(*let impr_s_1 = Array.init (n-1) (fun i ->
 		   (i = info.mu - 1 && info.e.(i+1) = 1 && info.g.(i+1) = (if i < n-2 then info.b.(i+2) else 0) && info.sx.(1).(i) = 0) ||
-			 (i < info.mu - 1 && info.b.(0) = 0 && info.sx.(1).(i) = 1) ||  
+			 (i < info.mu - 1 && info.b.(0) = 0 && info.sx.(1).(i) = 1) ||
 			 (i > info.mu - 1 && i < n-1 && info.sx.(1).(i) != info.b.(i+1) && info.sx.(1).(i) * info.b.(0) = 0)
   ) in
 	let impr_e i value =
@@ -854,19 +854,19 @@ let test_improving_switches game strategy valu n =
 				) ||
 				(
 					info.b.(i) = 0 &&
-					info.g.(i) = 0 && 
-					info.eb.(i) = 1 && 
+					info.g.(i) = 0 &&
+					info.eb.(i) = 1 &&
 					info.eg.(i) >= info.e1g.(i) &&
 					(
 						(
-							i >= info.mu && 
-							info.e1b.(i) = 0 && 
+							i >= info.mu &&
+							info.e1b.(i) = 0 &&
 							info.e1g.(i) = 1
 						) ||
 						(
-							info.mu = 0 && 
-							info.sx.(0).(i) = 1 && 
-							info.e1b.(i) = 1 && 
+							info.mu = 0 &&
+							info.sx.(0).(i) = 1 &&
+							info.e1b.(i) = 1 &&
 							(
           			(
 									info.sx.(1).(i) = 0 &&
@@ -874,7 +874,7 @@ let test_improving_switches game strategy valu n =
 									info.e1g.(i) = 0
 								) ||
 								(
-									i = 0 && 
+									i = 0 &&
 									info.b.(1) = 1
 								)
 							)
@@ -919,7 +919,7 @@ let test_improving_switches game strategy valu n =
 				) ||
 				(
 					i = 0 &&
-					info.mu = exit && 
+					info.mu = exit &&
 					info.b.(1) = 1 &&
 					exit = 1
 				) ||
@@ -975,7 +975,7 @@ let test_improving_switches game strategy valu n =
 							(
 								i > 0 ||
 								info.mu != 1
-							)						
+							)
 						)
 					)
 				) ||
@@ -993,9 +993,9 @@ let test_improving_switches game strategy valu n =
 		)
 	in*)
 	for i = 0 to n - 1 do
-		check_impr "b" "m" i impr_b.(i);		
+		check_impr "b" "m" i impr_b.(i);
 		check_impr "s0" "g" i impr_s_0.(i);
-		(*	
+		(*
 		if i < n-1 then check_impr "s1" "s" i impr_s_1.(i);
 		check_impr "g" "d" i impr_g.(i);
 		check_impr "e" "o" i (impr_e i (strat "o" i "m" 1));
@@ -1008,7 +1008,7 @@ let test_improving_switches game strategy valu n =
 		check_impr "d" "w" i (impr_d i (strat "w" i "X" i) (strat "v" i "X" i) (strat "q" i "m" 1) (strat "r" i "m" 1) 1);
 		if i < n-1 then
 		check_impr "d" "v" i (impr_d i (strat "v" i "X" i) (strat "w" i "X" i) (strat "r" i "m" 1) (strat "q" i "m" 1) 1);
-		*) 
+		*)
 	done;;
 
 
@@ -1018,7 +1018,7 @@ let initial_strategy_check game strategy n =
 	for i = 0 to n - 1 do
 		if (info.b.(i) = 1) then (
 			if not (info.g.(i) = (if i = n-1 then 0 else info.b.(i+1)) && info.e.(i) = 1 && info.s.(i) = 1)
-			then result := false; 
+			then result := false;
 		);
 		if (i < n - 1) then (
 			if (info.sx.(0).(i) = info.b.(i+1) || info.sx.(1).(i) != info.b.(i+1))
@@ -1066,16 +1066,16 @@ let test_occrec_delta_assumptions game strategy valu occrec n =
 			done;
 			if (!delta != assrt)
 			then print_string ("\n\n" ^ desc ^ " " ^ s ^ string_of_int i ^ " : " ^ string_of_int !delta ^ " vs " ^ string_of_int assrt ^ " " ^ ArrayUtils.format string_of_int oi.b ^ " --> " ^ ArrayUtils.format string_of_int info.b ^ "\n\n");
-		in	
-		
+		in
+
 		let delta_b = Array.init n (fun i ->
-			if (i <= oi.mu) then 1 else 0 
+			if (i <= oi.mu) then 1 else 0
 		) in
 		let delta_s_0 = Array.init n (fun i ->
-			if (i < oi.mu) then 1 else 0 
+			if (i < oi.mu) then 1 else 0
 		) in
 		let delta_s_1 = Array.init n (fun i ->
-			if (i < oi.mu) then 1 else 0 
+			if (i < oi.mu) then 1 else 0
 		) in
 		let delta_e = Array.init n (fun i ->
 			1
@@ -1083,7 +1083,7 @@ let test_occrec_delta_assumptions game strategy valu occrec n =
 
 		let delta_d = Array.init 2 (fun k -> Array.init 2 (fun l -> Array.init n (fun i ->
 			if (i > oi.mu) then (
-				if oi.b.(i) = 1 && (i = n-1 || oi.b.(i+1) = k) then 0				
+				if oi.b.(i) = 1 && (i = n-1 || oi.b.(i+1) = k) then 0
 				else if oi.b.(i) = 1 then 1
 				else if l = 1 && Bits.greatest_one oi.b = n then 2
 				else if i < n-1 && oi.b.(i+1) = 1-k && oi.b.(0) = 0 && (ArrayUtils.forall oi.b (fun j x -> j < 1 || j >= i || x = 1)) then 1
@@ -1101,15 +1101,15 @@ let test_occrec_delta_assumptions game strategy valu occrec n =
 				else if (i = n-1 || oi.b.(i+1) = k) && i > 0 then l
 				else if i = 0 && oi.b.(1) = 1-k then 1
 				else 1-l
-			) else (				
+			) else (
 				if k = 1 && l = 1 && oi.b.(i+1) = 1 && i = 1 then 1
 				else if k = 1 && oi.b.(i+1) = 1 && i > 0 then 2
-				else if i = 0 && oi.b.(0) = 1 && l = 1 && oi.b.(1) = k then 2					
+				else if i = 0 && oi.b.(0) = 1 && l = 1 && oi.b.(1) = k then 2
 			  else if oi.b.(0) = 1 && oi.b.(1) = 1 && i = 1 && oi.mu = 2 && l = 1 then 1
 				else if k = 1 && oi.b.(0) = 1 && oi.b.(1) = 1 && oi.b.(i) = 1 then 1
 				else if i = oi.mu - 1 && i > 0 then 2
 				else 1
-			)			
+			)
 		)))	in
 
 		let delta_g = Array.init n (fun i ->
@@ -1123,18 +1123,18 @@ let test_occrec_delta_assumptions game strategy valu occrec n =
 			else if i = oi.mu && (oi.b.(1) = 1 || i > 0) && Bits.greatest_one oi.b >= i then 1
 			else if i < n-1 && oi.b.(0) = 0 && oi.b.(1) = 0 && oi.b.(i+1) = 0 && Bits.greatest_one oi.b > i && Bits.least_one oi.b >= 0 && i > 1 &&
 			        (ArrayUtils.forall oi.b (fun j x -> j < 2 || j >= i || x = 1)) && oi.b.(i) = 0 then 1
-			
+
 			else 0
 		) in
-		
+
 		for i = 0 to n - 1 do
 			check "b" "m" i delta_b.(i);
 			if i < n - 1 then
 			check "s0" "g" i delta_s_0.(i);
 			if i < n - 1 then
 			check "s1" "s" i delta_s_1.(i);
-			
-			
+
+
 			check "d00" "a" i delta_d.(0).(0).(i);
 			check "d01" "b" i delta_d.(0).(1).(i);
 			if i < n - 1 then
@@ -1151,7 +1151,7 @@ let test_occrec_delta_assumptions game strategy valu occrec n =
 			if i < n - 1 then
 			check "e*" "r" i delta_e.(i);
 		done;
-		
+
 		oldoccrec := Array.init (Array.length occrec) (fun i -> Array.init (Array.length occrec.(i)) (fun j -> occrec.(i).(j)));
 		oldinfo := Some info;
 	);;
@@ -1178,7 +1178,7 @@ let test_occrec_assumptions game strategy valu occrec n =
 			if (!acc != assrt)
 			then print_string ("\n\n" ^ desc ^ " " ^ s ^ string_of_int i ^ " : " ^ string_of_int (!acc-assrt) ^ " " ^ ArrayUtils.format string_of_int oi.b ^ " --> " ^ ArrayUtils.format string_of_int info.b ^ "\n\n");
 		in
-		
+
 		let assrt_b = Array.init n (fun i ->
 			BitScheme.bit_flips info.b i TreeSet.empty_def + BitScheme.bit_unflips info.b i TreeSet.empty_def - 1
 		) in
@@ -1191,18 +1191,18 @@ let test_occrec_assumptions game strategy valu occrec n =
 		let assrt_e = Array.init n (fun i ->
 			Bits.to_int info.b
 		) in
-		
+
 		let sgn i = if i = 0 then 0 else if i > 0 then 1 else -1 in
-		
+
 		let assrt_d = Array.init 2 (fun k -> Array.init 2 (fun l -> Array.init n (fun i ->
 			if (info.b.(i) = 1 && (i = n-1 || info.b.(i+1) = k))
 			then BitScheme.max_flip_number info.b i (TreeSet.singleton_def (i+1, k)) + (2 * l - 1) * sgn i
 			else if (info.b.(i) = 0 && (i = n-1 || info.b.(i+1) = k))
-			then 2 * BitScheme.bit_flips info.b 0 TreeSet.empty_def - info.b.(0) * sgn i + l 
+			then 2 * BitScheme.bit_flips info.b 0 TreeSet.empty_def - info.b.(0) * sgn i + l
 			else if (info.b.(i) = 1)
 			then 2 * BitScheme.bit_flips info.b 0 TreeSet.empty_def - info.b.(0) + l
 			else if i = 0
-		  then BitScheme.max_flip_number info.b i (TreeSet.singleton_def (i+1, k)) + 2 * Bits.to_int info.b + 1 + l				 
+		  then BitScheme.max_flip_number info.b i (TreeSet.singleton_def (i+1, k)) + 2 * Bits.to_int info.b + 1 + l
 				   - 2 * ((if k = 0 then BitScheme.max_flip_number else BitScheme.max_unflip_number) info.b (i+1) TreeSet.empty_def)
 			else if i = 1
 			then BitScheme.max_flip_number info.b i (TreeSet.singleton_def (i+1, k))
@@ -1219,13 +1219,13 @@ let test_occrec_assumptions game strategy valu occrec n =
 			then 2 * Bits.to_int info.b + (if Bits.least_zero info.b = i then 0 else 1)
 			else BitScheme.max_flip_number info.b i (TreeSet.singleton_def (i+1, k))
 				 + (2 - k) * Bits.to_int info.b + l + (if Bits.least_zero info.b = i then 0 else 1-k)
-				 - 2 * ((if k = 0 then BitScheme.max_flip_number else BitScheme.max_unflip_number) info.b (i+1) TreeSet.empty_def)				 
+				 - 2 * ((if k = 0 then BitScheme.max_flip_number else BitScheme.max_unflip_number) info.b (i+1) TreeSet.empty_def)
 				 + k * (if Bits.greatest_one info.b < i then 0 else Bits.to_int info.b + (if Bits.least_zero info.b = i then 0 else 1))
 				 + (1-k) * l * (if (Bits.least_zero info.b < i) then (if info.b.(0) + info.b.(1) = 1 && ArrayUtils.forall info.b (fun j x -> j < 2 || j >= i || x = 1) then 0 else 1) else 0)
 				 + k * l * (if info.b.(i+1) = 0 && Bits.greatest_one info.b > i && (info.b.(i-1) = 0 || Bits.numb_zero_below info.b i > 1 || (i > 3 && info.b.(0) + info.b.(1) != 1) || (i > 3 && info.b.(i+2) = 1)) then 1 else 0)
 				 + k * l * (if i > 3 && i < n-2 && info.b.(i+1) = 0 && (if Bits.numb_zero_below info.b i > 0 then info.b.(i+2) = 1 else Bits.greatest_one info.b > i) && info.b.(i-1) = 1 && Bits.numb_zero_below info.b i < 2 && Bits.numb_zero_below info.b i = Bits.numb_zero_below info.b 2 then -1 else 0)
 		))) in
-				
+
 		let assrt_g = Array.init n (fun i ->
 			if i = n-1 then 0
 			else if (Bits.greatest_one info.b < i)
@@ -1237,24 +1237,24 @@ let test_occrec_assumptions game strategy valu occrec n =
 				if (ArrayUtils.forall info.b (fun j x -> j < 2 || j >= i || x = 1)) && info.b.(i+1) = 0 then info.b.(1) * 3 + info.b.(0) + info.b.(0) * info.b.(1) - 7 else -9
 			)
 		) in
-				
+
 		for i = 0 to n - 1 do
 			check "b" "m" i assrt_b.(i);
 			if i < n - 1 then
 			check "s0" "g" i assrt_s_0.(i);
 			if i < n - 1 then
 			check "s1" "s" i assrt_s_1.(i);
-			
+
 			check "d00" "a" i assrt_d.(0).(0).(i);
 			check "d01" "b" i assrt_d.(0).(1).(i);
-			if i < n - 1 then 
+			if i < n - 1 then
 			check "d10" "w" i assrt_d.(1).(0).(i);
 			if i < n - 1 then
 			check "d11" "v" i assrt_d.(1).(1).(i);
 
 			check "g" "d" i assrt_g.(i);
 
-			
+
 			check "e*" "o" i assrt_e.(i);
 			check "e*" "p" i assrt_e.(i);
 			if i < n - 1 then
@@ -1262,7 +1262,7 @@ let test_occrec_assumptions game strategy valu occrec n =
 			if i < n - 1 then
 			check "e*" "r" i assrt_e.(i);
 		done;
-		
+
 		oldoccrecx := Array.init (Array.length occrec) (fun i -> Array.init (Array.length occrec.(i)) (fun j -> occrec.(i).(j)));
 		oldinfox := Some info;
 	);;
@@ -1294,7 +1294,7 @@ let check_fair_exp_occ game strategy bits occ =
 			let ibfla1 = BitScheme.max_flip_number bits i (TreeSet.singleton_def (i+1, 1)) in
 			let ipbmfl = if i < n-1 then BitScheme.max_flip_number bits (i+1) TreeSet.empty_def else 0 in
 			let ipbmflu = if i < n-1 then BitScheme.max_unflip_number bits (i+1) TreeSet.empty_def else 0 in
-			
+
 			valid := eqs "m" i "d" i ibfl && !valid;
 
 			if (bits.(i) = 1 && active.(i) = 0) then (
@@ -1319,13 +1319,13 @@ let check_fair_exp_occ game strategy bits occ =
 	  	);
 
 			if (i < n-1) then (
-				
+
 				valid := eqs "m" i "m" (i+1) (ibfl - bits.(i)) && !valid;
 				valid := eqs "g" i "c" i (ipbfl - 1 * bits.(i+1)) && !valid;
 				valid := bounded "s" i "u" i (ipbfl - 0 * bits.(i+1) - 1) (ipbfl - 0 * bits.(i+1)) && !valid;
 				valid := bounded "g" i "m" 0 (ipbfl - 0 * bits.(i+1) - 1) (ipbfl - 0 * bits.(i+1)) && !valid;
 				valid := bounded "s" i "m" 0 (ipbfl - 1 * bits.(i+1) - 1) (ipbfl - 1 * bits.(i+1)) && !valid;
-				
+
 				if (bits.(i) = 1 && active.(i) = 1) then (
           valid := bounded "v" i "X" i (ibfla1/2 + ibfla1 mod 2) (ibfla1/2 + ibfla1 mod 2 + 1) && !valid;
           valid := bounded "w" i "X" i (ibfla1/2) (ibfla1/2 + 1) && !valid;
@@ -1338,9 +1338,9 @@ let check_fair_exp_occ game strategy bits occ =
 				) else (
 				  let limit = min ((ibfla1/2) + bits_as_int - ipbmflu) zbfl in
 					valid := bounded "v" i "X" i (limit - 1) (limit + 1) && !valid;
-					valid := bounded "w" i "X" i (limit - 1) (limit + 1) && !valid; 
+					valid := bounded "w" i "X" i (limit - 1) (limit + 1) && !valid;
 					valid := bounded "v" i "r" i (limit - 1) (limit + 1) && !valid;
-					valid := bounded "w" i "q" i (limit - 1) (limit + 1) && !valid; 
+					valid := bounded "w" i "q" i (limit - 1) (limit + 1) && !valid;
 					valid := bounded "q" i "d" 0 (zbfl-1) zbfl && !valid;
 					valid := bounded "r" i "d" 0 (zbfl-1) zbfl && !valid;
 					valid := bounded "q" i "m" 1 (zbfl-1) zbfl && !valid;
@@ -1362,7 +1362,7 @@ let last_active_phases = ref TreeSet.empty_def;;
 let count_bits = ref 1;;
 
 let switch_zadeh_exp_tie_break_callback n game old_strategy valu occ v w r s =
-	
+
 	  let is_initial_strategy bits = Array.init (Array.length bits - 1) (fun i -> bits.(i)) = (strategy_info game old_strategy).b in
 
 		let msg_tagged_nl v = message_autotagged_newline v (fun _ -> "ANALYZE") in
@@ -1370,7 +1370,7 @@ let switch_zadeh_exp_tie_break_callback n game old_strategy valu occ v w r s =
 		if (Array.length !curbits = 0)
 		then curbits := Bits.zero (n+1);
 
-	  if (not (is_initial_strategy !curbits) && (is_initial_strategy (Bits.inc !curbits)) && initial_strategy_check game old_strategy n) 
+	  if (not (is_initial_strategy !curbits) && (is_initial_strategy (Bits.inc !curbits)) && initial_strategy_check game old_strategy n)
 		then (
 			curbits := Bits.inc !curbits;
 			incr count_bits;
@@ -1394,11 +1394,11 @@ let switch_zadeh_exp_tie_break_callback n game old_strategy valu occ v w r s =
   	test_occrec_assumptions game old_strategy valu occ n;
 		test_occrec_delta_assumptions game old_strategy valu occ n;*)
 		test_improving_switches game old_strategy valu n;
-		
+
 		();;
-		
-	
-(***************************************** ANALYZE ********************************************)		
+
+
+(***************************************** ANALYZE ********************************************)
 
 
 
@@ -1408,24 +1408,24 @@ let improvement_policy_optimize_fair_default_tie_break game node_total_ordering 
 	)
 
 
-  
+
 let improvement_policy_optimize_fair tie_break
                                      game node_total_ordering occ old_strategy valu =
     let msg_tagged_nl v = message_autotagged_newline v (fun _ -> "STRIMPR_FAIR") in
 	let desc i = match (game#get_desc  i) with Some s -> s | None -> string_of_int i in
-  
+
 	let cmp =
 		if not mdplike
 		then fun i j -> node_valuation_ordering game node_total_ordering valu.(i) valu.(j)
 		else let mdplike_valu = mdplike_valuation game 7 old_strategy in
   	     compare_mdplike_valuation game mdplike_valu
 	in
-	
 
-	
-			
+
+
+
     msg_tagged_nl 4 (fun _ ->
-    	"Occ: " ^ 
+    	"Occ: " ^
     	ArrayUtils.formati (fun i a -> desc i ^ ":" ^
     		let tr = Array.of_list (ns_nodes (game#get_successors  i)) in
     		ArrayUtils.formati (fun j k ->
@@ -1434,13 +1434,13 @@ let improvement_policy_optimize_fair tie_break
     	) occ
     	^ "\n"
     );
-	
+
     let strategy = old_strategy#copy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
 	game#iterate (fun i (_, pl, tr, _, de) ->
 		if pl = plr_Even then
-			Array.iteri (fun j k ->		
+			Array.iteri (fun j k ->
 				if cmp (strategy#get i) k < 0 then (
 					if !minvalue = -1 then minvalue := occ.(i).(j);
 					if !minvalue = occ.(i).(j) then l := (i,j,k)::!l
@@ -1454,16 +1454,58 @@ let improvement_policy_optimize_fair tie_break
 	l := List.rev !l;
 	msg_tagged_nl 4 (fun _ -> "Occurrence-Arena: " ^ ListUtils.format (fun (i,_,k) -> desc i ^ "->" ^ desc k) (List.rev !l) ^ "\n");
 	if !l != [] then (
-		let (i,j,k) = tie_break game node_total_ordering occ old_strategy valu !l in 
+		let (i,j,k) = tie_break game node_total_ordering occ old_strategy valu !l in
 		strategy#set i k;
 		occ.(i).(j) <- occ.(i).(j) + 1
 	);
-	(strategy, occ)	
+	(strategy, occ)
 
-				
-				
-				
-				
+
+
+
+let zadeh_game_compute_state game valu =
+	let desc i = OptionUtils.get_some (game#get_desc  i) in
+	let find s =
+		let i = ref 0 in
+		while (!i < game#size ) && (desc !i <> s) do
+			incr i
+		done;
+		if !i < game#size  then Some !i else None
+	in
+	let leadsto i j =
+		let (_, path, _) = valu.(OptionUtils.get_some i) in
+		TreeSet.mem (OptionUtils.get_some j) path
+	in
+	let n = ref 0 in
+	while (find ("E" ^ string_of_int !n) != None) do incr n done;
+	let n = !n in
+	let state = Array.make n (0,0) in
+
+	for i = 0 to n - 1 do
+		let fndfst = ref 0 in
+		if (leadsto (find ("a" ^ string_of_int i)) (find ("E" ^ string_of_int i))) &&
+		   (leadsto (find ("b" ^ string_of_int i)) (find ("E" ^ string_of_int i))) then
+		(
+		   fndfst := 1;
+		);
+		let fndsnd = ref 0 in
+		if (i < n-1) && (leadsto (find ("v" ^ string_of_int i)) (find ("X" ^ string_of_int i))) &&
+		   (leadsto (find ("w" ^ string_of_int i)) (find ("X" ^ string_of_int i))) then
+		(
+		   fndsnd := 1;
+		);
+		state.(i) <- (!fndsnd,!fndfst)
+    done;
+
+	let state' = Array.make (n+1) 0 in
+	state'.(n) <- 0;
+	for i = n - 1 downto 0 do
+		let (s,f) = state.(i) in
+		state'.(i) <- state'.(i+1)*s + (1-state'.(i+1)) * f;
+	done;
+    state'
+
+
 let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy valu l =
 	let desc i = OptionUtils.get_some (game#get_desc  i) in
 	let find s =
@@ -1477,43 +1519,13 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 		let (_, path, _) = valu.(OptionUtils.get_some i) in
 		TreeSet.mem (OptionUtils.get_some j) path
 	in
-	
+
 	let n = ref 0 in
 	while (find ("E" ^ string_of_int !n) != None) do incr n done;
 	let n = !n in
-	let s = ref "" in
-	
-	let state = Array.make n (0,0) in
-	
-	for i = 0 to n - 1 do
-		let fndfst = ref 0 in
-		if (leadsto (find ("a" ^ string_of_int i)) (find ("E" ^ string_of_int i))) &&
-		   (leadsto (find ("b" ^ string_of_int i)) (find ("E" ^ string_of_int i))) then
-		(
-		   fndfst := 1;
-           s := "1" ^ !s;
-		)
-        else s := "0" ^ !s;
-		let fndsnd = ref 0 in
-		if (i < n-1) && (leadsto (find ("v" ^ string_of_int i)) (find ("X" ^ string_of_int i))) &&
-		   (leadsto (find ("w" ^ string_of_int i)) (find ("X" ^ string_of_int i))) then
-		(
-		   fndsnd := 1;
-           s := "1" ^ !s;
-		)
-        else s := "0" ^ !s;
-		s := "|" ^ !s;
-		state.(i) <- (!fndsnd,!fndfst)
-    done;
-	
-	let r = ref "" in
-	let state' = Array.make (n+1) 0 in
-	state'.(n) <- 0;
-	for i = n - 1 downto 0 do
-		let (s,f) = state.(i) in
-		state'.(i) <- state'.(i+1)*s + (1-state'.(i+1)) * f;
-		r := !r ^ string_of_int state'.(i)
-	done;
+
+	let state' = zadeh_game_compute_state game valu in
+
 	let idxmap = Array.make n 0 in
 	let zeros = ref 0 in
 	for i = 0 to n - 1 do
@@ -1534,7 +1546,7 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 	let msg_tagged_nl v = message_autotagged_newline v (fun _ -> "ANALYZE") in
 		(* msg_tagged_nl 2 (fun _ -> show_info game occ old_strategy valu n); *)
 
-	
+
 	let compare_nodes k (soulab0, souidx0) (tarlab0, taridx0) (oldlab0, oldidx0) (soulab1, souidx1) (tarlab1, taridx1) (oldlab1, oldidx1)
 					  state idxmap strat =
 		let nn = 2 * k in
@@ -1573,13 +1585,13 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 		|	(('c',_),_,_)       (* h *) 					            -> (4 + 2 * nn) * nn
 		|	(('u',_),_,_)       (* h *) 					            -> (4 + 2 * nn) * nn
 		|	((x,_),_,_) -> failwith ("imp:" ^ Char.escaped x)
-		in	
+		in
 		compare (mp ((soulab0, souidx0), (tarlab0, taridx0), (oldlab0, oldidx0))) (mp ((soulab1, souidx1), (tarlab1, taridx1), (oldlab1, oldidx1)))
 	in
 	let f i =
 		match game#get_desc  i with
 			None -> ('!', 0)
-		|	Some s -> 
+		|	Some s ->
 				if String.length s = 1
 				then (String.get s 0, 0)
 				else if String.get s 1 = '('
@@ -1594,7 +1606,167 @@ let improvement_policy_optimize_fair_sub_exp_tie_break game _ occ old_strategy v
 	(i,j,k)
 
 
-		   
+
+let iteration_counter =ref 0 ;;
+
+let improvement_policy_optimize_lbi_sub_exp_tie_break game _ occ old_strategy valu l =
+	let desc i = OptionUtils.get_some (game#get_desc  i) in
+	let find s =
+		let i = ref 0 in
+		while (!i < game#size ) && (desc !i <> s) do
+			incr i
+		done;
+		if !i < game#size  then Some !i else None
+	in
+	let leadsto i j =
+		let (_, path, _) = valu.(OptionUtils.get_some i) in
+		TreeSet.mem (OptionUtils.get_some j) path
+	in
+
+	let n = ref 0 in
+	while (find ("E" ^ string_of_int !n) != None) do incr n done;
+	let n = !n in
+
+	let state' = zadeh_game_compute_state game valu in
+
+	let idxmap = Array.make n 0 in
+	let zeros = ref 0 in
+	for i = 0 to n - 1 do
+		if state'.(i) = 0 then incr zeros;
+	done;
+	let zeroidx = ref 0 in
+	let oneidx = ref !zeros in
+	for i = 0 to n - 1 do
+		if state'.(i) = 1 then (
+			idxmap.(i) <- !oneidx;
+			incr oneidx
+		)
+		else (
+			idxmap.(i) <- !zeroidx;
+			incr zeroidx
+		)
+	done;
+	let msg_tagged_nl v = message_autotagged_newline v (fun _ -> "ANALYZE") in
+		(* msg_tagged_nl 2 (fun _ -> show_info game occ old_strategy valu n); *)
+    msg_tagged_nl 3 (fun _ ->
+    	"\nOcc: " ^
+    	ArrayUtils.formati (fun i a -> desc i ^ ":" ^
+    		let tr = Array.of_list (ns_nodes (game#get_successors  i)) in
+    		ArrayUtils.formati (fun j k ->
+    			desc tr.(j) ^ ":" ^ string_of_int k
+    		) a
+    	) occ
+    	^ "\n"
+    );
+  incr iteration_counter;
+
+	let compare_nodes k (soulab0, souidx0) (tarlab0, taridx0) (oldlab0, oldidx0) (soulab1, souidx1) (tarlab1, taridx1) (oldlab1, oldidx1)
+					  state idxmap strat =
+		let nn = 2 * k in
+		let f i = 2 * idxmap.(i) + state.(i+1) in
+		let g i = 2 * idxmap.(i) + 1 - state.(i+1) in
+		let h c d i = if fst (strat (c ^ string_of_int i)) = d then 1 else 0 in
+		let mp = function
+		|	(('m',_),_,_)       (* c *)            		    			-> -2 * nn
+(*		|	(('p',_),_,_)                       		    			-> -1
+		|	(('q',_),_,_)                       		    			-> -1 *)
+		|	(('d',i),_,_)       (* g *)           		    			-> (5 + 2 * nn) * nn
+  	    |	(('a',_),_,('E',_)) (* e *) 		    			        -> -3 * nn
+		|	(('w',_),_,('X',_)) (* e *)  		 				        -> -3 * nn
+		|	(('b',_),_,('E',_)) (* d *)  		    			        -> -3 * nn
+		|	(('v',_),_,('X',_)) (* d *)  		    			        -> -3 * nn
+        |	(('o',i),_,(_,_)) (* e *) 		    	                    -> (if (h "a" 'E' i) = 2 then -4 else 1) * nn + (nn-2*i)
+		|	(('p',i),_,(_,_)) (* e *)  		 				            -> (if (h "b" 'E' i) = 2 then -4 else 1) * nn + (nn-2*i) + 1
+		|	(('q',i),_,(_,_)) (* d *)  		    			            -> (if (h "w" 'X' i) = 2 then -4 else 1) * nn + (nn-2*i) + 1
+		|	(('r',i),_,(_,_)) (* d *)  		    			            -> (if (h "v" 'X' i) = 2 then -4 else 1) * nn + (nn-2*i)
+		|	(('a',i),('E',_),_) (* e *)                                 -> (2 + (h "b" 'E' i) * nn + f i) * nn
+		|	(('w',i),('X',_),_) (* e *)                                 -> (2 + (h "v" 'X' i) * nn + g i) * nn
+		|	(('b',i),('E',_),_) (* d *)                                 -> (2 + (h "a" 'E' i) * nn + f i) * nn
+		|	(('v',i),('X',_),_) (* d *)                                 -> (2 + (h "w" 'X' i) * nn + g i) * nn
+		|	(('a',_),_,('Y',_)) (* e *) 		    			        -> -3 * nn
+		|	(('w',_),_,('Y',_)) (* e *)  		 				        -> -3 * nn
+		|	(('b',_),_,('Y',_)) (* d *)  		    			        -> -3 * nn
+		|	(('v',_),_,('Y',_)) (* d *)  		    			        -> -3 * nn
+  	    |	(('a',_),_,_)       (* e *) 		 		      		    -> 1 * nn
+		|	(('w',_),_,_)       (* e *)  		 		      			-> 1 * nn
+		|	(('b',_),_,_)       (* d *)  		        				-> 1 * nn
+		|	(('v',_),_,_)       (* d *)  		    				    -> 1 * nn
+		|	(('l',_),_,_)           		    						-> (4 + 2 * nn) * nn
+		|	(('g',_),_,_)       (* s *)		    					    -> (4 + 2 * nn) * nn
+		|	(('s',_),_,_)       (* s *)		    					    -> (4 + 2 * nn) * nn
+		|	(('f',_),_,_)       (* b *) 					            -> (3 + 2 * nn) * nn
+		|	(('c',_),_,_)       (* h *) 					            -> (4 + 2 * nn) * nn
+		|	(('u',_),_,_)       (* h *) 					            -> (4 + 2 * nn) * nn
+		|	((x,_),_,_) -> failwith ("imp:" ^ Char.escaped x)
+		in
+		let sequence = [|
+		  (* 000 *)
+			(* P 1 *)
+			('b',0);
+			(* P 2 *)
+			('m',0);
+			(* P 3 *)
+			(*
+			('o',0);
+			('q',0);
+			('o',1);
+			('q',1);
+			('o',2);
+			*)
+			(* P 4 *)
+			('a',1);
+			('w',0);
+			('w',1);
+			('a',2);
+			(* P 5 *)
+			(* P 6 *)
+			('b',2);
+			('v',1);
+			('b',1);
+			('v',0);
+			(* P 7 *)
+			('p',0);
+			('r',0);
+			('p',1);
+			('r',1);
+			('p',2);
+			(* 001 *)
+			(* P 1 *)
+			('a',1);
+			(* Unexpected - need to switch s *)
+			('s',0);
+			(* P 2 *)
+			('m',1);
+			('m',0);
+			(* P 3 *)
+		|] in
+		let mp x = if (!iteration_counter <= Array.length sequence)
+		           then let (y, _, _) = x in if y = sequence.(!iteration_counter - 1) then 0 else 1
+							 else mp x
+						 in
+		compare (mp ((soulab0, souidx0), (tarlab0, taridx0), (oldlab0, oldidx0))) (mp ((soulab1, souidx1), (tarlab1, taridx1), (oldlab1, oldidx1)))
+	in
+	let f i =
+		match game#get_desc  i with
+			None -> ('!', 0)
+		|	Some s ->
+				if String.length s = 1
+				then (String.get s 0, 0)
+				else if String.get s 1 = '('
+				then (String.get s 0, 0)
+				else (String.get s 0, int_of_string (StringUtils.rest_string s 1))
+	in
+	let (i,j,k) = ListUtils.min_elt (fun (i0,j0,k0) (i1,j1,k1) ->
+		compare_nodes (game#size ) (f i0) (f k0) (f (old_strategy#get i0)) (f i1) (f k1) (f (old_strategy#get i1)) state' idxmap
+		   (fun s -> f (old_strategy# get(OptionUtils.get_some (find s))))
+	) l in
+	(*switch_zadeh_exp_tie_break_callback n game old_strategy valu occ i k !r !s;*)
+	(i,j,k)
+
+
+
+
+
 
 let strategy_improvement_optimize_fair_policy game =
 	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position
@@ -1602,17 +1774,17 @@ let strategy_improvement_optimize_fair_policy game =
 		game#map2 (fun _ (_, pl, tr, _, _) ->
 			if pl = plr_Odd then [||]
 			else Array.make (ns_size tr) 0
-		) 
+		)
 	) false "STRIMPR_FAIR";;
 
 
 let strategy_improvement_optimize_fair_sub_exp_policy game =
-	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position 
+	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position
                          (improvement_policy_optimize_fair improvement_policy_optimize_fair_sub_exp_tie_break) (
 		game#map2 (fun _ (_, pl, tr, _, _) ->
 			if pl = plr_Odd then [||]
 			else Array.make (ns_size tr) 0
-		) 
+		)
 	) false "STRIMPR_FAIRSE";;
 
 
@@ -1631,7 +1803,7 @@ let initial_strategy_for_exp_game game =
 	let parse de =
 		let s = OptionUtils.get_some de in
 		(String.get s 0, int_of_string (StringUtils.rest_string s 1))
-	in		
+	in
 	let strategy = initial_strategy_by_best_reward game in
 	game#iterate (fun i (pr, pl, tr, _, de) ->
 		if (pl = plr_Even) && (ns_size tr >= 2) then (
@@ -1654,13 +1826,57 @@ let initial_strategy_for_exp_game game =
   ) ;
 	strategy;;
 
+
+
+let initial_strategy_for_lbi_game game =
+	let n = ref 0 in
+	let find s =
+		let i = ref 0 in
+		while (!i < game#size ) && (game#get_desc  !i <> Some s) do
+			incr i
+		done;
+		if !i < game#size  then !i else -1
+	in
+	while (find ("m" ^ string_of_int !n) != -1) do incr n done;
+	let n = !n in
+	let parse de =
+		let s = OptionUtils.get_some de in
+		(String.get s 0, int_of_string (StringUtils.rest_string s 1))
+	in
+	let strategy = initial_strategy_by_best_reward game in
+	game#iterate (fun i (pr, pl, tr, _, de) ->
+		if (pl = plr_Even) && (ns_size tr >= 2) then (
+			let (c, j) = parse de in
+			match c with
+			| 'a' -> strategy#set i (find ("E" ^ string_of_int j))
+			| 'b' -> strategy#set i (find ("p" ^ string_of_int j))
+			| 'v' -> strategy#set i (find ("r" ^ string_of_int j))
+			| 'w' -> strategy#set i (find ("X" ^ string_of_int j))
+(*			| 'o' -> strategy#set i (find ("m" ^ string_of_int 1)) *)
+			| 'o' -> strategy#set i (find ("d" ^ string_of_int 0))
+			| 'p' -> strategy#set i (find ("m" ^ string_of_int 1))
+(*			| 'p' -> strategy#set i (find ("d" ^ string_of_int 0)) *)
+(*			| 'q' -> strategy#set i (find ("m" ^ string_of_int 1)) *)
+			| 'q' -> strategy#set i (find ("d" ^ string_of_int 0))
+			| 'r' -> strategy#set i (find ("m" ^ string_of_int 1))
+(*			| 'r' -> strategy#set i (find ("d" ^ string_of_int 0)) *)
+			| 'd' -> strategy#set i (find ("E" ^ string_of_int j))
+			| 'g' -> strategy#set i (find ("c" ^ string_of_int j))
+			| 's' -> strategy#set i (find ("m" ^ string_of_int 0))
+			| 'm' -> strategy#set i (find (if j < n -1 then ("m" ^ string_of_int (j+1)) else "Y"))
+			| _ -> ()
+		)
+  ) ;
+	strategy;;
+
+
 let strategy_improvement_optimize_fair_exp_policy game =
-	strategy_improvement game initial_strategy_for_exp_game node_total_ordering_by_position 
+	strategy_improvement game initial_strategy_for_exp_game node_total_ordering_by_position
                          (improvement_policy_optimize_fair improvement_policy_optimize_fair_sub_exp_tie_break) (
 		game#map2 (fun _ (_, pl, tr, _, _) ->
 			if pl = plr_Odd then [||]
 			else Array.make (ns_size tr) 0
-		) 
+		)
 	) false "STRIMPR_FAIRSE";;
 
 
@@ -1677,18 +1893,81 @@ let strategy_improvement_optimize_fair_worstcase_policy game =
 
 
 
-(* Select the improving edge that entered the strategy least-recently thus far.  *)
-let improvement_policy_optimize_least_recently_entered tie_break game node_total_ordering occ old_strategy valu =
-    let strategy = old_strategy#copy in
+
+let improvement_policy_optimize_least_basic_iterations tie_break game node_total_ordering occ old_strategy valu =
+	_edge_annotation := Some (fun i j -> Some (string_of_int occ.(i).(j)));
+	old_strategy#iter (fun i j ->
+		     let pl = game#get_owner  i in
+		     let tr = game#get_successors  i in
+		     if pl = plr_Even then Array.iteri (fun k l ->
+							if l = j then occ.(i).(k) <- occ.(i).(k) + 1
+						       ) (Array.of_list (ns_nodes tr))
+		    );
+	let strategy = old_strategy#copy in
 	let l = ref [] in
 	let minvalue = ref (-1) in
-	let maxvalue = ref (-1) in
 	game#iterate (fun i (_, pl, tr, _, _) ->
 		if pl = plr_Even then
 			Array.iteri (fun j k ->
 				if node_valuation_ordering game node_total_ordering valu.(strategy#get i) valu.(k) < 0 then (
 					if !minvalue = -1 then minvalue := occ.(i).(j);
-					maxvalue := max !maxvalue occ.(i).(j);
+					if !minvalue = occ.(i).(j) then l := (i,j,k)::!l
+					else if !minvalue > occ.(i).(j) then (
+						l := [(i,j,k)];
+						minvalue := occ.(i).(j)
+					)
+				)
+			) (Array.of_list (ns_nodes tr))
+	) ;
+	if !l != [] then (
+		let (i,j,k) = tie_break game node_total_ordering occ old_strategy valu !l in
+		strategy#set i k
+	);
+	(strategy, occ)
+
+(* Select the improving edge that left the strategy least-recently. *)
+let improvement_policy_optimize_least_recently_basic tie_break game node_total_ordering occ old_strategy valu =
+	Array.iteri (fun i ->
+		Array.iteri (fun j k ->
+			occ.(i).(j) <- if old_strategy#get i = k then 0 else occ.(i).(j) + 1
+		)
+	) occ;
+    let strategy = old_strategy#copy in
+	let l = ref [] in
+	let minvalue = ref (-1) in
+	game#iterate (fun i (_, pl, tr, _, _) ->
+		if pl = plr_Even then
+			Array.iteri (fun j k ->
+				if node_valuation_ordering game node_total_ordering valu.(strategy#get i) valu.(k) < 0 then (
+					if !minvalue = -1 then minvalue := occ.(i).(j);
+					if !minvalue = occ.(i).(j) then l := (i,j,k)::!l
+					else if !minvalue < occ.(i).(j) then (
+						l := [(i,j,k)];
+						minvalue := occ.(i).(j)
+					)
+				)
+			) (Array.of_list (ns_nodes tr))
+	) ;
+	if !l != [] then (
+		let (i,j,k) = tie_break game node_total_ordering occ old_strategy valu !l in
+		strategy#set i k
+	);
+	(strategy, occ)
+
+
+
+(* Select the improving edge that entered the strategy least-recently thus far.  *)
+let improvement_policy_optimize_least_recently_entered tie_break game node_total_ordering occ old_strategy valu =
+    let strategy = old_strategy#copy in
+	let l = ref [] in
+	let maxvalue = ref (-1) in
+	Array.iter (Array.iter (fun m -> maxvalue := max !maxvalue m)) occ;
+	let minvalue = ref (-1) in
+	game#iterate (fun i (_, pl, tr, _, _) ->
+		if pl = plr_Even then
+			Array.iteri (fun j k ->
+				if node_valuation_ordering game node_total_ordering valu.(strategy#get i) valu.(k) < 0 then (
+					if !minvalue = -1 then minvalue := occ.(i).(j);
 					if !minvalue = occ.(i).(j) then l := (i,j,k)::!l
 					else if !minvalue > occ.(i).(j) then (
 						l := [(i,j,k)];
@@ -1704,15 +1983,447 @@ let improvement_policy_optimize_least_recently_entered tie_break game node_total
 	);
 	(strategy, occ)
 
+
+
+
+
+
+
+
+let lre_sub_exp_list = ref [
+   (('a',0),('o',0)); (* d_{1,0,0} -> e_{1,0,0} *)
+   (('b',0),('p',0)); (* d_{1,0,1} -> e_{1,0,1} *)
+   (('w',0),('q',0)); (* d_{1,1,0} -> e_{1,1,0} *)
+   (('v',0),('r',0)); (* d_{1,1,1} -> e_{1,1,1} *)
+
+   (('a',1),('o',1)); (* d_{2,0,0} -> e_{2,0,0} *)
+
+   (('b',1),('p',1)); (* d_{2,0,1} -> e_{2,0,1} *)
+
+   (('w',1),('q',1)); (* d_{2,1,0} -> e_{2,1,0} *)
+
+   (('v',1),('r',1)); (* d_{2,1,1} -> e_{2,1,1} *)
+
+   (('b',2),('p',2)); (* d_{3,0,1} -> e_{3,0,1} *)
+   (('a',2),('o',2)); (* d_{3,0,0} -> e_{3,0,0} *)
+
+   (('p',2),('m',1)); (* e_{3,0,1} -> b_2 *)
+   (('o',2),('d',0)); (* e_{3,0,0} -> g_1 *)
+   (('p',1),('m',1)); (* e_{2,0,1} -> b_2 *)
+   (('o',1),('d',0)); (* e_{2,0,0} -> g_1 *)
+   (('p',0),('m',1)); (* e_{1,0,1} -> b_2 *)
+   (('o',0),('d',0)); (* e_{1,0,0} -> g_1 *)
+
+   (('o',2),('m',1)); (* e_{3,0,0} -> b_2 *)
+   (('p',2),('d',0)); (* e_{3,0,1} -> g_1 *)
+   (('o',1),('m',1)); (* e_{2,0,0} -> b_2 *)
+   (('p',1),('d',0)); (* e_{2,0,1} -> g_1 *)
+   (('o',0),('m',1)); (* e_{1,0,0} -> b_2 *)
+   (('p',0),('d',0)); (* e_{1,0,1} -> g_1 *)
+
+   (('q',1),('m',1)); (* e_{2,1,0} -> b_2 *)
+   (('q',1),('d',0)); (* e_{2,1,0} -> g_1 *)
+   (('q',0),('m',1)); (* e_{1,1,0} -> b_2 *)
+   (('q',0),('d',0)); (* e_{1,1,0} -> g_1 *)
+   (('r',1),('m',1)); (* e_{2,1,1} -> b_2 *)
+   (('r',1),('d',0)); (* e_{2,1,1} -> g_1 *)
+   (('r',0),('m',1)); (* e_{1,1,1} -> b_2 *)
+   (('r',0),('d',0)); (* e_{1,1,1} -> g_1 *)
+
+   (('a',0),('E',0)); (* d_{1,0,0} -> F_{1,0} *)
+   (('a',1),('E',1)); (* d_{2,0,0} -> F_{2,0} *)
+   (('a',2),('E',2)); (* d_{3,0,0} -> F_{3,0} *)
+
+   (('w',0),('X',0)); (* d_{1,1,0} -> F_{1,1} *)
+   (('w',1),('X',1)); (* d_{2,1,0} -> F_{2,1} *)
+
+   (('v',0),('X',0)); (* d_{1,1,1} -> F_{1,1} *)
+   (('b',0),('E',0)); (* d_{1,0,1} -> F_{1,0} *)
+   (('v',1),('X',1)); (* d_{2,1,1} -> F_{2,1} *)
+   (('b',1),('E',1)); (* d_{2,0,1} -> F_{2,0} *)
+   (('b',2),('E',2)); (* d_{3,0,1} -> F_{3,0} *)
+
+   (('m',0),('m',1)); (* b_1 -> b_2 *)
+   (('m',1),('m',2)); (* b_2 -> b_3 *)
+   (('m',2),('Y',0)); (* b_3 -> b_4 *)
+   (('m',0),('d',0)); (* b_1 -> g_1 *)
+   (('m',1),('d',1)); (* b_2 -> g_2 *)
+   (('m',2),('d',2)); (* b_3 -> g_3 *)
+   (('g',0),('m',0)); (* s_{1,0} -> b_1 *)
+   (('g',1),('m',0)); (* s_{2,0} -> b_1 *)
+   (('g',2),('m',0)); (* s_{3,0} -> b_1 *)
+   (('g',0),('c',0)); (* s_{1,0} -> h_{1,0} *)
+   (('g',1),('c',1)); (* s_{2,0} -> h_{2,0} *)
+   (('g',2),('c',2)); (* s_{3,0} -> h_{3,0} *)
+   (('s',0),('m',0)); (* s_{1,1} -> b_1 *)
+   (('s',1),('m',0)); (* s_{2,1} -> b_1 *)
+   (('s',0),('u',0)); (* s_{1,1} -> h_{1,1} *)
+   (('s',1),('u',1)); (* s_{2,1} -> h_{2,1} *)
+   (('d',0),('E',0)); (* g_1 -> F_{1,0} *)
+   (('d',1),('E',1)); (* g_2 -> F_{2,0} *)
+   (('d',2),('E',2)); (* g_3 -> F_{3,0} *)
+   (('d',0),('X',0)); (* g_1 -> F_{1,1} *)
+   (('d',1),('X',1)); (* g_2 -> F_{2,1} *)
+   (('d',2),('X',2))  (* g_3 -> F_{3,1} *)
+];;
+
+(*
+lre_sub_exp_list := [(('a',0),('o',0));
+                                                  (('b',0),('p',0));
+                                                  (('w',0),('q',0));
+                                                  (('v',0),('r',0));
+                                                  (('a',1),('o',1));
+                                                  (('b',1),('p',1));
+                                                  (('w',1),('q',1));
+                                                  (('v',1),('r',1));
+                                                  (('b',2),('p',2));
+                                                  (('a',2),('o',2));
+                                                  (('d',2),('E',2));
+                                                  (('o',2),('d',0));
+                                                  (('p',1),('m',1));
+                                                  (('o',1),('d',0));
+                                                  (('p',0),('m',1));
+                                                  (('p',2),('m',1));
+                                                  (('o',2),('m',1));
+                                                  (('p',2),('d',0));
+                                                  (('o',1),('m',1));
+                                                  (('w',0),('X',0));
+                                                  (('q',1),('d',0));
+                                                  (('p',0),('d',0));
+                                                  (('q',1),('m',1));
+                                                  (('s',0),('m',0));
+                                                  (('q',0),('m',1));
+                                                  (('g',2),('m',0));
+                                                  (('r',1),('m',1));
+                                                  (('r',1),('d',0));
+                                                  (('r',0),('m',1));
+                                                  (('d',1),('X',1));
+                                                  (('a',0),('E',0));
+                                                  (('a',1),('E',1));
+                                                  (('a',2),('E',2));
+                                                  (('p',1),('d',0));
+                                                  (('w',1),('X',1));
+                                                  (('v',0),('X',0));
+                                                  (('b',0),('E',0));
+                                                  (('v',1),('X',1));
+                                                  (('b',1),('E',1));
+                                                  (('b',2),('E',2));
+                                                  (('m',0),('m',1));
+                                                  (('m',1),('m',2));
+                                                  (('m',2),('Y',0));
+                                                  (('m',0),('d',0));
+                                                  (('m',1),('d',1));
+                                                  (('m',2),('d',2));
+                                                  (('d',2),('X',2));
+                                                  (('s',1),('m',0));
+                                                  (('q',0),('d',0));
+                                                  (('g',0),('c',0));
+                                                  (('g',1),('c',1));
+                                                  (('g',2),('c',2));
+                                                  (('o',0),('m',1));
+                                                  (('g',1),('m',0));
+                                                  (('s',0),('u',0));
+                                                  (('s',1),('u',1));
+                                                  (('d',0),('E',0));
+                                                  (('d',1),('E',1));
+                                                  (('o',0),('d',0));
+                                                  (('d',0),('X',0));
+                                                  (('r',0),('d',0));
+                                                  (('g',0),('m',0))];;
+
+
+lre_sub_exp_list :=[
+                     (('o',5),('d',0));
+                     (('w',4),('X',4));
+                     (('q',0),('d',0));
+                     (('m',3),('d',3));
+                     (('o',2),('m',1));
+                     (('g',6),('c',6));
+                     (('p',2),('m',1));
+                     (('g',1),('c',1));
+                     (('v',3),('r',3));
+                     (('s',5),('m',0));
+                     (('v',1),('X',1));
+                     (('a',1),('E',1));
+                     (('d',0),('X',0));
+                     (('w',1),('X',1));
+                     (('a',6),('E',6));
+                     (('g',3),('m',0));
+                     (('d',4),('X',4));
+                     (('w',5),('q',5));
+                     (('m',5),('d',5));
+                     (('g',0),('c',0));
+                     (('r',0),('m',1));
+                     (('m',2),('d',2));
+                     (('d',5),('X',5));
+                     (('m',6),('Y',0));
+                     (('q',2),('m',1));
+                     (('v',0),('r',0));
+                     (('m',2),('m',3));
+                     (('q',4),('d',0));
+                     (('w',5),('X',5));
+                     (('a',6),('o',6));
+                     (('o',1),('d',0));
+                     (('o',0),('m',1));
+                     (('r',4),('m',1));
+                     (('a',1),('o',1));
+                     (('g',2),('c',2));
+                     (('o',3),('m',1));
+                     (('q',3),('d',0));
+                     (('r',4),('d',0));
+                     (('s',1),('m',0));
+                     (('m',5),('m',6));
+                     (('v',0),('X',0));
+                     (('v',1),('r',1));
+                     (('p',0),('m',1));
+                     (('s',2),('m',0));
+                     (('d',1),('X',1));
+                     (('a',0),('o',0));
+                     (('p',1),('m',1));
+                     (('b',2),('p',2));
+                     (('q',4),('m',1));
+                     (('v',4),('X',4));
+                     (('o',6),('d',0));
+                     (('g',1),('m',0));
+                     (('a',4),('o',4));
+                     (('v',5),('r',5));
+                     (('o',0),('d',0));
+                     (('q',5),('d',0));
+                     (('d',0),('E',0));
+                     (('s',4),('u',4));
+                     (('p',3),('d',0));
+                     (('a',0),('E',0));
+                     (('a',4),('E',4));
+                     (('s',2),('u',2));
+                     (('p',4),('m',1));
+                     (('w',2),('X',2));
+                     (('b',3),('p',3));
+                     (('d',3),('E',3));
+                     (('g',0),('m',0));
+                     (('q',0),('m',1));
+                     (('w',0),('X',0));
+                     (('p',4),('d',0));
+                     (('v',2),('r',2));
+                     (('r',1),('d',0));
+                     (('m',4),('m',5));
+                     (('m',6),('d',6));
+                     (('g',4),('c',4));
+                     (('p',6),('d',0));
+                     (('m',1),('m',2));
+                     (('o',5),('m',1));
+                     (('p',1),('d',0));
+                     (('b',4),('p',4));
+                     (('a',3),('o',3));
+                     (('b',0),('E',0));
+                     (('v',5),('X',5));
+                     (('g',5),('m',0));
+                     (('d',2),('X',2));
+                     (('b',5),('p',5));
+                     (('w',0),('q',0));
+                     (('g',3),('c',3));
+                     (('o',4),('d',0));
+                     (('r',3),('m',1));
+                     (('m',3),('m',4));
+                     (('g',2),('m',0));
+                     (('r',2),('m',1));
+                     (('d',5),('E',5));
+                     (('s',3),('m',0));
+                     (('b',1),('p',1));
+                     (('b',3),('E',3));
+                     (('v',2),('X',2));
+                     (('s',3),('u',3));
+                     (('b',5),('E',5));
+                     (('p',2),('d',0));
+                     (('a',3),('E',3));
+                     (('d',1),('E',1));
+                     (('p',3),('m',1));
+                     (('o',4),('m',1));
+                     (('q',5),('m',1));
+                     (('q',3),('m',1));
+                     (('v',3),('X',3));
+                     (('o',1),('m',1));
+                     (('w',1),('q',1));
+                     (('m',4),('d',4));
+                     (('b',2),('E',2));
+                     (('r',5),('m',1));
+                     (('b',0),('p',0));
+                     (('r',0),('d',0));
+                     (('m',0),('m',1));
+                     (('g',4),('m',0));
+                     (('s',1),('u',1));
+                     (('g',6),('m',0));
+                     (('r',1),('m',1));
+                     (('s',0),('m',0));
+                     (('p',0),('d',0));
+                     (('b',1),('E',1));
+                     (('b',4),('E',4));
+                     (('a',2),('o',2));
+                     (('p',6),('m',1));
+                     (('r',2),('d',0));
+                     (('d',2),('E',2));
+                     (('d',3),('X',3));
+                     (('r',5),('d',0));
+                     (('r',3),('d',0));
+                     (('a',2),('E',2));
+                     (('s',4),('m',0));
+                     (('w',4),('q',4));
+                     (('p',5),('d',0));
+                     (('b',6),('E',6));
+                     (('b',6),('p',6));
+                     (('m',1),('d',1));
+                     (('o',2),('d',0));
+                     (('w',3),('q',3));
+                     (('q',2),('d',0));
+                     (('q',1),('d',0));
+                     (('s',0),('u',0));
+                     (('v',4),('r',4));
+                     (('a',5),('o',5));
+                     (('o',3),('d',0));
+                     (('d',4),('E',4));
+                     (('w',3),('X',3));
+                     (('a',5),('E',5));
+                     (('w',2),('q',2));
+                     (('q',1),('m',1));
+                     (('m',0),('d',0));
+                     (('o',6),('m',1));
+                     (('g',5),('c',5));
+                     (('s',5),('u',5));
+                     (('p',5),('m',1))];;
+
+*)
+
+let lre_edge_value k e f =
+    let nn = 2 * k * k * k in
+    (match (e,f) with
+        	(('a',i),('o',_))       (* d_{i,0,0} -> e_{i,0,0} *)      -> -5 * nn
+        |	(('b',i),('p',_))       (* d_{i,0,1} -> e_{i,0,1} *)      -> -5 * nn
+        |	(('w',i),('q',_))       (* d_{i,1,0} -> e_{i,1,0} *)      -> -5 * nn
+        |	(('v',i),('r',_))       (* d_{i,1,1} -> e_{i,1,1} *)      -> -5 * nn
+      	|	(('o',i),('m',_))       (* e_{i,0,0} -> b_2 *) 	        -> -7 * nn + (nn-i)
+      	|	(('o',i),('d',_))       (* e_{i,0,0} -> g_1 *) 	        -> -7 * nn + (nn-i)
+      	|	(('p',i),('m',_))       (* e_{i,0,1} -> b_2 *) 	        -> -7 * nn + (nn-i)
+      	|	(('p',i),('d',_))       (* e_{i,0,1} -> g_1 *) 	        -> -7 * nn + (nn-i)
+      	|	(('q',i),('m',_))       (* e_{i,1,0} -> b_2 *) 	        -> -7 * nn + (nn-i)
+      	|	(('q',i),('d',_))       (* e_{i,1,0} -> g_1 *) 	        -> -7 * nn + (nn-i)
+      	|	(('r',i),('m',_))       (* e_{i,1,1} -> b_2 *) 	        -> -7 * nn + (nn-i)
+      	|	(('r',i),('d',_))       (* e_{i,1,1} -> g_1 *) 	        -> -7 * nn + (nn-i)
+		|	(('m',i),('d',_))       (* b_i -> g_i *)            		-> -2 * nn
+		|	(('m',i),('m',_))       (* b_i -> b_{i+1} *)            	-> -2 * nn
+		|	(('g',_),('c',_))       (* s_{i,0} -> h_{i,0} *)		    -> 1 * nn
+		|	(('g',_),('m',_))       (* s_{i,0} -> b_1 *)		        -> -1 * nn
+		|	(('s',_),('u',_))       (* s_{i,1} -> h_{i,1} *)		    -> 1 * nn
+		|	(('s',_),('m',_))       (* s_{i,1} -> b_1 *)		        -> -1 * nn
+		|	(('d',i),('E',_))       (* g_i -> F_{i,0} *)            	->  0 * nn
+		|	(('d',i),('X',_))       (* g_i -> F_{i,1} *)            	->  0 * nn
+		|	(('a',i),('E',_))       (* d_{i,0,0} -> F_{i,0} *)        ->  5 * nn + i
+		|	(('b',i),('E',_))       (* d_{i,0,1} -> F_{i,0} *)        ->  5 * nn + i
+		|	(('w',i),('X',_))       (* d_{i,1,0} -> F_{i,1} *)        ->  5 * nn + i
+		|	(('v',i),('X',_))       (* d_{i,1,1} -> F_{i,1} *)        ->  5 * nn + i
+		|	((x,_),_) -> failwith ("imp:" ^ Char.escaped x)
+    )
+
+let lre_get_node_desc game i = match game#get_desc  i with
+                               			None -> ('!', 0)
+                               		|	Some s ->
+                               				if String.length s = 1
+                               				then (String.get s 0, 0)
+                               				else if String.get s 1 = '('
+                               				then (String.get s 0, 0)
+                               				else (String.get s 0, int_of_string (StringUtils.rest_string s 1))
+
+
+let improvement_policy_optimize_lre_sub_exp_tie_break game _ occ old_strategy valu l =
+	let f = lre_get_node_desc game in
+
+    let test3 = !lre_sub_exp_list in
+
+    let result = ref None in
+    List.iter (fun e ->
+        if !result = None then (
+            List.iter (fun (i,j,k) ->
+                if (f i, f k) = e then result := Some (i,j,k);
+            ) l;
+        );
+    ) test3;
+
+    if !result = None then (
+        List.iter (fun (i,j,k) ->
+            failwith (OptionUtils.get_some (game#get_desc i))
+        ) l;
+    );
+
+    message_autotagged_newline 2 (fun _ -> "ANALYZE") (fun _ -> "\n" ^ IntListUtils.format (Array.to_list (zadeh_game_compute_state game valu)) ^ "\n");
+(*
+	let compare_nodes k e0 f0 e1 f1 =
+		compare (lre_edge_value k e0 f0) (lre_edge_value k e1 f1)
+	in
+	let (i,j,k) = ListUtils.min_elt (fun (i0,j0,k0) (i1,j1,k1) -> compare_nodes (game#size ) (f i0) (f k0) (f i1) (f k1)) l in
+	(i,j,k)
+	*)
+
+	OptionUtils.get_some !result
+	
+
+
+
+let improvement_policy_optimize_least_recently_entered_pick tie_break game node_total_ordering occ old_strategy valu =
+    let strategy = old_strategy#copy in
+	let l = ref [] in
+	game#iterate (fun i (_, pl, tr, _, _) ->
+		if pl = plr_Even then
+			Array.iteri (fun j k ->
+				if node_valuation_ordering game node_total_ordering valu.(strategy#get i) valu.(k) < 0 then (
+					l := (i,j,k)::!l
+				)
+			) (Array.of_list (ns_nodes tr))
+	);
+	if !l != [] then (
+		let (i,j,k) = tie_break game node_total_ordering occ old_strategy valu !l in
+		strategy#set i k;
+	);
+	(strategy, occ)
+
+
+
+
+let improvement_policy_optimize_least_recently_entered_pick_applies tie_break game node_total_ordering occ old_strategy valu =
+    (* just to test it, we're going to return true *)
+    true
+
+let improvement_policy_optimize_least_recently_entered_hybrid tie_break game node_total_ordering occ old_strategy valu =
+    if (improvement_policy_optimize_least_recently_entered_pick_applies tie_break game node_total_ordering occ old_strategy valu)
+    then improvement_policy_optimize_least_recently_entered_pick tie_break game node_total_ordering occ old_strategy valu
+    else improvement_policy_optimize_least_recently_entered tie_break game node_total_ordering occ old_strategy valu
+
+
+
 let strategy_improvement_optimize_least_recently_entered_policy_lower_bound game =
-	strategy_improvement game initial_strategy_by_best_reward node_total_ordering_by_position
-	                     (improvement_policy_optimize_least_recently_entered improvement_policy_optimize_fair_sub_exp_tie_break) (
+	strategy_improvement game initial_strategy_for_exp_game node_total_ordering_by_position
+	                     (improvement_policy_optimize_least_recently_entered improvement_policy_optimize_lre_sub_exp_tie_break) (
 		game#map2 (fun _ (_, pl, tr, _, _) ->
 			if pl = plr_Odd then [||]
 			else Array.make (ns_size tr) 0
 		)
 	) false "STRIMPR_LRE";;
 
+
+let strategy_improvement_optimize_least_basic_iterations_policy_lower_bound game =
+	strategy_improvement game initial_strategy_for_lbi_game node_total_ordering_by_position
+	                     (improvement_policy_optimize_least_basic_iterations improvement_policy_optimize_lbi_sub_exp_tie_break) (
+		game#map2 (fun _ (_, pl, tr, _, _) ->
+			if pl = plr_Odd then [||]
+			else Array.make (ns_size tr) 0
+		)
+	) false "STRIMPR_LBI";;
+
+let strategy_improvement_optimize_least_recently_basic_policy_lower_bound game =
+	strategy_improvement game initial_strategy_for_exp_game node_total_ordering_by_position
+	                     (improvement_policy_optimize_least_recently_basic improvement_policy_optimize_lre_sub_exp_tie_break) (
+		game#map2 (fun _ (_, pl, tr, _, _) ->
+			if pl = plr_Odd then [||]
+			else Array.make (ns_size tr) 0
+		)
+	) false "STRIMPR_LRB";;
 
 let register _ =
     register_sub_solver
@@ -1721,10 +2432,17 @@ let register _ =
 
 
     register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_least_basic_iterations_policy_lower_bound g)
+        "switchlbilb" "slbilb" "Least basic iterations lower bound policy iteration";
+
+    register_sub_solver
+        (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_least_recently_basic_policy_lower_bound g)
+        "switchlrblb" "slrblb" "Least recently basic lower bound policy iteration";
+
+    register_sub_solver
         (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_least_recently_entered_policy_lower_bound g)
         "switchlrelb" "slrelb" "Least recently entered lower bound policy iteration";;
 
     register_sub_solver
         (fun g -> universal_solve (universal_solve_init_options_verbose !universal_solve_global_options) strategy_improvement_optimize_fair_worstcase_policy g)
         "switchfairse" "sfse" "Zadeh's fair policy iteration with lower bound breaking ties";;
-

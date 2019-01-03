@@ -35,6 +35,8 @@ let get_last_iteration_count _ = !last_iteration_count
 
 let _strat_impr_callback = ref None
 
+let _edge_annotation = ref None
+
 
 type node_valuation = int * int TreeSet.t * int
 

@@ -13,14 +13,17 @@ open Pgpriority;;
 let list_max a less = ListUtils.max_elt (fun x y -> if less x y then -1 else 1) a
 
 
-let improvement_policy_optimize_all_globally game' node_total_ordering old_strategy valu =
+let improvement_policy_optimize_all_globally' filter game' node_total_ordering old_strategy valu =
 	let game = game'#copy in
 	let n = game#size  in
 	let valu_ord = node_valuation_ordering game' node_total_ordering in
 	game#iterate (fun i (pr, pl, tr, _, _) ->
 		if pl = plr_Even
 		then
-		  ns_iter (fun w -> game#del_edge i w) (ns_filter (fun j -> not (valu_ord valu.(j) valu.(old_strategy#get i) >= 0)) tr)
+		  ns_iter (fun w -> game#del_edge i w) (ns_filter (fun j ->
+		    (not (valu_ord valu.(j) valu.(old_strategy#get i) >= 0)) ||
+		    (not (filter i j))
+		  ) tr)
 	) ;
 
 	let strategy = old_strategy#copy in
@@ -110,7 +113,8 @@ let improvement_policy_optimize_all_globally game' node_total_ordering old_strat
 	strategy
 	
 	
-	
+let improvement_policy_optimize_all_globally = improvement_policy_optimize_all_globally' (fun _ _ -> true)
+
 
 let strategy_improvement_optimize_all_globally_policy game =
 	strategy_improvement_by_policy game (improvement_policy_no_user_data improvement_policy_optimize_all_globally) () false "STRIMPR_GLOOPT";;

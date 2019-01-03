@@ -317,16 +317,42 @@ vardef build_graph(expr aspg) =
 	enddef;
 	
 	graph_reset;
-	build_group_layer(0,1,3,0,1);
-	build_group_layer(ypart group_get_coord_ur(group_layers[1]) + 1.75,2,3,0,2);
-	build_group_layer(ypart group_get_coord_ur(group_layers[2]) + 1.75,3,3,0,3);
-	build_sink(ypart group_get_coord_ur(group_layers[3]) + 1.75);
-	group_separator_add(group_layers[1], group_layers[2], style_separator, 0.10);
-	group_separator_add(group_layers[2], group_layers[3], style_separator, 0.10);
-	group_separator_add(group_layers[3], group_sink, style_separator, 0.10);
-	connect_group_layer_with_next(1,3);
-	connect_group_layer_with_next(2,3);
-	connect_group_layer_with_next(3,3);
+
+
+
+
+
+
+
+	number_of_bits := 3;
+
+
+
+
+
+
+
+
+
+
+
+	build_group_layer(0, 1, number_of_bits, 0, 1);
+
+	for i = 2 upto number_of_bits :
+        build_group_layer(ypart group_get_coord_ur(group_layers[i-1]) + 1.75, i, number_of_bits, 0, i);
+    endfor;
+
+	build_sink(ypart group_get_coord_ur(group_layers[number_of_bits]) + 1.75);
+
+	for i = 1 upto number_of_bits-1 :
+	    group_separator_add(group_layers[i], group_layers[i+1], style_separator, 0.10);
+    endfor;
+
+	group_separator_add(group_layers[number_of_bits], group_sink, style_separator, 0.10);
+
+	for i = 1 upto number_of_bits :
+        connect_group_layer_with_next(i, number_of_bits);
+    endfor;
 enddef;
 
 

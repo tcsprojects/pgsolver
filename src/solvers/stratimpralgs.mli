@@ -15,6 +15,8 @@ val get_last_iteration_count: unit -> int
 
 val _strat_impr_callback: (strategy -> int -> unit) option ref
 
+val _edge_annotation: (int -> int -> string option) option ref
+
 type node_total_ordering_fun = Paritygame.paritygame -> node -> node -> int
 
 val node_total_ordering_by_position : node_total_ordering_fun

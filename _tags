@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: ff42186f384c070fa019ecbcbfc18b96)
+# DO NOT EDIT (digest: 8c2268d639d71942d9f138d4ec3e6afd)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -196,13 +196,6 @@ true: annot, bin_annot
 <src/tools/winningstrats.{native,byte}>: package(ocaml-sat-solvers)
 <src/tools/winningstrats.{native,byte}>: package(str)
 <src/tools/winningstrats.{native,byte}>: use_pgsolver
-<src/tools/*.ml{,i,y}>: package(TCSLib)
-<src/tools/*.ml{,i,y}>: package(extlib)
-<src/tools/*.ml{,i,y}>: package(minisat)
-<src/tools/*.ml{,i,y}>: package(num)
-<src/tools/*.ml{,i,y}>: package(ocaml-sat-solvers)
-<src/tools/*.ml{,i,y}>: package(str)
-<src/tools/*.ml{,i,y}>: use_pgsolver
 # Executable cliquegame-bin
 <src/generators/cliquegame_aux.{native,byte}>: package(TCSLib)
 <src/generators/cliquegame_aux.{native,byte}>: package(extlib)
@@ -328,4 +321,27 @@ true: annot, bin_annot
 <src/generators/policyiter/*.ml{,i,y}>: package(ocaml-sat-solvers)
 <src/generators/policyiter/*.ml{,i,y}>: package(str)
 <src/generators/policyiter/*.ml{,i,y}>: use_pgsolver
+# Executable lbfinder-bin
+<src/tools/lbfinder.{native,byte}>: package(TCSLib)
+<src/tools/lbfinder.{native,byte}>: package(extlib)
+<src/tools/lbfinder.{native,byte}>: package(minisat)
+<src/tools/lbfinder.{native,byte}>: package(num)
+<src/tools/lbfinder.{native,byte}>: package(ocaml-sat-solvers)
+<src/tools/lbfinder.{native,byte}>: package(str)
+<src/tools/lbfinder.{native,byte}>: use_pgsolver
+# Executable cycletester-bin
+<src/tools/cycletester.{native,byte}>: package(TCSLib)
+<src/tools/cycletester.{native,byte}>: package(extlib)
+<src/tools/cycletester.{native,byte}>: package(minisat)
+<src/tools/cycletester.{native,byte}>: package(num)
+<src/tools/cycletester.{native,byte}>: package(ocaml-sat-solvers)
+<src/tools/cycletester.{native,byte}>: package(str)
+<src/tools/cycletester.{native,byte}>: use_pgsolver
+<src/tools/*.ml{,i,y}>: package(TCSLib)
+<src/tools/*.ml{,i,y}>: package(extlib)
+<src/tools/*.ml{,i,y}>: package(minisat)
+<src/tools/*.ml{,i,y}>: package(num)
+<src/tools/*.ml{,i,y}>: package(ocaml-sat-solvers)
+<src/tools/*.ml{,i,y}>: package(str)
+<src/tools/*.ml{,i,y}>: use_pgsolver
 # OASIS_STOP

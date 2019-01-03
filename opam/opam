@@ -22,9 +22,9 @@ build-test: [
   ["ocaml" "setup.ml" "-test"]
 ]
 depends: [
-  "TCSLib" {>= "0.2"}
+  ("TCSLib" {>= "0.3"} | "TCSLib" {= "0.2"})
   ("extlib" | "extlib-compat")
-  "minisat"
+  "minisat" {= "0.1"}
   "ocaml-sat-solvers"
   "ocamlbuild" {build}
   "ocamlfind" {build}

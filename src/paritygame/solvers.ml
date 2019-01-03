@@ -46,6 +46,7 @@ let _ =
     Stratimpralgs.register ();
     Switch_cunningham.register ();
     Switch_globally_best.register ();
+    Switch_friedmann.register ();
     Switch_history.register ();
     Switch_internal.register ();
     Switch_locally_best.register ();

@@ -2,6 +2,7 @@ open Arg ;;
 open Tcsargs;;
 open Basics ;;
 open Paritygame ;;
+open Tcsbasedata;;
 open Tcsstrings ;;
 open Tcsarray;;
 open Univsolve;;
@@ -47,7 +48,7 @@ type kind = Even_player_strategy | Even_player_disabled | Even_player_improving 
 
 let _ =
   SimpleArgs.parsedef speclist (fun _ -> ()) (header ^ "\nOptions are");
-  
+
 (Univsolve.universal_solve_global_options := fun gen_stat verb -> {
 	generate_statistics = gen_stat ;
 	verb_level = verb ;
@@ -68,16 +69,16 @@ let _ =
 	let before_iteration i =
 		out ("beginfig(" ^ string_of_int (i + !add_iteration) ^ ");\n")
 	in
-	
+
 	let after_iteration i =
 		out ("  graph_draw;\n");
 		out ("endfig;\n\n")
 	in
-	
+
 	let set_edge_iteration (from_ident, from_index_stack) (to_ident, to_index_stack) kind = (
 				let t = "edge_translate(\"" ^ Char.escaped from_ident ^ "\", \"" ^
 				                             ArrayUtils.custom_format string_of_int "" "" ", " from_index_stack ^ "\", " ^
-				                             "\"" ^ Char.escaped to_ident ^ "\", \"" ^ 
+				                             "\"" ^ Char.escaped to_ident ^ "\", \"" ^
 				                             ArrayUtils.custom_format string_of_int "" "" ", " to_index_stack ^ "\")" in
 				let k =
 					match kind with
@@ -90,20 +91,29 @@ let _ =
 				out ("  edge_set_style(" ^ t ^ ", " ^ k ^ ");\n")
 			)
 	in
-	
-	
+
+	let set_edge_annotation  (from_ident, from_index_stack) (to_ident, to_index_stack) annotation = (
+                let t = "edge_translate(\"" ^ Char.escaped from_ident ^ "\", \"" ^
+                                             ArrayUtils.custom_format string_of_int "" "" ", " from_index_stack ^ "\", " ^
+                                             "\"" ^ Char.escaped to_ident ^ "\", \"" ^
+                                             ArrayUtils.custom_format string_of_int "" "" ", " to_index_stack ^ "\")" in
+                out ("  edge_rewrite_text_line(" ^ t ^ ", 0, 0, \"" ^ annotation ^ "\");\n")
+            )
+    in
+
+
 	let get_ident i =
 		match game#get_desc  i with
 			None -> ('!', [||])
-		|	Some s -> 
+		|	Some s ->
 				if String.length s = 1
 				then (String.get s 0, [||])
 				else if String.get s 1 = '('
 				then (String.get s 0, Array.of_list (List.map int_of_string (StringUtils.explode (List.hd (StringUtils.explode (StringUtils.rest_string s 2) ')')) ',')))
 				else (String.get s 0, [|int_of_string (StringUtils.rest_string s 1)|])
 	in
-	
-	
+
+
 	_strat_impr_callback := Some (fun strat counter ->
 		let node_compare = node_total_ordering_by_position in
 		let valu = evaluate_strategy game node_compare strat in
@@ -117,7 +127,7 @@ let _ =
 			let pl = game#get_owner  i in
 			let tr = game#get_successors  i in
 				let from_node = get_ident i in
-				ns_iter (fun j ->
+				Array.iteri (fun ctr j ->
 					    let to_node = get_ident j in
 					    let kind =
 					      if pl = plr_Even then
@@ -131,15 +141,21 @@ let _ =
                         			then Odd_player_strategy
 						else Odd_player_disabled
 					    in
-					    set_edge_iteration from_node to_node kind
-					   ) tr
-    			   done;		
+					    set_edge_iteration from_node to_node kind;
+
+                        try (
+                            if !_edge_annotation != None then (
+                                let annot = (OptionUtils.get_some !_edge_annotation) i ctr in
+                                if annot != None then set_edge_annotation from_node to_node (OptionUtils.get_some annot)
+                            )
+                        ) with _ -> ();
+
+					   ) (Array.of_list (ns_nodes tr))
+    			   done;
 		after_iteration counter;
 		);
 	);
-	
+
 	match !solver with
 		None -> ()
 	|	Some solve -> let _ = solve game in ()
-	
-	

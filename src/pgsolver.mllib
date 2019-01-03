@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 717c4cf730bbe98699966013834eb963)
+# DO NOT EDIT (digest: df66596549d2507a99a586055303ad3d)
 pgsolver/Basics
 pgsolver/Info
 data/Pgnode
@@ -43,6 +43,7 @@ solvers/Stratimprsat
 solvers/Viasat
 solvers/stratimpralgs/Switch_cunningham
 solvers/stratimpralgs/Switch_globally_best
+solvers/stratimpralgs/Switch_friedmann
 solvers/stratimpralgs/Switch_history
 solvers/stratimpralgs/Switch_internal
 solvers/stratimpralgs/Switch_locally_best
@@ -68,6 +69,7 @@ generators/Recursivedullgame
 generators/policyiter/Stratimprgen
 generators/policyiter/Stratimprgenerators
 generators/policyiter/Stratimprgenlist
+generators/policyiter/generators/Zadehexpish
 generators/policyiter/generators/Zadehexp
 generators/policyiter/generators/Cunninghamexp
 generators/policyiter/generators/Zadehsubexp
