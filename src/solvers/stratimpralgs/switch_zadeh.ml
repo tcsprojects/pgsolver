@@ -1788,7 +1788,6 @@ let strategy_improvement_optimize_fair_sub_exp_policy game =
 	) false "STRIMPR_FAIRSE";;
 
 
-
 let initial_strategy_for_exp_game game =
 	let n = ref 0 in
 	let find s =
@@ -1826,6 +1825,13 @@ let initial_strategy_for_exp_game game =
   ) ;
 	strategy;;
 
+
+let initial_strategy_list = ref None
+
+let initial_strategy_by_fixed_list game =
+  match !initial_strategy_list with
+		Some s -> s
+	| None -> failwith "whoops"
 
 
 let initial_strategy_for_lbi_game game =
@@ -2362,7 +2368,7 @@ let improvement_policy_optimize_lre_sub_exp_tie_break game _ occ old_strategy va
 	*)
 
 	OptionUtils.get_some !result
-	
+
 
 
 
@@ -2417,7 +2423,7 @@ let strategy_improvement_optimize_least_basic_iterations_policy_lower_bound game
 	) false "STRIMPR_LBI";;
 
 let strategy_improvement_optimize_least_recently_basic_policy_lower_bound game =
-	strategy_improvement game initial_strategy_for_exp_game node_total_ordering_by_position
+	strategy_improvement game initial_strategy_by_fixed_list node_total_ordering_by_position
 	                     (improvement_policy_optimize_least_recently_basic improvement_policy_optimize_lre_sub_exp_tie_break) (
 		game#map2 (fun _ (_, pl, tr, _, _) ->
 			if pl = plr_Odd then [||]
