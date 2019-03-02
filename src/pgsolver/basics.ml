@@ -27,9 +27,12 @@ let message u s = if !verbosity >= u then
 let message_depth u depth s = message u (fun x -> (String.make (depth * 2) ' ') ^ s x)
 
 let message_depth_tagged u depth tag s =
-  let now = Sys.time () in
-  message_depth u depth (fun x -> "[" ^ String.capitalize_ascii (tag x) ^ ": " ^ Printf.sprintf "%.2f msec" (1000.0 *. (now -. !last_time)) ^ "]  " ^ s x);
-  last_time := now
+  message_depth u depth (fun x -> 
+		let now = Sys.time () in
+		let msg = "[" ^ String.capitalize_ascii (tag x) ^ ": " ^ Printf.sprintf "%.2f msec" (1000.0 *. (now -. !last_time)) ^ "]  " ^ s x in
+		last_time := now;
+		msg
+	)
 
 let message_depth_counter = ref 0
 let message_incrdepth _ = incr message_depth_counter
