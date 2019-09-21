@@ -3,7 +3,7 @@ PGSolver
 
 A collection of tools for generating, manipulating and - most of all - solving parity games.
 
-Version 4.1, Copyright (c) 2008-2017
+Version 4.1, Copyright (c) 2008-2019, BSD 3 LICENSE
 
 It is developed and maintained by:
 - (c) Oliver Friedmann, University of Munich (http://oliverfriedmann.com)
