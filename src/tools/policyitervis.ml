@@ -17,8 +17,11 @@ struct
   let start_iteration = ref 1
   let end_iteration = ref None
   let add_iteration = ref 0
+	let random_seed = ref None
 
   let speclist = [
+		(["--randomseed"; "-rs"], Int(fun i -> random_seed := Some i),
+	"\n     set random seed[int] (default: disabled)");
         (["--startiter"; "-si"], Int(fun i -> start_iteration := i),
 		 "\n     start with iteration [int] (default: 1)");
 		(["--enditer"; "-ei"], Int(fun i -> end_iteration := Some i),
@@ -47,7 +50,11 @@ type kind = Even_player_strategy | Even_player_disabled | Even_player_improving 
 
 let _ =
   SimpleArgs.parsedef speclist (fun _ -> ()) (header ^ "\nOptions are");
-  
+
+	(match !random_seed with
+		Some rs -> Random.init rs
+	| None -> ());
+
 (Univsolve.universal_solve_global_options := fun gen_stat verb -> {
 	generate_statistics = gen_stat ;
 	verb_level = verb ;
@@ -68,16 +75,16 @@ let _ =
 	let before_iteration i =
 		out ("beginfig(" ^ string_of_int (i + !add_iteration) ^ ");\n")
 	in
-	
+
 	let after_iteration i =
 		out ("  graph_draw;\n");
 		out ("endfig;\n\n")
 	in
-	
+
 	let set_edge_iteration (from_ident, from_index_stack) (to_ident, to_index_stack) kind = (
 				let t = "edge_translate(\"" ^ Char.escaped from_ident ^ "\", \"" ^
 				                             ArrayUtils.custom_format string_of_int "" "" ", " from_index_stack ^ "\", " ^
-				                             "\"" ^ Char.escaped to_ident ^ "\", \"" ^ 
+				                             "\"" ^ Char.escaped to_ident ^ "\", \"" ^
 				                             ArrayUtils.custom_format string_of_int "" "" ", " to_index_stack ^ "\")" in
 				let k =
 					match kind with
@@ -90,20 +97,20 @@ let _ =
 				out ("  edge_set_style(" ^ t ^ ", " ^ k ^ ");\n")
 			)
 	in
-	
-	
+
+
 	let get_ident i =
 		match game#get_desc  i with
 			None -> ('!', [||])
-		|	Some s -> 
+		|	Some s ->
 				if String.length s = 1
 				then (String.get s 0, [||])
 				else if String.get s 1 = '('
 				then (String.get s 0, Array.of_list (List.map int_of_string (StringUtils.explode (List.hd (StringUtils.explode (StringUtils.rest_string s 2) ')')) ',')))
 				else (String.get s 0, [|int_of_string (StringUtils.rest_string s 1)|])
 	in
-	
-	
+
+
 	_strat_impr_callback := Some (fun strat counter ->
 		let node_compare = node_total_ordering_by_position in
 		let valu = evaluate_strategy game node_compare strat in
@@ -133,13 +140,11 @@ let _ =
 					    in
 					    set_edge_iteration from_node to_node kind
 					   ) tr
-    			   done;		
+    			   done;
 		after_iteration counter;
 		);
 	);
-	
+
 	match !solver with
 		None -> ()
 	|	Some solve -> let _ = solve game in ()
-	
-	

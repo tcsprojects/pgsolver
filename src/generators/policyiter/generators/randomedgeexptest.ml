@@ -10,8 +10,11 @@ open Pgplayer;;
 
 let n = ref 0
 let accesslen = ref 2
-let pacedlen = ref 6
-let cyclelen = ref 8
+let pacedlen = ref 2
+let cyclelen = ref 4
+
+let binlog n = int_of_float (ceil ((log (float_of_int n)) /. (log 2.)))
+
 
 type gamenode =
 	Sink (*T*)
@@ -35,7 +38,7 @@ type gamenode =
 |	CountingHighLeaver of int (*F*)
 |	CountingHighLane of int (*W*)
 
-let symb_to_str = function 
+let symb_to_str = function
 	Sink -> "T"
 |	SinkEntry -> "t"
 |	PacerExit -> "L"
@@ -48,12 +51,12 @@ let symb_to_str = function
 |	AccessLeaver i -> "K" ^ string_of_int i
 |	CountingEntry i -> "H" ^ string_of_int i
 |	CountingCenter i -> "e" ^ string_of_int i
-|	CountingLowNode (i,k) -> "d(" ^ string_of_int i ^ "," ^ string_of_int 0 ^ "," ^ string_of_int k ^ ")"
+|	CountingLowNode (i,k) -> "d(" ^ string_of_int i ^ "," ^ string_of_int k ^ ")"
 |	CountingLowLeaver (i,j) -> "M(" ^ string_of_int i ^ "," ^ string_of_int j ^ ")"
 |	CountingLowLane (i,j) -> "P(" ^ string_of_int i ^ "," ^ string_of_int j ^ ")"
 |	CountingExit i -> "C" ^ string_of_int i
-|	PacedNode (i,k) -> "d(" ^ string_of_int i ^ "," ^ string_of_int 1 ^ "," ^ string_of_int k ^ ")"
-|	CountingHighNode i -> "d(" ^ string_of_int i ^ "," ^ string_of_int 0 ^ "," ^ string_of_int (!cyclelen) ^ ")"
+|	PacedNode (i,k) -> "b(" ^ string_of_int i ^ "," ^ string_of_int k ^ ")"
+|	CountingHighNode i -> "r(" ^ string_of_int i ^ ")"
 |	CountingHighLeaver i -> "F" ^ string_of_int i
 |	CountingHighLane i -> "W" ^ string_of_int i
 
@@ -81,7 +84,7 @@ let mystrat s n node =
 
 
 
-let generator_game_func arguments = 
+let generator_game_func arguments =
 
 	let strat = ref None in
 
@@ -97,65 +100,65 @@ let generator_game_func arguments =
 					    ]
 					  (fun s ->
 						n := int_of_string s;
-						accesslen := !accesslen * !n;
-						pacedlen := !pacedlen * !n;
-						cyclelen := !cyclelen * !n)
+						accesslen := !accesslen * binlog !n;
+						pacedlen := !pacedlen * binlog !n;
+						cyclelen := !cyclelen * binlog !n)
 					  ("Options are") SimpleArgs.argprint_help SimpleArgs.argprint_bad;
 
     let n = !n in
-	
+
 	let uu = !accesslen in
 	let ss = !pacedlen in
 	let tt = !cyclelen in
-    		  
-	let pg = SymbolicParityGame.create_new Sink in
-	
 
-	let add sy pr pl li = 
+	let pg = SymbolicParityGame.create_new Sink in
+
+
+	let add sy pr pl li =
 		match (!strat, pl) with
 			(Some str, plr_Even) ->
 				SymbolicParityGame.add_node pg sy pr pl (Array.of_list li) (Some (symb_to_str sy ^ "[" ^ symb_to_str (str n sy) ^ "]"))
 		|	_ ->
 				SymbolicParityGame.add_node pg sy pr pl (Array.of_list li) (Some (symb_to_str sy))
 	in
-	
+
 	add Sink 1 plr_Odd [Sink];
 	add SinkEntry (2 * tt * n + 6 * n + 12) plr_Odd [Sink];
-	
+
 	add PacerExit (2 * tt * n + 2 * n + 10) plr_Odd [SuccessorLane 0];
-	
+
 	add SelectorHighEntry (2 * tt * n + 2 * n + 8) plr_Odd [SelectorLane 0];
-	
+
 	for i = 0 to n do
-		add (SuccessorLane i) 3 plr_Even (if i = n then [SinkEntry] else [AccessCenter i; SuccessorLane (i+1)]);
-		add (SelectorLane i) 3 plr_Even (if i = n then [SinkEntry] else [CountingEntry i; SelectorLane (i+1)]);
+		add (SuccessorLane i) 3 (if i = n then plr_Odd else plr_Even) (if i = n then [SinkEntry] else [AccessCenter i; SuccessorLane (i+1)]);
+		add (SelectorLane i) 3 (if i = n then plr_Odd else plr_Even) (if i = n then [SinkEntry] else [CountingEntry i; SelectorLane (i+1)]);
 	done;
-	
+
 	for i = 0 to n - 1 do
 		add (SelectorLowEntry i) (2 * tt * n + 2 * i + 8) plr_Odd [SelectorLane 0];
 		add (AccessCenter i) 6 plr_Odd [CountingEntry i; AccessNode (i, uu - 1)];
-		
+
 		for j = 0 to uu - 1 do
-			add (AccessNode (i,j)) 5 plr_Even [SinkEntry; AccessLeaver i; (if j = 0 then AccessCenter i else AccessNode (i,j-1))]
+			add (AccessNode (i,j)) 5 plr_Even [AccessLeaver i; (if j = 0 then AccessCenter i else AccessNode (i,j-1))]
 		done;
-		
+
 		add (AccessLeaver i) (2 * tt * n + 2 * n + 4 * i + 11) plr_Odd [SelectorLane 0];
 		add (CountingEntry i) (2 * tt * n + 2 * n + 4 * i + 13) plr_Odd [CountingCenter i];
 		add (CountingCenter i) 6 plr_Odd [CountingExit i; CountingHighNode i; PacedNode (i, ss - 1)];
 		add (CountingHighNode i) 5 plr_Even [CountingHighLeaver i; CountingLowNode (i, tt - 1)];
 		add (CountingHighLeaver i) 7 plr_Odd (if i = 0 then [SelectorHighEntry] else [SelectorHighEntry; CountingHighLane (i-1)]);
-		add (CountingHighLane i) 3 plr_Odd (if i = 0 then [CountingLowNode (i, tt - 1)] else [CountingLowNode (i, tt - 1); CountingHighLane (i-1)]);
-		
+		if i < n-1 then add (CountingHighLane i) 3 plr_Odd (if i = 0 then [CountingLowNode (i, tt - 1)] else [CountingLowNode (i, tt - 1); CountingHighLane (i-1)]);
+
 		for j = 0 to tt - 1 do
-			add (CountingLowNode (i,j)) 5 plr_Even [SinkEntry; CountingLowLeaver (i,j); (if j = 0 then CountingCenter i else CountingLowNode (i,j-1))];
+			add (CountingLowNode (i,j)) 5 plr_Even [CountingLowLeaver (i,j); (if j = 0 then CountingCenter i else CountingLowNode (i,j-1))];
 			add (CountingLowLeaver (i,j)) (2 * tt - 2 * j + 2 * tt * i + 7) plr_Odd (if i = 0 then [SelectorLowEntry i] else [CountingLowLane (i-1,j); SelectorLowEntry i]);
-			add (CountingLowLane (i,j)) 3 plr_Odd (if i = 0 then [CountingLowNode (i,j)] else [CountingLowNode (i,j); CountingLowLane (i-1,j)])
+			if i < n-1 then add (CountingLowLane (i,j)) 3 plr_Odd (if i = 0 then [CountingLowNode (i,j)] else [CountingLowNode (i,j); CountingLowLane (i-1,j)])
 		done;
-		
+
 		add (CountingExit i) (2 * tt * n + 2 * n + 4 * i + 14) plr_Odd [SuccessorLane (i+1)];
-		
+
 		for j = 0 to ss - 1 do
-			add (PacedNode (i,j)) 5 plr_Even [SinkEntry; PacerExit; (if j = 0 then CountingCenter i else PacedNode (i,j-1))]
+			add (PacedNode (i,j)) 5 plr_Even [PacerExit; (if j = 0 then CountingCenter i else PacedNode (i,j-1))]
 		done;
 	done;
 

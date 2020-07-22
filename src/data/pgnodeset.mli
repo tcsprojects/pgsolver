@@ -176,3 +176,5 @@ val ns_diff: nodeset -> nodeset -> nodeset
 val ns_inter: nodeset -> nodeset -> nodeset
 
 val ns_union: nodeset -> nodeset -> nodeset
+
+val ns_random    : nodeset -> node

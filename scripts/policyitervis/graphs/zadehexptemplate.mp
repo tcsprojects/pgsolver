@@ -10,6 +10,6 @@ input "latex";
 input ./metapostgraphs/graphicslib
 input ./metapostgraphs/graphlib
 
-input graphs/zadehexpgraph;			
+input graphs/zadehexpgraph;
 
-build_graph(true);
+build_graph(3, true);

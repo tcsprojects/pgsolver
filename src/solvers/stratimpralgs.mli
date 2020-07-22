@@ -25,16 +25,21 @@ type game_valuation = node_valuation array
 val evaluate_strategy :
   paritygame -> node_total_ordering_fun -> strategy -> game_valuation
 
+val less_valuation :
+  (node_valuation -> node_valuation -> int) -> game_valuation -> game_valuation -> bool
+
 val strategy_improvable :
   paritygame -> node_total_ordering_fun -> strategy -> game_valuation -> bool
 
 val initial_strategy_by_best_reward : paritygame -> strategy
 
+val initial_strategy_by_random_edge : paritygame -> strategy
+
 val improvement_policy_optimize_all_locally :
   paritygame -> node_total_ordering_fun -> strategy -> game_valuation -> strategy
- 
+
 val strategy_improvement_optimize_all_locally_policy: paritygame -> solution * strategy
- 
+
 val best_decision_by_valuation_ordering :
   paritygame -> node_total_ordering_fun -> game_valuation -> node -> node
 
@@ -46,11 +51,11 @@ val counter_strategy_by_valu_and_ordering: paritygame -> game_valuation -> node_
 val compute_counter_strategy:
   paritygame -> strategy -> strategy
 
-	
-	
+
+
 val register_sub_solver: (paritygame -> solution * strategy) -> string -> string -> string -> unit
 
-				
+
 type initial_strategy_fun = paritygame -> strategy
 
 type 'a improvement_policy_fun = paritygame -> node_total_ordering_fun -> 'a -> strategy -> game_valuation -> strategy * 'a
@@ -81,4 +86,3 @@ type mdplike_valuation = (((node, float) TreeMap.t) * bool option) array
 val mdplike_valuation: paritygame -> int -> strategy -> mdplike_valuation
 
 val compare_mdplike_valuation: paritygame -> mdplike_valuation -> node -> node -> int
-

@@ -10,10 +10,10 @@ input "latex";
 input ./metapostgraphs/graphicslib
 input ./metapostgraphs/graphlib
 
-input zadehexpgame;
+input randomedgeexpgame;
 
 beginfig(1);
-	build_graph(3, true);
+	build_graph(3, true, true, true, true);
  	graph_draw;
 endfig;
 

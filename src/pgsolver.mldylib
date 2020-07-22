@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 717c4cf730bbe98699966013834eb963)
+# DO NOT EDIT (digest: f2e6021b613546b787746a19db573e9e)
 pgsolver/Basics
 pgsolver/Info
 data/Pgnode
@@ -41,6 +41,7 @@ solvers/Stratimprlocal2
 solvers/Stratimprovement
 solvers/Stratimprsat
 solvers/Viasat
+solvers/Stratimprlowerboundanalyze
 solvers/stratimpralgs/Switch_cunningham
 solvers/stratimpralgs/Switch_globally_best
 solvers/stratimpralgs/Switch_history

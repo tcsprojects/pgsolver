@@ -6,9 +6,11 @@
 # 4th parameter = Metapost template
 # 5th parameter = Latex template
 
+rm *.mpt
+
 BASEDIR=$(dirname $0)/../..
 
-$BASEDIR/bin/$1 | $BASEDIR/bin/policyitervis -pi "$2" > $3_animation.mp
+$BASEDIR/bin/$1 | $BASEDIR/bin/policyitervis -pi "$2" -rs 2 > $3_animation.mp
 
 cp $4 $3_main.mp
 

@@ -2,8 +2,8 @@
  *
  * from:
  * ... uh well ... actually no-one wants to be responsible for this kind of nonsense. Unthinkable that it
- * would have been published anywhere, maybe GandALF ... or ICTAC. Or TSGAPG, the Transsylvanian Symposium 
- * on Genetic Algorithms for Parity Games. 
+ * would have been published anywhere, maybe GandALF ... or ICTAC. Or TSGAPG, the Transsylvanian Symposium
+ * on Genetic Algorithms for Parity Games.
  *)
 
 open Paritygame ;;
@@ -19,24 +19,22 @@ open Pgsolution;;
 open Pgstrategy;;
 
 
-let _ = Random.self_init ()
-
-let msg_tagged v = message_autotagged v (fun _ -> "GENETIC")
+ let msg_tagged v = message_autotagged v (fun _ -> "GENETIC")
 let msg_plain = message
 
 
-(* An evaluated strategy is a strategy in which each edge has a local value remembering the number of times 
+(* An evaluated strategy is a strategy in which each edge has a local value remembering the number of times
    this edge has been used in a winning play. There are also two global values remembering how often each
    of the players has won a play using this strategy. *)
 
 type evaluated_strategy = (int * int) array * int * int
 
-let show (str,g0,g1) = 
+let show (str,g0,g1) =
   let show i = match i with -1 -> "_" | _ -> string_of_int i in
   "[" ^ String.concat "," (Array.to_list (Array.mapi (fun i -> fun (w,e) -> string_of_int i ^ "-(" ^ string_of_int e ^ ")->" ^ show w) str)) ^ "]"
   ^ ":" ^ string_of_int g0 ^ ":" ^ string_of_int g1
 
-module Parameters = 
+module Parameters =
 struct
 
   let max_pool_size = ref 100
@@ -49,14 +47,14 @@ struct
 
   (* decide whether or not to mutate in the i-th round *)
   (* here: independent of round number *)
-  let mutate_now _ = 
+  let mutate_now _ =
     let x = Random.float 1.0 in
     x < !mutation_prob
 
- 
+
   (* decide whether or not to procreate in the i-th round *)
   (* here: independent of round number *)
-  let procreate_now _ = 
+  let procreate_now _ =
     let x = Random.float 1.0 in
     x < !procreation_prob
 
@@ -71,7 +69,7 @@ struct
 
   (* decide whether or not to test a random strategy in the i-th round *)
   (* here: low probability before !test_breakpoint, high afterwards, and continuously increasing *)
-  let test_now i = 
+  let test_now i =
     let x = Random.float 3.1415 in
     x < (atan ((float_of_int (i - !test_breakpoint)) /. 2.0)) +. 3.1415 /. 2.0
 
@@ -79,24 +77,24 @@ end ;;
 
 module RandomDistribution =
 struct
-    
+
   (* normal distribution over [0,..,n-1] *)
   let normal = Random.int
 
   (* distribution weakly biased towards low values *)
-  let biased_low n = 
+  let biased_low n =
     let x = Random.float 1.0 in
     let x = x *. x in
     int_of_float (x *. (float_of_int n))
 
   (* distribution strongly biased towards low values *)
-  let very_biased_low n = 
+  let very_biased_low n =
     let x = Random.float 1.0 in
     let x = x *. x *. x in
     int_of_float (x *. (float_of_int n))
 
   (* distribution weakly biased towards high values *)
-  let biased_high n = 
+  let biased_high n =
     let x = Random.float 1.0 in
     let x = sqrt x in
     int_of_float (x *. (float_of_int n))
@@ -110,7 +108,7 @@ struct
 
   let pool = DynArray.create ([|(0,0)|],0,0)
 
-  let init _ = 
+  let init _ =
     DynArray.clear pool
 
 
@@ -125,8 +123,8 @@ struct
 
   let insert estr =
     let rec search x start finish =
-      if start >= finish then 
-        start 
+      if start >= finish then
+        start
       else
         let middle = start + ((finish - start) / 2) in
         let y = evaluate (DynArray.get pool middle) in
@@ -137,11 +135,11 @@ struct
     in
     DynArray.insert pool (search (evaluate estr) 0 ((DynArray.length pool)-1)) estr;
     if DynArray.length pool > !max_pool_size then DynArray.delete_last pool
-    
+
 
   (* select a strategy randomly from the pool and take it out *)
 
-  let select_and_remove f = 
+  let select_and_remove f =
     let n = DynArray.length pool in
     let i = f n in
     let estr = DynArray.get pool i in
@@ -151,7 +149,7 @@ struct
 
   (* select a strategy randomly from the pool and leave it in *)
 
-  let select f = 
+  let select f =
     let n = DynArray.length pool in
     let i = f n in
     DynArray.get pool i
@@ -182,7 +180,7 @@ struct
 
     let v = Random.int l in
     let ws = Array.of_list (ns_nodes (game#get_successors v)) in
-    
+
     let (o,_) = str.(v) in
     let n = ws.(Random.int (Array.length ws)) in
     if n <> o then
@@ -193,7 +191,7 @@ struct
     else
       (str,g0,g1)
 
-    
+
   (* create a strategy out of two other strategies *)
   (* choices in the child strategy are randomly inherited from either of the parents, distribution is biased
      according to their local evaluations *)
@@ -214,7 +212,7 @@ struct
                      incr counter;
                      str1.(i)
                    end
-                 else 
+                 else
                    str2.(i)
     done;
     (str, ((g01 * !counter) + (g02 * (l - !counter))) / l, ((g11 * !counter) + (g12 * (l - !counter))) / l)
@@ -278,10 +276,10 @@ struct
             node := fst str.(!node)
           end
       done;
-      
+
       (* record winner globally *)
       if !winner = plr_Even then incr wins0 else incr wins1;
-      
+
       (* record winner locally *)
       let vs = if !winner = plr_Even then !choices0 else !choices1 in
       let str = if !winner = plr_Even then str0 else str1 in
@@ -365,7 +363,7 @@ let solve' game =
         msg_tagged 2 (fun _ -> "Selecting two strategies for procreation.\n");
         let estr1 = select RandomDistribution.biased_low in
         let estr2 = select RandomDistribution.biased_low in
-        let estr = procreate estr1 estr2 in 
+        let estr = procreate estr1 estr2 in
         msg_tagged 3 (fun _ -> "Parent 1: " ^ (show estr1) ^ "\n");
         msg_tagged 3 (fun _ -> "Parent 2: " ^ (show estr2) ^ "\n");
         msg_tagged 3 (fun _ -> "Child   : " ^ (show estr) ^ "\n");
@@ -384,7 +382,7 @@ let solve' game =
     msg_tagged 3 (fun _ -> "The pool now has " ^ string_of_int (DynArray.length Pool.pool) ^ " strategies.\n");
     msg_tagged 3 (fun _ -> "Their global evaluations are [" ^
       String.concat ";" (List.map (fun (_,g0,g1) -> "(" ^ string_of_int g0 ^ "," ^ string_of_int g1 ^ ")") (DynArray.to_list Pool.pool))
-      ^ "]\n"); 
+      ^ "]\n");
 
     (* conditional test whether some strategy is winning *)
     if test_now !counter then
@@ -393,7 +391,7 @@ let solve' game =
         let estr = select RandomDistribution.very_biased_low in
         let (str,g0,g1) = estr in
         msg_tagged 3 (fun _ -> "Candidate: " ^ (show estr) ^ "\n");
- 
+
         (* strip the evaluated strategy *)
         let str = str_init game (fun i -> fst str.(i)) in
 
@@ -409,7 +407,7 @@ let solve' game =
             wstr := str;
             List.iter (fun v -> sol#set v p) ws
           end
-        else 
+        else
           begin
             let p = plr_opponent p in
             msg_tagged 3 (fun _ -> "Alright. Will try player " ^ plr_show p ^ " as well, if I must.\n");
@@ -445,7 +443,7 @@ module CommandLine = struct
                       "<iterations>\n     set test breakpoint iterations (default is 1000)")
                       ]
 
-  let parse s = 
+  let parse s =
   	SimpleArgs.parsearr s speclist (fun _ -> ()) "Genetic Algorithm\n" SimpleArgs.argprint_help SimpleArgs.argprint_bad
 
 end ;;
@@ -460,4 +458,3 @@ let solve game = universal_solve (universal_solve_init_options_verbose !universa
 
 
 let register _ = Solverregistry.register_solver_factory (fun s -> parse s; solve) "genetic" "gn" "use a genetic algorithm (aka heuristic)";;
-

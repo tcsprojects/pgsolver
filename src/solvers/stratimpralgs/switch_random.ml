@@ -93,7 +93,7 @@ let improvement_policy_vorobyov2_init_edges game =
 	game#iterate (fun i (pr, pl, tr, _, _) ->
 		if (pr >= 0) && (pl = plr_Even) then ns_iter (fun j ->
 			ed := TreeSet.add (i,j) !ed
-		) tr		
+		) tr
 	);
 	[(game#copy, !ed, TreeSet.empty compare, 0)]
 
@@ -107,7 +107,7 @@ let improvement_policy_vorobyov2 game node_compare
 			let strate = ref (TreeSet.empty compare) in
 			let ga' = ga#copy in
 			ga'#iterate (fun i (pr, pl, tr, _, de) ->
-				    if (pr >= 0) && (pl = plr_Even) then 
+				    if (pr >= 0) && (pl = plr_Even) then
 				      begin
 					strate := TreeSet.add (i,strategy#get i) !strate;
 					ns_iter (fun w -> ga'#del_edge i w) (ga'#get_successors i);
@@ -132,10 +132,10 @@ let improvement_policy_vorobyov2 game node_compare
 		)
 		else iterate stack
 	)
-	in	
-	iterate stack                                 
+	in
+	iterate stack
 
-                                
+
 
 let improvement_policy_vorobyovordered game node_total_ordering
                                 (edgearr, counter, stack, edgeord)
@@ -203,7 +203,7 @@ let improvement_policy_vorobyovordered_init_edges (game:paritygame) init_strat =
         else (ref 0, [||])
 	) in
 	(edgearr, counter, ref [], (ArrayUtils.shuffle (Array.of_list !ord)))
-	
+
 
 let improvement_policy_randomizedbland game node_total_ordering ordering old_strategy valu =
 	let strategy = old_strategy#copy in
@@ -215,7 +215,7 @@ let improvement_policy_randomizedbland game node_total_ordering ordering old_str
 	strategy#set x y;
 	(strategy, ordering)
 
-	
+
 let improvement_policy_randomizedbland_init_edges game init_strat =
 	Random.self_init ();
 	let ord = ref [] in
@@ -224,7 +224,7 @@ let improvement_policy_randomizedbland_init_edges game init_strat =
 		then ns_iter (fun j -> ord := (i,j)::!ord) tr;
 	);
 	(ArrayUtils.shuffle (Array.of_list !ord))
-	
+
 let improvement_policy_vorobyov game node_total_ordering
                                 (edgearr, counter, stack)
                                 old_strategy valu =
@@ -398,8 +398,16 @@ let improvement_policy_all_randomly game node_total_ordering old_strategy valu =
 
 
 let strategy_improvement_single_randomly_policy game =
-	Random.self_init ();
-	strategy_improvement game initial_strategy_by_last_edge node_total_ordering_by_position (improvement_policy_no_user_data improvement_policy_single_randomly) () false "STRIMPR_SIRAND";;
+	(*Random.self_init ();*)
+	strategy_improvement game (fun game ->
+		let strategy = initial_strategy_by_random_edge game in
+		strategy#map (fun i j ->
+			try
+			 let k = ns_find (fun k -> game#get_priority k = 3) (game#get_successors i) in
+			 if j != nd_undef then k else j
+		 with Not_found -> j
+		)
+	) node_total_ordering_by_position (improvement_policy_no_user_data improvement_policy_single_randomly) () false "STRIMPR_SIRAND";;
 
 let strategy_improvement_single_node_edge_randomly_policy game =
 	Random.self_init ();

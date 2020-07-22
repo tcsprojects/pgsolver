@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: ff42186f384c070fa019ecbcbfc18b96)
+# DO NOT EDIT (digest: 9fb816d8de1747270c7b68afe1e896c4)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -156,6 +156,14 @@ true: annot, bin_annot
 <src/tools/infotool.{native,byte}>: package(ocaml-sat-solvers)
 <src/tools/infotool.{native,byte}>: package(str)
 <src/tools/infotool.{native,byte}>: use_pgsolver
+# Executable analyzepolicy-bin
+<src/tools/analyzepolicy.{native,byte}>: package(TCSLib)
+<src/tools/analyzepolicy.{native,byte}>: package(extlib)
+<src/tools/analyzepolicy.{native,byte}>: package(minisat)
+<src/tools/analyzepolicy.{native,byte}>: package(num)
+<src/tools/analyzepolicy.{native,byte}>: package(ocaml-sat-solvers)
+<src/tools/analyzepolicy.{native,byte}>: package(str)
+<src/tools/analyzepolicy.{native,byte}>: use_pgsolver
 # Executable itersat-bin
 <src/tools/itersat.{native,byte}>: package(TCSLib)
 <src/tools/itersat.{native,byte}>: package(extlib)

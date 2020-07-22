@@ -8,7 +8,7 @@ numeric
 	node_style_prio,
 	node_style_plain,
 	edge_style_default;
-	
+
 node_style_even := node_style_add(primitive_style_add(white, path_style_default, primitive_circle), (1,1));
 node_style_odd := node_style_add(primitive_style_add(white, path_style_default, primitive_rectangle), (1,1));
 node_style_prio := node_style_add(primitive_style_add(white, path_style_default, primitive_diamond), (1,1));
@@ -29,7 +29,7 @@ numeric % Groups
 	group_source_sink;
 
 
-	
+
 numeric % Nodes
 	node_lane_t[],
 	node_lane_c,
@@ -54,9 +54,9 @@ numeric % Nodes
 	node_source_r,
 	node_source_s,
 	node_sink_x;
-	
-	
-	
+
+
+
 numeric % Edges
 	edge_lane_t_c,
 	edge_lane_a_t[],
@@ -113,8 +113,8 @@ numeric % Edges
 	edge_con_source_sx,
 	edge_con_source_rx;
 
-	
-	
+
+
 numeric % Coords
 	coord_cycle_v_tar[][],
 	coord_cycle_w_tar[][],
@@ -130,7 +130,7 @@ numeric % Coords
 	coord_lane_t_r[];
 
 
-	
+
 vardef build_graph(expr fearnleygame, bits) =
 
 	vardef new_even_node(expr x, y, txt, prio) =
@@ -188,11 +188,11 @@ vardef build_graph(expr fearnleygame, bits) =
 
 	vardef build_deceleration_lane(expr base) =
 		group_deceleration_lane := group_add(group_root);
-		group_enter(group_deceleration_lane);	
+		group_enter(group_deceleration_lane);
 		coords_enter_base(base);
-		
+
 		node_lane_c		  := new_even_node(0,0,"$c$",decimal (10*bits+6));
-		
+
 		coord_cycle_t_s[0] := coords_register(-2.5,0+1);
 		edge_lane_t_coord_t_s[0] := new_edge_to_coord(node_lane_c, coord_cycle_t_s[0]);
 		coord_cycle_t_r[0] := coords_register(-1.25,0+1);
@@ -216,13 +216,13 @@ vardef build_graph(expr fearnleygame, bits) =
 			edge_lane_coord_t_r[i-1] := new_edge_coord_to_coord(coord_cycle_t_r[i-1], coord_cycle_t_r[i]);
 			edge_lane_coord_t_s[i-1] := new_edge_coord_to_coord(coord_cycle_t_s[i-1], coord_cycle_t_s[i]);
 		endfor;
-		
+
 		edge_lane_t_c := new_default_edge(node_lane_t[1], node_lane_c);
-		
+
 		for i=1 upto 3 * bits :
 			edge_lane_a_t[i] := new_default_edge(node_lane_a[i], node_lane_t[i]);
 		endfor;
-		
+
 		for i=2 upto 3 * bits :
 			edge_lane_t_t[i] := new_default_edge(node_lane_t[i], node_lane_t[i-1]);
 		endfor;
@@ -232,19 +232,19 @@ vardef build_graph(expr fearnleygame, bits) =
 		edge_lane_source_s := new_edge_coord_to_coord(coord_cycle_t_s[3*bits], coord_source_t_s);
 		edge_lane_source_r := new_edge_coord_to_coord(coord_cycle_t_r[3*bits], coord_source_t_r);
 
-		
+
 		coords_leave_base;
 		group_leave;
 	enddef;
 
 	vardef build_cycle_gate(expr index, base) =
 		group_cycle_gate[index] := group_add(group_root);
-		group_enter(group_cycle_gate[index]);	
+		group_enter(group_cycle_gate[index]);
 		coords_enter_base(base);
-		
+
 		node_cycle_b[index]	  := new_even_node(-2,-0.5,"$b_" & decimal index & "$",decimal (4*index-1));
 		node_cycle_d[index]	  := new_even_node(-2,2.5,"$d_" & decimal index & "$",decimal (4*index-1));
-		
+
 		coord_cycle_b_s[index] := coords_register(0.5,1);
 		edge_cycle_b_coord_b_s[index] := new_edge_to_coord(node_cycle_b[index], coord_cycle_b_s[index]);
 		coord_cycle_b_r[index] := coords_register(-0.75,1);
@@ -255,7 +255,7 @@ vardef build_graph(expr fearnleygame, bits) =
 		edge_cycle_d_coord_d_r[index] := new_edge_to_coord(node_cycle_d[index], coord_cycle_d_r[index]);
 		edge_cycle_coord_b_d_r[index] := new_edge_coord_to_coord(coord_cycle_b_r[index], coord_cycle_d_r[index]);
 		edge_cycle_coord_b_d_s[index] := new_edge_coord_to_coord(coord_cycle_b_s[index], coord_cycle_d_s[index]);
-		
+
 		if fearnleygame :
 			for i = 1 upto index - 1 :
 				node_cycle_u[index][i]	  := new_even_node(2 + (bits - i - 1) * 6,2.5,"$u_{" & decimal index & "," & decimal i & "}$",decimal 3);
@@ -277,13 +277,13 @@ vardef build_graph(expr fearnleygame, bits) =
 			node_cycle_m[index]	:= new_prio_node(4 + (bits - 1) * 6 ,0.5,"$m_" & decimal index & "$",decimal (10*bits+2*index+9));
 			node_cycle_q[index]	:= new_prio_node(6 + (bits - 1) * 6 ,0.5,"$q_" & decimal index & "$",decimal (12*bits+6*index+9));
 		fi;
-		
+
 		node_cycle_e[index]	:= new_odd_node(4 + (bits-1) * 6 ,2.5,"$e_" & decimal index & "$",decimal (4*index+2));
 		node_cycle_h[index]	:= new_prio_node(6 + (bits-1) * 6 ,2.5,"$h_" & decimal index & "$",decimal (12*bits+6*index+10));
 		node_cycle_f[index]	:= new_prio_node(4 + (bits-1) * 6 ,4.5,"$f_" & decimal index & "$",decimal (12*bits+6*index+7));
 		node_cycle_g[index]	:= new_even_node(6 + (bits-1) * 6 ,4.5,"$g_" & decimal index & "$",decimal (4*index+4));
 		node_cycle_k[index]	:= new_even_node(8 + (bits-1) * 6 ,4.5,"$k_" & decimal index & "$",decimal (12*bits+6*index+5));
-		
+
 		edge_cycle_f_e[index] := new_default_edge(node_cycle_f[index], node_cycle_e[index]);
 		edge_cycle_g_f[index] := new_default_edge(node_cycle_g[index], node_cycle_f[index]);
 		edge_cycle_g_k[index] := new_default_edge(node_cycle_g[index], node_cycle_k[index]);
@@ -294,10 +294,10 @@ vardef build_graph(expr fearnleygame, bits) =
 		edge_cycle_e_b[index] := new_default_edge(node_cycle_e[index], node_cycle_b[index]);
 								 edge_register_coord_(edge_cycle_e_b[index], coords_register(2 + (bits - 1) * 6,-0.5));
 
-		if fearnleygame :					 
+		if fearnleygame :
 			edge_cycle_m_e[index] := new_default_edge(node_cycle_m[index], node_cycle_e[index]);
 			edge_cycle_q_h[index] := new_default_edge(node_cycle_q[index], node_cycle_h[index]);
-			
+
 			for i = 1 upto index - 1 :
 				edge_cycle_u_v[index][i] := new_default_edge(node_cycle_u[index][i], node_cycle_v[index][i]);
 				edge_cycle_u_w[index][i] := new_default_edge(node_cycle_u[index][i], node_cycle_w[index][i]);
@@ -308,7 +308,7 @@ vardef build_graph(expr fearnleygame, bits) =
 					tmp := node_cycle_u[index][i-1];
 				fi;
 				edge_cycle_v_to[index][i] := new_default_edge(node_cycle_v[index][i], tmp);
-				edge_cycle_w_to[index][i] := new_default_edge(node_cycle_w[index][i], tmp);			
+				edge_cycle_w_to[index][i] := new_default_edge(node_cycle_w[index][i], tmp);
 
 				edge_cycle_v_m[index][i] := new_default_edge(node_cycle_v[index][i], node_cycle_vm[index][i]);
 				edge_cycle_w_q[index][i] := new_default_edge(node_cycle_w[index][i], node_cycle_wq[index][i]);
@@ -335,12 +335,12 @@ vardef build_graph(expr fearnleygame, bits) =
 					fi;
 				fi;
 				edge_cycle_v_to[index][i] := new_default_edge(node_cycle_v[index][i], tmp);
-				edge_cycle_w_to[index][i] := new_default_edge(node_cycle_w[index][i], tmp);			
+				edge_cycle_w_to[index][i] := new_default_edge(node_cycle_w[index][i], tmp);
 
 				edge_cycle_v_m[index][i] := new_default_edge(node_cycle_v[index][i], node_cycle_vm[index][i]);
 				edge_cycle_w_q[index][i] := new_default_edge(node_cycle_w[index][i], node_cycle_wq[index][i]);
 			endfor;
-									 
+
 			if (bits = 1) :
 				edge_cycle_d_to[index] := new_default_edge(node_cycle_d[index], node_cycle_e[index]);
 			else :
@@ -353,37 +353,37 @@ vardef build_graph(expr fearnleygame, bits) =
 		else :
 			edge_cycle_d_to[index] := new_default_edge(node_cycle_d[index], node_cycle_e[index]);
 		fi;
-		
+
 		if (index = bits) :
 			coord_source_d_s := coords_register(0.5, 8.5);
 			coord_source_d_r := coords_register(-0.75, 6.5);
 			edge_cycle_source_s := new_edge_coord_to_coord(coord_cycle_d_s[index], coord_source_d_s);
 			edge_cycle_source_r := new_edge_coord_to_coord(coord_cycle_d_r[index], coord_source_d_r);
 		fi;
-		
+
 		coords_leave_base;
 		group_leave;
 	enddef;
-	
+
 	vardef build_source_sink(expr base) =
 		group_source_sink := group_add(group_root);
-		group_enter(group_source_sink);	
+		group_enter(group_source_sink);
 		coords_enter_base(base);
-		
+
 		node_source_s	  := new_even_node(4,0,"$s$",decimal (10*bits+8));
 		node_source_r	  := new_even_node(4,-2,"$r$",decimal (10*bits+10));
 		node_sink_x		  := new_prio_node(6,-4,"$x$",decimal 1);
-		
+
 		edge_sink_x_x := new_default_edge(node_sink_x, node_sink_x);
 						 edge_path_loop(edge_sink_x_x, 0, 0.65, 0.75, 25);
-						 
+
 		edge_source_r_x := new_default_edge(node_source_r, node_sink_x);
 		edge_source_s_x := new_default_edge(node_source_s, node_sink_x);
-		
+
 		coords_leave_base;
 		group_leave;
 	enddef;
-	
+
 	vardef connect_cycle_gate_layers(expr index) =
 		for i = index + 1 upto bits :
 			edge_cycle_k_g[index][i] := new_default_edge(node_cycle_k[index], node_cycle_g[i]);
@@ -391,20 +391,20 @@ vardef build_graph(expr fearnleygame, bits) =
 				edge_path_curl(edge_cycle_k_g[index][i], 0, -0.3);
 			fi;
 		endfor;
-		
+
 		edge_cycle_k_x[index] := new_default_edge(node_cycle_k[index], node_sink_x);
 
 		for i = 1 upto 3 * index :
 			edge_cycle_d_a[index][i] := new_default_edge(node_cycle_d[index], node_lane_a[i]);
 			edge_cycle_b_a[index][i] := new_default_edge(node_cycle_b[index], node_lane_a[i]);
 		endfor;
-		
+
 		if (index < bits) :
 			edge_cycle_coord_d_b_r[index] := new_edge_coord_to_coord(coord_cycle_d_r[index], coord_cycle_b_r[index+1]);
 			edge_cycle_coord_d_b_s[index] := new_edge_coord_to_coord(coord_cycle_d_s[index], coord_cycle_b_s[index+1]);
 		fi;
 	enddef;
-	
+
 	vardef connect_source_sink_layer =
 		for i = 1 upto bits :
 			edge_source_s_f[i] := new_default_edge(node_source_s, node_cycle_f[i]);
@@ -412,25 +412,25 @@ vardef build_graph(expr fearnleygame, bits) =
 			edge_source_r_g[i] := new_default_edge(node_source_r, node_cycle_g[i]);
 			edge_path_curl(edge_source_r_g[i], 0, 0.25);
 		endfor;
-		
+
 		edge_con_source_s := new_edge_coord_to_coord(coord_source_t_s, coord_source_d_s);
 		edge_con_source_r := new_edge_coord_to_coord(coord_source_t_r, coord_source_d_r);
 		edge_con_source_sx := new_edge_coord_to(coord_source_d_s, node_source_s);
 		edge_con_source_rx := new_edge_coord_to(coord_source_d_r, node_source_r);
 	enddef;
-	
+
 	graph_reset;
-	
+
 	build_deceleration_lane((0,0));
 	for i = 1 upto bits :
 		build_cycle_gate(i, (6 + bits, 6 * i - 2.5));
 	endfor;
 	build_source_sink((7 * bits + 6, 6 * bits + 6));
-	
+
 	for i = bits downto 1 :
 		connect_cycle_gate_layers(i);
 	endfor;
-	
+
 	connect_source_sink_layer;
 enddef;
 
@@ -440,24 +440,24 @@ enddef;
 vardef edge_translate(expr source, source_stack, target, target_stack) =
   numeric source_arr[];
   numeric source_arr_len;
-  
+
   source_arr_len := 0;
-  
+
   for i = scantokens(source_stack) :
   	source_arr[source_arr_len] := i;
   	source_arr_len := source_arr_len + 1;
   endfor;
-  
+
   numeric target_arr[];
   numeric target_arr_len;
-  
+
   target_arr_len := 0;
-  
+
   for i = scantokens(target_stack) :
   	target_arr[target_arr_len] := i;
   	target_arr_len := target_arr_len + 1;
   endfor;
-    
+
   if     (source="c") and (target="s"): edge_lane_t_coord_t_s[0]
   elseif (source="c") and (target="r"): edge_lane_t_coord_t_r[0]
   elseif (source="t") and (target="c"): edge_lane_t_c
@@ -477,12 +477,12 @@ vardef edge_translate(expr source, source_stack, target, target_stack) =
   elseif (source="s") and (target="f"): edge_source_s_f[target_arr[0]+1]
   elseif (source="u") and (target="v"): edge_cycle_u_v[source_arr[0]+1][source_arr[1]+1]
   elseif (source="u") and (target="w"): edge_cycle_u_w[source_arr[0]+1][source_arr[1]+1]
-  
+
   elseif (source="u") and (target="b"): edge_cycle_u_p[source_arr[0]+1][source_arr[1]+1]
   elseif (source="b") and (target="l"): edge_cycle_p_z[source_arr[0]+1][source_arr[1]+1]
   elseif (source="b") and (target="p"): edge_cycle_p_y[source_arr[0]+1][source_arr[1]+1]
   elseif (source="b"): edge_cycle_p_out[source_arr[0]+1][source_arr[1]+1]
-  
+
   elseif (source="v") and (target="m"): edge_cycle_v_m[source_arr[0]+1][source_arr[1]+1]
   elseif (source="v")                 : edge_cycle_v_to[source_arr[0]+1][source_arr[1]+1]
   elseif (source="w") and (target="q"): edge_cycle_w_q[source_arr[0]+1][source_arr[1]+1]
@@ -505,4 +505,3 @@ vardef edge_translate(expr source, source_stack, target, target_stack) =
     -1
   fi
 enddef;
-

@@ -10,11 +10,6 @@ input "latex";
 input ./metapostgraphs/graphicslib
 input ./metapostgraphs/graphlib
 
-input zadehexpgame;
+input graphs/randomedgeexpgraph;
 
-beginfig(1);
-	build_graph(3, true);
- 	graph_draw;
-endfig;
-
-end;
+build_graph(3, true, true, true, true);

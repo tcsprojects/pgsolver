@@ -69,7 +69,7 @@ class array_strategy (initSize: int) = object (self: 'self)
 
     val mutable nodes : node array = Array.make initSize nd_undef
 
-    method copy = {< nodes = nodes >}
+    method copy = {< nodes = Array.copy nodes >}
 
     method get v =
         nodes.(nd_to_int v)

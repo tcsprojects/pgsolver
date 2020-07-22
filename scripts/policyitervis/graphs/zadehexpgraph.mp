@@ -35,7 +35,7 @@ style_separator := path_style_add(black, path_shape_dashed, 0.75);
 numeric % Groups
 	group_sink,
 	group_layers[];
-	
+
 numeric % Nodes
 	node_d[],               % g
 	node_f[],               % b
@@ -57,8 +57,8 @@ numeric % Nodes
 	node_q[],               % e11
 	node_r[],               % e10
 	node_t;                 % t
-	
-	
+
+
 numeric % Edges
 	edge_d_left[],
 	edge_d_right[],
@@ -94,9 +94,9 @@ numeric % Edges
 	edge_u[],
 	edge_t;
 
-	
 
-vardef build_graph(expr aspg) =
+
+vardef build_graph(expr kkk, aspg) =
 	vardef prio_annot(expr n, priopg, priomdp) =
 		if (aspg):
 			if (not (priopg = "")):
@@ -192,15 +192,15 @@ vardef build_graph(expr aspg) =
 		fi;
 		tmp
 	enddef;
-	
+
 	vardef build_group_layer(expr basey, index, count, times_i, add_const) =
 		group_layers[index] := group_add(group_root);
-		group_enter(group_layers[index]);	
+		group_enter(group_layers[index]);
 		coords_enter_base((0,basey));
-		
+
 		string indexstr;
-		indexstr := i_string(times_i, add_const);	
-		
+		indexstr := i_string(times_i, add_const);
+
 		numeric mdpminus;
 		mdpminus:=6;
 
@@ -290,7 +290,7 @@ vardef build_graph(expr aspg) =
 			edge_s_out[index] := new_default_edge(node_s[index], node_f_zero[index]);
 			edge_add_text_line(edge_s_out[index], 0, latex("$s_{" & indexstr & ",1}^0$"), black, 0.5, false);
 		fi;
-		
+
 		edge_path_curl(edge_b_in[index], 0, -0.3);
 		edge_path_curl(edge_E_in_b[index], 0, -0.3);
 		edge_path_curl(edge_a_in[index], 0, -0.3);
@@ -305,7 +305,7 @@ vardef build_graph(expr aspg) =
 			edge_path_curl(edge_X_in_w[index], 0, -0.3);
 			edge_path_curl(edge_X_out[index], 0, -0.3);
 		fi;
-		
+
 		if (not aspg) :
 			edge_add_text_line(edge_E_out[index], 0, latex("$\varepsilon$"), black, 0.2, false);
 			edge_add_text_line(edge_E_in_b[index], 0, latex("$0.5(1{-}\varepsilon)$"), black, 0.2, false);
@@ -320,27 +320,27 @@ vardef build_graph(expr aspg) =
 		coords_leave_base;
 		group_leave;
 	enddef;
-		
+
 	vardef build_sink(expr basey, count) =
 		group_sink := group_add(group_root);
-		group_enter(group_sink);	
+		group_enter(group_sink);
 		coords_enter_base((0,basey));
-		
+
 		node_f[count+1] := coords_register(0,0);
-		
+
 		node_t        := new_prio_node(8,0, "$t$", "1", "");
 
 		edge_t      := new_default_edge(node_t, node_t);
 			   	       edge_path_loop(edge_t, 0, 0.5, 0.75, 0);
 
 		edge_f_in[count+1] := new_coord_to_edge(node_f[count+1], node_t);
-					   
+
 		coords_leave_base;
 		group_leave;
 	enddef;
 
 	vardef connect_group_layer_with_next(expr layer, count) =
-		
+
 		if (layer < count):
 			edge_u[layer] := new_default_edge(node_u[layer], node_d[layer+1]);
 			edge_add_text_line(edge_u[layer], 0, latex("$h_{" & decimal(layer) & ",1}^0$"), black, 0.2, false);
@@ -356,45 +356,47 @@ vardef build_graph(expr aspg) =
 		fi;
 
 	enddef;
-	
+
 	graph_reset;
-	build_group_layer(0,1,3,0,1);
-	build_group_layer(ypart group_get_coord_ur(group_layers[1]) + 1.75,2,3,0,2);
-	build_group_layer(ypart group_get_coord_ur(group_layers[2]) + 1.75,3,3,0,3);
-	build_sink(ypart group_get_coord_ur(group_layers[3]) + 1.75, 3);
+	build_group_layer(0,1,kkk,0,1);
+	for i = 2 upto kkk :
+		build_group_layer(ypart group_get_coord_ur(group_layers[i-1]) + 1.75,i,kkk,0,i);
+	endfor;
+	build_sink(ypart group_get_coord_ur(group_layers[kkk]) + 1.75, kkk);
 	% group_separator_add(group_source, group_layers[1], style_separator, 0.10);
-	group_separator_add(group_layers[1], group_layers[2], style_separator, 0.10);
-	group_separator_add(group_layers[2], group_layers[3], style_separator, 0.10);
-	group_separator_add(group_layers[3], group_sink, style_separator, 0.10);
-	connect_group_layer_with_next(1,3);
-	connect_group_layer_with_next(2,3);
-	connect_group_layer_with_next(3,3);
+	for i = 1 upto kkk-1 :
+		group_separator_add(group_layers[i], group_layers[i+1], style_separator, 0.10);
+	endfor;
+	group_separator_add(group_layers[kkk], group_sink, style_separator, 0.10);
+	for i = 1 upto kkk :
+  	connect_group_layer_with_next(i,kkk);
+	endfor;
 enddef;
-		
-		
-		
+
+
+
 vardef edge_translate(expr source, source_stack, target, target_stack) =
   numeric source_arr[];
   numeric source_arr_len;
-  
+
   source_arr_len := 0;
-  
+
   for i = scantokens(source_stack) :
   	source_arr[source_arr_len] := i;
   	source_arr_len := source_arr_len + 1;
   endfor;
-  
+
   numeric target_arr[];
   numeric target_arr_len;
-  
+
   target_arr_len := 0;
-  
+
   for i = scantokens(target_stack) :
   	target_arr[target_arr_len] := i;
   	target_arr_len := target_arr_len + 1;
   endfor;
-  
-  
+
+
   if     (source="d") and (target="E"): edge_d_left[source_arr[0]+1]
   elseif (source="d") and (target="X"): edge_d_right[source_arr[0]+1]
   elseif (source="m") and (target="d"): edge_f_in[source_arr[0]+1]
@@ -429,5 +431,4 @@ vardef edge_translate(expr source, source_stack, target, target_stack) =
   else:
     -1
   fi
-enddef;  
-
+enddef;

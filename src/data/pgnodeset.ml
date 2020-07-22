@@ -44,3 +44,9 @@ let ns_some ws =
   ) ws
 
 let ns_max ns lessf = ns_fold (fun v -> fun w -> if lessf v w then w else v) (ns_some ns) ns
+
+let ns_nodes = TreeSet.elements
+
+let ns_random tr =
+  let a = Array.of_list (ns_nodes tr) in
+  a.(0)
