@@ -31,3 +31,12 @@ cd pgsolver
 ocaml setup.ml -configure
 ocaml setup.ml -build
 ```
+
+
+## Examples
+
+Run the exponential lower bound construction for Zadeh's rule on PGSolver:
+```
+  bin/stratimprgen -pg zadehexp [n] | bin/pgsolver -dsd -dgo -dlo -dsg -v 2 -jh -global policyiter -x -sfse
+```
+where [n] is the index of the game, e.g. 3.
