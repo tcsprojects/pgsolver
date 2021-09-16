@@ -1,6 +1,6 @@
 # OASIS_START
-# DO NOT EDIT (digest: f13b1a003b5ae755a2f8f1bec894e749)
-version = "4.1"
+# DO NOT EDIT (digest: 7d1ab25d32bcb25c6175adc061458140)
+version = "4.2"
 description =
 "A collection of tools for generating, manipulating and - most of all - solving parity games."
 requires = "num str TCSLib extlib ocaml-sat-solvers minisat unix threads"

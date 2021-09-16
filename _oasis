@@ -1,6 +1,6 @@
 OASISFormat: 0.4
 Name:        pgsolver
-Version:     4.1
+Version:     4.2
 Synopsis:    A collection of tools for generating, manipulating and - most of all - solving parity games.
 Description: A collection of tools for generating, manipulating and - most of all - solving parity games.
 Authors:     Oliver Friedmann, Martin Lange

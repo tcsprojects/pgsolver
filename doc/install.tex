@@ -15,21 +15,21 @@ This will create a directory \texttt{pgsolver} and various subdirectories in it.
     ~> cd pgsolver
 \end{verbatim}
 
-In order to compile \pgsolver from source code you will need the OCaml compiler and the compilation tool \texttt{ocamlbuild}. A convenient way to get
-both is to use the OCaml Package Manager \texttt{opam}. Install it via any package manager for your system or download it from
+In order to compile \pgsolver from source code you will need the OCaml compiler. A convenient way is to install the OCaml 
+Package Manager \texttt{opam}. Install it via any package manager for your system or download it from
 \begin{center}
 \url{https://opam.ocaml.org/}
 \end{center}
-Get the OCaml compiler and Ocamlfind.
+Then get the OCaml compiler installed via.
 \begin{verbatim}
-    ~> opam switch 4.03.0 
+    ~> opam switch 4.07.0 
     ~> eval `opam config env`
-    ~> opam install ocamlbuild ocamlfind
 \end{verbatim}
+It may be recommendable to use a later version of the OCaml compiler. Previous versions before 4.07.0 may also work.
 
-Install the following required additional packages:
+Next you need the compilation tool \texttt{ocamlbuild} and some additional packages which can be installed via:
 \begin{verbatim}
-    ~> opam install TCSLib extlib ocaml-sat-solvers minisat
+    ~> opam install ocamlbuild ocamlfind TCSLib extlib ocaml-sat-solvers minisat
 \end{verbatim}
 
 If you intent to contribute to the development of \pgsolver you may want to use unit tests as well. This requires:
@@ -50,43 +50,5 @@ To start the compilation, type
 \begin{verbatim}
     ~/pgsolver> ocaml setup.ml -configure
     ~/pgsolver> ocaml setup.ml -build
-
 \end{verbatim}
-%This is the same as
-%\begin{verbatim}
-%    ~/pgsolver> make all
-%\end{verbatim}
-%which is an abbreviation for \verb# make pgsolver generators tools#. If you only want the executable \pgsolver then
-%\begin{verbatim}
-%    ~/pgsolver> make pgsolver
-%\end{verbatim}
-%suffices. The same holds for the executables containing benchmark generators and some tools to manipulate parity games.
-%After successful compilation, the executables can be found in the
-%subdirectory \texttt{bin}.
-%
-%You can delete all files that have been created during the compilation process by running
-%\begin{verbatim}
-%    ~/pgsolver> make clean
-%\end{verbatim}
 
-% If you also want to have executable programs that create the benchmarks described in the next
-% chapter as well as some possibly useful tools that massage parity games then run
-% \begin{verbatim}
-%     ~/pgsolver> make generators
-% \end{verbatim}
-% and
-% \begin{verbatim}
-%     ~/pgsolver> make tools
-% \end{verbatim}
-% Finally,
-% \begin{verbatim}
-%     ~/pgsolver> make all
-% \end{verbatim}
-% is a synonym for \verb#make pgsolver; make generators; make tools#.
-
-
-
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: "main"
-%%% End:
