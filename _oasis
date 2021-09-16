@@ -12,7 +12,7 @@ SourceRepository head
   Type: git
   Location: git://github.com/tcsprojects/pgsolver.git
   Browser: https://github.com/tcsprojects/pgsolver
-Plugins:     META
+Plugins:     META (0.4)
 BuildTools: ocamlbuild
 Library "pgsolver"
   Path:       src
