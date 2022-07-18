@@ -8,6 +8,7 @@ compatibility, changes in the user interface, etc., are marked with three asteri
 
 Changes incorporated into version 4.2:
 \begin{itemize}
+\item[$\ast \ast$] Bug fix in the random game generators: they require a lower bound on outdegrees of at least $1$ now. 
 \item[$\ast$] Removed dependency on deprecated OCaml Pervasives module.
 \end{itemize}
 
@@ -31,7 +32,7 @@ Changes incorporated into version 4.0:
      nodes in the game, rather than the largest identifier of a node in the game. So any ``\texttt{parity} $n$'' should now be 
      ``\texttt{parity} $n+1$''.
 \item[$\ast$] A framework for the easy creation of benchmarks derived from model-checking problems is now provided. 
-\item[$\ast\ast$] Support for the \texttt{Z3} has been discontinued.  
+\item[$\ast\ast$] Support for \texttt{Z3} has been discontinued.  
 \end{itemize}
 
 Changes incorporated into version 3:

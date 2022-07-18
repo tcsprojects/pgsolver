@@ -7,7 +7,7 @@ let random_game_func arguments =
 		print_string ("Usage: randomgame n p l h [x]\n\n" ^
 					  "       where n = Number of nodes\n" ^
 					  "             p = Highest possibly occurring priority\n" ^
-					  "             l = Lowest possible out-degree\n" ^
+					  "             l = Lowest possible out-degree (l > 0)\n" ^
 					  "             h = Highest possible out-degree\n" ^ 
 					  "             x = disable self-cycles\n\n")
 	in
@@ -17,8 +17,11 @@ let random_game_func arguments =
     let size = int_of_string arguments.(0) in
     let max_prio = 1+(int_of_string arguments.(1)) in
     let outdegmin = int_of_string arguments.(2) in
+
+    if outdegmin < 1 then (show_help (); exit 1);
+
     let outdegmax = int_of_string arguments.(3) in
-	let self_cycles = Array.length arguments = 4 in
+    let self_cycles = Array.length arguments = 4 in
 
     Random.self_init ();
 

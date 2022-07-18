@@ -17,8 +17,14 @@ let generator_game_func arguments =
 
   let size = int_of_string arguments.(0) in
   let outdegmin = int_of_string arguments.(1) in
+
+  if outdegmin < 1 then (show_help (); exit 1);
+
   let outdegmax = int_of_string arguments.(2) in
   let indegmin = int_of_string arguments.(3) in
+
+  if indegmin < 1 then (show_help (); exit 1);
+
   let indegmax = int_of_string arguments.(4) in
   let outavail = DynArray.init 0 size (fun i -> i) in
   let inavail = DynArray.init 0 size (fun i -> i) in

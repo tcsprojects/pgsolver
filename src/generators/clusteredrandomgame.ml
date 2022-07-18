@@ -23,6 +23,9 @@ let generator_game_func arguments =
   let size      = int_of_string arguments.(0) in
   let max_prio  = 1+(int_of_string arguments.(1)) in
   let outdegmin = int_of_string arguments.(2) in
+
+  if outdegmin < 1 then (show_help (); exit 1);
+
   let outdegmax = int_of_string arguments.(3) in
   let recdepth  = int_of_string arguments.(4) in
   let recintmin = int_of_string arguments.(5) in

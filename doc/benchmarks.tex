@@ -32,8 +32,12 @@ creates a random game with 1000 nodes as follows: for each node $v$,
 \item a number $d$ is uniformly chosen in the range $\{2,\ldots,5\}$, and $d$ pairwise different
       nodes are uniformly chosen as $v$'s successors.
 \end{itemize}
-Beware that \texttt{bin/randomgame} may crash or not terminate if the lower bound on the outdegree
-is greater than the upper bound or that one is greater than the number of nodes.
+Beware that \texttt{bin/randomgame} may crash or not terminate if 
+\begin{itemize}
+\item the lower bound on the outdegree is greater than the upper bound,
+\item the lower bound is smaller than $1$, or
+\item the upper bound is greater than the number of nodes.
+\end{itemize}
 
 
 \subsection{Clustered Random Games}
