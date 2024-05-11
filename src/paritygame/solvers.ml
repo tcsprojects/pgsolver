@@ -46,6 +46,7 @@ let _ =
     Stratimprsat.register ();
     Viasat.register ();
     Stratimpralgs.register ();
+    Stratimpralgsmulti.register ();
     Switch_cunningham.register ();
     Switch_globally_best.register ();
     Switch_history.register ();

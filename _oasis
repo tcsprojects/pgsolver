@@ -32,6 +32,7 @@ Library "pgsolver"
            solvers/stratimpralgs/Switch_locally_best, solvers/stratimpralgs/Switch_random,
            solvers/stratimpralgs/Switch_snare, solvers/stratimpralgs/Switch_zadeh,
            solvers/Succinctsmallprogress,
+           solvers/Stratimpralgsmulti,
            paritygame/Generatorregistry, paritygame/Generators,
            generators/Randomgame, generators/Laddergame, generators/Clusteredrandomgame, generators/Cliquegame,
            generators/Modelcheckerladder, generators/Recursiveladder, generators/Steadygame, generators/Jurdzinskigame,

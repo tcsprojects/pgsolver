@@ -32,3 +32,4 @@ scripts/policyitervis/metapostgraphs
 setup.data
 *.byte
 *.cache
+_opam
