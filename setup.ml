@@ -6871,7 +6871,7 @@ let setup_t =
        {
           oasis_version = "0.4";
           ocaml_version = Some (OASISVersion.VGreaterEqual "4.03.0");
-          version = "4.2";
+          version = "4.3";
           license =
             OASISLicense.DEP5License
               (OASISLicense.DEP5Unit

@@ -16,7 +16,7 @@ let msg_tagged v = message_autotagged v (fun _ -> "SATSOLVE");;
 let msg_plain = message;;
 
 let solve' game =
-	let solver = new Satwrapper.satWrapper (Satsolvers.get_default ()) in
+	let solver = new Satwrapper.satWrapper (Satsolvers.get_default ()) None in
 
 	msg_tagged 2 (fun _ -> "Using backend sat solver: " ^ (Satsolvers.get_default ())#identifier ^ "\n");
 	msg_tagged 2 (fun _ -> "Building constraints...\n");

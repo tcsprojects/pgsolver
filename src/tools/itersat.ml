@@ -224,7 +224,7 @@ let factory = if !option_printonly then get_pseudo_factory
               else if not (!option_parsesolution = "") then new Externalsat.externalSolverFactory !option_parsesolution
               else Satsolvers.get_default ()
 let factory = if !option_preprocess then new Preprocessor.preprocessorSolverFactory factory else factory
-let solver = new Satwrapper.satWrapper (factory)
+let solver = new Satwrapper.satWrapper (factory) None
 
 
 (*****************************************************************************

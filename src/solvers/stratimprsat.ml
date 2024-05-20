@@ -18,7 +18,7 @@ let msg_tagged v = message_autotagged v (fun _ -> "STRATIMPRSAT");;
 let msg_plain = message;;
 
 let solve' game sink0 sink1 =
-	let solver = new Satwrapper.satWrapper (Satsolvers.get_default ()) in
+	let solver = new Satwrapper.satWrapper (Satsolvers.get_default ()) None in
 
 	msg_tagged 2 (fun _ -> "Using backend sat solver: " ^ (Satsolvers.get_default ())#identifier ^ "\n");
 	msg_tagged 2 (fun _ -> "Building constraints...\n");
