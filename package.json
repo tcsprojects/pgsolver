@@ -1,0 +1,6 @@
+{
+    "scripts": {
+        "opam-build": "ocaml setup.ml -build",
+        "opam-publish": "opam publish opam/opam"
+    }
+}
