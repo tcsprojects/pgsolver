@@ -1,0 +1,7 @@
+(executables
+ (names auso benchmark benchstratimpr combine complexdecomp compressor fullimprarena imprarena infotool itersat obfuscator policyitervis transformer winningstrats)
+ (modules auso benchmark benchstratimpr combine complexdecomp compressor fullimprarena imprarena infotool itersat obfuscator policyitervis transformer winningstrats)
+ (libraries pgsolver)
+ (flags (:standard -w -32 -w -27 -w -33 -w -35))
+)
+(include_subdirs unqualified)

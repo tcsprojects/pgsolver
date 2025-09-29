@@ -1,0 +1,7 @@
+(executables
+ (names pgsolver)
+ (modules pgsolver)
+ (libraries pgsolver)
+ (flags (:standard -w -32))
+)
+(include_subdirs unqualified)

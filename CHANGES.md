@@ -1,3 +1,11 @@
+## v4.4
+
+- Change from OASIS to DUNE
+- Change from OCAML 4 to OCAML 5
+
+
+## v4.3
+
 Jun 3 2017      Oliver Friedmann
  - Use OASIS and OPAM instead of submodules and make
 

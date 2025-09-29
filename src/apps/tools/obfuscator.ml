@@ -44,8 +44,10 @@ let _ =
     swap.(i) <- i
   done;
 
-  Option.map_default (fun i _ -> Random.init i) (Random.self_init) !seed ();
-
+  match !seed with
+    None -> Random.self_init ()
+  | Some i -> Random.init i;
+  
   if !obfuscate_nodes then (
       for k=1 to 10*(m-1) do
         let i = Random.int m in

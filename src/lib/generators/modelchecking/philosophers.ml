@@ -12,16 +12,16 @@ module Philosophers =
 		| PutdownRight of int
 		| PutdownLeft of int
 
-    type philosopher = Eating | Thinking | HasLeft | HasRight
+    type philosopher = Hungry | Eating | Thinking | HasLeft | HasRight
     type state = philosopher  array
 
-    let initstate = Array.init !n (fun i -> Thinking)
+    let initstate = Array.init !n (fun _ -> Thinking)
 
     let labeling s =
-      let t = Treeset.empty_def ref in
+      let t = ref TreeSet.empty_def in
       Array.iteri (fun i p -> match p with
-				 Hungry -> t := Treeset.add t (isHungry i)
-			       | Eating -> t := Treeset.add t (isEating i)
+				 Hungry -> t := TreeSet.add (IsHungry i) !t 
+			       | Eating -> t := TreeSet.add (IsEating i) !t
 			       | _      -> ())
 		  s;
       !t
@@ -64,7 +64,7 @@ module Philosophers =
       in
       actlst (!n-1) []
 	     
-    let show_state s = Array.fold_left (fun t -> fun p -> t ^ (match p with Thinking -> "_"
+    let show_state s = Array.fold_left (fun t -> fun p -> t ^ (match p with Hungry -> "." | Thinking -> "_"
 									  | HasLeft -> "\\"
 									  | HasRight -> "/"
 									  | Eating -> "*"))

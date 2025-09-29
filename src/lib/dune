@@ -1,0 +1,8 @@
+(library
+ (name pgsolver)
+ (public_name pgsolver)
+ (libraries num str unix threads extlib tcs-lib ocaml-sat-solvers)
+ (wrapped false)
+ (flags (:standard -w -27 -w -33 -w -32 -w -69 -w -34 -w -37 -w -38 -w -35 -w -39 -w -67))
+)
+(include_subdirs unqualified)
