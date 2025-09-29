@@ -18,6 +18,11 @@ jobs:
         ocaml-version:
           - 4.8
           - 5.3
+        exclude:
+          - os: macos-latest
+            ocaml-compiler: "4.08"
+          - os: windows-latest
+            ocaml-compiler: "4.08"
 
     runs-on: ${{ matrix.os }}
 
