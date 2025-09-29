@@ -16,8 +16,6 @@ depends: [
   "num"
   "tcs-lib"
   "extlib"
-  "str"
-  "unix"
   "ocaml-sat-solvers"
   "odoc" {with-doc}
 ]

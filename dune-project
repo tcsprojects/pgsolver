@@ -16,8 +16,6 @@
    num
    tcs-lib
    extlib
-   str
-   unix
    ocaml-sat-solvers
  )
  (license "BSD-3-clause")
