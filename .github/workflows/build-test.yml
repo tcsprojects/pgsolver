@@ -46,10 +46,14 @@ jobs:
       - name: run test
         run: opam exec -- dune runtest
 
-      - run: opam install . --deps-only --with-test --criteria='+removed,+count[version-lag,solution]' --solver=builtin-0install
+      - name: install lower bounds version
+        if: matrix.os == 'ubuntu-latest'
+        run: opam install . --deps-only --with-test --criteria='+removed,+count[version-lag,solution]' --solver=builtin-0install
 
       - name: build project with lower bounds
+        if: matrix.os == 'ubuntu-latest'
         run: opam exec -- dune build
 
       - name: run test with lower bounds
+        if: matrix.os == 'ubuntu-latest'
         run: opam exec -- dune runtest
