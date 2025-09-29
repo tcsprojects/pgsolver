@@ -14,9 +14,9 @@ depends: [
   "ocaml" {>= "4.8"}
   "dune" {>= "3.10"}
   "num"
-  "tcs-lib"
+  "tcs-lib" {>= "0.6"}
   "extlib"
-  "ocaml-sat-solvers"
+  "ocaml-sat-solvers" {>= "0.8"}
   "odoc" {with-doc}
 ]
 build: [

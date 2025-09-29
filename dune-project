@@ -14,9 +14,9 @@
    (ocaml (>= 4.8))
    dune
    num
-   tcs-lib
+   (tcs-lib (>= 0.6))
    extlib
-   ocaml-sat-solvers
+   (ocaml-sat-solvers (>= 0.8))
  )
  (license "BSD-3-clause")
  (authors "Oliver Friedmann" "Martin Lange") 
