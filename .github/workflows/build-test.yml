@@ -21,9 +21,9 @@ jobs:
           - "5.3"
         exclude:
           - os: macos-latest
-            ocaml-compiler: "4.08"
+            ocaml-version: "4.08"
           - os: windows-latest
-            ocaml-compiler: "4.08"
+            ocaml-version: "4.08"
 
     runs-on: ${{ matrix.os }}
 
