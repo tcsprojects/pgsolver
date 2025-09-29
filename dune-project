@@ -16,7 +16,6 @@
    num
    tcs-lib
    extlib
-   threads
    str
    unix
    ocaml-sat-solvers
