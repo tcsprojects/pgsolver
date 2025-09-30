@@ -1,10 +1,10 @@
 name: Build and Test
 
 on:
+  pull_request:
   push:
     branches:
       - master
-  pull_request:
 
 jobs:
   build-and-test:
@@ -16,8 +16,14 @@ jobs:
           - ubuntu-latest
           - windows-latest
         ocaml-version:
-          - 4.8
-          - 5.3
+          - "4.08"
+          - "4.14"
+          - "5.3"
+        exclude:
+          - os: macos-latest
+            ocaml-version: "4.08"
+          - os: windows-latest
+            ocaml-version: "4.08"
 
     runs-on: ${{ matrix.os }}
 
@@ -40,10 +46,14 @@ jobs:
       - name: run test
         run: opam exec -- dune runtest
 
-      - run: opam install . --deps-only --with-test --criteria='+removed,+count[version-lag,solution]' --solver=builtin-0install
+      - name: install lower bounds version
+        if: matrix.os == 'ubuntu-latest'
+        run: opam install . --deps-only --with-test --criteria='+removed,+count[version-lag,solution]' --solver=builtin-0install
 
       - name: build project with lower bounds
+        if: matrix.os == 'ubuntu-latest'
         run: opam exec -- dune build
 
       - name: run test with lower bounds
+        if: matrix.os == 'ubuntu-latest'
         run: opam exec -- dune runtest
