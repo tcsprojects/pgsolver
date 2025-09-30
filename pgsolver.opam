@@ -12,7 +12,7 @@ homepage: "https://github.com/tcsprojects/pgsolver"
 bug-reports: "https://github.com/tcsprojects/pgsolver/issues"
 depends: [
   "ocaml" {>= "4.8"}
-  "dune" {>= "3.10"}
+  "dune" {>= "3.18"}
   "num"
   "tcs-lib" {>= "0.6"}
   "extlib"
@@ -34,3 +34,4 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/tcsprojects/pgsolver.git"
+x-maintenance-intent: ["(latest)"]

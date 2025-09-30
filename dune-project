@@ -1,4 +1,4 @@
-(lang dune 3.10)
+(lang dune 3.18)
 (name pgsolver)
 (version 4.4)
 
@@ -8,6 +8,7 @@
 
 (package
  (name pgsolver)
+ (maintenance_intent "(latest)")
  (synopsis "A collection of tools for generating, manipulating and - most of all - solving parity games")
  (description "A collection of tools for generating, manipulating and - most of all - solving parity games.")
  (depends
