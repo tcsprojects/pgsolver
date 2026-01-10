@@ -1,6 +1,6 @@
 (executables
- (names generator)
- (modules generator)
+ (names generator stratimprgen)
+ (modules generator stratimprgen)
  (libraries pgsolver)
  (flags (:standard -w -32))
 )

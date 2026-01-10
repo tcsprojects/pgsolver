@@ -59,4 +59,9 @@ the directory where you did `dune build`:
 ```
   ./_build/default/src/apps/generator/generator.exe --generator recursiveladder 4
 ```
+Generate a parity game using Friedmann's exponential lower-bound family of
+examples for strategy improvement:
+```
+  ./_build/default/src/apps/generators/stratimprgen.exe -pg friedmannsubexp [n]
+```
 

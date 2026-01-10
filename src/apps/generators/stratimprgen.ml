@@ -1,12 +1,9 @@
 open Arg ;;
 open Tcsargs;;
 open Tcsbasedata;;
-open Basics ;;
 open Paritygame;;
 open Mdp;;
-open Tcsstrings ;;
 open Stratimprgenerators;;
-open Stratimprgenlist;;
 
 Stratimprgenlist.register();;
 
